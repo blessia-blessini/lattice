@@ -1,0 +1,6 @@
+{
+  "dailyNotesPath": "{notesRoot}\\daily",
+  "defaultOpenTheme": "light",
+  "saveOnBlur": true,
+  "wordWrap": true
+}

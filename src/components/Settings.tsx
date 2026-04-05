@@ -1,0 +1,178 @@
+import React, { useState } from 'react';
+import { FileSystem } from '../services/FileSystem';
+import { invoke } from '@tauri-apps/api/core';
+
+interface SettingsProps {
+    defaultTheme: 'light' | 'dark';
+    onDefaultThemeChange: (theme: 'light' | 'dark') => void;
+    wordWrap: boolean;
+    onWordWrapChange: (wrap: boolean) => void;
+    saveOnBlur: boolean;
+    dailyNotesPath: string;
+    onDailyNotesPathChange: (path: string) => void;
+    onClose?: () => void;
+    settingsPath: string;
+}
+
+//******************************************************************************
+// Settings
+//******************************************************************************
+export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultThemeChange, wordWrap, onWordWrapChange, saveOnBlur, dailyNotesPath, onDailyNotesPathChange, onClose, settingsPath }) => {
+    const [status, setStatus] = useState<string>('');
+
+    const saveSettings = async (newTheme: 'light' | 'dark',
+        newWordWrap: boolean,
+        newDailyNotesPath: string) => {
+        try {
+            const settingsObject = {
+                defaultOpenTheme: newTheme,
+                wordWrap: newWordWrap,
+                saveOnBlur: saveOnBlur,
+                dailyNotesPath: newDailyNotesPath
+            };
+            await invoke('save_settings', { settingsPath, settings: settingsObject });
+            setStatus('Saved!');
+            setTimeout(() => setStatus(''), 2000);
+        } catch (error) {
+            console.error("Failed to save settings:", error);
+            setStatus('Error saving settings');
+        }
+    };
+
+    const handleThemeChange = (newTheme: 'light' | 'dark') => {
+        onDefaultThemeChange(newTheme);
+        saveSettings(newTheme, wordWrap, dailyNotesPath);
+    };
+
+    const handleWordWrapChange = () => {
+        const newWrap = !wordWrap;
+        onWordWrapChange(newWrap);
+        saveSettings(defaultTheme, newWrap, dailyNotesPath);
+    };
+
+    const handleDailyNotesPathChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newPath = e.target.value;
+        onDailyNotesPathChange(newPath);
+        saveSettings(defaultTheme, wordWrap, newPath);
+    };
+
+    return (
+        <div style={{
+            padding: '2rem',
+            height: '100vh',
+            backgroundColor: defaultTheme === 'dark' ? '#0d1117' : '#ffffff',
+            color: defaultTheme === 'dark' ? '#c9d1d9' : '#24292e',
+            boxSizing: 'border-box'
+        }}>
+            <h1>Settings</h1>
+            <div style={{ marginBottom: '2rem' }}>
+                <h3>Appearance</h3>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <span>Default Open Theme:</span>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                        <span style={{ fontWeight: defaultTheme === 'light' ? 'bold' : 'normal' }}>Light</span>
+                        <div
+                            onClick={() => handleThemeChange(defaultTheme === 'light' ? 'dark' : 'light')}
+                            style={{
+                                width: '50px',
+                                height: '24px',
+                                backgroundColor: defaultTheme === 'dark' ? '#2ea44f' : '#ccc',
+                                borderRadius: '12px',
+                                position: 'relative',
+                                cursor: 'pointer',
+                                transition: 'background-color 0.2s'
+                            }}
+                        >
+                            <div style={{
+                                width: '20px',
+                                height: '20px',
+                                backgroundColor: '#fff',
+                                borderRadius: '50%',
+                                position: 'absolute',
+                                top: '2px',
+                                left: defaultTheme === 'dark' ? '28px' : '2px',
+                                transition: 'left 0.2s',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+                            }} />
+                        </div>
+                        <span style={{ fontWeight: defaultTheme === 'dark' ? 'bold' : 'normal' }}>Dark</span>
+                    </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '1.5rem' }}>
+                    <span>Word Wrap:</span>
+                    <div
+                        onClick={handleWordWrapChange}
+                        style={{
+                            width: '50px',
+                            height: '24px',
+                            backgroundColor: wordWrap ? '#2ea44f' : '#ccc',
+                            borderRadius: '12px',
+                            position: 'relative',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.2s'
+                        }}
+                    >
+                        <div style={{
+                            width: '20px',
+                            height: '20px',
+                            backgroundColor: '#fff',
+                            borderRadius: '50%',
+                            position: 'absolute',
+                            top: '2px',
+                            left: wordWrap ? '28px' : '2px',
+                            transition: 'left 0.2s',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+                        }} />
+                    </div>
+                    <span>{wordWrap ? 'On' : 'Off'}</span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '1.5rem', width: '100%' }}>
+                    <span style={{ minWidth: '120px' }}>Daily Notes Path:</span>
+                    <input
+                        type="text"
+                        value={dailyNotesPath}
+                        onChange={handleDailyNotesPathChange}
+                        style={{
+                            flex: 1,
+                            padding: '0.5rem',
+                            borderRadius: '4px',
+                            border: `1px solid ${defaultTheme === 'dark' ? '#30363d' : '#e1e4e8'}`,
+                            backgroundColor: defaultTheme === 'dark' ? '#161b22' : '#f6f8fa',
+                            color: defaultTheme === 'dark' ? '#c9d1d9' : '#24292e',
+                        }}
+                    />
+                </div>
+
+            </div>
+            <div style={{ borderTop: `1px solid ${defaultTheme === 'dark' ? '#30363d' : '#e1e4e8'}`, paddingTop: '1rem', marginTop: 'auto' }}>
+                <button
+                    onClick={() => {
+                        if (onClose) {
+                            onClose();
+                        } else {
+                            invoke('close_settings_window');
+                        }
+                    }}
+                    style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        backgroundColor: defaultTheme === 'dark' ? '#2ea44f' : '#2ea44f',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '1rem',
+                        cursor: 'pointer',
+                        marginBottom: '1rem'
+                    }}
+                >
+                    Close Settings
+                </button>
+                <p style={{ color: '#2ea44f', marginTop: '1rem', minHeight: '1.2em', visibility: status ? 'visible' : 'hidden' }}>{status || 'Placeholder'}</p>
+                <p style={{ fontSize: '0.8rem', opacity: 0.7 }}>Settings are saved to: {settingsPath}</p>
+            </div>
+        </div >
+    );
+};
+// Settings END ****************************************************************

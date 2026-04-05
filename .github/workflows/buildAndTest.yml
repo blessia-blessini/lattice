@@ -1,0 +1,427 @@
+# LEGAL NOTE:
+# LATTICE (tm) - The Portable and standard Markdown Editor 
+# Copyright (C) 2026 Owner of blessini.com (a.k.a Blessia)
+# email: blessia AT blessini.com
+# 
+# GNU AFFERO GENERAL PUBLIC LICENSE V3 NOTICE:
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+# 
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#   
+# See LICENCE file in GitHUB root folder of the repository.
+# END OF NOTE
+
+name: Build and Test Matrix
+
+on:
+
+  push:
+    branches: [ "*build*" ] # look for build in branch name
+
+  workflow_dispatch:  # <--- This enables the manual trigger
+    inputs:
+      platform:
+        description: 'Target Platform'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+        - all
+        - desktops                # macOS-Universal, Linux, Windows (x64+ARM)
+        - non-apple-os-desktops   # Windows (x64+ARM), Linux
+        - windows-desktop
+        - windows-arm-desktop
+        - linux-desktop
+        - macos-universal
+        - android
+        - ios
+
+  # Do not build on pull requests  
+  # pull_request:
+  #  branches: [ "main", "dev*" ]
+
+concurrency:
+  # Make it wait between branches - it is not needed but it is more human to give chance to
+  #   Cancel builds if needed manually and avoid action minutes burning out
+  #   ADD -${{ github.ref }} to make it NOT wait between branches
+  group: ${{ github.workflow }} 
+  cancel-in-progress: false
+
+jobs:
+  ################################################################
+  # JOB 1: SETUP (Define & Filter Matrix)
+  ################################################################
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+    - name: Strings and Matrix Definition
+      id: set-matrix
+      shell: bash
+      run: |
+        # 1. Define the Master Matrix as a JSON String
+        #    (We use a compact JSON structure here)
+        #    TODO: Add "windows-arm-desktop" to the matrix
+        #       should be >> runs-on: windows-11-arm 
+        CONST_JSON='[
+          {
+            "os": "windows-latest",
+            "platform": "windows-desktop",
+            "bldprefix": "",
+            "mobile_build": "",
+            "args": "",
+            "download_name": "Windows-AMD64(and INTEL)-Desktop-App",
+            "upload_path1": "src-tauri/target/release/bundle/nsis/*.exe",
+            "upload_path2": ""
+          },
+          {
+            "os": "windows-latest",
+            "platform": "windows-arm-desktop",
+            "bldprefix": "",
+            "mobile_build": "",
+            "args": "--target aarch64-pc-windows-msvc",
+            "download_name": "Windows-ARM64(and AppleSilicon)-Desktop-App",
+            "upload_path1": "src-tauri/target/aarch64-pc-windows-msvc/release/bundle/nsis/*.exe",
+            "upload_path2": ""
+          },
+          {
+            "os": "macos-latest",
+            "platform": "macos-universal",
+            "bldprefix": "",
+            "mobile_build": "",
+            "args": "--target universal-apple-darwin",
+            "download_name": "MacOS-Universal-Intel-and-AppleSilicon-Desktop-App",
+            "upload_path1": "src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg",
+            "upload_path2": "src-tauri/target/release/release/bundle/dmg/*.dmg"
+          },
+          {
+            "os": "ubuntu-latest",
+            "platform": "linux-desktop",
+            "bldprefix": "",
+            "mobile_build": "",
+            "args": "",
+            "download_name": "Linux-Desktop-App-tested-on-Ubuntu-Appimage",
+            "upload_path1": "src-tauri/target/release/bundle/appimage/*.AppImage",
+            "upload_path2": "src-tauri/target/release/bundle/deb/*.deb"
+          },
+          {
+            "os": "ubuntu-latest",
+            "platform": "android",
+            "bldprefix": "android",
+            "mobile_build": "-Ax",
+            "args": "",
+            "download_name": "Android-App-APK-and-aab",
+            "upload_path1": "src-tauri/gen/android/app/build/outputs/**/*.apk",
+            "upload_path2": "src-tauri/gen/android/app/build/outputs/bundle/universalRelease/*.aab"
+          },
+          {
+            "os": "macos-latest",
+            "platform": "ios",
+            "bldprefix": "ios",
+            "mobile_build": "-Ax",
+            "args": "ios",
+            "download_name": "iOS-App-Archive",
+            "upload_path1": "src-tauri/gen/apple/build/Release-iphoneos/*.ipa",
+            "upload_path2": ""
+          }
+        ]'
+
+        # 2. Determine Logic from Inputs or Branch Name
+        TARGET="${{ inputs.platform }}"
+        BRANCH="${{ github.ref_name }}"
+        
+        # If triggered by push (not manual), derive target from branch name
+        if [ "${{ github.event_name }}" == "push" ]; then
+          if [[ "$BRANCH" == *"buildAll"* ]]; then
+            TARGET="all"
+          elif [[ "$BRANCH" == *"buildDesktops"* ]]; then
+            TARGET="desktops"   
+          elif [[ "$BRANCH" == *"buildAndroid"* ]]; then
+            TARGET="android"
+          elif [[ "$BRANCH" == *"buildIos"* ]]; then
+            TARGET="ios"
+          elif [[ "$BRANCH" == *"buildWindows"* ]]; then
+            TARGET="windows-desktop"
+          elif [[ "$BRANCH" == *"buildLinux"* ]]; then
+            TARGET="linux-desktop"
+          elif [[ "$BRANCH" == *"buildMacos"* ]]; then
+            TARGET="macos-universal"
+          else
+            echo "Branch name setup requires explicit target. Stopping."
+            echo "matrix=[]" >> "$GITHUB_OUTPUT"
+            exit 0 
+          fi
+        fi
+
+        echo "Selected Target Logic: $TARGET"
+
+        # First remove completely temporary "on-hold" - SAVES ACTION TIME
+        echo "*** Removing temporary on-hold platform: windows-arm-desktop ***"
+        CONST_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform != "windows-arm-desktop")]')
+
+
+        # 3. Filter JSON using jq
+        #    We construct a jq select query based on the TARGET
+        if [ "$TARGET" == "all" ]; then
+          FINAL_JSON=$(echo "$CONST_JSON")
+        elif [ "$TARGET" == "desktops" ]; then
+          FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "windows-desktop" or .platform == "windows-arm-desktop" or .platform == "linux-desktop" or .platform == "macos-universal")]')
+        elif [ "$TARGET" == "non-apple-os-desktops" ]; then
+          FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "windows-desktop" or .platform == "windows-arm-desktop" or .platform == "linux-desktop")]')
+        elif [ "$TARGET" == "windows-desktop" ]; then
+          FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "windows-desktop")]')
+        elif [ "$TARGET" == "windows-arm-desktop" ]; then
+          FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "windows-arm-desktop")]')
+        elif [ "$TARGET" == "linux-desktop" ]; then
+          FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "linux-desktop")]')
+        elif [ "$TARGET" == "macos-universal" ]; then
+          FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "macos-universal")]')
+        elif [ "$TARGET" == "android" ]; then
+          FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "android")]')
+        elif [ "$TARGET" == "ios" ]; then
+          FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "ios")]')
+        else 
+          # Fallback or specific platform name match
+          FINAL_JSON=$(echo "$CONST_JSON" | jq -c --arg t "$TARGET" '[.[] | select(.platform == $t)]')
+        fi
+
+        # 4. Output
+        # Compact it one last time to be safe for GITHUB_OUTPUT
+        FINAL_JSON=$(echo "$FINAL_JSON" | jq -c '.')
+        echo "Generated Matrix: $FINAL_JSON"
+        echo "matrix=$FINAL_JSON" >> "$GITHUB_OUTPUT"
+
+  ################################################################
+  # JOB 2: BUILD AND TEST
+  ################################################################
+  build-and-test:
+    needs: setup
+    if: needs.setup.outputs.matrix != '[]' && needs.setup.outputs.matrix != ''
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        config: ${{ fromJson(needs.setup.outputs.matrix) }}
+            
+    env:
+      BUILD_TYPE: RelWithDebInfo
+      # Common env vars can go here
+
+    steps:
+    ################################################################
+    # 050 / Set reusable strings
+    ################################################################
+    - name: 050. Set reusable strings
+      id: strings
+      shell: bash
+      run: |
+        echo "build-platform=${{ matrix.config.platform }}" >> "$GITHUB_OUTPUT"
+        echo "build-args=${{ matrix.config.args }}" >> "$GITHUB_OUTPUT"
+        echo "download_path1=${{ matrix.config.upload_path1 }}" >> "$GITHUB_OUTPUT"   
+        echo "download_path2=${{ matrix.config.upload_path2 }}" >> "$GITHUB_OUTPUT"
+
+    ################################################################
+    # 100 / Checkout
+    ################################################################
+    - name: 100. Checkout
+      uses: actions/checkout@v4
+
+    ################################################################
+    # 120 - 125 Cache Dependencies
+    ################################################################
+
+    # RUST Cache ###################################################
+    - name: 120. Cache Rust Dependencies
+      uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: src-tauri
+    # end RUST Cache ###############################################
+
+    # NPM Cache ####################################################
+    - name: 121.1 Get npm cache directory
+      id: npm-cache-dir
+      shell: bash # Use bash to ensure consistent syntax across OS
+      run: echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
+    # now use it to cache npm dependencies
+    - name: 121.2 Cache NPM Dependencies
+      uses: actions/cache@v5
+      with:  ## ~/.npm
+        path: |          
+          ${{ steps.npm-cache-dir.outputs.dir }} 
+        key: npm-${{ matrix.config.os }}${{ matrix.config.mobile_build}}-${{ hashFiles('package-lock.json') }}
+        restore-keys: |
+          npm-${{ matrix.config.os }}${{ matrix.config.mobile_build}}-
+    # end NPM Cache ################################################
+    # END 120 - 125 Cache Dependencies #############################
+
+
+    - name: 123. Install Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+
+
+    ################################################################
+    # 150 / Configure Environment (Script)
+    ################################################################
+    - name: 150. Configure Environment (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        # rem chmod +x .\setup_env.ps1
+        .\scripts\setup_env.ps1
+
+    - name: 151. Configure Environment (Unix)
+      if: runner.os != 'Windows'
+      shell: bash
+      run: | 
+        chmod +x ./scripts/setup_env.sh 
+        ./scripts/setup_env.sh
+
+    - name: 153. Setup Rust Targets (Windows ARM64)
+      if: matrix.config.platform == 'windows-arm-desktop'
+      run: rustup target add aarch64-pc-windows-msvc
+
+    - name: 154. Setup Rust Targets (macOS Universal)
+      if: matrix.config.platform == 'macos-universal'
+      run: rustup target add x86_64-apple-darwin aarch64-apple-darwin
+
+    ################################################################
+    # 200 / Setup JDK 17 (Android)
+    ################################################################
+    - name: 200. Setup Java 17 for Android
+      if: matrix.config.platform == 'android'
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    ################################################################
+    # 250 / Setup Android: SDK and Project
+    ################################################################
+    - name: 250. Setup Android SDK
+      if: matrix.config.platform == 'android'
+      uses: android-actions/setup-android@v3   
+
+    - name: 251. Initialize Android Project
+      if: matrix.config.platform == 'android'
+      run: npm run tauri android init
+
+    ################################################################
+    # 350 / Build App
+    ################################################################
+    - name: 350. Build App (Desktop AND Mobile)
+      if: matrix.config.platform != 'ios' ### && matrix.config.platform != 'android' # see comment in 350.2
+      run: npm run tauri ${{ matrix.config.bldprefix }} build -- ${{ matrix.config.args }}
+
+    - name: 350.2 Build App (iOS)
+      if: matrix.config.platform == 'ios'
+      # iOS build requires code signing identities usually.
+      # This step serves as the requested placeholder/cross-build attempt.
+      run: |
+        echo "Starting iOS Build..."
+        # npm run tauri ios build
+        echo "iOS build requires provisioning profiles. Skipping actual build command for CI demo."
+        echo "  ideally, it should be done like in the step above (even _in_ the step above (not just _like_ in step above))"
+
+    ################################################################
+    # 370/ Run Automatic Tests
+    ################################################################
+    - name: 370.1 Run Rust Tests (Backend)
+      # Run on all desktop platforms. 
+      # For Android/iOS matrix items, we can still run host tests (Linux/Mac) to verify shared logic.
+      # TODO: Consider uncommenting
+      if: matrix.config.platform != 'ios' ### && matrix.config.platform != 'android' # see comment in 350.2 
+      working-directory: src-tauri
+      env:
+        LATTICEBUILD_NO: "TESTVERSION"
+        RUSTFLAGS: "--cfg integration_test"
+        RUST_BACKTRACE: 1
+      run: |
+        cargo test # removed --verbose
+
+    - name: 370.2 Run Frontend Tests (React/Tauri)
+      # TODO: Consider uncommenting for now we are saving some action minutes by not running tests on mobile
+      if: matrix.config.platform != 'ios' && matrix.config.platform != 'windows-arm-desktop' && matrix.config.platform != 'android' # see comment in 350.2
+      shell: bash
+      env:
+        LATTICEBUILD_NO: "TEST-FRONTEND-VERSION"
+        RUSTFLAGS: "--cfg integration_test"
+        RUST_BACKTRACE: 1
+      # Frontend tests use jsdom, so they can theoretically run anywhere node is.
+      # But usually we run them on standard desktop runners.
+      # Note: 'npm install/ci' was done in step 150/151.
+      run: |
+        npm run test:run
+        ./scripts/build-test.sh
+
+    ################################################################
+    # 380 / Generate Documentation (Linux Only)
+    ################################################################
+    - name: 380. Generate Documentation
+      # This runs on all platforms (and generates the same content for docs) 
+      #    but we only upload docs generated from linux
+      if: matrix.config.platform == 'linux-desktop' 
+      run: |
+        # 1. Generate Build Number with Prefix
+        # Utility is already built and placed in root by step 151 (setup_env.sh)
+        chmod +x ./buildno-gen
+        export LATTICEBUILD_NO="CI_Doc_$(./buildno-gen)"
+        # PowerShell equivalent for local Windows users:
+        # $env:LATTICEBUILD_NO="CI_Doc_$(.\buildno-gen.exe)"
+        echo "Generated Build Number for Docs: $LATTICEBUILD_NO"
+
+        # 2. Frontend Docs (Markdown) -> docs/gen/frontend
+        npm run doc
+
+        # 3. Backend Docs (HTML) -> docs/gen/backend
+        # Note: Cargo doc output is in target/doc, we need to move it.
+        # Ensure parent dir exists
+        mkdir -p docs/gen
+        
+        # Run cargo doc
+        cd src-tauri
+        cargo doc --no-deps
+        cd ..
+        
+        # Move output
+        mv src-tauri/target/doc docs/gen/backend
+      shell: bash
+
+    ################################################################
+    # 410 / Upload Documentation
+    ################################################################
+    - name: 410. Upload Documentation
+      if: matrix.config.platform == 'linux-desktop'
+      uses: actions/upload-artifact@v4
+      with:
+        name: DOCS
+        path: |
+          docs/gen
+
+    ################################################################
+    # 400 / Upload Artifacts
+    ################################################################    
+    - name: 400. Upload Artifacts (ALL)
+      uses: actions/upload-artifact@v4
+      with:
+        name: DOWNLOAD-${{ matrix.config.platform }}
+        path: |  
+          ${{ steps.strings.outputs.download_path1 }}
+          ${{ steps.strings.outputs.download_path2 }}
+
+
+  # End of build-and-test job
+
+# End of matrix workflow

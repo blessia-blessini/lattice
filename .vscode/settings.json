@@ -1,0 +1,6 @@
+{
+    "workbench.tree.indent": 12,
+    "rust-analyzer.cargo.extraEnv": {
+        "LATTICEBUILD_NO": "VSCodeSettingsRustAnalyzer"
+    }
+}

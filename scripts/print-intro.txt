@@ -1,0 +1,18 @@
+
+***************************************************************************
+*** INTRO:        *********************************************************
+***************************************************************************
+   To make a release for the platform on which you are 
+   working now:
+      =>   npm run tauri build
+   To develop/test/debug:
+      =>   npm run tauri dev
+    THIS WORKS FOR ALL PLATFORMS
+***************************************************************************
+    TIP 1: Look how targets are built and tested automatically 
+       in .github/workflows/build.yml
+***************************************************************************
+    TIP 2: Look in folder "scripts", all scripts that are 
+       named as build-xxx.sh or build-xxx.ps1 are scripts for 
+       macOS/Linux and Windows respectively. 
+***************************************************************************

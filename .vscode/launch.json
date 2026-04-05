@@ -1,0 +1,35 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Tauri Debug",
+            "preLaunchTask": "ui:dev",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--manifest-path=./src-tauri/Cargo.toml",
+                    "--no-default-features"
+                ]
+            },
+            "args": [
+                "${userHome}/_prj/lattice-work/_test_samples/test1.md",
+                "${userHome}/_prj/lattice-work/_test_samples/test2.md",
+                "${userHome}/_prj/lattice-work/_test_samples/test3.md",
+                "${userHome}/_prj/lattice-work/_test_samples/test4.md",
+                "${userHome}/_prj/lattice-work/_test_samples/test5.md",
+                "${userHome}/_prj/lattice-work/_test_samples/test6.md",
+            ],
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "LATTICEBUILD_NO": "START_WITH_DEBUGGER",
+                "RUST_LOG": "info",
+                "LATTICE_DEBUG": "1"
+            },
+            "sourceLanguages": [
+                "rust"
+            ]
+        }
+    ]
+}

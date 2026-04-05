@@ -1,0 +1,86 @@
+# Handle line endings automatically for files detected as text
+# and leave binary files untouched.
+# * text=auto
+
+# Docker, shell scripts, and build/config files should always use LF
+*.sh text eol=lf
+*.bash text eol=lf
+Dockerfile text eol=lf
+*.toml text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Project Config Files
+LICENSE text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+Cargo.lock text eol=lf
+*.ini text eol=lf
+*.conf text eol=lf
+*.properties text eol=lf
+*.xml text eol=lf
+*.txt text eol=lf
+*.svg text eol=lf
+
+# Web & Scripting (JS/TS/CSS/HTML)
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+
+# Rust
+*.rs text eol=lf
+
+# C/C++
+*.c text eol=lf
+*.cpp text eol=lf
+*.h text eol=lf
+*.hpp text eol=lf
+*.cc text eol=lf
+*.hh text eol=lf
+
+# Java
+*.java text eol=lf
+
+# Binary Files - safety net
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.icns binary
+*.pdf binary
+*.exe binary
+*.msi binary
+*.zip binary
+*.tar binary
+*.gz binary
+*.bz2 binary
+*.7z binary
+*.dmg binary
+*.iso binary
+*.app binary
+*.dll binary
+*.dylib binary
+*.so binary
+*.dylib binary
+*.lib binary
+*.a binary
+*.obj binary
+*.class binary
+*.jar binary
+*.war binary
+*.ear binary
+*.apk binary
+*.ipa binary
+*.app binary
+*.dmg binary
+*.iso binary
+*.mpp binary
+*.doc binary
+*.docx binary
