@@ -235,7 +235,7 @@ jobs:
     # 100 / Checkout
     ################################################################
     - name: 100. Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     ################################################################
     # 120 - 125 Cache Dependencies
@@ -267,7 +267,7 @@ jobs:
 
 
     - name: 123. Install Node
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v6
       with:
         node-version: '24'
 
@@ -289,6 +289,18 @@ jobs:
         chmod +x ./scripts/setup_env.sh 
         ./scripts/setup_env.sh
 
+    - name: 152. calculate build number
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      id: build-no-gen
+      run: |  
+        if [ "${{ runner.os }}" == "Windows" ]; then
+          BUILD_NO=$(./buildno-gen.exe)
+        else
+          BUILD_NO=$(./buildno-gen)
+        fi
+        echo "BUILD_NO=$BUILD_NO" >> $GITHUB_OUTPUT
+
     - name: 153. Setup Rust Targets (Windows ARM64)
       if: matrix.config.platform == 'windows-arm-desktop'
       run: rustup target add aarch64-pc-windows-msvc
@@ -302,7 +314,7 @@ jobs:
     ################################################################
     - name: 200. Setup Java 17 for Android
       if: matrix.config.platform == 'android'
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         distribution: 'temurin'
         java-version: '17'
@@ -312,7 +324,7 @@ jobs:
     ################################################################
     - name: 250. Setup Android SDK
       if: matrix.config.platform == 'android'
-      uses: android-actions/setup-android@v3   
+      uses: android-actions/setup-android@v4   
 
     - name: 251. Initialize Android Project
       if: matrix.config.platform == 'android'
@@ -323,10 +335,14 @@ jobs:
     ################################################################
     - name: 350. Build App (Desktop AND Mobile)
       if: matrix.config.platform != 'ios' ### && matrix.config.platform != 'android' # see comment in 350.2
+      env:
+        LATTICEBUILD_NO: ${{matrix.config.platform}}-${{ steps.build-no-gen.outputs.BUILD_NO }}
       run: npm run tauri ${{ matrix.config.bldprefix }} build -- ${{ matrix.config.args }}
 
     - name: 350.2 Build App (iOS)
       if: matrix.config.platform == 'ios'
+      env:
+        LATTICEBUILD_NO: ${{matrix.config.platform}}-${{ steps.build-no-gen.outputs.BUILD_NO }}
       # iOS build requires code signing identities usually.
       # This step serves as the requested placeholder/cross-build attempt.
       run: |
@@ -345,7 +361,7 @@ jobs:
       if: matrix.config.platform != 'ios' ### && matrix.config.platform != 'android' # see comment in 350.2 
       working-directory: src-tauri
       env:
-        LATTICEBUILD_NO: "TESTVERSION"
+        LATTICEBUILD_NO: TSTBE-${{matrix.config.platform}}-${{ steps.build-no-gen.outputs.BUILD_NO }}
         RUSTFLAGS: "--cfg integration_test"
         RUST_BACKTRACE: 1
       run: |
@@ -356,7 +372,7 @@ jobs:
       if: matrix.config.platform != 'ios' && matrix.config.platform != 'windows-arm-desktop' && matrix.config.platform != 'android' # see comment in 350.2
       shell: bash
       env:
-        LATTICEBUILD_NO: "TEST-FRONTEND-VERSION"
+        LATTICEBUILD_NO: TSTFrontEnd-${{matrix.config.platform}}-${{ steps.build-no-gen.outputs.BUILD_NO }}
         RUSTFLAGS: "--cfg integration_test"
         RUST_BACKTRACE: 1
       # Frontend tests use jsdom, so they can theoretically run anywhere node is.
@@ -404,7 +420,8 @@ jobs:
     ################################################################
     - name: 410. Upload Documentation
       if: matrix.config.platform == 'linux-desktop'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
+      id: a-docs-gen
       with:
         name: DOCS
         path: |
@@ -414,14 +431,28 @@ jobs:
     # 400 / Upload Artifacts
     ################################################################    
     - name: 400. Upload Artifacts (ALL)
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
+      id: a-download-exec
       with:
-        name: DOWNLOAD-${{ matrix.config.platform }}
+        name: DOWNLOAD-${{matrix.config.download_name}}-${{ steps.build-no-gen.outputs.BUILD_NO }}
         path: |  
           ${{ steps.strings.outputs.download_path1 }}
           ${{ steps.strings.outputs.download_path2 }}
 
 
-  # End of build-and-test job
+    - name: 800. SUMMARY PAGE UPDATE
+      working-directory: ${{ github.workspace }}
+      shell: bash
+      continue-on-error: true
+      run: |
+        echo "### ${{ matrix.config.download_name }} BUILD" >> $GITHUB_STEP_SUMMARY
+        echo " - Download built executable file(s) from: ${{ steps.a-download-exec.outputs.artifact-url }}" >>  $GITHUB_STEP_SUMMARY
+        # echo " - Download built executable file(s) from: ${{ steps.a-download-exec.outputs.artifact-url }}" >>  $GITHUB_STEP_SUMMARY
 
-# End of matrix workflow
+      
+      # - `\u26A0` is the warning emoji  ⚠️.
+      # - `\u2705` is the check mark emoji ✅.
+      # - `\u274C` is the cross mark emoji `❌`. 
+      # - 🟢 is a green circle.
+      # - 🟡 is a yellow circle.
+      # - 🔴 is a red circle.
