@@ -27,6 +27,12 @@ on:
 
   push:
     branches: [ "*build*" ] # look for build in branch name
+    inputs:
+      platform:
+        description: 'Target Platform'
+        required: true
+        default: 'all'
+
 
   workflow_dispatch:  # <--- This enables the manual trigger
     inputs:
