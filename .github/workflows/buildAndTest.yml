@@ -448,22 +448,11 @@ jobs:
         echo "### ${{ matrix.config.download_name }} BUILD" >> $GITHUB_STEP_SUMMARY
         echo " - Download built executable file(s) from: ${{ steps.a-download-exec.outputs.artifact-url }}" >>  $GITHUB_STEP_SUMMARY
         # echo " - Download built executable file(s) from: ${{ steps.a-download-exec.outputs.artifact-url }}" >>  $GITHUB_STEP_SUMMARY
-        
-        # echo " - Download built executable files from: ${{ steps.ANTIVIRUS_SCAN.outputs.BIN_DOWNLD }}" >>  $GITHUB_STEP_SUMMARY
-        # echo "You can check detailed antivirus scan report downloaded with test reports." >> $GITHUB_STEP_SUMMARY 
-        # if [ -f ctest-pass2-results-of-failedonly.txt ]; then
-        #  echo -e " - 🟡 Some test(s) **failed**. Namely: " >> $GITHUB_STEP_SUMMARY
-        #   # echo all lines from file ctest-pass2-results-of-failedonly.txt starting from the line that contains the string "The following tests FAILED:"
-        #   awk '/The following tests FAILED:/ {flag=1; next} /Errors while running CTest/ {flag=0} flag {print "    " $0}' ctest-pass2-results-of-failedonly.txt >> $GITHUB_STEP_SUMMARY            
-        #  echo "    Download the test results to check why. Look into \`ctest-pass2-results-of-failedonly.txt\` file in Test-Result logs, which  " >> $GITHUB_STEP_SUMMARY
-        # else
-        #  echo -e " - 🟢 All tests **passed**. Test-Result logs " >> $GITHUB_STEP_SUMMARY
-        # fi
-        # echo -e "are here: ${{ steps.a-TestLog.outputs.artifact-url }}." >> $GITHUB_STEP_SUMMARY
+
       
-      # - `\u26A0` represents the warning emoji  ⚠️.
-      # - `\u2705` represents the check mark emoji ✅.
-      # - `\u274C` represents the cross mark emoji `❌`. 
-      # - 🟢 represents a green circle.
-      # - 🟡 represents a yellow circle.
-      # - 🔴 represents a red circle.
+      # - `\u26A0` is the warning emoji  ⚠️.
+      # - `\u2705` is the check mark emoji ✅.
+      # - `\u274C` is the cross mark emoji `❌`. 
+      # - 🟢 is a green circle.
+      # - 🟡 is a yellow circle.
+      # - 🔴 is a red circle.
