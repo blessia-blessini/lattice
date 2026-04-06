@@ -289,6 +289,16 @@ jobs:
         chmod +x ./scripts/setup_env.sh 
         ./scripts/setup_env.sh
 
+    - name: 152. calculate build number
+      shell: bash
+      run: |  
+        if [ "${{ runner.os }}" == "Windows" ]; then
+          BUILD_NO=$(./buildno-gen.exe)
+        else
+          BUILD_NO=$(./buildno-gen)
+        fi
+        echo "BUILD_NO=$BUILD_NO" >> $GITHUB_OUTPUT
+
     - name: 153. Setup Rust Targets (Windows ARM64)
       if: matrix.config.platform == 'windows-arm-desktop'
       run: rustup target add aarch64-pc-windows-msvc
@@ -323,10 +333,14 @@ jobs:
     ################################################################
     - name: 350. Build App (Desktop AND Mobile)
       if: matrix.config.platform != 'ios' ### && matrix.config.platform != 'android' # see comment in 350.2
+      env:
+        LATTICEBUILD_NO: ${{matrix.config.platform}}-${{ steps.build-no-gen.outputs.BUILD_NO }}
       run: npm run tauri ${{ matrix.config.bldprefix }} build -- ${{ matrix.config.args }}
 
     - name: 350.2 Build App (iOS)
       if: matrix.config.platform == 'ios'
+      env:
+        LATTICEBUILD_NO: ${{matrix.config.platform}}-${{ steps.build-no-gen.outputs.BUILD_NO }}
       # iOS build requires code signing identities usually.
       # This step serves as the requested placeholder/cross-build attempt.
       run: |
@@ -345,7 +359,7 @@ jobs:
       if: matrix.config.platform != 'ios' ### && matrix.config.platform != 'android' # see comment in 350.2 
       working-directory: src-tauri
       env:
-        LATTICEBUILD_NO: "TESTVERSION"
+        LATTICEBUILD_NO: TSTBE-${{matrix.config.platform}}-${{ steps.build-no-gen.outputs.BUILD_NO }}
         RUSTFLAGS: "--cfg integration_test"
         RUST_BACKTRACE: 1
       run: |
@@ -356,7 +370,7 @@ jobs:
       if: matrix.config.platform != 'ios' && matrix.config.platform != 'windows-arm-desktop' && matrix.config.platform != 'android' # see comment in 350.2
       shell: bash
       env:
-        LATTICEBUILD_NO: "TEST-FRONTEND-VERSION"
+        LATTICEBUILD_NO: TSTFrontEnd-${{matrix.config.platform}}-${{ steps.build-no-gen.outputs.BUILD_NO }}
         RUSTFLAGS: "--cfg integration_test"
         RUST_BACKTRACE: 1
       # Frontend tests use jsdom, so they can theoretically run anywhere node is.
@@ -405,6 +419,7 @@ jobs:
     - name: 410. Upload Documentation
       if: matrix.config.platform == 'linux-desktop'
       uses: actions/upload-artifact@v7
+      id: a-docs-gen
       with:
         name: DOCS
         path: |
@@ -414,14 +429,39 @@ jobs:
     # 400 / Upload Artifacts
     ################################################################    
     - name: 400. Upload Artifacts (ALL)
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
+      id: a-download-exec
       with:
-        name: DOWNLOAD-${{ matrix.config.platform }}
+        name: DOWNLOAD-${{matrix.config.download_name}}-${{ steps.build-no-gen.outputs.BUILD_NO }}
         path: |  
           ${{ steps.strings.outputs.download_path1 }}
           ${{ steps.strings.outputs.download_path2 }}
 
 
-  # End of build-and-test job
-
-# End of matrix workflow
+    - name: 800. SUMMARY PAGE UPDATE
+      working-directory: ${{ github.workspace }}
+      shell: bash
+      continue-on-error: true
+      run: |
+        echo "### ${{ matrix.config.download_name }} BUILD" >> $GITHUB_STEP_SUMMARY
+        echo " - Download built executable file(s) from: ${{ steps.a-download-exec.outputs.artifact-url }}" >>  $GITHUB_STEP_SUMMARY
+        # echo " - Download built executable file(s) from: ${{ steps.a-download-exec.outputs.artifact-url }}" >>  $GITHUB_STEP_SUMMARY
+        
+        # echo " - Download built executable files from: ${{ steps.ANTIVIRUS_SCAN.outputs.BIN_DOWNLD }}" >>  $GITHUB_STEP_SUMMARY
+        # echo "You can check detailed antivirus scan report downloaded with test reports." >> $GITHUB_STEP_SUMMARY 
+        # if [ -f ctest-pass2-results-of-failedonly.txt ]; then
+        #  echo -e " - 🟡 Some test(s) **failed**. Namely: " >> $GITHUB_STEP_SUMMARY
+        #   # echo all lines from file ctest-pass2-results-of-failedonly.txt starting from the line that contains the string "The following tests FAILED:"
+        #   awk '/The following tests FAILED:/ {flag=1; next} /Errors while running CTest/ {flag=0} flag {print "    " $0}' ctest-pass2-results-of-failedonly.txt >> $GITHUB_STEP_SUMMARY            
+        #  echo "    Download the test results to check why. Look into \`ctest-pass2-results-of-failedonly.txt\` file in Test-Result logs, which  " >> $GITHUB_STEP_SUMMARY
+        # else
+        #  echo -e " - 🟢 All tests **passed**. Test-Result logs " >> $GITHUB_STEP_SUMMARY
+        # fi
+        # echo -e "are here: ${{ steps.a-TestLog.outputs.artifact-url }}." >> $GITHUB_STEP_SUMMARY
+      
+      # - `\u26A0` represents the warning emoji  ⚠️.
+      # - `\u2705` represents the check mark emoji ✅.
+      # - `\u274C` represents the cross mark emoji `❌`. 
+      # - 🟢 represents a green circle.
+      # - 🟡 represents a yellow circle.
+      # - 🔴 represents a red circle.
