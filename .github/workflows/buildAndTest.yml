@@ -291,6 +291,8 @@ jobs:
 
     - name: 152. calculate build number
       shell: bash
+      working-directory: ${{ github.workspace }}
+      id: build-no-gen
       run: |  
         if [ "${{ runner.os }}" == "Windows" ]; then
           BUILD_NO=$(./buildno-gen.exe)
