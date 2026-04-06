@@ -27,12 +27,6 @@ on:
 
   push:
     branches: [ "*build*" ] # look for build in branch name
-    inputs:
-      platform:
-        description: 'Target Platform'
-        required: true
-        default: 'all'
-
 
   workflow_dispatch:  # <--- This enables the manual trigger
     inputs:
@@ -320,7 +314,7 @@ jobs:
     ################################################################
     - name: 200. Setup Java 17 for Android
       if: matrix.config.platform == 'android'
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         distribution: 'temurin'
         java-version: '17'
@@ -330,7 +324,7 @@ jobs:
     ################################################################
     - name: 250. Setup Android SDK
       if: matrix.config.platform == 'android'
-      uses: android-actions/setup-android@v3   
+      uses: android-actions/setup-android@v4   
 
     - name: 251. Initialize Android Project
       if: matrix.config.platform == 'android'
