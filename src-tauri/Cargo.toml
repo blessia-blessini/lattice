@@ -1,8 +1,8 @@
 [package]
 name = "lattice"
 version = "0.2.1"
-description = "A Tauri App"
-authors = ["you"]
+description = "A Markdown Editor"
+authors = ["Blessia Blessini"]
 edition = "2024"
 default-run = "lattice"
 
@@ -38,7 +38,6 @@ chrono = "0.4.44"
 
 [dev-dependencies]
 tempfile = "3.24.0"
-
 
 [profile.dev]
 opt-level = 0
