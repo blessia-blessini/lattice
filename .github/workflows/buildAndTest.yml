@@ -235,7 +235,7 @@ jobs:
     # 100 / Checkout
     ################################################################
     - name: 100. Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     ################################################################
     # 120 - 125 Cache Dependencies
@@ -267,7 +267,7 @@ jobs:
 
 
     - name: 123. Install Node
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v6
       with:
         node-version: '24'
 
@@ -404,7 +404,7 @@ jobs:
     ################################################################
     - name: 410. Upload Documentation
       if: matrix.config.platform == 'linux-desktop'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: DOCS
         path: |
