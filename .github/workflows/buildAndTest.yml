@@ -1,23 +1,23 @@
 # LEGAL NOTE:
-# LATTICE (tm) - The Portable and standard Markdown Editor 
+# LATTICE (tm) - The Portable and standard Markdown Editor
 # Copyright (C) 2026 Owner of blessini.com (a.k.a Blessia)
 # email: blessia AT blessini.com
-# 
+#
 # GNU AFFERO GENERAL PUBLIC LICENSE V3 NOTICE:
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
 # published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-#   
+#
 # See LICENCE file in GitHUB root folder of the repository.
 # END OF NOTE
 
@@ -47,7 +47,7 @@ on:
         - android
         - ios
 
-  # Do not build on pull requests  
+  # Do not build on pull requests
   # pull_request:
   #  branches: [ "main", "dev*" ]
 
@@ -55,7 +55,7 @@ concurrency:
   # Make it wait between branches - it is not needed but it is more human to give chance to
   #   Cancel builds if needed manually and avoid action minutes burning out
   #   ADD -${{ github.ref }} to make it NOT wait between branches
-  group: ${{ github.workflow }} 
+  group: ${{ github.workflow }}
   cancel-in-progress: false
 
 jobs:
@@ -74,7 +74,7 @@ jobs:
         # 1. Define the Master Matrix as a JSON String
         #    (We use a compact JSON structure here)
         #    TODO: Add "windows-arm-desktop" to the matrix
-        #       should be >> runs-on: windows-11-arm 
+        #       should be >> runs-on: windows-11-arm
         CONST_JSON='[
           {
             "os": "windows-latest",
@@ -141,7 +141,7 @@ jobs:
         # 2. Determine Logic from Inputs or Branch Name
         TARGET="${{ inputs.platform }}"
         BRANCH="${{ github.ref_name }}"
-        
+
         # If triggered by push (not manual), derive target from branch name or tag
         if [ "${{ github.event_name }}" == "push" ]; then
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
@@ -149,7 +149,7 @@ jobs:
           elif [[ "$BRANCH" == *"buildAll"* ]]; then
             TARGET="all"
           elif [[ "$BRANCH" == *"buildDesktops"* ]]; then
-            TARGET="desktops"   
+            TARGET="desktops"
           elif [[ "$BRANCH" == *"buildAndroid"* ]]; then
             TARGET="android"
           elif [[ "$BRANCH" == *"buildIos"* ]]; then
@@ -163,7 +163,7 @@ jobs:
           else
             echo "Branch name setup requires explicit target. Stopping."
             echo "matrix=[]" >> "$GITHUB_OUTPUT"
-            exit 0 
+            exit 0
           fi
         fi
 
@@ -194,7 +194,7 @@ jobs:
           FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "android")]')
         elif [ "$TARGET" == "ios" ]; then
           FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "ios")]')
-        else 
+        else
           # Fallback or specific platform name match
           FINAL_JSON=$(echo "$CONST_JSON" | jq -c --arg t "$TARGET" '[.[] | select(.platform == $t)]')
         fi
@@ -216,7 +216,7 @@ jobs:
       fail-fast: false
       matrix:
         config: ${{ fromJson(needs.setup.outputs.matrix) }}
-            
+
     env:
       BUILD_TYPE: RelWithDebInfo
       # Common env vars can go here
@@ -231,7 +231,7 @@ jobs:
       run: |
         echo "build-platform=${{ matrix.config.platform }}" >> "$GITHUB_OUTPUT"
         echo "build-args=${{ matrix.config.args }}" >> "$GITHUB_OUTPUT"
-        echo "download_path1=${{ matrix.config.upload_path1 }}" >> "$GITHUB_OUTPUT"   
+        echo "download_path1=${{ matrix.config.upload_path1 }}" >> "$GITHUB_OUTPUT"
         echo "download_path2=${{ matrix.config.upload_path2 }}" >> "$GITHUB_OUTPUT"
 
     ################################################################
@@ -260,8 +260,8 @@ jobs:
     - name: 121.2 Cache NPM Dependencies
       uses: actions/cache@v5
       with:  ## ~/.npm
-        path: |          
-          ${{ steps.npm-cache-dir.outputs.dir }} 
+        path: |
+          ${{ steps.npm-cache-dir.outputs.dir }}
         key: npm-${{ matrix.config.os }}${{ matrix.config.mobile_build}}-${{ hashFiles('package-lock.json') }}
         restore-keys: |
           npm-${{ matrix.config.os }}${{ matrix.config.mobile_build}}-
@@ -288,15 +288,15 @@ jobs:
     - name: 151. Configure Environment (Unix)
       if: runner.os != 'Windows'
       shell: bash
-      run: | 
-        chmod +x ./scripts/setup_env.sh 
+      run: |
+        chmod +x ./scripts/setup_env.sh
         ./scripts/setup_env.sh
 
     - name: 152. calculate build number
       shell: bash
       working-directory: ${{ github.workspace }}
       id: build-no-gen
-      run: |  
+      run: |
         if [ "${{ runner.os }}" == "Windows" ]; then
           BUILD_NO=$(./buildno-gen.exe)
         else
@@ -327,7 +327,7 @@ jobs:
     ################################################################
     - name: 250. Setup Android SDK
       if: matrix.config.platform == 'android'
-      uses: android-actions/setup-android@v4   
+      uses: android-actions/setup-android@v4
 
     - name: 251. Initialize Android Project
       if: matrix.config.platform == 'android'
@@ -358,10 +358,10 @@ jobs:
     # 370/ Run Automatic Tests
     ################################################################
     - name: 370.1 Run Rust Tests (Backend)
-      # Run on all desktop platforms. 
+      # Run on all desktop platforms.
       # For Android/iOS matrix items, we can still run host tests (Linux/Mac) to verify shared logic.
       # TODO: Consider uncommenting
-      if: matrix.config.platform != 'ios' ### && matrix.config.platform != 'android' # see comment in 350.2 
+      if: matrix.config.platform != 'ios' ### && matrix.config.platform != 'android' # see comment in 350.2
       working-directory: src-tauri
       env:
         LATTICEBUILD_NO: TSTBE-${{matrix.config.platform}}-${{ steps.build-no-gen.outputs.BUILD_NO }}
@@ -389,9 +389,9 @@ jobs:
     # 380 / Generate Documentation (Linux Only)
     ################################################################
     - name: 380. Generate Documentation
-      # This runs on all platforms (and generates the same content for docs) 
+      # This runs on all platforms (and generates the same content for docs)
       #    but we only upload docs generated from linux
-      if: matrix.config.platform == 'linux-desktop' 
+      if: matrix.config.platform == 'linux-desktop'
       run: |
         # 1. Generate Build Number with Prefix
         # Utility is already built and placed in root by step 151 (setup_env.sh)
@@ -408,12 +408,12 @@ jobs:
         # Note: Cargo doc output is in target/doc, we need to move it.
         # Ensure parent dir exists
         mkdir -p docs/gen
-        
+
         # Run cargo doc
         cd src-tauri
         cargo doc --no-deps
         cd ..
-        
+
         # Move output
         mv src-tauri/target/doc docs/gen/backend
       shell: bash
@@ -432,13 +432,13 @@ jobs:
 
     ################################################################
     # 400 / Upload Artifacts
-    ################################################################    
+    ################################################################
     - name: 400. Upload Artifacts (ALL)
       uses: actions/upload-artifact@v7
       id: a-download-exec
       with:
         name: DOWNLOAD-${{matrix.config.download_name}}-${{ steps.build-no-gen.outputs.BUILD_NO }}
-        path: |  
+        path: |
           ${{ steps.strings.outputs.download_path1 }}
           ${{ steps.strings.outputs.download_path2 }}
 
@@ -452,7 +452,7 @@ jobs:
         echo " - Download built executable file(s) from: ${{ steps.a-download-exec.outputs.artifact-url }}" >>  $GITHUB_STEP_SUMMARY
         # echo " - Download built executable file(s) from: ${{ steps.a-download-exec.outputs.artifact-url }}" >>  $GITHUB_STEP_SUMMARY
 
-      
+
       # - `\u26A0` is the warning emoji  ⚠️.
       # - `\u2705` is the check mark emoji ✅.
       # - `\u274C` is the cross mark emoji `❌`.
@@ -550,10 +550,9 @@ jobs:
 
         # Footer notes
         printf '\n%s\n' "## Notes" "" \
-          "- Executables are provided as-is; see [LICENSE](https://lattice-technologies.com/Lattice-Releases/LICENSE) for terms." \
+          "- Executables are provided as-is; see [LICENSE](https://lattice-technologies.com/LICENSE) for terms." \
           "- Source code and release notes: [GitHub Release](https://github.com/blessia-blessini/lattice/releases/tag/${VERSION})" \
-          "- Report issues: [blessia AT blessini.com](mailto:blessia@blessini.com)" >> "$OUT"
-
+          "" >> "$OUT"
         echo "index.md written to $OUT"
 
     ################################################################
