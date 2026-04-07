@@ -529,54 +529,32 @@ jobs:
         ASSETS_DIR="${ASSETS_DIR}"
         BASE_URL="https://lattice-technologies.com/Lattice-Releases/assets-${VERSION}"
         DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
+        OUT="$ASSETS_DIR/index.md"
 
-        # Build the downloads table rows
-        ROWS=""
+        # Header
+        printf '%s\n' "---" "title: \"Lattice ${VERSION}\"" "layout: default" "---" "" \
+          "# Lattice ${VERSION}" "" \
+          "**Released:** ${DATE}" "" \
+          "## Downloads" "" \
+          "| File | Size |" \
+          "|------|------|" > "$OUT"
+
+        # One table row per artifact
         for f in "$ASSETS_DIR"/*; do
           [ -f "$f" ] || continue
           filename=$(basename "$f")
-          # Skip the page itself if it already exists
           [[ "$filename" == "index.md" ]] && continue
           size=$(du -sh "$f" | cut -f1)
-          ROWS="${ROWS}| [${filename}](${BASE_URL}/${filename}) | ${size} |
-"
+          printf '| [%s](%s/%s) | %s |\n' "$filename" "$BASE_URL" "$filename" "$size" >> "$OUT"
         done
 
-        python3 - <<PYEOF
-import os
+        # Footer notes
+        printf '\n%s\n' "## Notes" "" \
+          "- Executables are provided as-is; see [LICENSE](https://lattice-technologies.com/Lattice-Releases/LICENSE) for terms." \
+          "- Source code and release notes: [GitHub Release](https://github.com/blessia-blessini/lattice/releases/tag/${VERSION})" \
+          "- Report issues: [blessia AT blessini.com](mailto:blessia@blessini.com)" >> "$OUT"
 
-version   = "${VERSION}"
-date      = "${DATE}"
-base_url  = "${BASE_URL}"
-rows      = """${ROWS}"""
-assets_dir = "${ASSETS_DIR}"
-
-page = f"""---
-title: "Lattice {version}"
-layout: default
----
-
-# Lattice {version}
-
-**Released:** {date}
-
-## Downloads
-
-| File | Size |
-|------|------|
-{rows.strip()}
-
-## Notes
-
-- Executables are provided as-is; see [LICENSE](https://lattice-technologies.com/Lattice-Releases/LICENSE) for terms.
-- Source code and release notes: [GitHub Release](https://github.com/blessia-blessini/lattice/releases/tag/{version})
-- Report issues: [blessia AT blessini.com](mailto:blessia@blessini.com)
-"""
-
-with open(os.path.join(assets_dir, "index.md"), "w") as fh:
-    fh.write(page)
-print("index.md written.")
-PYEOF
+        echo "index.md written to $OUT"
 
     ################################################################
     # 905 / Commit and push to lattice-docs-releases
