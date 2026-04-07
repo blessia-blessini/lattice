@@ -27,6 +27,7 @@ on:
 
   push:
     branches: [ "*build*" ] # look for build in branch name
+    tags: [ "v*.*.*" ]      # release tag triggers full build + publish
 
   workflow_dispatch:  # <--- This enables the manual trigger
     inputs:
@@ -141,9 +142,11 @@ jobs:
         TARGET="${{ inputs.platform }}"
         BRANCH="${{ github.ref_name }}"
         
-        # If triggered by push (not manual), derive target from branch name
+        # If triggered by push (not manual), derive target from branch name or tag
         if [ "${{ github.event_name }}" == "push" ]; then
-          if [[ "$BRANCH" == *"buildAll"* ]]; then
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            TARGET="all"   # tag vX.X.X → build every platform
+          elif [[ "$BRANCH" == *"buildAll"* ]]; then
             TARGET="all"
           elif [[ "$BRANCH" == *"buildDesktops"* ]]; then
             TARGET="desktops"   
@@ -452,7 +455,148 @@ jobs:
       
       # - `\u26A0` is the warning emoji  ⚠️.
       # - `\u2705` is the check mark emoji ✅.
-      # - `\u274C` is the cross mark emoji `❌`. 
+      # - `\u274C` is the cross mark emoji `❌`.
       # - 🟢 is a green circle.
       # - 🟡 is a yellow circle.
       # - 🔴 is a red circle.
+
+  ################################################################
+  # JOB 3: PUBLISH TO RELEASE SITE  (tag vX.X.X builds only)
+  ################################################################
+  publish-release-site:
+    needs: build-and-test
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+    ################################################################
+    # 900 / Extract version from tag
+    ################################################################
+    - name: 900. Extract version
+      id: version
+      shell: bash
+      run: echo "VERSION=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+
+    ################################################################
+    # 901 / Download every DOWNLOAD-* artifact from this run
+    ################################################################
+    - name: 901. Download all build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: DOWNLOAD-*
+        path: downloaded-artifacts
+        merge-multiple: false
+
+    ################################################################
+    # 902 / Checkout lattice-docs-releases
+    #       Requires secret RELEASE_SITE_TOKEN (PAT with contents:write
+    #       on blessia-blessini/lattice-docs-releases)
+    ################################################################
+    - name: 902. Checkout lattice-docs-releases
+      uses: actions/checkout@v6
+      with:
+        repository: blessia-blessini/lattice-docs-releases
+        token: ${{ secrets.RELEASE_SITE_TOKEN }}
+        path: release-site
+
+    ################################################################
+    # 903 / Copy executables into assets-vX.X.X/
+    ################################################################
+    - name: 903. Prepare assets folder
+      shell: bash
+      run: |
+        VERSION="${{ steps.version.outputs.VERSION }}"
+        ASSETS_DIR="release-site/Lattice-Releases/assets-${VERSION}"
+        mkdir -p "$ASSETS_DIR"
+
+        # Copy every recognised installer/package format
+        find downloaded-artifacts -type f \
+          \( -name "*.exe" -o -name "*.dmg" \
+             -o -name "*.AppImage" -o -name "*.deb" \
+             -o -name "*.apk" -o -name "*.aab" \
+             -o -name "*.ipa" \) \
+          -exec cp {} "$ASSETS_DIR/" \;
+
+        echo "ASSETS_DIR=$ASSETS_DIR" >> $GITHUB_ENV
+
+    ################################################################
+    # 904 / Generate index.md summary page (rendered by Jekyll/GH Pages)
+    ################################################################
+    - name: 904. Generate summary page
+      shell: bash
+      run: |
+        VERSION="${{ steps.version.outputs.VERSION }}"
+        ASSETS_DIR="${ASSETS_DIR}"
+        BASE_URL="https://lattice-technologies.com/Lattice-Releases/assets-${VERSION}"
+        DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
+
+        # Build the downloads table rows
+        ROWS=""
+        for f in "$ASSETS_DIR"/*; do
+          [ -f "$f" ] || continue
+          filename=$(basename "$f")
+          # Skip the page itself if it already exists
+          [[ "$filename" == "index.md" ]] && continue
+          size=$(du -sh "$f" | cut -f1)
+          ROWS="${ROWS}| [${filename}](${BASE_URL}/${filename}) | ${size} |
+"
+        done
+
+        python3 - <<PYEOF
+import os
+
+version   = "${VERSION}"
+date      = "${DATE}"
+base_url  = "${BASE_URL}"
+rows      = """${ROWS}"""
+assets_dir = "${ASSETS_DIR}"
+
+page = f"""---
+title: "Lattice {version}"
+layout: default
+---
+
+# Lattice {version}
+
+**Released:** {date}
+
+## Downloads
+
+| File | Size |
+|------|------|
+{rows.strip()}
+
+## Notes
+
+- Executables are provided as-is; see [LICENSE](https://lattice-technologies.com/Lattice-Releases/LICENSE) for terms.
+- Source code and release notes: [GitHub Release](https://github.com/blessia-blessini/lattice/releases/tag/{version})
+- Report issues: [blessia AT blessini.com](mailto:blessia@blessini.com)
+"""
+
+with open(os.path.join(assets_dir, "index.md"), "w") as fh:
+    fh.write(page)
+print("index.md written.")
+PYEOF
+
+    ################################################################
+    # 905 / Commit and push to lattice-docs-releases
+    ################################################################
+    - name: 905. Commit and push release assets
+      shell: bash
+      working-directory: release-site
+      run: |
+        git config user.name  "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add Lattice-Releases/
+        git commit -m "Release ${{ steps.version.outputs.VERSION }}: add assets and summary page"
+        git push
+
+    ################################################################
+    # 906 / Write job summary
+    ################################################################
+    - name: 906. Summary
+      shell: bash
+      run: |
+        VERSION="${{ steps.version.outputs.VERSION }}"
+        echo "### Release site updated" >> $GITHUB_STEP_SUMMARY
+        echo "Assets published to: https://lattice-technologies.com/Lattice-Releases/assets-${VERSION}/" >> $GITHUB_STEP_SUMMARY
