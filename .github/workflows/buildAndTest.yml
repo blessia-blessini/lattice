@@ -467,6 +467,8 @@ jobs:
     needs: build-and-test
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # required to create GitHub Releases
 
     steps:
     ################################################################
@@ -500,36 +502,59 @@ jobs:
         path: release-site
 
     ################################################################
-    # 903 / Copy executables into assets-vX.X.X/
+    # 903 / Collect all installer files into a flat staging directory
     ################################################################
-    - name: 903. Prepare assets folder
+    - name: 903. Collect installers
       shell: bash
       run: |
-        VERSION="${{ steps.version.outputs.VERSION }}"
-        ASSETS_DIR="release-site/Lattice-Releases/assets-${VERSION}"
-        mkdir -p "$ASSETS_DIR"
-
-        # Copy every recognised installer/package format
+        mkdir -p staging
         find downloaded-artifacts -type f \
           \( -name "*.exe" -o -name "*.dmg" \
              -o -name "*.AppImage" -o -name "*.deb" \
              -o -name "*.apk" -o -name "*.aab" \
              -o -name "*.ipa" \) \
-          -exec cp {} "$ASSETS_DIR/" \;
-
-        echo "ASSETS_DIR=$ASSETS_DIR" >> $GITHUB_ENV
+          -exec cp {} staging/ \;
+        echo "--- Collected files ---"
+        ls -lh staging/
 
     ################################################################
-    # 904 / Generate index.md summary page (rendered by Jekyll/GH Pages)
+    # 904 / Create GitHub Release on blessia-blessini/lattice and
+    #       upload all installers as release assets.
+    #       Uses GITHUB_TOKEN (automatic, no extra secret needed).
     ################################################################
-    - name: 904. Generate summary page
+    - name: 904. Create GitHub Release and upload assets
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       shell: bash
       run: |
         VERSION="${{ steps.version.outputs.VERSION }}"
-        ASSETS_DIR="${ASSETS_DIR}"
-        BASE_URL="https://lattice-technologies.com/Lattice-Releases/assets-${VERSION}"
+        RELEASE_URL=$(gh release create "$VERSION" staging/* \
+          --repo blessia-blessini/lattice \
+          --title "Lattice ${VERSION}" \
+          --notes "Automated release — see [lattice-technologies.com](https://lattice-technologies.com/Lattice-Releases/) for details." \
+          --latest)
+        echo "RELEASE_URL=$RELEASE_URL" >> $GITHUB_ENV
+        echo "Release created: $RELEASE_URL"
+
+    ################################################################
+    # 905 / Generate index.md in lattice-docs-releases linking to
+    #       the GitHub Release assets (no binaries committed to repo)
+    ################################################################
+    - name: 905. Generate index.md and push to lattice-docs-releases
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      shell: bash
+      run: |
+        VERSION="${{ steps.version.outputs.VERSION }}"
         DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
-        OUT="$ASSETS_DIR/index.md"
+        RELEASE_URL="${RELEASE_URL}"
+        OUT_DIR="release-site/Lattice-Releases/assets-${VERSION}"
+        OUT="$OUT_DIR/index.md"
+        mkdir -p "$OUT_DIR"
+
+        # Fetch asset download URLs from the GitHub Release API
+        ASSETS_JSON=$(gh api repos/blessia-blessini/lattice/releases/tags/${VERSION} \
+          --jq '.assets[] | [.name, .browser_download_url, .size] | @tsv')
 
         # Header
         printf '%s\n' "---" "title: \"Lattice ${VERSION}\"" "layout: default" "---" "" \
@@ -539,33 +564,24 @@ jobs:
           "| File | Size |" \
           "|------|------|" > "$OUT"
 
-        # One table row per artifact
-        for f in "$ASSETS_DIR"/*; do
-          [ -f "$f" ] || continue
-          filename=$(basename "$f")
-          [[ "$filename" == "index.md" ]] && continue
-          size=$(du -sh "$f" | cut -f1)
-          printf '| [%s](%s/%s) | %s |\n' "$filename" "$BASE_URL" "$filename" "$size" >> "$OUT"
-        done
+        # One row per asset, size in MB
+        while IFS=$'\t' read -r name url size_bytes; do
+          size_mb=$(awk "BEGIN {printf \"%.1f MB\", $size_bytes/1048576}")
+          printf '| [%s](%s) | %s |\n' "$name" "$url" "$size_mb" >> "$OUT"
+        done <<< "$ASSETS_JSON"
 
-        # Footer notes
+        # Footer
         printf '\n%s\n' "## Notes" "" \
+          "- [Full release on GitHub](${RELEASE_URL})" \
           "- Executables are provided as-is; see [LICENSE](https://lattice-technologies.com/LICENSE) for terms." \
-          "- Source code and release notes: [GitHub Release](https://github.com/blessia-blessini/lattice/releases/tag/${VERSION})" \
-          "" >> "$OUT"
-        echo "index.md written to $OUT"
+          "- Contact: [blessia AT blessini.com](mailto:blessia@blessini.com)" >> "$OUT"
 
-    ################################################################
-    # 905 / Commit and push to lattice-docs-releases
-    ################################################################
-    - name: 905. Commit and push release assets
-      shell: bash
-      working-directory: release-site
-      run: |
+        # Commit only the tiny index.md — no binaries in git
+        cd release-site
         git config user.name  "GitHub Actions"
         git config user.email "actions@github.com"
         git add Lattice-Releases/
-        git commit -m "Release ${{ steps.version.outputs.VERSION }}: add assets and summary page"
+        git commit -m "Release ${VERSION}: add index.md (links to GitHub Release assets)"
         git push
 
     ################################################################
@@ -575,5 +591,6 @@ jobs:
       shell: bash
       run: |
         VERSION="${{ steps.version.outputs.VERSION }}"
-        echo "### Release site updated" >> $GITHUB_STEP_SUMMARY
-        echo "Assets published to: https://lattice-technologies.com/Lattice-Releases/assets-${VERSION}/" >> $GITHUB_STEP_SUMMARY
+        echo "### Release published" >> $GITHUB_STEP_SUMMARY
+        echo "- GitHub Release: ${RELEASE_URL}" >> $GITHUB_STEP_SUMMARY
+        echo "- Release page: https://lattice-technologies.com/Lattice-Releases/assets-${VERSION}/" >> $GITHUB_STEP_SUMMARY
