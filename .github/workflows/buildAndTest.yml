@@ -574,7 +574,7 @@ jobs:
         printf '\n%s\n' "## Notes" "" \
           "- [Full release on GitHub](${RELEASE_URL})" \
           "- Executables are provided as-is; see [LICENSE](https://lattice-technologies.com/LICENSE) for terms." \
-          "- Contact: [blessia AT blessini.com](mailto:blessia@blessini.com)" >> "$OUT"
+          "" >> "$OUT"
 
         # Commit only the tiny index.md — no binaries in git
         cd release-site
