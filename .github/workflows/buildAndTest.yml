@@ -1,23 +1,23 @@
 # LEGAL NOTE:
-# LATTICE (tm) - The Portable and standard Markdown Editor 
+# LATTICE (tm) - The Portable and standard Markdown Editor
 # Copyright (C) 2026 Owner of blessini.com (a.k.a Blessia)
 # email: blessia AT blessini.com
-# 
+#
 # GNU AFFERO GENERAL PUBLIC LICENSE V3 NOTICE:
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
 # published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-#   
+#
 # See LICENCE file in GitHUB root folder of the repository.
 # END OF NOTE
 
@@ -27,6 +27,7 @@ on:
 
   push:
     branches: [ "*build*" ] # look for build in branch name
+    tags: [ "v*.*.*" ]      # release tag triggers full build + publish
 
   workflow_dispatch:  # <--- This enables the manual trigger
     inputs:
@@ -46,7 +47,7 @@ on:
         - android
         - ios
 
-  # Do not build on pull requests  
+  # Do not build on pull requests
   # pull_request:
   #  branches: [ "main", "dev*" ]
 
@@ -54,7 +55,7 @@ concurrency:
   # Make it wait between branches - it is not needed but it is more human to give chance to
   #   Cancel builds if needed manually and avoid action minutes burning out
   #   ADD -${{ github.ref }} to make it NOT wait between branches
-  group: ${{ github.workflow }} 
+  group: ${{ github.workflow }}
   cancel-in-progress: false
 
 jobs:
@@ -73,7 +74,7 @@ jobs:
         # 1. Define the Master Matrix as a JSON String
         #    (We use a compact JSON structure here)
         #    TODO: Add "windows-arm-desktop" to the matrix
-        #       should be >> runs-on: windows-11-arm 
+        #       should be >> runs-on: windows-11-arm
         CONST_JSON='[
           {
             "os": "windows-latest",
@@ -140,13 +141,15 @@ jobs:
         # 2. Determine Logic from Inputs or Branch Name
         TARGET="${{ inputs.platform }}"
         BRANCH="${{ github.ref_name }}"
-        
-        # If triggered by push (not manual), derive target from branch name
+
+        # If triggered by push (not manual), derive target from branch name or tag
         if [ "${{ github.event_name }}" == "push" ]; then
-          if [[ "$BRANCH" == *"buildAll"* ]]; then
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            TARGET="all"   # tag vX.X.X → build every platform
+          elif [[ "$BRANCH" == *"buildAll"* ]]; then
             TARGET="all"
           elif [[ "$BRANCH" == *"buildDesktops"* ]]; then
-            TARGET="desktops"   
+            TARGET="desktops"
           elif [[ "$BRANCH" == *"buildAndroid"* ]]; then
             TARGET="android"
           elif [[ "$BRANCH" == *"buildIos"* ]]; then
@@ -160,7 +163,7 @@ jobs:
           else
             echo "Branch name setup requires explicit target. Stopping."
             echo "matrix=[]" >> "$GITHUB_OUTPUT"
-            exit 0 
+            exit 0
           fi
         fi
 
@@ -191,7 +194,7 @@ jobs:
           FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "android")]')
         elif [ "$TARGET" == "ios" ]; then
           FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "ios")]')
-        else 
+        else
           # Fallback or specific platform name match
           FINAL_JSON=$(echo "$CONST_JSON" | jq -c --arg t "$TARGET" '[.[] | select(.platform == $t)]')
         fi
@@ -213,7 +216,7 @@ jobs:
       fail-fast: false
       matrix:
         config: ${{ fromJson(needs.setup.outputs.matrix) }}
-            
+
     env:
       BUILD_TYPE: RelWithDebInfo
       # Common env vars can go here
@@ -228,7 +231,7 @@ jobs:
       run: |
         echo "build-platform=${{ matrix.config.platform }}" >> "$GITHUB_OUTPUT"
         echo "build-args=${{ matrix.config.args }}" >> "$GITHUB_OUTPUT"
-        echo "download_path1=${{ matrix.config.upload_path1 }}" >> "$GITHUB_OUTPUT"   
+        echo "download_path1=${{ matrix.config.upload_path1 }}" >> "$GITHUB_OUTPUT"
         echo "download_path2=${{ matrix.config.upload_path2 }}" >> "$GITHUB_OUTPUT"
 
     ################################################################
@@ -257,8 +260,8 @@ jobs:
     - name: 121.2 Cache NPM Dependencies
       uses: actions/cache@v5
       with:  ## ~/.npm
-        path: |          
-          ${{ steps.npm-cache-dir.outputs.dir }} 
+        path: |
+          ${{ steps.npm-cache-dir.outputs.dir }}
         key: npm-${{ matrix.config.os }}${{ matrix.config.mobile_build}}-${{ hashFiles('package-lock.json') }}
         restore-keys: |
           npm-${{ matrix.config.os }}${{ matrix.config.mobile_build}}-
@@ -285,13 +288,15 @@ jobs:
     - name: 151. Configure Environment (Unix)
       if: runner.os != 'Windows'
       shell: bash
-      run: | 
-        chmod +x ./scripts/setup_env.sh 
+      run: |
+        chmod +x ./scripts/setup_env.sh
         ./scripts/setup_env.sh
 
     - name: 152. calculate build number
       shell: bash
-      run: |  
+      working-directory: ${{ github.workspace }}
+      id: build-no-gen
+      run: |
         if [ "${{ runner.os }}" == "Windows" ]; then
           BUILD_NO=$(./buildno-gen.exe)
         else
@@ -312,7 +317,7 @@ jobs:
     ################################################################
     - name: 200. Setup Java 17 for Android
       if: matrix.config.platform == 'android'
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         distribution: 'temurin'
         java-version: '17'
@@ -322,7 +327,7 @@ jobs:
     ################################################################
     - name: 250. Setup Android SDK
       if: matrix.config.platform == 'android'
-      uses: android-actions/setup-android@v3   
+      uses: android-actions/setup-android@v4
 
     - name: 251. Initialize Android Project
       if: matrix.config.platform == 'android'
@@ -353,10 +358,10 @@ jobs:
     # 370/ Run Automatic Tests
     ################################################################
     - name: 370.1 Run Rust Tests (Backend)
-      # Run on all desktop platforms. 
+      # Run on all desktop platforms.
       # For Android/iOS matrix items, we can still run host tests (Linux/Mac) to verify shared logic.
       # TODO: Consider uncommenting
-      if: matrix.config.platform != 'ios' ### && matrix.config.platform != 'android' # see comment in 350.2 
+      if: matrix.config.platform != 'ios' ### && matrix.config.platform != 'android' # see comment in 350.2
       working-directory: src-tauri
       env:
         LATTICEBUILD_NO: TSTBE-${{matrix.config.platform}}-${{ steps.build-no-gen.outputs.BUILD_NO }}
@@ -384,9 +389,9 @@ jobs:
     # 380 / Generate Documentation (Linux Only)
     ################################################################
     - name: 380. Generate Documentation
-      # This runs on all platforms (and generates the same content for docs) 
+      # This runs on all platforms (and generates the same content for docs)
       #    but we only upload docs generated from linux
-      if: matrix.config.platform == 'linux-desktop' 
+      if: matrix.config.platform == 'linux-desktop'
       run: |
         # 1. Generate Build Number with Prefix
         # Utility is already built and placed in root by step 151 (setup_env.sh)
@@ -403,12 +408,12 @@ jobs:
         # Note: Cargo doc output is in target/doc, we need to move it.
         # Ensure parent dir exists
         mkdir -p docs/gen
-        
+
         # Run cargo doc
         cd src-tauri
         cargo doc --no-deps
         cd ..
-        
+
         # Move output
         mv src-tauri/target/doc docs/gen/backend
       shell: bash
@@ -427,13 +432,13 @@ jobs:
 
     ################################################################
     # 400 / Upload Artifacts
-    ################################################################    
+    ################################################################
     - name: 400. Upload Artifacts (ALL)
       uses: actions/upload-artifact@v7
       id: a-download-exec
       with:
         name: DOWNLOAD-${{matrix.config.download_name}}-${{ steps.build-no-gen.outputs.BUILD_NO }}
-        path: |  
+        path: |
           ${{ steps.strings.outputs.download_path1 }}
           ${{ steps.strings.outputs.download_path2 }}
 
@@ -446,22 +451,146 @@ jobs:
         echo "### ${{ matrix.config.download_name }} BUILD" >> $GITHUB_STEP_SUMMARY
         echo " - Download built executable file(s) from: ${{ steps.a-download-exec.outputs.artifact-url }}" >>  $GITHUB_STEP_SUMMARY
         # echo " - Download built executable file(s) from: ${{ steps.a-download-exec.outputs.artifact-url }}" >>  $GITHUB_STEP_SUMMARY
-        
-        # echo " - Download built executable files from: ${{ steps.ANTIVIRUS_SCAN.outputs.BIN_DOWNLD }}" >>  $GITHUB_STEP_SUMMARY
-        # echo "You can check detailed antivirus scan report downloaded with test reports." >> $GITHUB_STEP_SUMMARY 
-        # if [ -f ctest-pass2-results-of-failedonly.txt ]; then
-        #  echo -e " - 🟡 Some test(s) **failed**. Namely: " >> $GITHUB_STEP_SUMMARY
-        #   # echo all lines from file ctest-pass2-results-of-failedonly.txt starting from the line that contains the string "The following tests FAILED:"
-        #   awk '/The following tests FAILED:/ {flag=1; next} /Errors while running CTest/ {flag=0} flag {print "    " $0}' ctest-pass2-results-of-failedonly.txt >> $GITHUB_STEP_SUMMARY            
-        #  echo "    Download the test results to check why. Look into \`ctest-pass2-results-of-failedonly.txt\` file in Test-Result logs, which  " >> $GITHUB_STEP_SUMMARY
-        # else
-        #  echo -e " - 🟢 All tests **passed**. Test-Result logs " >> $GITHUB_STEP_SUMMARY
-        # fi
-        # echo -e "are here: ${{ steps.a-TestLog.outputs.artifact-url }}." >> $GITHUB_STEP_SUMMARY
-      
-      # - `\u26A0` represents the warning emoji  ⚠️.
-      # - `\u2705` represents the check mark emoji ✅.
-      # - `\u274C` represents the cross mark emoji `❌`. 
-      # - 🟢 represents a green circle.
-      # - 🟡 represents a yellow circle.
-      # - 🔴 represents a red circle.
+
+
+      # - `\u26A0` is the warning emoji  ⚠️.
+      # - `\u2705` is the check mark emoji ✅.
+      # - `\u274C` is the cross mark emoji `❌`.
+      # - 🟢 is a green circle.
+      # - 🟡 is a yellow circle.
+      # - 🔴 is a red circle.
+
+  ################################################################
+  # JOB 3: PUBLISH TO RELEASE SITE  (tag vX.X.X builds only)
+  ################################################################
+  publish-release-site:
+    needs: build-and-test
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # required to create GitHub Releases
+
+    steps:
+    ################################################################
+    # 900 / Extract version from tag
+    ################################################################
+    - name: 900. Extract version
+      id: version
+      shell: bash
+      run: echo "VERSION=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+
+    ################################################################
+    # 901 / Download every DOWNLOAD-* artifact from this run
+    ################################################################
+    - name: 901. Download all build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: DOWNLOAD-*
+        path: downloaded-artifacts
+        merge-multiple: false
+
+    ################################################################
+    # 902 / Checkout lattice-docs-releases
+    #       Requires secret RELEASE_SITE_TOKEN (PAT with contents:write
+    #       on blessia-blessini/lattice-docs-releases)
+    ################################################################
+    - name: 902. Checkout lattice-docs-releases
+      uses: actions/checkout@v6
+      with:
+        repository: blessia-blessini/lattice-docs-releases
+        token: ${{ secrets.RELEASE_SITE_TOKEN }}
+        path: release-site
+
+    ################################################################
+    # 903 / Collect all installer files into a flat staging directory
+    ################################################################
+    - name: 903. Collect installers
+      shell: bash
+      run: |
+        mkdir -p staging
+        find downloaded-artifacts -type f \
+          \( -name "*.exe" -o -name "*.dmg" \
+             -o -name "*.AppImage" -o -name "*.deb" \
+             -o -name "*.apk" -o -name "*.aab" \
+             -o -name "*.ipa" \) \
+          -exec cp {} staging/ \;
+        echo "--- Collected files ---"
+        ls -lh staging/
+
+    ################################################################
+    # 904 / Create GitHub Release on blessia-blessini/lattice and
+    #       upload all installers as release assets.
+    #       Uses GITHUB_TOKEN (automatic, no extra secret needed).
+    ################################################################
+    - name: 904. Create GitHub Release and upload assets
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      shell: bash
+      run: |
+        VERSION="${{ steps.version.outputs.VERSION }}"
+        RELEASE_URL=$(gh release create "$VERSION" staging/* \
+          --repo blessia-blessini/lattice \
+          --title "Lattice ${VERSION}" \
+          --notes "Automated release — see [lattice-technologies.com](https://lattice-technologies.com/Lattice-Releases/) for details." \
+          --latest)
+        echo "RELEASE_URL=$RELEASE_URL" >> $GITHUB_ENV
+        echo "Release created: $RELEASE_URL"
+
+    ################################################################
+    # 905 / Generate index.md in lattice-docs-releases linking to
+    #       the GitHub Release assets (no binaries committed to repo)
+    ################################################################
+    - name: 905. Generate index.md and push to lattice-docs-releases
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      shell: bash
+      run: |
+        VERSION="${{ steps.version.outputs.VERSION }}"
+        DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
+        RELEASE_URL="${RELEASE_URL}"
+        OUT_DIR="release-site/Lattice-Releases/assets-${VERSION}"
+        OUT="$OUT_DIR/index.md"
+        mkdir -p "$OUT_DIR"
+
+        # Fetch asset download URLs from the GitHub Release API
+        ASSETS_JSON=$(gh api repos/blessia-blessini/lattice/releases/tags/${VERSION} \
+          --jq '.assets[] | [.name, .browser_download_url, .size] | @tsv')
+
+        # Header
+        printf '%s\n' "---" "title: \"Lattice ${VERSION}\"" "layout: default" "---" "" \
+          "# Lattice ${VERSION}" "" \
+          "**Released:** ${DATE}" "" \
+          "## Downloads" "" \
+          "| File | Size |" \
+          "|------|------|" > "$OUT"
+
+        # One row per asset, size in MB
+        while IFS=$'\t' read -r name url size_bytes; do
+          size_mb=$(awk "BEGIN {printf \"%.1f MB\", $size_bytes/1048576}")
+          printf '| [%s](%s) | %s |\n' "$name" "$url" "$size_mb" >> "$OUT"
+        done <<< "$ASSETS_JSON"
+
+        # Footer
+        printf '\n%s\n' "## Notes" "" \
+          "- [Full release on GitHub](${RELEASE_URL})" \
+          "- Executables are provided as-is; see [LICENSE](https://lattice-technologies.com/LICENSE) for terms." \
+          "" >> "$OUT"
+
+        # Commit only the tiny index.md — no binaries in git
+        cd release-site
+        git config user.name  "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add Lattice-Releases/
+        git commit -m "Release ${VERSION}: add index.md (links to GitHub Release assets)"
+        git push
+
+    ################################################################
+    # 906 / Write job summary
+    ################################################################
+    - name: 906. Summary
+      shell: bash
+      run: |
+        VERSION="${{ steps.version.outputs.VERSION }}"
+        echo "### Release published" >> $GITHUB_STEP_SUMMARY
+        echo "- GitHub Release: ${RELEASE_URL}" >> $GITHUB_STEP_SUMMARY
+        echo "- Release page: https://lattice-technologies.com/Lattice-Releases/assets-${VERSION}/" >> $GITHUB_STEP_SUMMARY

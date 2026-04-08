@@ -1,7 +1,7 @@
 {
   "name": "lattice",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.2.9",
   "type": "module",
   "engines": {
     "node": ">=24"
@@ -24,9 +24,9 @@
     "@codemirror/language-data": "^6.5.2",
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.39.2",
-    "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-dialog": "^2.4.2",
-    "@tauri-apps/plugin-opener": "^2",
+    "@tauri-apps/api": "^2.10.1",
+    "@tauri-apps/plugin-dialog": "^2.7.0",
+    "@tauri-apps/plugin-opener": "^2.5.3",
     "@uiw/codemirror-themes": "^4.25.3",
     "@uiw/codemirror-themes-all": "^4.25.3",
     "codemirror": "^6.0.2",
@@ -52,7 +52,7 @@
     "typedoc": "^0.28.15",
     "typedoc-plugin-markdown": "^4.9.0",
     "typescript": "~5.8.3",
-    "vite": "^7.0.4",
+    "vite": "^7.3.2",
     "vitest": "^4.0.16"
   }
 }
