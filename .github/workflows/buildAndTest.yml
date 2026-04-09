@@ -23,6 +23,9 @@
 
 name: Build and Test Matrix
 
+permissions:
+  contents: read
+
 on:
 
   push:
