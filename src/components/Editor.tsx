@@ -33,6 +33,9 @@ const monoHighlightStyle = HighlightStyle.define([
 export interface EditorHandle {
     markAsSaved: () => void;
     getContent: () => string;
+    getScrollDOM: () => HTMLElement | null;
+    getTopVisibleLine: () => number | null;
+    scrollToLine: (line: number) => void;
 }
 export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
     theme, wordWrap, onChange, initialDoc, currentFilePath, onDirtyChange
@@ -56,6 +59,24 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
         },
         getContent: () => {
             return viewRef.current ? viewRef.current.state.doc.toString() : "";
+        },
+        getScrollDOM: () => {
+            return viewRef.current ? viewRef.current.scrollDOM : null;
+        },
+        getTopVisibleLine: () => {
+            const view = viewRef.current;
+            if (!view) return null;
+            const block = view.lineBlockAtHeight(view.scrollDOM.scrollTop);
+            return view.state.doc.lineAt(block.from).number;
+        },
+        scrollToLine: (line: number) => {
+            const view = viewRef.current;
+            if (!view) return;
+            const total = view.state.doc.lines;
+            const safe = Math.max(1, Math.min(total, Math.round(line)));
+            const pos = view.state.doc.line(safe).from;
+            const block = view.lineBlockAt(pos);
+            view.scrollDOM.scrollTop = block.top;
         }
     }));
     useEffect(() => {

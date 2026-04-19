@@ -47,6 +47,21 @@ import { StaticRuntime } from "@services/StaticRuntime";
 
 const APP_NAME = tauriConfig.productName || "Lattice";
 
+// Rehype plugin: copy each element's source line number from its mdast position
+// onto a data-source-line attribute, used by dual-view scroll sync.
+const rehypeAddSourceLines = () => (tree: any) => {
+  const walk = (node: any) => {
+    if (node.type === 'element' && node.position?.start?.line != null) {
+      node.properties = node.properties || {};
+      node.properties['data-source-line'] = String(node.position.start.line);
+    }
+    if (node.children) {
+      for (const child of node.children) walk(child);
+    }
+  };
+  walk(tree);
+};
+
 //******************************************************************************
 // App
 //******************************************************************************
@@ -83,6 +98,7 @@ function App() {
   // Dirty State Management
   const [m_isDirty, setIsDirty] = useState(false);
   const editorRef = useRef<import("./components/Editor").EditorHandle>(null);
+  const previewPaneRef = useRef<HTMLDivElement>(null);
 
   const autoSaveTimer = useRef<number | null>(null);
 
@@ -761,6 +777,96 @@ function App() {
     };
   }, [m_currentFilePath]); // Re-bind if m_currentFilePath changes
 
+  //****************************************************************************
+  // Dual View Scroll Synchronization (line-accurate)
+  //****************************************************************************
+  useEffect(() => {
+    if (viewMode !== 'dual') return;
+
+    const editorScroll = editorRef.current?.getScrollDOM();
+    const preview = previewPaneRef.current;
+    if (!editorScroll || !preview) return;
+
+    let isSyncing = false;
+
+    // Build sorted [sourceLine, offsetTop] pairs from preview's tagged elements.
+    const buildLineMap = (): Array<[number, number]> => {
+      const elements = preview.querySelectorAll<HTMLElement>('[data-source-line]');
+      const previewTop = preview.getBoundingClientRect().top;
+      const map: Array<[number, number]> = [];
+      elements.forEach(el => {
+        const line = parseInt(el.dataset.sourceLine || '0', 10);
+        if (line > 0) {
+          const top = el.getBoundingClientRect().top - previewTop + preview.scrollTop;
+          map.push([line, top]);
+        }
+      });
+      return map.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    };
+
+    const offsetForLine = (map: Array<[number, number]>, line: number): number => {
+      if (map.length === 0) return 0;
+      if (line <= map[0][0]) return 0;
+      if (line >= map[map.length - 1][0]) {
+        return Math.max(0, preview.scrollHeight - preview.clientHeight);
+      }
+      for (let i = 0; i < map.length - 1; i++) {
+        if (line >= map[i][0] && line <= map[i + 1][0]) {
+          const [l1, t1] = map[i];
+          const [l2, t2] = map[i + 1];
+          const r = l2 === l1 ? 0 : (line - l1) / (l2 - l1);
+          return t1 + r * (t2 - t1);
+        }
+      }
+      return 0;
+    };
+
+    const lineForOffset = (map: Array<[number, number]>, top: number): number => {
+      if (map.length === 0) return 1;
+      if (top <= map[0][1]) return map[0][0];
+      if (top >= map[map.length - 1][1]) return map[map.length - 1][0];
+      for (let i = 0; i < map.length - 1; i++) {
+        if (top >= map[i][1] && top <= map[i + 1][1]) {
+          const [l1, t1] = map[i];
+          const [l2, t2] = map[i + 1];
+          const r = t2 === t1 ? 0 : (top - t1) / (t2 - t1);
+          return l1 + r * (l2 - l1);
+        }
+      }
+      return 1;
+    };
+
+    const onEditorScroll = () => {
+      if (isSyncing) return;
+      const handle = editorRef.current;
+      if (!handle) return;
+      const line = handle.getTopVisibleLine();
+      if (line == null) return;
+      const target = offsetForLine(buildLineMap(), line);
+      isSyncing = true;
+      preview.scrollTop = target;
+      requestAnimationFrame(() => { isSyncing = false; });
+    };
+
+    const onPreviewScroll = () => {
+      if (isSyncing) return;
+      const handle = editorRef.current;
+      if (!handle) return;
+      const line = lineForOffset(buildLineMap(), preview.scrollTop);
+      isSyncing = true;
+      handle.scrollToLine(line);
+      requestAnimationFrame(() => { isSyncing = false; });
+    };
+
+    editorScroll.addEventListener('scroll', onEditorScroll, { passive: true });
+    preview.addEventListener('scroll', onPreviewScroll, { passive: true });
+
+    return () => {
+      editorScroll.removeEventListener('scroll', onEditorScroll);
+      preview.removeEventListener('scroll', onPreviewScroll);
+    };
+  }, [viewMode, previewContent]);
+
   return (
     <>
       {showSettingsModal && ( // this is when the complete window is settings in mobile app
@@ -890,7 +996,7 @@ function App() {
               flexShrink: 0
             }} />
           )}
-          <div className="preview-pane" style={{
+          <div ref={previewPaneRef} className="preview-pane" style={{
             flex: 1,
             padding: '2rem',
             overflowY: 'auto',
@@ -903,7 +1009,7 @@ function App() {
             <div className="markdown-body" data-theme={m_theme} style={{ backgroundColor: 'transparent', maxWidth: '80%', margin: '0 auto' }}>
               <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkMath]}
-                rehypePlugins={[rehypeKatex]}
+                rehypePlugins={[rehypeAddSourceLines, rehypeKatex]}
                 components={{
                   a(props) {
                     const { href, children } = props;
