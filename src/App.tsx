@@ -66,7 +66,7 @@ function App() {
   const [m_theme, setTheme] = useState<'dark' | 'light'>('dark'); // Local theme (current window)
   const [m_wordWrap, setWordWrap] = useState(false);
   const [m_dailyNotesPath, setDailyNotesPath] = useState<string>('');
-  const [showPreview, setShowPreview] = useState(false);
+  const [viewMode, setViewMode] = useState<'edit' | 'preview' | 'dual'>('edit');
   const [m_loadedContent, setLoadedContent] = useState("");
   const [m_isSettingsWindow, setIsSettingsWindow] = useState(false);
   const [isModalBlocked, setIsModalBlocked] = useState(false);
@@ -265,18 +265,15 @@ function App() {
 
 
   //****************************************************************************
-  // Preview Management
+  // View Mode Management (edit → preview → dual → edit)
   //****************************************************************************
-  const handleTogglePreview = () => {
-    // If we are switching TO preview mode (current state is false)
-    if (!showPreview) {
-      if (editorRef.current) {
-        const currentEditorContent = editorRef.current.getContent();
-        setPreviewContent(currentEditorContent);
-      }
-    }
-    setShowPreview(!showPreview);
-  };// Preview Management END **************************************************
+  const handleCycleView = () => {
+    setViewMode(prev => {
+      if (prev === 'edit') return 'preview';
+      if (prev === 'preview') return 'dual';
+      return 'edit';
+    });
+  };// View Mode Management END *************************************************
 
 
   //****************************************************************************
@@ -815,7 +812,7 @@ function App() {
           gap: '0.5rem'
         }}>
           <button
-            onClick={handleTogglePreview}
+            onClick={handleCycleView}
             style={{
               padding: '8px 16px',
               borderRadius: '20px',
@@ -827,7 +824,7 @@ function App() {
               boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
             }}
           >
-            {showPreview ? '✏️ Edit' : 'kb Preview'}
+            {viewMode === 'edit' ? 'Preview' : viewMode === 'preview' ? 'Dual' : '✏️ Edit'}
           </button>
 
           <button
@@ -872,7 +869,9 @@ function App() {
           <div className="editor-pane" style={{
             flex: 1,
             height: '100%',
-            display: showPreview ? 'none' : 'block'
+            display: viewMode === 'preview' ? 'none' : 'flex',
+            flexDirection: 'column',
+            minWidth: 0
           }}>
             <Editor
               ref={editorRef}
@@ -881,16 +880,25 @@ function App() {
               initialDoc={m_loadedContent}
               currentFilePath={m_currentFilePath}
               onDirtyChange={setIsDirty}
+              onChange={setPreviewContent}
             />
           </div>
+          {viewMode === 'dual' && (
+            <div style={{
+              width: '1px',
+              backgroundColor: m_theme === 'dark' ? '#30363d' : '#d0d7de',
+              flexShrink: 0
+            }} />
+          )}
           <div className="preview-pane" style={{
             flex: 1,
             padding: '2rem',
             overflowY: 'auto',
             height: '100%',
             backgroundColor: m_theme === 'dark' ? '#0d1117' : '#ffffff',
-            display: showPreview ? 'block' : 'none',
-            color: m_theme === 'dark' ? '#c9d1d9' : '#24292e'
+            display: viewMode === 'edit' ? 'none' : 'block',
+            color: m_theme === 'dark' ? '#c9d1d9' : '#24292e',
+            minWidth: 0
           }}>
             <div className="markdown-body" data-theme={m_theme} style={{ backgroundColor: 'transparent', maxWidth: '80%', margin: '0 auto' }}>
               <ReactMarkdown
