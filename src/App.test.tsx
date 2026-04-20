@@ -238,6 +238,9 @@ describe('App', () => {
     });
 
     it('draggable divider: resizes panes when dragged horizontally', async () => {
+        // JSDOM does not execute requestAnimationFrame callbacks — run them synchronously
+        const rafSpy = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => { cb(0); return 0; });
+
         const { container } = render(<App />);
         await waitFor(() => expect(container.querySelector('select')).toBeTruthy());
         await selectViewMode(container, 'dual');
@@ -249,7 +252,6 @@ describe('App', () => {
         });
         expect(divider.style.cursor).toBe('col-resize');
 
-        // Simulate drag: mousedown on divider, mousemove on window, mouseup
         const mainContent = container.querySelector('.main-content') as HTMLElement;
         Object.defineProperty(mainContent, 'getBoundingClientRect', {
             value: () => ({ left: 0, top: 0, width: 1000, height: 600, right: 1000, bottom: 600 }),
@@ -264,9 +266,10 @@ describe('App', () => {
 
         await waitFor(() => {
             const editorPane = container.querySelector('.editor-pane') as HTMLElement;
-            // split should have moved from 57% toward 67%
             expect(editorPane.style.flex).toMatch(/67/);
         });
+
+        rafSpy.mockRestore();
     });
 
     it('draggable divider: has row-resize cursor in vertical dual modes', async () => {

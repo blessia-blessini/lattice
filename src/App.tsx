@@ -152,13 +152,19 @@ function App() {
     const startPos = vertical ? e.clientY : e.clientX;
     const containerSize = vertical ? rect.height : rect.width;
     const startPct = splitPct;
+    let rafId: number | null = null;
 
     const onMouseMove = (mv: MouseEvent) => {
-      const delta = (vertical ? mv.clientY : mv.clientX) - startPos;
-      const newPct = Math.min(90, Math.max(10, startPct + (delta / containerSize) * 100));
-      setSplitPct(newPct);
+      if (rafId !== null) return; // already a frame pending
+      rafId = requestAnimationFrame(() => {
+        const delta = (vertical ? mv.clientY : mv.clientX) - startPos;
+        const newPct = Math.min(90, Math.max(10, startPct + (delta / containerSize) * 100));
+        setSplitPct(newPct);
+        rafId = null;
+      });
     };
     const onMouseUp = () => {
+      if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
       document.body.style.cursor = '';
