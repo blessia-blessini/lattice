@@ -223,7 +223,7 @@ describe('App', () => {
     });
 
     it('editor-pane has overflow:hidden (prevents CodeMirror content overflowing into preview)', () => {
-        const css = readFileSync(resolve(__dirname, 'App.css'), 'utf-8');
+        const css = readFileSync(resolve(import.meta.dirname, 'App.css'), 'utf-8');
         const editorPaneBlock = (() => {
             const start = css.indexOf('.editor-pane');
             let depth = 0, i = css.indexOf('{', start);
@@ -331,9 +331,9 @@ describe('App', () => {
 // rendering in WebView2/WebKit when violated.
 // ---------------------------------------------------------------------------
 describe('App.css invariants', () => {
-    const css       = readFileSync(resolve(__dirname, 'App.css'), 'utf-8');
+    const css       = readFileSync(resolve(import.meta.dirname, 'App.css'), 'utf-8');
     const githubCss = readFileSync(
-        resolve(__dirname, '../node_modules/github-markdown-css/github-markdown.css'), 'utf-8'
+        resolve(import.meta.dirname, '../node_modules/github-markdown-css/github-markdown.css'), 'utf-8'
     );
 
     it(':root must not declare color-scheme: light dark (breaks WebView2 preview pane)', () => {
