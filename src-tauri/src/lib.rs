@@ -597,6 +597,14 @@ fn trace_log(msg: String) {
 } // trace_log END *************************************************************
 
 //******************************************************************************
+// exit_app
+//******************************************************************************
+#[tauri::command]
+fn exit_app(app: tauri::AppHandle) {
+    app.exit(0);
+} // exit_app END *************************************************************
+
+//******************************************************************************
 // get_version_string
 //******************************************************************************
 #[tauri::command]
@@ -644,7 +652,8 @@ pub fn run() {
             read_file_base64,
             get_launch_file,
             get_version_string,
-            trace_log
+            trace_log,
+            exit_app
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

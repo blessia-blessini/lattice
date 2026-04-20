@@ -4,7 +4,9 @@
   line-height: 24px;
   font-weight: 400;
 
-  color-scheme: light dark;
+  /* App manages its own dark/light theming via data-theme — disable browser
+     automatic dark mode so WebView2/WebKit never overrides our explicit colors. */
+  color-scheme: light;
   color: rgba(255, 255, 255, 0.87);
   background-color: #242424;
 
@@ -34,7 +36,7 @@ body,
 
 body {
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-  color-scheme: light dark;
+  color-scheme: light;
   color: rgba(255, 255, 255, 0.87);
   background-color: #242424;
   font-synthesis: none;
@@ -43,53 +45,39 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Force high contrast for preview text */
+/* Override github-markdown-css per preview theme.
+   Must use the current variable names (--bgColor-*, --fgColor-*) since
+   the old names (--color-canvas-*) are no longer used by the library. */
 .markdown-body[data-theme="dark"] {
-  color: #ffffff !important;
-  --color-canvas-default: transparent !important;
-  --color-canvas-subtle: #161b22 !important;
-  --color-border-default: #30363d !important;
-  --color-border-muted: #21262d !important;
-  --color-neutral-muted: rgba(110, 118, 129, 0.4) !important;
+  color-scheme: dark;
+  color: #f0f6fc !important;
+  --bgColor-default: #0d1117 !important;
+  --bgColor-muted: #151b23 !important;
+  --fgColor-default: #f0f6fc !important;
+  --fgColor-muted: #9198a1 !important;
+  --borderColor-default: #3d444d !important;
+  --borderColor-muted: #3d444db3 !important;
+  --bgColor-neutral-muted: #656c7633 !important;
 
-  /* Explicit Overrides */
-  & table tr {
-    background-color: #0d1117 !important;
-  }
-
-  & table tr:nth-child(2n) {
-    background-color: #161b22 !important;
-  }
-
-  & code,
-  & pre {
-    background-color: #161b22 !important;
-    color: #ffffff !important;
-  }
+  & table tr    { background-color: #0d1117 !important; }
+  & table tr:nth-child(2n) { background-color: #151b23 !important; }
+  & code, & pre { background-color: #151b23 !important; color: #f0f6fc !important; }
 }
 
 .markdown-body[data-theme="light"] {
-  color: #000000 !important;
-  --color-canvas-default: #ffffff !important;
-  --color-canvas-subtle: #f6f8fa !important;
-  --color-border-default: #d0d7de !important;
-  --color-border-muted: #d8dee4 !important;
-  --color-neutral-muted: rgba(175, 184, 193, 0.2) !important;
+  color-scheme: light;
+  color: #1f2328 !important;
+  --bgColor-default: #ffffff !important;
+  --bgColor-muted: #f6f8fa !important;
+  --fgColor-default: #1f2328 !important;
+  --fgColor-muted: #59636e !important;
+  --borderColor-default: #d1d9e0 !important;
+  --borderColor-muted: #d1d9e0b3 !important;
+  --bgColor-neutral-muted: #818b981f !important;
 
-  /* Explicit Overrides */
-  & table tr {
-    background-color: #ffffff !important;
-  }
-
-  & table tr:nth-child(2n) {
-    background-color: #f6f8fa !important;
-  }
-
-  & code,
-  & pre {
-    background-color: #f6f8fa !important;
-    color: #000000 !important;
-  }
+  & table tr    { background-color: #ffffff !important; }
+  & table tr:nth-child(2n) { background-color: #f6f8fa !important; }
+  & code, & pre { background-color: #f6f8fa !important; color: #1f2328 !important; }
 }
 
 .container {
@@ -100,11 +88,63 @@ body {
 }
 
 
+/* ============================================================
+   Edit Pane  (theme: controlled by data-theme on .container)
+   ============================================================ */
+.editor-pane {
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  /* height is set via inline style — vertical splits need auto, horizontal need 100% */
+}
+
+.cm-editor {
+  min-width: 0;
+  width: 100%;
+}
+
 /* Editor Container */
 .editor-container {
   height: 100%;
   width: 100%;
   /* CodeMirror will handle the scrolling internally */
+}
+
+/* ============================================================
+   Preview Pane  (own orthogonal theme via data-preview-theme)
+   ============================================================ */
+.preview-pane {
+  padding: 2rem;
+  overflow-y: auto;
+  min-width: 0;
+  /* height is set via inline style — vertical splits need auto, horizontal need 100% */
+  /* background-color, color, color-scheme are set via inline style from PREVIEW_THEME_COLORS */
+}
+
+.preview-pane__body {
+  background-color: transparent;
+  max-width: 80%;
+  margin: 0 auto;
+}
+
+/* ============================================================
+   Pane divider (dual modes)
+   ============================================================ */
+.pane-divider {
+  flex-shrink: 0;
+  /* width/height/cursor are set via inline style — depends on split direction */
+}
+
+.pane-divider:hover {
+  opacity: 0.7;
+}
+
+[data-theme="dark"] .pane-divider {
+  background-color: #30363d;
+}
+
+[data-theme="light"] .pane-divider {
+  background-color: #d0d7de;
 }
 
 /* Ensure CodeMirror takes up the full container height */

@@ -47,6 +47,38 @@ import { StaticRuntime } from "@services/StaticRuntime";
 
 const APP_NAME = tauriConfig.productName || "Lattice";
 
+// Rehype plugin: copy each element's source line number from its mdast position
+// onto a data-source-line attribute, used by dual-view scroll sync.
+const rehypeAddSourceLines = () => (tree: any) => {
+  const walk = (node: any) => {
+    if (node.type === 'element' && node.position?.start?.line != null) {
+      node.properties = node.properties || {};
+      node.properties['data-source-line'] = String(node.position.start.line);
+    }
+    if (node.children) {
+      for (const child of node.children) walk(child);
+    }
+  };
+  walk(tree);
+};
+
+const PREVIEW_THEME_COLORS = {
+  light: { backgroundColor: '#ffffff', color: '#24292e', colorScheme: 'light' as const },
+  dark:  { backgroundColor: '#0d1117', color: '#c9d1d9', colorScheme: 'dark'  as const },
+};
+
+const VIEW_EDIT        = 'edit'         as const;
+const VIEW_PREVIEW     = 'preview'      as const;
+const VIEW_DUAL        = 'dual'         as const;
+const VIEW_DUAL_SWAP   = 'dual-swap'    as const;
+const VIEW_DUAL_TOP    = 'dual-top'     as const;
+const VIEW_DUAL_BOTTOM = 'dual-bottom'  as const;
+type ViewMode = typeof VIEW_EDIT | typeof VIEW_PREVIEW | typeof VIEW_DUAL | typeof VIEW_DUAL_SWAP
+              | typeof VIEW_DUAL_TOP | typeof VIEW_DUAL_BOTTOM;
+const DUAL_MODES = [VIEW_DUAL, VIEW_DUAL_SWAP, VIEW_DUAL_TOP, VIEW_DUAL_BOTTOM] as const;
+const isDual       = (m: ViewMode) => (DUAL_MODES as readonly string[]).includes(m);
+const isVertical   = (m: ViewMode) => m === VIEW_DUAL_TOP || m === VIEW_DUAL_BOTTOM;
+
 //******************************************************************************
 // App
 //******************************************************************************
@@ -60,13 +92,36 @@ function App() {
     StaticRuntime.log("App mounted via StaticRuntime Shim");
   }, []);
 
+  // Prevent browser-level WebView refresh via keyboard (F5 / Ctrl+R / Cmd+R)
+  // and via right-click context menu. Both would restart the React app and
+  // discard unsaved editor state. sessionStorage recovery handles the rare case
+  // where a reload still occurs (e.g. Tauri dev hot-reload).
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'F5' || ((e.ctrlKey || e.metaKey) && e.key === 'r')) {
+        e.preventDefault();
+      }
+    };
+    const onContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('contextmenu', onContextMenu);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('contextmenu', onContextMenu);
+    };
+  }, []);
+
   //****************************************************************************
   // State Management
   //****************************************************************************
   const [m_theme, setTheme] = useState<'dark' | 'light'>('dark'); // Local theme (current window)
+  const [m_previewTheme, setPreviewTheme] = useState<'dark' | 'light'>('light'); // Preview pane theme (independent)
   const [m_wordWrap, setWordWrap] = useState(false);
   const [m_dailyNotesPath, setDailyNotesPath] = useState<string>('');
-  const [showPreview, setShowPreview] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>(VIEW_EDIT);
+  const [splitPct, setSplitPct] = useState(57); // editor share in %, preview gets remainder
   const [m_loadedContent, setLoadedContent] = useState("");
   const [m_isSettingsWindow, setIsSettingsWindow] = useState(false);
   const [isModalBlocked, setIsModalBlocked] = useState(false);
@@ -83,8 +138,43 @@ function App() {
   // Dirty State Management
   const [m_isDirty, setIsDirty] = useState(false);
   const editorRef = useRef<import("./components/Editor").EditorHandle>(null);
+  const previewPaneRef = useRef<HTMLDivElement>(null);
 
   const autoSaveTimer = useRef<number | null>(null);
+  const mainContentRef = useRef<HTMLDivElement>(null);
+
+  const handleDividerMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const container = mainContentRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const vertical = isVertical(viewMode);
+    const startPos = vertical ? e.clientY : e.clientX;
+    const containerSize = vertical ? rect.height : rect.width;
+    const startPct = splitPct;
+    let rafId: number | null = null;
+
+    const onMouseMove = (mv: MouseEvent) => {
+      if (rafId !== null) return; // already a frame pending
+      rafId = requestAnimationFrame(() => {
+        const delta = (vertical ? mv.clientY : mv.clientX) - startPos;
+        const newPct = Math.min(90, Math.max(10, startPct + (delta / containerSize) * 100));
+        setSplitPct(newPct);
+        rafId = null;
+      });
+    };
+    const onMouseUp = () => {
+      if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    document.body.style.cursor = vertical ? 'row-resize' : 'col-resize';
+    document.body.style.userSelect = 'none';
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
 
   // MRU State
   const [mruList, setMruList] = useState<string[]>([]);
@@ -119,9 +209,14 @@ function App() {
     });
   };
 
-  // TRACE: Monitor m_currentFilePath state changes
+  // TRACE: Monitor m_currentFilePath state changes + persist for refresh recovery
   useEffect(() => {
     console.log(`TRACE: State 'm_currentFilePath' changed to: ${m_currentFilePath}`);
+    if (m_currentFilePath) {
+      sessionStorage.setItem('lattice-last-open-path', m_currentFilePath);
+    } else {
+      sessionStorage.removeItem('lattice-last-open-path');
+    }
   }, [m_currentFilePath]);
   // State Management END ******************************************************
 
@@ -264,19 +359,6 @@ function App() {
   };// Theme Management END ****************************************************
 
 
-  //****************************************************************************
-  // Preview Management
-  //****************************************************************************
-  const handleTogglePreview = () => {
-    // If we are switching TO preview mode (current state is false)
-    if (!showPreview) {
-      if (editorRef.current) {
-        const currentEditorContent = editorRef.current.getContent();
-        setPreviewContent(currentEditorContent);
-      }
-    }
-    setShowPreview(!showPreview);
-  };// Preview Management END **************************************************
 
 
   //****************************************************************************
@@ -629,9 +711,27 @@ function App() {
         }
       }
       else { //there is no initData
-        // No file opened
-        await enforceVaultPath(""); // Get global fallback
-        console.log("Info: No Direct Push Data found. App opened without any file");
+        // Try to restore last open file from session (survives WebView refresh)
+        const lastPath = sessionStorage.getItem('lattice-last-open-path');
+        if (lastPath) {
+          console.log("Info: Restoring last open file after refresh:", lastPath);
+          try {
+            await enforceVaultPath(lastPath);
+            const response = await FileSystem.readTextFile(lastPath);
+            setLoadedContent(response.content);
+            setPreviewContent(response.content);
+            setCurrentFilePath(lastPath);
+            FileSystem.watchFile(lastPath);
+            if (editorRef.current) editorRef.current.markAsSaved();
+          } catch (e) {
+            console.error("Failed to restore last file:", e);
+            sessionStorage.removeItem('lattice-last-open-path');
+            await enforceVaultPath("");
+          }
+        } else {
+          await enforceVaultPath(""); // Get global fallback
+          console.log("Info: No Direct Push Data found. App opened without any file");
+        }
       }
     };
     checkLaunch();
@@ -764,6 +864,96 @@ function App() {
     };
   }, [m_currentFilePath]); // Re-bind if m_currentFilePath changes
 
+  //****************************************************************************
+  // Dual View Scroll Synchronization (line-accurate)
+  //****************************************************************************
+  useEffect(() => {
+    if (!isDual(viewMode)) return;
+
+    const editorScroll = editorRef.current?.getScrollDOM();
+    const preview = previewPaneRef.current;
+    if (!editorScroll || !preview) return;
+
+    let isSyncing = false;
+
+    // Build sorted [sourceLine, offsetTop] pairs from preview's tagged elements.
+    const buildLineMap = (): Array<[number, number]> => {
+      const elements = preview.querySelectorAll<HTMLElement>('[data-source-line]');
+      const previewTop = preview.getBoundingClientRect().top;
+      const map: Array<[number, number]> = [];
+      elements.forEach(el => {
+        const line = parseInt(el.dataset.sourceLine || '0', 10);
+        if (line > 0) {
+          const top = el.getBoundingClientRect().top - previewTop + preview.scrollTop;
+          map.push([line, top]);
+        }
+      });
+      return map.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    };
+
+    const offsetForLine = (map: Array<[number, number]>, line: number): number => {
+      if (map.length === 0) return 0;
+      if (line <= map[0][0]) return 0;
+      if (line >= map[map.length - 1][0]) {
+        return Math.max(0, preview.scrollHeight - preview.clientHeight);
+      }
+      for (let i = 0; i < map.length - 1; i++) {
+        if (line >= map[i][0] && line <= map[i + 1][0]) {
+          const [l1, t1] = map[i];
+          const [l2, t2] = map[i + 1];
+          const r = l2 === l1 ? 0 : (line - l1) / (l2 - l1);
+          return t1 + r * (t2 - t1);
+        }
+      }
+      return 0;
+    };
+
+    const lineForOffset = (map: Array<[number, number]>, top: number): number => {
+      if (map.length === 0) return 1;
+      if (top <= map[0][1]) return map[0][0];
+      if (top >= map[map.length - 1][1]) return map[map.length - 1][0];
+      for (let i = 0; i < map.length - 1; i++) {
+        if (top >= map[i][1] && top <= map[i + 1][1]) {
+          const [l1, t1] = map[i];
+          const [l2, t2] = map[i + 1];
+          const r = t2 === t1 ? 0 : (top - t1) / (t2 - t1);
+          return l1 + r * (l2 - l1);
+        }
+      }
+      return 1;
+    };
+
+    const onEditorScroll = () => {
+      if (isSyncing) return;
+      const handle = editorRef.current;
+      if (!handle) return;
+      const line = handle.getTopVisibleLine();
+      if (line == null) return;
+      const target = offsetForLine(buildLineMap(), line);
+      isSyncing = true;
+      preview.scrollTop = target;
+      requestAnimationFrame(() => { isSyncing = false; });
+    };
+
+    const onPreviewScroll = () => {
+      if (isSyncing) return;
+      const handle = editorRef.current;
+      if (!handle) return;
+      const line = lineForOffset(buildLineMap(), preview.scrollTop);
+      isSyncing = true;
+      handle.scrollToLine(line);
+      requestAnimationFrame(() => { isSyncing = false; });
+    };
+
+    editorScroll.addEventListener('scroll', onEditorScroll, { passive: true });
+    preview.addEventListener('scroll', onPreviewScroll, { passive: true });
+
+    return () => {
+      editorScroll.removeEventListener('scroll', onEditorScroll);
+      preview.removeEventListener('scroll', onPreviewScroll);
+    };
+  }, [viewMode, previewContent]);
+
   return (
     <>
       {showSettingsModal && ( // this is when the complete window is settings in mobile app
@@ -814,21 +1004,34 @@ function App() {
           display: 'flex',
           gap: '0.5rem'
         }}>
-          <button
-            onClick={handleTogglePreview}
+          <select
+            data-testid="view-mode-select"
+            value={viewMode}
+            onChange={e => setViewMode(e.target.value as ViewMode)}
             style={{
               padding: '8px 16px',
               borderRadius: '20px',
               border: 'none',
-              background: m_theme === 'dark' ? '#30363d' : '#e1e4e8',
+              backgroundColor: m_theme === 'dark' ? '#30363d' : '#e1e4e8',
               color: m_theme === 'dark' ? '#c9d1d9' : '#24292e',
               cursor: 'pointer',
               fontWeight: 600,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              appearance: 'none',
+              paddingRight: '28px',
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='${m_theme === 'dark' ? '%23c9d1d9' : '%2324292e'}' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 10px center',
+              backgroundSize: 'auto',
             }}
           >
-            {showPreview ? '✏️ Edit' : 'kb Preview'}
-          </button>
+            <option value={VIEW_EDIT}>✏️ Edit</option>
+            <option value={VIEW_PREVIEW}>👁 Preview</option>
+            <option value={VIEW_DUAL}>⬜ Dual (edit on the left)</option>
+            <option value={VIEW_DUAL_SWAP}>⬜ Dual (edit on the right)</option>
+            <option value={VIEW_DUAL_TOP}>⬜ Dual (edit on top)</option>
+            <option value={VIEW_DUAL_BOTTOM}>⬜ Dual (edit on bottom)</option>
+          </select>
 
           <button
             onClick={toggleTheme}
@@ -863,16 +1066,23 @@ function App() {
               { label: "Open in new ...", onClick: handleLoadInNewWindow },
               { label: "New Window", onClick: handleNewWindow },
               { label: "Settings ...", onClick: handleOpenSettings, disabled: false },
-              { label: "Initialize Vault Here ...", onClick: handleInitializeVault, disabled: !m_currentFilePath }
+              { label: "Initialize Vault Here ...", onClick: handleInitializeVault, disabled: !m_currentFilePath },
+              { label: "---" },
+              { label: "Exit", onClick: () => invoke('exit_app') }
             ]}
           />
         </div>
 
-        <div className="main-content" style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
+        <div ref={mainContentRef} className="main-content" style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative',
+          flexDirection: viewMode === VIEW_DUAL_SWAP ? 'row-reverse'
+                       : viewMode === VIEW_DUAL_TOP    ? 'column'
+                       : viewMode === VIEW_DUAL_BOTTOM ? 'column-reverse'
+                       : 'row'
+        }}>
           <div className="editor-pane" style={{
-            flex: 1,
-            height: '100%',
-            display: showPreview ? 'none' : 'block'
+            flex: isDual(viewMode) ? `0 0 ${splitPct}%` : 1,
+            display: viewMode === VIEW_PREVIEW ? 'none' : 'flex',
+            height: isVertical(viewMode) ? 'auto' : '100%',
           }}>
             <Editor
               ref={editorRef}
@@ -881,21 +1091,32 @@ function App() {
               initialDoc={m_loadedContent}
               currentFilePath={m_currentFilePath}
               onDirtyChange={setIsDirty}
+              onChange={setPreviewContent}
             />
           </div>
-          <div className="preview-pane" style={{
-            flex: 1,
-            padding: '2rem',
-            overflowY: 'auto',
-            height: '100%',
-            backgroundColor: m_theme === 'dark' ? '#0d1117' : '#ffffff',
-            display: showPreview ? 'block' : 'none',
-            color: m_theme === 'dark' ? '#c9d1d9' : '#24292e'
+          {isDual(viewMode) && (
+            <div
+              className="pane-divider"
+              data-testid="pane-divider"
+              onMouseDown={handleDividerMouseDown}
+              style={isVertical(viewMode)
+                ? { width: '100%', height: '5px', cursor: 'row-resize' }
+                : { width: '5px',  height: '100%', cursor: 'col-resize' }
+              }
+            />
+          )}
+          <div ref={previewPaneRef} className="preview-pane" data-preview-theme={m_previewTheme} style={{
+            flex: isDual(viewMode) ? `0 0 ${100 - splitPct}%` : 1,
+            display: viewMode === VIEW_EDIT ? 'none' : 'block',
+            height: isVertical(viewMode) ? 'auto' : '100%',
+            ...PREVIEW_THEME_COLORS[m_previewTheme],
           }}>
-            <div className="markdown-body" data-theme={m_theme} style={{ backgroundColor: 'transparent', maxWidth: '80%', margin: '0 auto' }}>
+            <div className="markdown-body preview-pane__body" data-theme={m_previewTheme}
+              style={{ backgroundColor: PREVIEW_THEME_COLORS[m_previewTheme].backgroundColor,
+                       color: PREVIEW_THEME_COLORS[m_previewTheme].color }}>
               <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkMath]}
-                rehypePlugins={[rehypeKatex]}
+                rehypePlugins={[rehypeAddSourceLines, rehypeKatex]}
                 components={{
                   a(props) {
                     const { href, children } = props;
