@@ -67,11 +67,17 @@ const PREVIEW_THEME_COLORS = {
   dark:  { backgroundColor: '#0d1117', color: '#c9d1d9', colorScheme: 'dark'  as const },
 };
 
-const VIEW_EDIT      = 'edit'      as const;
-const VIEW_PREVIEW   = 'preview'   as const;
-const VIEW_DUAL      = 'dual'      as const;
-const VIEW_DUAL_SWAP = 'dual-swap' as const;
-type ViewMode = typeof VIEW_EDIT | typeof VIEW_PREVIEW | typeof VIEW_DUAL | typeof VIEW_DUAL_SWAP;
+const VIEW_EDIT        = 'edit'         as const;
+const VIEW_PREVIEW     = 'preview'      as const;
+const VIEW_DUAL        = 'dual'         as const;
+const VIEW_DUAL_SWAP   = 'dual-swap'    as const;
+const VIEW_DUAL_TOP    = 'dual-top'     as const;
+const VIEW_DUAL_BOTTOM = 'dual-bottom'  as const;
+type ViewMode = typeof VIEW_EDIT | typeof VIEW_PREVIEW | typeof VIEW_DUAL | typeof VIEW_DUAL_SWAP
+              | typeof VIEW_DUAL_TOP | typeof VIEW_DUAL_BOTTOM;
+const DUAL_MODES = [VIEW_DUAL, VIEW_DUAL_SWAP, VIEW_DUAL_TOP, VIEW_DUAL_BOTTOM] as const;
+const isDual       = (m: ViewMode) => (DUAL_MODES as readonly string[]).includes(m);
+const isVertical   = (m: ViewMode) => m === VIEW_DUAL_TOP || m === VIEW_DUAL_BOTTOM;
 
 //******************************************************************************
 // App
@@ -86,6 +92,27 @@ function App() {
     StaticRuntime.log("App mounted via StaticRuntime Shim");
   }, []);
 
+  // Prevent browser-level WebView refresh via keyboard (F5 / Ctrl+R / Cmd+R)
+  // and via right-click context menu. Both would restart the React app and
+  // discard unsaved editor state. sessionStorage recovery handles the rare case
+  // where a reload still occurs (e.g. Tauri dev hot-reload).
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'F5' || ((e.ctrlKey || e.metaKey) && e.key === 'r')) {
+        e.preventDefault();
+      }
+    };
+    const onContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('contextmenu', onContextMenu);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('contextmenu', onContextMenu);
+    };
+  }, []);
+
   //****************************************************************************
   // State Management
   //****************************************************************************
@@ -94,6 +121,7 @@ function App() {
   const [m_wordWrap, setWordWrap] = useState(false);
   const [m_dailyNotesPath, setDailyNotesPath] = useState<string>('');
   const [viewMode, setViewMode] = useState<ViewMode>(VIEW_EDIT);
+  const [splitPct, setSplitPct] = useState(57); // editor share in %, preview gets remainder
   const [m_loadedContent, setLoadedContent] = useState("");
   const [m_isSettingsWindow, setIsSettingsWindow] = useState(false);
   const [isModalBlocked, setIsModalBlocked] = useState(false);
@@ -113,6 +141,34 @@ function App() {
   const previewPaneRef = useRef<HTMLDivElement>(null);
 
   const autoSaveTimer = useRef<number | null>(null);
+  const mainContentRef = useRef<HTMLDivElement>(null);
+
+  const handleDividerMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const container = mainContentRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const vertical = isVertical(viewMode);
+    const startPos = vertical ? e.clientY : e.clientX;
+    const containerSize = vertical ? rect.height : rect.width;
+    const startPct = splitPct;
+
+    const onMouseMove = (mv: MouseEvent) => {
+      const delta = (vertical ? mv.clientY : mv.clientX) - startPos;
+      const newPct = Math.min(90, Math.max(10, startPct + (delta / containerSize) * 100));
+      setSplitPct(newPct);
+    };
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    document.body.style.cursor = vertical ? 'row-resize' : 'col-resize';
+    document.body.style.userSelect = 'none';
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
 
   // MRU State
   const [mruList, setMruList] = useState<string[]>([]);
@@ -147,9 +203,14 @@ function App() {
     });
   };
 
-  // TRACE: Monitor m_currentFilePath state changes
+  // TRACE: Monitor m_currentFilePath state changes + persist for refresh recovery
   useEffect(() => {
     console.log(`TRACE: State 'm_currentFilePath' changed to: ${m_currentFilePath}`);
+    if (m_currentFilePath) {
+      sessionStorage.setItem('lattice-last-open-path', m_currentFilePath);
+    } else {
+      sessionStorage.removeItem('lattice-last-open-path');
+    }
   }, [m_currentFilePath]);
   // State Management END ******************************************************
 
@@ -644,9 +705,27 @@ function App() {
         }
       }
       else { //there is no initData
-        // No file opened
-        await enforceVaultPath(""); // Get global fallback
-        console.log("Info: No Direct Push Data found. App opened without any file");
+        // Try to restore last open file from session (survives WebView refresh)
+        const lastPath = sessionStorage.getItem('lattice-last-open-path');
+        if (lastPath) {
+          console.log("Info: Restoring last open file after refresh:", lastPath);
+          try {
+            await enforceVaultPath(lastPath);
+            const response = await FileSystem.readTextFile(lastPath);
+            setLoadedContent(response.content);
+            setPreviewContent(response.content);
+            setCurrentFilePath(lastPath);
+            FileSystem.watchFile(lastPath);
+            if (editorRef.current) editorRef.current.markAsSaved();
+          } catch (e) {
+            console.error("Failed to restore last file:", e);
+            sessionStorage.removeItem('lattice-last-open-path');
+            await enforceVaultPath("");
+          }
+        } else {
+          await enforceVaultPath(""); // Get global fallback
+          console.log("Info: No Direct Push Data found. App opened without any file");
+        }
       }
     };
     checkLaunch();
@@ -783,7 +862,7 @@ function App() {
   // Dual View Scroll Synchronization (line-accurate)
   //****************************************************************************
   useEffect(() => {
-    if (viewMode !== VIEW_DUAL && viewMode !== VIEW_DUAL_SWAP) return;
+    if (!isDual(viewMode)) return;
 
     const editorScroll = editorRef.current?.getScrollDOM();
     const preview = previewPaneRef.current;
@@ -920,6 +999,7 @@ function App() {
           gap: '0.5rem'
         }}>
           <select
+            data-testid="view-mode-select"
             value={viewMode}
             onChange={e => setViewMode(e.target.value as ViewMode)}
             style={{
@@ -941,8 +1021,10 @@ function App() {
           >
             <option value={VIEW_EDIT}>✏️ Edit</option>
             <option value={VIEW_PREVIEW}>👁 Preview</option>
-            <option value={VIEW_DUAL}>⬜ Dual (edit on the left) </option>
+            <option value={VIEW_DUAL}>⬜ Dual (edit on the left)</option>
             <option value={VIEW_DUAL_SWAP}>⬜ Dual (edit on the right)</option>
+            <option value={VIEW_DUAL_TOP}>⬜ Dual (edit on top)</option>
+            <option value={VIEW_DUAL_BOTTOM}>⬜ Dual (edit on bottom)</option>
           </select>
 
           <button
@@ -983,10 +1065,16 @@ function App() {
           />
         </div>
 
-        <div className="main-content" style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative', flexDirection: viewMode === VIEW_DUAL_SWAP ? 'row-reverse' : 'row' }}>
+        <div ref={mainContentRef} className="main-content" style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative',
+          flexDirection: viewMode === VIEW_DUAL_SWAP ? 'row-reverse'
+                       : viewMode === VIEW_DUAL_TOP    ? 'column'
+                       : viewMode === VIEW_DUAL_BOTTOM ? 'column-reverse'
+                       : 'row'
+        }}>
           <div className="editor-pane" style={{
-            flex: (viewMode === VIEW_DUAL || viewMode === VIEW_DUAL_SWAP) ? '0 0 57%' : 1,
+            flex: isDual(viewMode) ? `0 0 ${splitPct}%` : 1,
             display: viewMode === VIEW_PREVIEW ? 'none' : 'flex',
+            height: isVertical(viewMode) ? 'auto' : '100%',
           }}>
             <Editor
               ref={editorRef}
@@ -998,12 +1086,21 @@ function App() {
               onChange={setPreviewContent}
             />
           </div>
-          {(viewMode === VIEW_DUAL || viewMode === VIEW_DUAL_SWAP) && (
-            <div className="pane-divider" />
+          {isDual(viewMode) && (
+            <div
+              className="pane-divider"
+              data-testid="pane-divider"
+              onMouseDown={handleDividerMouseDown}
+              style={isVertical(viewMode)
+                ? { width: '100%', height: '5px', cursor: 'row-resize' }
+                : { width: '5px',  height: '100%', cursor: 'col-resize' }
+              }
+            />
           )}
           <div ref={previewPaneRef} className="preview-pane" data-preview-theme={m_previewTheme} style={{
-            flex: (viewMode === VIEW_DUAL || viewMode === VIEW_DUAL_SWAP) ? '0 0 43%' : 1,
+            flex: isDual(viewMode) ? `0 0 ${100 - splitPct}%` : 1,
             display: viewMode === VIEW_EDIT ? 'none' : 'block',
+            height: isVertical(viewMode) ? 'auto' : '100%',
             ...PREVIEW_THEME_COLORS[m_previewTheme],
           }}>
             <div className="markdown-body preview-pane__body" data-theme={m_previewTheme}

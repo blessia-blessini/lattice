@@ -24,7 +24,7 @@
 import React from 'react';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { render, fireEvent, waitFor } from '@testing-library/react';
+import { render, fireEvent, waitFor, act } from '@testing-library/react';
 import App from './App';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as TauriCore from '@tauri-apps/api/core';
@@ -84,12 +84,16 @@ vi.mocked(TauriCore.invoke).mockImplementation((cmd, args: any) => {
 describe('App', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        sessionStorage.clear();
+        delete (window as any).__LATTICE_INIT_DATA__;
     });
 
     const selectViewMode = async (container: HTMLElement, value: string) => {
-        const select = container.querySelector('select') as HTMLSelectElement;
+        const select = container.querySelector('[data-testid="view-mode-select"]') as HTMLSelectElement;
         expect(select).toBeTruthy();
-        fireEvent.change(select, { target: { value } });
+        await act(async () => {
+            fireEvent.change(select, { target: { value } });
+        });
     };
 
     it('renders without crashing', () => {
@@ -231,6 +235,51 @@ describe('App', () => {
             return '';
         })();
         expect(editorPaneBlock).toMatch(/overflow\s*:\s*hidden/);
+    });
+
+    it('draggable divider: resizes panes when dragged horizontally', async () => {
+        const { container } = render(<App />);
+        await waitFor(() => expect(container.querySelector('select')).toBeTruthy());
+        await selectViewMode(container, 'dual');
+
+        const divider = await waitFor(() => {
+            const el = container.querySelector('[data-testid="pane-divider"]');
+            expect(el).toBeTruthy();
+            return el as HTMLElement;
+        });
+        expect(divider.style.cursor).toBe('col-resize');
+
+        // Simulate drag: mousedown on divider, mousemove on window, mouseup
+        const mainContent = container.querySelector('.main-content') as HTMLElement;
+        Object.defineProperty(mainContent, 'getBoundingClientRect', {
+            value: () => ({ left: 0, top: 0, width: 1000, height: 600, right: 1000, bottom: 600 }),
+            configurable: true,
+        });
+
+        await act(async () => {
+            fireEvent.mouseDown(divider, { clientX: 570, clientY: 300 });
+            fireEvent.mouseMove(window, { clientX: 670, clientY: 300 }); // +100px on 1000px = +10%
+            fireEvent.mouseUp(window);
+        });
+
+        await waitFor(() => {
+            const editorPane = container.querySelector('.editor-pane') as HTMLElement;
+            // split should have moved from 57% toward 67%
+            expect(editorPane.style.flex).toMatch(/67/);
+        });
+    });
+
+    it('draggable divider: has row-resize cursor in vertical dual modes', async () => {
+        const { container } = render(<App />);
+        await waitFor(() => expect(container.querySelector('select')).toBeTruthy());
+        await selectViewMode(container, 'dual-top');
+
+        const divider = await waitFor(() => {
+            const el = container.querySelector('[data-testid="pane-divider"]');
+            expect(el).toBeTruthy();
+            return el as HTMLElement;
+        });
+        expect(divider.style.cursor).toBe('row-resize');
     });
 
     it('triggers save dialog and writes file when "Save as ..." is clicked', async () => {
