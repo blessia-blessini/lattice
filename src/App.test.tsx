@@ -40,11 +40,15 @@ vi.mock('@tauri-apps/plugin-dialog', () => ({
 // Mock the Editor to ensure refs and imperative handles work reliably in JSDOM
 vi.mock('./components/Editor', () => ({
     Editor: React.forwardRef((_props, ref) => {
+        const scrollDiv = React.useRef<HTMLDivElement>(null);
         React.useImperativeHandle(ref, () => ({
             markAsSaved: vi.fn(),
-            getContent: () => "mocked content"
+            getContent: () => "mocked content",
+            getScrollDOM: () => scrollDiv.current,
+            getTopVisibleLine: () => 1,
+            scrollToLine: vi.fn(),
         }));
-        return <div data-testid="mock-editor"></div>;
+        return <div data-testid="mock-editor" ref={scrollDiv} style={{ overflowY: 'scroll', height: '100%' }}></div>;
     })
 }));
 
@@ -81,6 +85,12 @@ describe('App', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
+
+    const selectViewMode = async (container: HTMLElement, value: string) => {
+        const select = container.querySelector('select') as HTMLSelectElement;
+        expect(select).toBeTruthy();
+        fireEvent.change(select, { target: { value } });
+    };
 
     it('renders without crashing', () => {
         render(<App />);
@@ -122,6 +132,105 @@ describe('App', () => {
         expect(previewPane.getAttribute('data-preview-theme')).toBe('light');
         expect(previewPane.style.backgroundColor).toBe('rgb(255, 255, 255)');
         expect(previewPane.style.colorScheme).toBe('light');
+    });
+
+    const DUAL_MODES = ['dual', 'dual-swap', 'dual-top', 'dual-bottom'];
+
+    DUAL_MODES.forEach(mode => {
+        it(`${mode}: both editor and preview panes are visible`, async () => {
+            const { container } = render(<App />);
+            await waitFor(() => expect(container.querySelector('select')).toBeTruthy());
+
+            await selectViewMode(container, mode);
+
+            await waitFor(() => {
+                const editor  = container.querySelector('.editor-pane')  as HTMLElement;
+                const preview = container.querySelector('.preview-pane') as HTMLElement;
+                expect(editor.style.display,  `editor hidden in ${mode}` ).not.toBe('none');
+                expect(preview.style.display, `preview hidden in ${mode}`).not.toBe('none');
+            });
+        });
+    });
+
+    it('dual-top: main-content has column flex direction', async () => {
+        const { container } = render(<App />);
+        await waitFor(() => expect(container.querySelector('select')).toBeTruthy());
+        await selectViewMode(container, 'dual-top');
+        await waitFor(() => {
+            const main = container.querySelector('.main-content') as HTMLElement;
+            expect(main.style.flexDirection).toBe('column');
+        });
+    });
+
+    it('dual-bottom: main-content has column-reverse flex direction', async () => {
+        const { container } = render(<App />);
+        await waitFor(() => expect(container.querySelector('select')).toBeTruthy());
+        await selectViewMode(container, 'dual-bottom');
+        await waitFor(() => {
+            const main = container.querySelector('.main-content') as HTMLElement;
+            expect(main.style.flexDirection).toBe('column-reverse');
+        });
+    });
+
+    it('dual-top/bottom: pane heights are auto (100% breaks column flex split)', async () => {
+        for (const mode of ['dual-top', 'dual-bottom']) {
+            const { container } = render(<App />);
+            await waitFor(() => expect(container.querySelector('select')).toBeTruthy());
+            await selectViewMode(container, mode);
+            await waitFor(() => {
+                const editor  = container.querySelector('.editor-pane')  as HTMLElement;
+                const preview = container.querySelector('.preview-pane') as HTMLElement;
+                expect(editor.style.height,  `editor height wrong in ${mode}` ).toBe('auto');
+                expect(preview.style.height, `preview height wrong in ${mode}`).toBe('auto');
+            });
+        }
+    });
+
+    it('dual/dual-swap: pane heights are 100% (needed for horizontal flex split)', async () => {
+        for (const mode of ['dual', 'dual-swap']) {
+            const { container } = render(<App />);
+            await waitFor(() => expect(container.querySelector('select')).toBeTruthy());
+            await selectViewMode(container, mode);
+            await waitFor(() => {
+                const editor  = container.querySelector('.editor-pane')  as HTMLElement;
+                const preview = container.querySelector('.preview-pane') as HTMLElement;
+                expect(editor.style.height,  `editor height wrong in ${mode}` ).toBe('100%');
+                expect(preview.style.height, `preview height wrong in ${mode}`).toBe('100%');
+            });
+        }
+    });
+
+    it('horizontal dual: preview pane remains visible after loading file content', async () => {
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: 'test-file.md',
+            content: 'A'.repeat(200) + '\n' + 'B'.repeat(200) // long lines that expand CodeMirror
+        };
+
+        const { container } = render(<App />);
+        await waitFor(() => expect(container.querySelector('select')).toBeTruthy());
+
+        for (const mode of ['dual', 'dual-swap']) {
+            await selectViewMode(container, mode);
+            await waitFor(() => {
+                const preview = container.querySelector('.preview-pane') as HTMLElement;
+                expect(preview.style.display, `preview hidden in ${mode} after file load`).not.toBe('none');
+            });
+        }
+    });
+
+    it('editor-pane has overflow:hidden (prevents CodeMirror content overflowing into preview)', () => {
+        const css = readFileSync(resolve(__dirname, 'App.css'), 'utf-8');
+        const editorPaneBlock = (() => {
+            const start = css.indexOf('.editor-pane');
+            let depth = 0, i = css.indexOf('{', start);
+            const s = i;
+            for (; i < css.length; i++) {
+                if (css[i] === '{') depth++;
+                else if (css[i] === '}' && --depth === 0) return css.slice(s, i + 1);
+            }
+            return '';
+        })();
+        expect(editorPaneBlock).toMatch(/overflow\s*:\s*hidden/);
     });
 
     it('triggers save dialog and writes file when "Save as ..." is clicked', async () => {

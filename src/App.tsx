@@ -941,8 +941,8 @@ function App() {
           >
             <option value={VIEW_EDIT}>✏️ Edit</option>
             <option value={VIEW_PREVIEW}>👁 Preview</option>
-            <option value={VIEW_DUAL}>⬜ Dual(edit on left) </option>
-            <option value={VIEW_DUAL_SWAP}>⬜ Dual(edit on right)</option>
+            <option value={VIEW_DUAL}>⬜ Dual (edit on the left) </option>
+            <option value={VIEW_DUAL_SWAP}>⬜ Dual (edit on the right)</option>
           </select>
 
           <button

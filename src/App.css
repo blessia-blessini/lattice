@@ -92,9 +92,15 @@ body {
    Edit Pane  (theme: controlled by data-theme on .container)
    ============================================================ */
 .editor-pane {
-  height: 100%;
   flex-direction: column;
   min-width: 0;
+  overflow: hidden;
+  /* height is set via inline style — vertical splits need auto, horizontal need 100% */
+}
+
+.cm-editor {
+  min-width: 0;
+  width: 100%;
 }
 
 /* Editor Container */
@@ -110,8 +116,8 @@ body {
 .preview-pane {
   padding: 2rem;
   overflow-y: auto;
-  height: 100%;
   min-width: 0;
+  /* height is set via inline style — vertical splits need auto, horizontal need 100% */
   /* background-color, color, color-scheme are set via inline style from PREVIEW_THEME_COLORS */
 }
 
@@ -126,7 +132,9 @@ body {
    ============================================================ */
 .pane-divider {
   width: 1px;
+  height: 100%;
   flex-shrink: 0;
+  /* For vertical splits, width/height are overridden via inline style */
 }
 
 [data-theme="dark"] .pane-divider {
