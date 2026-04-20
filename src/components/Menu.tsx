@@ -51,10 +51,12 @@ export const Menu: React.FC<MenuProps> = ({ items, theme }) => {
 
     const renderMenuItems = (menuItems: MenuItem[], parentIndex?: number) => {
         return menuItems.map((item, index) => {
-            // Unique key for submenu state: parentIndex-index
             const key = parentIndex !== undefined ? `${parentIndex}-${index}` : `${index}`;
-            // We use simple index for top level for now
             const isSubmenuExpanded = expandedSubmenus[index];
+
+            if (item.label === '---') {
+                return <div key={key} style={{ height: '1px', margin: '4px 8px', backgroundColor: '#444' }} />;
+            }
 
             return (
                 <div key={key}>

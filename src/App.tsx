@@ -1066,7 +1066,9 @@ function App() {
               { label: "Open in new ...", onClick: handleLoadInNewWindow },
               { label: "New Window", onClick: handleNewWindow },
               { label: "Settings ...", onClick: handleOpenSettings, disabled: false },
-              { label: "Initialize Vault Here ...", onClick: handleInitializeVault, disabled: !m_currentFilePath }
+              { label: "Initialize Vault Here ...", onClick: handleInitializeVault, disabled: !m_currentFilePath },
+              { label: "---" },
+              { label: "Exit", onClick: () => invoke('exit_app') }
             ]}
           />
         </div>
