@@ -22,6 +22,8 @@
 // END OF NOTE
 //
 import React from 'react';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import { render, fireEvent, waitFor } from '@testing-library/react';
 import App from './App';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -85,6 +87,43 @@ describe('App', () => {
         expect(document.body).toBeTruthy();
     });
 
+    it('preview pane has light theme colors by default (independent of app theme)', async () => {
+        const { container } = render(<App />);
+
+        await waitFor(() => {
+            const previewPane = container.querySelector('.preview-pane');
+            expect(previewPane).toBeTruthy();
+            // data-preview-theme defaults to light
+            expect(previewPane!.getAttribute('data-preview-theme')).toBe('light');
+            // inline style must carry the light theme colors
+            const style = (previewPane as HTMLElement).style;
+            expect(style.backgroundColor).toBe('rgb(255, 255, 255)');
+            expect(style.color).toBe('rgb(36, 41, 46)');
+            expect(style.colorScheme).toBe('light');
+        });
+    });
+
+    it('preview pane light theme is independent of dark editor theme', async () => {
+        const { container, getByText } = render(<App />);
+
+        await waitFor(() => expect(getByText('🌙')).toBeTruthy());
+
+        // Toggle editor theme to light via toolbar button (☀️ / 🌙)
+        fireEvent.click(getByText('🌙'));
+
+        // Editor container should now be light
+        await waitFor(() => {
+            const appContainer = container.querySelector('.container') as HTMLElement;
+            expect(appContainer.getAttribute('data-theme')).toBe('light');
+        });
+
+        // Preview pane must remain on its own independent theme (light by default)
+        const previewPane = container.querySelector('.preview-pane') as HTMLElement;
+        expect(previewPane.getAttribute('data-preview-theme')).toBe('light');
+        expect(previewPane.style.backgroundColor).toBe('rgb(255, 255, 255)');
+        expect(previewPane.style.colorScheme).toBe('light');
+    });
+
     it('triggers save dialog and writes file when "Save as ..." is clicked', async () => {
         // Initialize the app with an open file so that "Save as ..." is enabled
         (window as any).__LATTICE_INIT_DATA__ = {
@@ -115,5 +154,62 @@ describe('App', () => {
                 content: 'mocked content'
             }));
         });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// CSS regression guards
+// These tests read App.css directly and assert structural invariants that are
+// invisible to jsdom (which does not apply stylesheets) but that silently broke
+// rendering in the real WebView2/WebKit engine when violated.
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// CSS regression guards
+// These tests read App.css and github-markdown-css directly and assert
+// structural invariants that are invisible to jsdom but silently broke
+// rendering in WebView2/WebKit when violated.
+// ---------------------------------------------------------------------------
+describe('App.css invariants', () => {
+    const css       = readFileSync(resolve(__dirname, 'App.css'), 'utf-8');
+    const githubCss = readFileSync(
+        resolve(__dirname, '../node_modules/github-markdown-css/github-markdown.css'), 'utf-8'
+    );
+
+    it(':root must not declare color-scheme: light dark (breaks WebView2 preview pane)', () => {
+        const rootBlock = css.match(/:root\s*\{([^}]*)\}/)?.[1] ?? '';
+        expect(rootBlock).not.toMatch(/color-scheme\s*:\s*light\s+dark/);
+    });
+
+    it('body must not declare color-scheme: light dark (breaks WebView2 preview pane)', () => {
+        const bodyBlocks = [...css.matchAll(/\bbody\b\s*\{([^}]*)\}/g)].map(m => m[1]).join('');
+        expect(bodyBlocks).not.toMatch(/color-scheme\s*:\s*light\s+dark/);
+    });
+
+    it('App.css overrides use current github-markdown-css variable names (not stale ones)', () => {
+        // Extract which CSS variables github-markdown-css actually defines in its dark block
+        const darkMediaBlock = githubCss.match(/@media\s*\(prefers-color-scheme:\s*dark\)[^{]*\{([\s\S]*?)\}\s*\}/)?.[1] ?? '';
+        const libVars = [...darkMediaBlock.matchAll(/--([\w-]+)\s*:/g)].map(m => `--${m[1]}`);
+
+        // Key background/foreground vars that must be present in our dark override
+        // Only assert the vars that directly affect background and body text
+        const requiredVars = libVars.filter(v =>
+            v === '--bgColor-default' || v === '--bgColor-muted' ||
+            v === '--fgColor-default' || v === '--fgColor-muted'
+        );
+
+        // Extract block including nested rules — find the opening brace and collect until balanced close
+        const darkStart = css.indexOf('.markdown-body[data-theme="dark"]');
+        let ourDarkBlock = '';
+        if (darkStart !== -1) {
+            let depth = 0, i = css.indexOf('{', darkStart);
+            const start = i;
+            for (; i < css.length; i++) {
+                if (css[i] === '{') depth++;
+                else if (css[i] === '}' && --depth === 0) { ourDarkBlock = css.slice(start, i + 1); break; }
+            }
+        }
+        for (const varName of requiredVars) {
+            expect(ourDarkBlock, `App.css must override ${varName} (used by github-markdown-css)`).toContain(varName);
+        }
     });
 });

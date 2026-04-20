@@ -62,6 +62,17 @@ const rehypeAddSourceLines = () => (tree: any) => {
   walk(tree);
 };
 
+const PREVIEW_THEME_COLORS = {
+  light: { backgroundColor: '#ffffff', color: '#24292e', colorScheme: 'light' as const },
+  dark:  { backgroundColor: '#0d1117', color: '#c9d1d9', colorScheme: 'dark'  as const },
+};
+
+const VIEW_EDIT      = 'edit'      as const;
+const VIEW_PREVIEW   = 'preview'   as const;
+const VIEW_DUAL      = 'dual'      as const;
+const VIEW_DUAL_SWAP = 'dual-swap' as const;
+type ViewMode = typeof VIEW_EDIT | typeof VIEW_PREVIEW | typeof VIEW_DUAL | typeof VIEW_DUAL_SWAP;
+
 //******************************************************************************
 // App
 //******************************************************************************
@@ -79,9 +90,10 @@ function App() {
   // State Management
   //****************************************************************************
   const [m_theme, setTheme] = useState<'dark' | 'light'>('dark'); // Local theme (current window)
+  const [m_previewTheme, setPreviewTheme] = useState<'dark' | 'light'>('light'); // Preview pane theme (independent)
   const [m_wordWrap, setWordWrap] = useState(false);
   const [m_dailyNotesPath, setDailyNotesPath] = useState<string>('');
-  const [viewMode, setViewMode] = useState<'edit' | 'preview' | 'dual' | 'dual-swap'>('edit');
+  const [viewMode, setViewMode] = useState<ViewMode>(VIEW_EDIT);
   const [m_loadedContent, setLoadedContent] = useState("");
   const [m_isSettingsWindow, setIsSettingsWindow] = useState(false);
   const [isModalBlocked, setIsModalBlocked] = useState(false);
@@ -771,7 +783,7 @@ function App() {
   // Dual View Scroll Synchronization (line-accurate)
   //****************************************************************************
   useEffect(() => {
-    if (viewMode !== 'dual' && viewMode !== 'dual-swap') return;
+    if (viewMode !== VIEW_DUAL && viewMode !== VIEW_DUAL_SWAP) return;
 
     const editorScroll = editorRef.current?.getScrollDOM();
     const preview = previewPaneRef.current;
@@ -909,12 +921,12 @@ function App() {
         }}>
           <select
             value={viewMode}
-            onChange={e => setViewMode(e.target.value as 'edit' | 'preview' | 'dual' | 'dual-swap')}
+            onChange={e => setViewMode(e.target.value as ViewMode)}
             style={{
               padding: '8px 16px',
               borderRadius: '20px',
               border: 'none',
-              background: m_theme === 'dark' ? '#30363d' : '#e1e4e8',
+              backgroundColor: m_theme === 'dark' ? '#30363d' : '#e1e4e8',
               color: m_theme === 'dark' ? '#c9d1d9' : '#24292e',
               cursor: 'pointer',
               fontWeight: 600,
@@ -924,12 +936,13 @@ function App() {
               backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='${m_theme === 'dark' ? '%23c9d1d9' : '%2324292e'}' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
               backgroundRepeat: 'no-repeat',
               backgroundPosition: 'right 10px center',
+              backgroundSize: 'auto',
             }}
           >
-            <option value="edit">✏️ Edit</option>
-            <option value="preview">👁 Preview</option>
-            <option value="dual">⬜ Dual</option>
-            <option value="dual-swap">⬜ Dual (swapped)</option>
+            <option value={VIEW_EDIT}>✏️ Edit</option>
+            <option value={VIEW_PREVIEW}>👁 Preview</option>
+            <option value={VIEW_DUAL}>⬜ Dual(edit on left) </option>
+            <option value={VIEW_DUAL_SWAP}>⬜ Dual(edit on right)</option>
           </select>
 
           <button
@@ -970,13 +983,10 @@ function App() {
           />
         </div>
 
-        <div className="main-content" style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative', flexDirection: viewMode === 'dual-swap' ? 'row-reverse' : 'row' }}>
+        <div className="main-content" style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative', flexDirection: viewMode === VIEW_DUAL_SWAP ? 'row-reverse' : 'row' }}>
           <div className="editor-pane" style={{
-            flex: 1,
-            height: '100%',
-            display: viewMode === 'preview' ? 'none' : 'flex',
-            flexDirection: 'column',
-            minWidth: 0
+            flex: (viewMode === VIEW_DUAL || viewMode === VIEW_DUAL_SWAP) ? '0 0 57%' : 1,
+            display: viewMode === VIEW_PREVIEW ? 'none' : 'flex',
           }}>
             <Editor
               ref={editorRef}
@@ -988,24 +998,17 @@ function App() {
               onChange={setPreviewContent}
             />
           </div>
-          {(viewMode === 'dual' || viewMode === 'dual-swap') && (
-            <div style={{
-              width: '1px',
-              backgroundColor: m_theme === 'dark' ? '#30363d' : '#d0d7de',
-              flexShrink: 0
-            }} />
+          {(viewMode === VIEW_DUAL || viewMode === VIEW_DUAL_SWAP) && (
+            <div className="pane-divider" />
           )}
-          <div ref={previewPaneRef} className="preview-pane" style={{
-            flex: 1,
-            padding: '2rem',
-            overflowY: 'auto',
-            height: '100%',
-            backgroundColor: m_theme === 'dark' ? '#0d1117' : '#ffffff',
-            display: viewMode === 'edit' ? 'none' : 'block',
-            color: m_theme === 'dark' ? '#c9d1d9' : '#24292e',
-            minWidth: 0
+          <div ref={previewPaneRef} className="preview-pane" data-preview-theme={m_previewTheme} style={{
+            flex: (viewMode === VIEW_DUAL || viewMode === VIEW_DUAL_SWAP) ? '0 0 43%' : 1,
+            display: viewMode === VIEW_EDIT ? 'none' : 'block',
+            ...PREVIEW_THEME_COLORS[m_previewTheme],
           }}>
-            <div className="markdown-body" data-theme={m_theme} style={{ backgroundColor: 'transparent', maxWidth: '80%', margin: '0 auto' }}>
+            <div className="markdown-body preview-pane__body" data-theme={m_previewTheme}
+              style={{ backgroundColor: PREVIEW_THEME_COLORS[m_previewTheme].backgroundColor,
+                       color: PREVIEW_THEME_COLORS[m_previewTheme].color }}>
               <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkMath]}
                 rehypePlugins={[rehypeAddSourceLines, rehypeKatex]}

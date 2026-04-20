@@ -181,6 +181,48 @@ classDiagram
     RustCommands ..> TextHashingModule : Uses
 ```
 
+## Theme Design
+
+Lattice uses an **orthogonal, two-theme model**: the editor (app) theme and the preview pane theme are fully independent of each other and of the OS color scheme.
+
+### Editor Theme
+
+Controlled by the `m_theme` state (`'dark' | 'light'`) in `App.tsx`, loaded from vault settings on startup and toggled via the toolbar. It is applied by setting `data-theme` on the root `.container` div, which cascades to all editor UI elements (toolbar, CodeMirror, dividers, etc.) via CSS attribute selectors.
+
+### Preview Theme
+
+Controlled by a separate `m_previewTheme` state (`'dark' | 'light'`) in `App.tsx`, defaulting to `'light'`. It is applied via:
+
+- `data-preview-theme` on the `.preview-pane` div — drives background/text colors.
+- `data-theme` on the inner `.markdown-body` div — drives `github-markdown-css` rendering.
+- An explicit `color-scheme` CSS declaration on each `[data-preview-theme]` variant — this prevents the OS or root `color-scheme: light dark` from overriding the pane's rendering.
+
+### Independence Guarantee
+
+The two themes do not influence each other. A dark editor with a light preview, or any other combination, is valid. This is enforced at the CSS level: `.preview-pane[data-preview-theme]` rules carry their own `color-scheme` declaration, isolating the pane from both the ancestor `data-theme` cascade and the OS preference.
+
+```
+OS color scheme
+      │  (blocked by color-scheme declaration on .preview-pane)
+      ▼
+.container [data-theme]          ← Editor / App theme
+      │
+      ├── toolbar, dividers, CodeMirror ...
+      │
+      └── .preview-pane [data-preview-theme]   ← Preview theme (independent)
+                │
+                └── .markdown-body [data-theme=previewTheme]
+```
+
+### Adding a New Theme Variant
+
+To add a new preview theme (e.g. `'sepia'`):
+1. Extend the `ViewMode`-style union type for `m_previewTheme` in `App.tsx`.
+2. Add a `.preview-pane[data-preview-theme="sepia"] { color-scheme: light; ... }` block in `App.css`.
+3. Add the matching `.markdown-body[data-theme="sepia"]` overrides in `App.css`.
+
+No changes to `App.tsx` rendering logic are needed beyond wiring `setPreviewTheme` to a UI control.
+
 ## Testing Architecture
 
 The project employs a dual strategy for testing, covering both the Rust backend and the React frontend.
