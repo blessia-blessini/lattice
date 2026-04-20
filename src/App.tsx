@@ -771,7 +771,7 @@ function App() {
   // Dual View Scroll Synchronization (line-accurate)
   //****************************************************************************
   useEffect(() => {
-    if (viewMode !== 'dual') return;
+    if (viewMode !== 'dual' && viewMode !== 'dual-swap') return;
 
     const editorScroll = editorRef.current?.getScrollDOM();
     const preview = previewPaneRef.current;
