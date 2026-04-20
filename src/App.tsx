@@ -81,7 +81,7 @@ function App() {
   const [m_theme, setTheme] = useState<'dark' | 'light'>('dark'); // Local theme (current window)
   const [m_wordWrap, setWordWrap] = useState(false);
   const [m_dailyNotesPath, setDailyNotesPath] = useState<string>('');
-  const [viewMode, setViewMode] = useState<'edit' | 'preview' | 'dual'>('edit');
+  const [viewMode, setViewMode] = useState<'edit' | 'preview' | 'dual' | 'dual-swap'>('edit');
   const [m_loadedContent, setLoadedContent] = useState("");
   const [m_isSettingsWindow, setIsSettingsWindow] = useState(false);
   const [isModalBlocked, setIsModalBlocked] = useState(false);
@@ -280,16 +280,6 @@ function App() {
   };// Theme Management END ****************************************************
 
 
-  //****************************************************************************
-  // View Mode Management (edit → preview → dual → edit)
-  //****************************************************************************
-  const handleCycleView = () => {
-    setViewMode(prev => {
-      if (prev === 'edit') return 'preview';
-      if (prev === 'preview') return 'dual';
-      return 'edit';
-    });
-  };// View Mode Management END *************************************************
 
 
   //****************************************************************************
@@ -917,8 +907,9 @@ function App() {
           display: 'flex',
           gap: '0.5rem'
         }}>
-          <button
-            onClick={handleCycleView}
+          <select
+            value={viewMode}
+            onChange={e => setViewMode(e.target.value as 'edit' | 'preview' | 'dual' | 'dual-swap')}
             style={{
               padding: '8px 16px',
               borderRadius: '20px',
@@ -927,11 +918,19 @@ function App() {
               color: m_theme === 'dark' ? '#c9d1d9' : '#24292e',
               cursor: 'pointer',
               fontWeight: 600,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              appearance: 'none',
+              paddingRight: '28px',
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='${m_theme === 'dark' ? '%23c9d1d9' : '%2324292e'}' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 10px center',
             }}
           >
-            {viewMode === 'edit' ? 'Preview' : viewMode === 'preview' ? 'Dual' : '✏️ Edit'}
-          </button>
+            <option value="edit">✏️ Edit</option>
+            <option value="preview">👁 Preview</option>
+            <option value="dual">⬜ Dual</option>
+            <option value="dual-swap">⬜ Dual (swapped)</option>
+          </select>
 
           <button
             onClick={toggleTheme}
@@ -971,7 +970,7 @@ function App() {
           />
         </div>
 
-        <div className="main-content" style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
+        <div className="main-content" style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative', flexDirection: viewMode === 'dual-swap' ? 'row-reverse' : 'row' }}>
           <div className="editor-pane" style={{
             flex: 1,
             height: '100%',
@@ -989,7 +988,7 @@ function App() {
               onChange={setPreviewContent}
             />
           </div>
-          {viewMode === 'dual' && (
+          {(viewMode === 'dual' || viewMode === 'dual-swap') && (
             <div style={{
               width: '1px',
               backgroundColor: m_theme === 'dark' ? '#30363d' : '#d0d7de',
