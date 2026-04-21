@@ -121,7 +121,13 @@ function App() {
     padding: '6px 16px',
     borderRadius: '10px',
     border: 'none',
-    background: m_theme === 'dark' ? 'rgba(48,54,61,0.75)' : 'rgba(225,228,232,0.75)',
+    // Use backgroundColor (not the `background` shorthand) so components that
+    // spread this style can layer their own backgroundImage (e.g. the view-mode
+    // <select>'s dropdown chevron) without the shorthand resetting image /
+    // repeat / position / size and producing tiled-triangle artifacts.
+    backgroundColor: m_theme === 'dark' ? 'rgba(48,54,61,0.75)' : 'rgba(225,228,232,0.75)',
+    backgroundImage: 'none',
+    backgroundRepeat: 'no-repeat',
     color: m_theme === 'dark' ? '#c9d1d9' : '#24292e',
     cursor: 'pointer',
     fontWeight: 600,
@@ -1020,20 +1026,30 @@ function App() {
             onChange={e => setViewMode(e.target.value as ViewMode)}
             style={{
               ...toolbarBtnStyle,
+              // All vendor prefixes — WebView2/WebKit can still draw their own
+              // native chevron if only the unprefixed `appearance` is set,
+              // which then stacks on top of our custom SVG and looks like
+              // extra triangles on the button.
               appearance: 'none',
+              WebkitAppearance: 'none',
+              MozAppearance: 'none',
               paddingRight: '28px',
               backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='${m_theme === 'dark' ? '%23c9d1d9' : '%2324292e'}' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
               backgroundRepeat: 'no-repeat',
               backgroundPosition: 'right 10px center',
-              backgroundSize: 'auto',
+              backgroundSize: '12px 12px',
             }}
           >
-            <option value={VIEW_EDIT}>✏️ Edit</option>
-            <option value={VIEW_PREVIEW}>👁 Preview</option>
-            <option value={VIEW_DUAL}>⬜ Dual (edit on the left)</option>
-            <option value={VIEW_DUAL_SWAP}>⬜ Dual (edit on the right)</option>
-            <option value={VIEW_DUAL_TOP}>⬜ Dual (edit on top)</option>
-            <option value={VIEW_DUAL_BOTTOM}>⬜ Dual (edit on bottom)</option>
+            {/* Use a single family of monochrome geometric markers so all
+                rows render from the same font (no color-emoji vs outline
+                mismatch). The filled half-square also conveys which pane is
+                the editor at a glance. */}
+            <option value={VIEW_EDIT}>▤  Edit</option>
+            <option value={VIEW_PREVIEW}>▥  Preview</option>
+            <option value={VIEW_DUAL}>◧  Dual (edit on the left)</option>
+            <option value={VIEW_DUAL_SWAP}>◨  Dual (edit on the right)</option>
+            <option value={VIEW_DUAL_TOP}>⬒  Dual (edit on top)</option>
+            <option value={VIEW_DUAL_BOTTOM}>⬓  Dual (edit on bottom)</option>
           </select>
 
           <button
