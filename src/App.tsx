@@ -21,12 +21,12 @@
 // See LICENCE file in GitHUB root folder of the repository.
 // END OF NOTE
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo, useCallback } from "react";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import "./App.css";
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
@@ -145,6 +145,21 @@ function App() {
   const [m_vaultSettingsPath, setVaultSettingsPath] = useState<string>(""); // NEVER NULL
   const [previewContent, setPreviewContent] = useState("");
 
+  // Note on checkbox-click sync:
+  // Every edit — including a preview checkbox toggle, a keystroke in the
+  // source pane, an undo, a redo, an external file reload — flows through
+  // the same path: editor dispatches change -> updateListener fires
+  // onChange(doc) -> setPreviewContent(doc). That single codepath is why
+  // undo / redo stay in sync across both panes.
+  //
+  // The reason a checkbox click does not visibly "redraw the whole preview"
+  // is the two layers of memoization set up below (`previewComponents` +
+  // `previewMarkdown`). With stable component identities React reconciles
+  // the new ReactMarkdown output against the previous tree, sees every
+  // subtree (images, Mermaid, paragraphs, code blocks) is unchanged, and
+  // the only DOM write is flipping `checked` on the one <input>. Images
+  // and Mermaid charts stay mounted — no remount, no flicker.
+
 
   // File Management State
   const [m_currentFilePath, setCurrentFilePath] = useState<string | null>(null);
@@ -155,6 +170,16 @@ function App() {
   const [m_isDirty, setIsDirty] = useState(false);
   const editorRef = useRef<import("./components/Editor").EditorHandle>(null);
   const previewPaneRef = useRef<HTMLDivElement>(null);
+
+  const suppressNextPreviewSyncRef = useRef(false);
+
+  const handleEditorChange = useCallback((content: string) => {
+    if (suppressNextPreviewSyncRef.current) {
+      suppressNextPreviewSyncRef.current = false;
+      return;
+    }
+    setPreviewContent(content);
+  }, []);
 
   const autoSaveTimer = useRef<number | null>(null);
   const mainContentRef = useRef<HTMLDivElement>(null);
@@ -827,18 +852,19 @@ function App() {
   //****************************************************************************
   // Settings Window
   //****************************************************************************
-  /*
   if (m_isSettingsWindow) {
     return <Settings
       defaultTheme={m_theme}
       onDefaultThemeChange={setTheme}
       wordWrap={m_wordWrap}
       onWordWrapChange={setWordWrap}
+      saveOnBlur={saveOnBlur}
+      dailyNotesPath={m_dailyNotesPath}
+      onDailyNotesPathChange={setDailyNotesPath}
       settingsPath={m_vaultSettingsPath || ""}
     />;
 
   } // if (isSettingsWindow) END ***********************************************
-  */
 
   //****************************************************************************
   // Main App
@@ -969,6 +995,166 @@ function App() {
       preview.removeEventListener('scroll', onPreviewScroll);
     };
   }, [viewMode, previewContent]);
+
+  //****************************************************************************
+  // Memoized preview pipeline
+  // ---------------------------------------------------------------------------
+  // Two memoization layers, both important for avoiding full-preview redraws:
+  //
+  // 1. `previewComponents` gives the ReactMarkdown renderers stable function
+  //    identity across App re-renders. Without this the `components={{...}}`
+  //    literal would be rebuilt every render, React would see each custom
+  //    renderer (img, code, a, input) as a "new component type", and would
+  //    unmount + remount every corresponding DOM subtree on every preview
+  //    update. That's what produces the image/Mermaid flicker on checkbox
+  //    clicks and on every unrelated state change (theme flips, split drag,
+  //    settings modal, ...).
+  //
+  // 2. `previewMarkdown` caches the actual <ReactMarkdown> React element,
+  //    keyed on previewContent + previewComponents. Unrelated App re-renders
+  //    will then reuse this cached element wholesale and React won't even
+  //    call into ReactMarkdown's internals — no re-parse, no reconciliation
+  //    inside the preview subtree at all.
+  //
+  // Deps note: the renderers close over m_theme (for Mermaid) and
+  // m_currentFilePath (for image path resolution). Both change rarely, and
+  // when they do the preview should refresh anyway, so it's correct that
+  // those invalidate the memo.
+  //****************************************************************************
+  const previewComponents = useMemo<Components>(() => ({
+    a(props) {
+      const { href, children } = props;
+      return (
+        <a
+          href={href}
+          onClick={(e) => {
+            if (href && (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:'))) {
+              e.preventDefault();
+              openUrl(href).catch(err => console.error('Failed to open URL externally:', err));
+            }
+          }}
+          style={{ cursor: 'pointer' }}
+        >
+          {children}
+        </a>
+      );
+    },
+    code(props) {
+      const { children, className, node, ...rest } = props;
+      const match = /language-(\w+)/.exec(className || '');
+      if (match && match[1] === 'mermaid') {
+        return <Mermaid chart={String(children).replace(/\n$/, '')} theme={m_theme} />;
+      }
+      return (
+        <code className={className} {...rest}>
+          {children}
+        </code>
+      );
+    },
+    // GFM task-list checkboxes. remark-gfm renders them as
+    // <input type="checkbox" disabled [checked]>. We override that to
+    // make them clickable and, crucially, to avoid re-rendering the
+    // whole preview on toggle: we let the native click flip the DOM
+    // state (the :has(:checked) CSS rule picks up the strikethrough
+    // automatically), push `[ ]` <-> `[x]` into the editor document,
+    // and set the suppressNextPreviewSync ref so the editor's onChange
+    // does not feed back into setPreviewContent. No preview re-render.
+    input(props) {
+      const anyProps = props as any;
+      if (anyProps.type === 'checkbox') {
+        const directLine = anyProps['data-source-line'];
+        return (
+          <input
+            type="checkbox"
+            className={`task-checkbox ${anyProps.className || ''}`.trim()}
+            // `defaultChecked` (uncontrolled) rather than `checked`
+            // (controlled): with a controlled input React would re-assert
+            // the prop value onto the DOM on any future render, undoing
+            // our optimistic native-click state. With uncontrolled, the
+            // DOM is the source of truth between clicks; when the parsed
+            // markdown genuinely changes the checked state (e.g. user
+            // edited `[ ]` -> `[x]` in the source pane), a new input
+            // element is mounted in a different place in the tree so
+            // defaultChecked applies correctly at mount time.
+            defaultChecked={!!anyProps.checked}
+            onChange={(e) => {
+              let line: number | null = directLine ? Number(directLine) : null;
+              if (!line || !Number.isFinite(line)) {
+                const host = (e.currentTarget as HTMLElement)
+                  .closest('[data-source-line]') as HTMLElement | null;
+                const raw = host?.getAttribute('data-source-line');
+                if (raw) line = Number(raw);
+              }
+              if (line && Number.isFinite(line)) {
+                // Order matters: set the flag BEFORE calling the editor
+                // so the synchronous updateListener -> handleEditorChange
+                // callback sees the flag and skips setPreviewContent.
+                suppressNextPreviewSyncRef.current = true;
+                const toggled = editorRef.current?.toggleTaskAtLine(line);
+                if (!toggled) {
+                  // Regex didn't match the line — nothing got dispatched
+                  // to CodeMirror, so no onChange will fire and we must
+                  // clear the flag manually. Also undo the native click
+                  // so the UI doesn't claim a state that isn't in the doc.
+                  suppressNextPreviewSyncRef.current = false;
+                  e.currentTarget.checked = !e.currentTarget.checked;
+                }
+              }
+            }}
+          />
+        );
+      }
+      // Non-checkbox inputs (rare inside markdown) pass through.
+      return <input {...(props as any)} />;
+    },
+    img(props) {
+      const { alt, src } = props;
+      if (!src) return <img alt={alt} />;
+      if (src.startsWith('http://') || src.startsWith('https://')) {
+        return <img src={src} alt={alt} style={{ maxWidth: '100%' }} />;
+      }
+      if (m_currentFilePath) {
+        const pathSeparator = m_currentFilePath.includes('\\') ? '\\' : '/';
+
+        const lastSepIndex = m_currentFilePath.lastIndexOf(pathSeparator);
+        const parentDir = lastSepIndex !== -1 ? m_currentFilePath.substring(0, lastSepIndex) : "";
+        let absolutePath = "";
+
+        const cleanSrc = src.startsWith('.') ? src.substring(2) : src;
+        if (cleanSrc.startsWith('/') || cleanSrc.startsWith('\\') || parentDir.endsWith('/') || parentDir.endsWith('\\')) {
+          absolutePath = `${parentDir}${cleanSrc}`;
+        }
+        else {
+          absolutePath = `${parentDir}${pathSeparator}${cleanSrc}`;
+        }
+        // Use direct Base64 loading to bypass protocol issues.
+        // Initialize with `undefined` (not "") so the first render does
+        // not produce <img src="">, which React warns about and which
+        // makes the browser re-request the current page.
+        const [realSrc, setRealSrc] = useState<string | undefined>(undefined);
+        const [_, setErrorMsg] = useState<string>("");
+
+        useEffect(() => {
+          if (!absolutePath) return;
+          invoke('read_file_base64', { path: absolutePath })
+            .then((res: any) => setRealSrc(res as string))
+            .catch((err: any) => setErrorMsg("Load Failed: " + err));
+        }, [absolutePath]);
+        return realSrc ? <img src={realSrc} alt={alt} /> : <img alt={alt} />;
+      }
+      return <img src={src} alt={alt} />;
+    },
+  }), [m_theme, m_currentFilePath]);
+
+  const previewMarkdown = useMemo(() => (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm, remarkMath]}
+      rehypePlugins={[rehypeAddSourceLines, rehypeKatex]}
+      components={previewComponents}
+    >
+      {previewContent}
+    </ReactMarkdown>
+  ), [previewContent, previewComponents]);
 
   return (
     <>
@@ -1102,7 +1288,7 @@ function App() {
               initialDoc={m_loadedContent}
               currentFilePath={m_currentFilePath}
               onDirtyChange={setIsDirty}
-              onChange={setPreviewContent}
+              onChange={handleEditorChange}
             />
           </div>
           {isDual(viewMode) && (
@@ -1125,149 +1311,12 @@ function App() {
             <div className="markdown-body preview-pane__body" data-theme={m_previewTheme}
               style={{ backgroundColor: PREVIEW_THEME_COLORS[m_previewTheme].backgroundColor,
                        color: PREVIEW_THEME_COLORS[m_previewTheme].color }}>
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm, remarkMath]}
-                rehypePlugins={[rehypeAddSourceLines, rehypeKatex]}
-                components={{
-                  a(props) {
-                    const { href, children } = props;
-                    return (
-                      <a
-                        href={href}
-                        onClick={(e) => {
-                          if (href && (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:'))) {
-                            e.preventDefault();
-                            openUrl(href).catch(err => console.error('Failed to open URL externally:', err));
-                          }
-                        }}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        {children}
-                      </a>
-                    );
-                  },
-                  code(props) {
-                    const { children, className, node, ...rest } = props;
-                    const match = /language-(\w+)/.exec(className || '');
-                    if (match && match[1] === 'mermaid') {
-                      return <Mermaid chart={String(children).replace(/\n$/, '')} theme={m_theme} />;
-                    }
-                    return (
-                      <code className={className} {...rest}>
-                        {children}
-                      </code>
-                    );
-                  },
-                  // GFM task-list checkboxes. remark-gfm renders them as
-                  // <input type="checkbox" disabled [checked]>. We override
-                  // that to make them clickable: on toggle we look up the
-                  // source line (stamped on every element by the existing
-                  // rehypeAddSourceLines plugin — either directly on the
-                  // input or on the closest ancestor like the <li>) and ask
-                  // the editor to flip `[ ]` <-> `[x]` on that line. The
-                  // editor then re-emits onChange, which refreshes the
-                  // preview, so the UI stays in sync with the source.
-                  input(props) {
-                    const anyProps = props as any;
-                    if (anyProps.type === 'checkbox') {
-                      const directLine = anyProps['data-source-line'];
-                      return (
-                        <input
-                          type="checkbox"
-                          className={`task-checkbox ${anyProps.className || ''}`.trim()}
-                          checked={!!anyProps.checked}
-                          onChange={(e) => {
-                            let line: number | null = directLine ? Number(directLine) : null;
-                            if (!line || !Number.isFinite(line)) {
-                              const host = (e.currentTarget as HTMLElement)
-                                .closest('[data-source-line]') as HTMLElement | null;
-                              const raw = host?.getAttribute('data-source-line');
-                              if (raw) line = Number(raw);
-                            }
-                            if (line && Number.isFinite(line)) {
-                              editorRef.current?.toggleTaskAtLine(line);
-                            }
-                          }}
-                        />
-                      );
-                    }
-                    // Non-checkbox inputs (rare inside markdown) pass through.
-                    return <input {...(props as any)} />;
-                  },
-                  img(props) {
-                    const { alt, src } = props;
-                    if (!src) return <img alt={alt} />;
-                    if (src.startsWith('http://') || src.startsWith('https://')) {
-                      return <img src={src} alt={alt} style={{ maxWidth: '100%' }} />;
-                    }
-                    if (m_currentFilePath) {
-                      //return <img alt="Hi b" />;
-                      const pathSeparator = m_currentFilePath.includes('\\') ? '\\' : '/';
-
-                      const lastSepIndex = m_currentFilePath.lastIndexOf(pathSeparator);
-                      const parentDir = lastSepIndex !== -1 ? m_currentFilePath.substring(0, lastSepIndex) : "";
-                      let absolutePath = "";
-
-                      const cleanSrc = src.startsWith('.') ? src.substring(2) : src;
-                      if (cleanSrc.startsWith('/') || cleanSrc.startsWith('\\') || parentDir.endsWith('/') || parentDir.endsWith('\\')) {
-                        absolutePath = `${parentDir}${cleanSrc}`;
-                      }
-                      else {
-                        absolutePath = `${parentDir}${pathSeparator}${cleanSrc}`;
-                      }
-                      // Use direct Base64 loading to bypass protocol issues.
-                      // Initialize with `undefined` (not "") so the first render
-                      // does not produce <img src="">, which React warns about
-                      // and which makes the browser re-request the current page.
-                      const [realSrc, setRealSrc] = useState<string | undefined>(undefined);
-                      //const [errorMsg, setErrorMsg] = useState<string>("");
-                      const [_, setErrorMsg] = useState<string>("");
-
-                      useEffect(() => {
-                        if (!absolutePath) return;
-                        invoke('read_file_base64', { path: absolutePath })
-                          .then((res: any) => setRealSrc(res as string))
-                          .catch((err: any) => setErrorMsg("Load Failed: " + err));
-                      }, [absolutePath]);
-                      /*
-                      const debugInfo = JSON.stringify({
-                        absolute: absolutePath,
-                        status: realSrc ? "Loaded Base64" : "Loading...",
-                        error: errorMsg
-                      }, null, 2);
-                      */
-                      let sReturn = (
-                        /*
-                        <span style={{ display: 'block', border: '1px dashed #666', padding: '10px', margin: '10px 0' }}>
-
-                          <span style={{ display: 'block', fontSize: '10px', whiteSpace: 'pre-wrap', color: 'orange', fontFamily: 'monospace' }}>
-                            DEBUG INFO:
-                            {debugInfo}
-                          </span>
-                          {realSrc ? (
-                            <img
-                              src={realSrc}
-                              alt={alt}
-                              style={{ maxWidth: '100%', border: '2px solid green' }}
-                            />
-                          ) : (
-                            <span style={{ display: 'block', color: 'red' }}>Image Not Loaded Yet</span>
-                          )}
-                        </span>
-                        */
-                        // Only render the <img> once the Base64 payload has
-                        // arrived. Passing `undefined` (or omitting the tag)
-                        // avoids the src="" warning and the phantom re-request.
-                        realSrc ? <img src={realSrc} alt={alt} /> : <img alt={alt} />
-                      );
-                      return sReturn;
-                    }
-                    return <img src={src} alt={alt} />;
-                  }
-                }}
-              >
-                {previewContent}
-              </ReactMarkdown>
+              {/* Rendered via useMemo above — see `previewMarkdown`. Using
+                  the cached element here means unrelated App re-renders do
+                  not re-invoke ReactMarkdown, and a checkbox click (which
+                  deliberately does not call setPreviewContent) leaves this
+                  subtree completely untouched. */}
+              {previewMarkdown}
             </div>
 
           </div>
