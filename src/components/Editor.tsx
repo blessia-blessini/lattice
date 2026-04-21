@@ -36,6 +36,14 @@ export interface EditorHandle {
     getScrollDOM: () => HTMLElement | null;
     getTopVisibleLine: () => number | null;
     scrollToLine: (line: number) => void;
+    /**
+     * Toggle a GFM task-list marker on the given 1-based source line.
+     * Matches lines of the form `  - [ ] text`, `* [x] text`, `1. [X] text`, etc.
+     * Returns true if a marker was found and flipped, false otherwise.
+     * Going through CodeMirror (rather than rewriting the string in React
+     * state) preserves undo/redo history, dirty tracking and autosave.
+     */
+    toggleTaskAtLine: (line: number) => boolean;
 }
 export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
     theme, wordWrap, onChange, initialDoc, currentFilePath, onDirtyChange
@@ -77,6 +85,25 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
             const pos = view.state.doc.line(safe).from;
             const block = view.lineBlockAt(pos);
             view.scrollDOM.scrollTop = block.top;
+        },
+        toggleTaskAtLine: (line: number) => {
+            const view = viewRef.current;
+            if (!view) return false;
+            const total = view.state.doc.lines;
+            if (!Number.isFinite(line) || line < 1 || line > total) return false;
+            const docLine = view.state.doc.line(line);
+            // Optional indent, list marker (-, *, +, or `N.`), whitespace,
+            // then the 3-char task marker "[ ]" / "[x]" / "[X]".
+            const re = /^(\s*(?:[-*+]|\d+\.)\s+)\[( |x|X)\]/;
+            const m = docLine.text.match(re);
+            if (!m) return false;
+            const prefix = m[1];
+            const wasChecked = m[2] !== ' ';
+            const insert = wasChecked ? '[ ]' : '[x]';
+            const from = docLine.from + prefix.length;
+            const to = from + 3; // "[ ]" / "[x]" are always 3 chars
+            view.dispatch({ changes: { from, to, insert } });
+            return true;
         }
     }));
     useEffect(() => {

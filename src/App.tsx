@@ -1158,6 +1158,42 @@ function App() {
                       </code>
                     );
                   },
+                  // GFM task-list checkboxes. remark-gfm renders them as
+                  // <input type="checkbox" disabled [checked]>. We override
+                  // that to make them clickable: on toggle we look up the
+                  // source line (stamped on every element by the existing
+                  // rehypeAddSourceLines plugin — either directly on the
+                  // input or on the closest ancestor like the <li>) and ask
+                  // the editor to flip `[ ]` <-> `[x]` on that line. The
+                  // editor then re-emits onChange, which refreshes the
+                  // preview, so the UI stays in sync with the source.
+                  input(props) {
+                    const anyProps = props as any;
+                    if (anyProps.type === 'checkbox') {
+                      const directLine = anyProps['data-source-line'];
+                      return (
+                        <input
+                          type="checkbox"
+                          className={`task-checkbox ${anyProps.className || ''}`.trim()}
+                          checked={!!anyProps.checked}
+                          onChange={(e) => {
+                            let line: number | null = directLine ? Number(directLine) : null;
+                            if (!line || !Number.isFinite(line)) {
+                              const host = (e.currentTarget as HTMLElement)
+                                .closest('[data-source-line]') as HTMLElement | null;
+                              const raw = host?.getAttribute('data-source-line');
+                              if (raw) line = Number(raw);
+                            }
+                            if (line && Number.isFinite(line)) {
+                              editorRef.current?.toggleTaskAtLine(line);
+                            }
+                          }}
+                        />
+                      );
+                    }
+                    // Non-checkbox inputs (rare inside markdown) pass through.
+                    return <input {...(props as any)} />;
+                  },
                   img(props) {
                     const { alt, src } = props;
                     if (!src) return <img alt={alt} />;

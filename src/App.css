@@ -282,3 +282,36 @@ body .cm-tooltip li,
 #root .cm-tooltip li {
   padding: 2px 8px !important;
 }
+
+/* ============================================================
+   GFM task-list checkboxes in the Preview pane
+   ------------------------------------------------------------
+   - Make the checkbox visibly larger than the default 13px native box.
+   - Strike through + dim the text of a task item whose checkbox is
+     checked, so "done" items visually fade out. Uses :has() — fully
+     supported in WebView2 / modern Chromium / WebKit.
+   - Direct-child selectors (`>`) keep nested task lists sane: only the
+     immediate task item's text is struck; a nested, still-open child
+     inside a done parent can cancel the strikethrough on itself.
+   ============================================================ */
+.markdown-body .task-list-item > input[type="checkbox"],
+.markdown-body input.task-checkbox {
+  width: 1.15em;
+  height: 1.15em;
+  margin-right: 0.45em;
+  vertical-align: -0.15em;
+  cursor: pointer;
+  accent-color: #1f6feb;
+}
+
+.markdown-body .task-list-item:has(> input[type="checkbox"]:checked) {
+  text-decoration: line-through;
+  opacity: 0.65;
+}
+
+/* Inside a done parent, a still-open nested task should render normally. */
+.markdown-body .task-list-item:has(> input[type="checkbox"]:checked)
+  .task-list-item:not(:has(> input[type="checkbox"]:checked)) {
+  text-decoration: none;
+  opacity: 1;
+}

@@ -47,6 +47,7 @@ vi.mock('./components/Editor', () => ({
             getScrollDOM: () => scrollDiv.current,
             getTopVisibleLine: () => 1,
             scrollToLine: vi.fn(),
+            toggleTaskAtLine: vi.fn().mockReturnValue(false),
         }));
         return <div data-testid="mock-editor" ref={scrollDiv} style={{ overflowY: 'scroll', height: '100%' }}></div>;
     })
