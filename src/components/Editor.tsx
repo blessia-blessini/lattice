@@ -6,7 +6,7 @@ import { languages } from '@codemirror/language-data';
 import { githubLight, githubDark } from '@uiw/codemirror-themes-all';
 import { HighlightStyle, syntaxHighlighting, indentOnInput, bracketMatching, foldGutter, defaultHighlightStyle } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
-import { undoDepth, history, historyKeymap, defaultKeymap } from '@codemirror/commands';
+import { undoDepth, history, historyKeymap, defaultKeymap, undo, redo } from '@codemirror/commands';
 import { closeBrackets, closeBracketsKeymap, completionKeymap } from '@codemirror/autocomplete';
 import { searchKeymap, highlightSelectionMatches } from '@codemirror/search';
 import { foldKeymap } from '@codemirror/language';
@@ -36,6 +36,8 @@ export interface EditorHandle {
     getScrollDOM: () => HTMLElement | null;
     getTopVisibleLine: () => number | null;
     scrollToLine: (line: number) => void;
+    undo: () => void;
+    redo: () => void;
     /**
      * Toggle a GFM task-list marker on the given 1-based source line.
      * Matches lines of the form `  - [ ] text`, `* [x] text`, `1. [X] text`, etc.
@@ -85,6 +87,12 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
             const pos = view.state.doc.line(safe).from;
             const block = view.lineBlockAt(pos);
             view.scrollDOM.scrollTop = block.top;
+        },
+        undo: () => {
+            if (viewRef.current) undo(viewRef.current);
+        },
+        redo: () => {
+            if (viewRef.current) redo(viewRef.current);
         },
         toggleTaskAtLine: (line: number) => {
             const view = viewRef.current;

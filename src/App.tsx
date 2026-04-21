@@ -874,6 +874,26 @@ function App() {
         console.log("DEBUG: Ctrl+S detected. Triggering save...");
         handleSave();
       }
+
+      // Check for Ctrl+Z or Meta+Z (Undo)
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
+        if (editorRef.current) {
+          e.preventDefault();
+          console.log("DEBUG: Undo shortcut detected.");
+          editorRef.current.undo();
+        }
+      }
+
+      // Check for Redo: Ctrl+Y (Win) or Cmd+Shift+Z / Cmd+Y (Mac)
+      const isRedo = ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) ||
+                     ((e.metaKey) && e.shiftKey && (e.key === 'z' || e.key === 'Z'));
+      if (isRedo) {
+        if (editorRef.current) {
+          e.preventDefault();
+          console.log("DEBUG: Redo shortcut detected.");
+          editorRef.current.redo();
+        }
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
