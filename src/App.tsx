@@ -1179,8 +1179,11 @@ function App() {
                       else {
                         absolutePath = `${parentDir}${pathSeparator}${cleanSrc}`;
                       }
-                      // Use direct Base64 loading to bypass protocol issues
-                      const [realSrc, setRealSrc] = useState<string>("");
+                      // Use direct Base64 loading to bypass protocol issues.
+                      // Initialize with `undefined` (not "") so the first render
+                      // does not produce <img src="">, which React warns about
+                      // and which makes the browser re-request the current page.
+                      const [realSrc, setRealSrc] = useState<string | undefined>(undefined);
                       //const [errorMsg, setErrorMsg] = useState<string>("");
                       const [_, setErrorMsg] = useState<string>("");
 
@@ -1216,7 +1219,10 @@ function App() {
                           )}
                         </span>
                         */
-                        <img src={realSrc} alt={alt} />
+                        // Only render the <img> once the Base64 payload has
+                        // arrived. Passing `undefined` (or omitting the tag)
+                        // avoids the src="" warning and the phantom re-request.
+                        realSrc ? <img src={realSrc} alt={alt} /> : <img alt={alt} />
                       );
                       return sReturn;
                     }
