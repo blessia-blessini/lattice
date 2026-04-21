@@ -54,6 +54,7 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
     const viewRef = useRef<EditorView | null>(null);
     const themeCompartment = useRef(new Compartment());
     const wrappingCompartment = useRef(new Compartment());
+    const historyCompartment = useRef(new Compartment());
     const isRemoteUpdate = useRef(false);
     const currentFilePathRef = useRef(currentFilePath);
 
@@ -114,113 +115,112 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
             return true;
         }
     }));
-    useEffect(() => {
-        currentFilePathRef.current = currentFilePath;
-    }, [currentFilePath]);
+
+    const getExtensions = () => [
+        // Disable OS and browser spellcheck/autocorrect/autocomplete
+        EditorView.contentAttributes.of({
+            spellcheck: "true",
+            autocorrect: "off",
+            autocapitalize: "off",
+            autocomplete: "off",
+            "data-gramm": "false",
+            role: "textbox",
+            "aria-multiline": "true"
+        }),
+
+        lineNumbers(),
+        highlightActiveLineGutter(),
+        highlightSpecialChars(),
+        historyCompartment.current.of(history()),
+        foldGutter(),
+        drawSelection(),
+        dropCursor(),
+        EditorState.allowMultipleSelections.of(true),
+        indentOnInput(),
+        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+        bracketMatching(),
+        closeBrackets(),
+        rectangularSelection(),
+        crosshairCursor(),
+        highlightActiveLine(),
+        highlightSelectionMatches(),
+        keymap.of([
+            ...closeBracketsKeymap,
+            ...defaultKeymap,
+            ...searchKeymap,
+            ...historyKeymap,
+            ...foldKeymap,
+            ...completionKeymap,
+            ...lintKeymap
+        ]),
+        symbolPicker, // <-- Add our custom extension here
+        syntaxHighlighting(monoHighlightStyle),
+        markdown({
+            base: markdownLanguage,
+            codeLanguages: languages,
+            addKeymap: true
+        }),
+        themeCompartment.current.of(theme === 'dark' ? githubDark : githubLight),
+        wrappingCompartment.current.of(wordWrap ? EditorView.lineWrapping : []),
+        EditorView.updateListener.of((update) => {
+            if (update.docChanged && onChange && !isRemoteUpdate.current) {
+                onChange(update.state.doc.toString());
+            }
+
+            // Check internal history depth for dirty state
+            if (onDirtyChange) {
+                const currentDepth = undoDepth(update.state);
+                const isDirty = currentDepth !== lastSavedDepth.current;
+                onDirtyChange(isDirty);
+            }
+        }),
+        EditorView.domEventHandlers({
+            paste: (event, view) => {
+                //**********************************************************************
+                // paste sction coming from user
+                //**********************************************************************
+                const items = event.clipboardData?.items;
+                if (items) {
+                    for (let i = 0; i < items.length; i++) {
+                        if (items[i].type.indexOf('image') !== -1) {
+                            const blob = items[i].getAsFile();
+                            if (blob && currentFilePathRef.current) {
+                                const reader = new FileReader();
+                                reader.onload = async (e) => {
+                                    const base64Data = e.target?.result as string;
+                                    // Split to remove "data:image/png;base64," prefix
+                                    const pureBase64 = base64Data.split(',')[1];
+                                    if (pureBase64) {
+                                        try {
+                                            const relativePath = await FileSystem.saveImage(currentFilePathRef.current!, pureBase64);
+                                            const markdownImage = `![Image](${relativePath})`;
+
+                                            view.dispatch(view.state.replaceSelection(markdownImage));
+                                        } catch (err) {
+                                            console.error("Failed to save image", err);
+                                            alert("Failed to save paste image: " + err);
+                                        }
+                                    }
+                                };
+                                reader.readAsDataURL(blob);
+                                event.preventDefault();
+                            } else if (!currentFilePathRef.current) {
+                                alert("The current editor has no associated file. Images are saved relative to the file, " +
+                                    "so before the editor is associated to a file and path we do not know where to save the image(s) to.");
+                            }
+                        }
+                    }
+                }// paste END **********************************************************
+            }
+        })
+    ];
 
     useEffect(() => {
         if (!editorRef.current) return;
 
         const startState = EditorState.create({
             doc: initialDoc,
-            extensions: [
-                // Disable OS and browser spellcheck/autocorrect/autocomplete
-                EditorView.contentAttributes.of({
-                    spellcheck: "true",
-                    autocorrect: "off",
-                    autocapitalize: "off",
-                    autocomplete: "off",
-                    "data-gramm": "false",
-                    role: "textbox",
-                    "aria-multiline": "true"
-                }),
-
-                lineNumbers(),
-                highlightActiveLineGutter(),
-                highlightSpecialChars(),
-                history(),
-                foldGutter(),
-                drawSelection(),
-                dropCursor(),
-                EditorState.allowMultipleSelections.of(true),
-                indentOnInput(),
-                syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-                bracketMatching(),
-                closeBrackets(),
-                rectangularSelection(),
-                crosshairCursor(),
-                highlightActiveLine(),
-                highlightSelectionMatches(),
-                keymap.of([
-                    ...closeBracketsKeymap,
-                    ...defaultKeymap,
-                    ...searchKeymap,
-                    ...historyKeymap,
-                    ...foldKeymap,
-                    ...completionKeymap,
-                    ...lintKeymap
-                ]),
-                symbolPicker, // <-- Add our custom extension here
-                syntaxHighlighting(monoHighlightStyle),
-                markdown({
-                    base: markdownLanguage,
-                    codeLanguages: languages,
-                    addKeymap: true
-                }),
-                themeCompartment.current.of(githubDark), // Initial theme
-                wrappingCompartment.current.of(wordWrap ? EditorView.lineWrapping : []),
-                EditorView.updateListener.of((update) => {
-                    if (update.docChanged && onChange && !isRemoteUpdate.current) {
-                        onChange(update.state.doc.toString());
-                    }
-
-                    // Check internal history depth for dirty state
-                    if (onDirtyChange) {
-                        const currentDepth = undoDepth(update.state);
-                        const isDirty = currentDepth !== lastSavedDepth.current;
-                        onDirtyChange(isDirty);
-                    }
-                }),
-                EditorView.domEventHandlers({
-                    paste: (event, view) => {
-                        //**********************************************************************
-                        // paste sction coming from user
-                        //**********************************************************************
-                        const items = event.clipboardData?.items;
-                        if (items) {
-                            for (let i = 0; i < items.length; i++) {
-                                if (items[i].type.indexOf('image') !== -1) {
-                                    const blob = items[i].getAsFile();
-                                    if (blob && currentFilePathRef.current) {
-                                        const reader = new FileReader();
-                                        reader.onload = async (e) => {
-                                            const base64Data = e.target?.result as string;
-                                            // Split to remove "data:image/png;base64," prefix
-                                            const pureBase64 = base64Data.split(',')[1];
-                                            if (pureBase64) {
-                                                try {
-                                                    const relativePath = await FileSystem.saveImage(currentFilePathRef.current!, pureBase64);
-                                                    const markdownImage = `![Image](${relativePath})`;
-
-                                                    view.dispatch(view.state.replaceSelection(markdownImage));
-                                                } catch (err) {
-                                                    console.error("Failed to save image", err);
-                                                    alert("Failed to save paste image: " + err);
-                                                }
-                                            }
-                                        };
-                                        reader.readAsDataURL(blob);
-                                        event.preventDefault();
-                                    } else if (!currentFilePathRef.current) {
-                                        alert("The current editor has no associated file. Images are saved relative to the file, " +
-                                            "so before the editor is associated to a file and path we do not know where to save the image(s) to.");
-                                    }
-                                }
-                            }
-                        }// paste END **********************************************************
-                    }
-                })
-            ]
+            extensions: getExtensions()
         });
 
         const view = new EditorView({
@@ -241,13 +241,15 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
     useEffect(() => {
         if (viewRef.current && initialDoc !== undefined) {
             const currentDoc = viewRef.current.state.doc.toString();
-            // Only update if content is materially different to avoid loop
+            // Only update if content is materially different
             if (currentDoc !== initialDoc) {
-                isRemoteUpdate.current = true;
-                viewRef.current.dispatch({
-                    changes: { from: 0, to: currentDoc.length, insert: initialDoc }
+                // Use setState to completely reset the editor state for the new document.
+                // This clears the undo/redo history and sets the new content as the baseline.
+                const newState = EditorState.create({
+                    doc: initialDoc,
+                    extensions: getExtensions()
                 });
-                isRemoteUpdate.current = false;
+                viewRef.current.setState(newState);
 
                 // When loading a new doc from outside, we assume it's "saved" state
                 lastSavedDepth.current = undoDepth(viewRef.current.state);
