@@ -58,6 +58,10 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
     const isRemoteUpdate = useRef(false);
     const currentFilePathRef = useRef(currentFilePath);
 
+    useEffect(() => {
+        currentFilePathRef.current = currentFilePath;
+    }, [currentFilePath]);
+
     // History Depth State
     const lastSavedDepth = useRef<number>(0);
 
