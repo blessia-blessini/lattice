@@ -5,6 +5,7 @@ import React, { useState, useRef, useEffect } from 'react';
 interface MenuProps {
     items: MenuItem[];
     theme: 'light' | 'dark';
+    buttonStyle?: React.CSSProperties;
 }
 
 //******************************************************************************
@@ -18,7 +19,7 @@ export interface MenuItem {
     isOpen?: boolean; // For internal state tracking if needed, but better to control via local state map or just simple modification
 }
 
-export const Menu: React.FC<MenuProps> = ({ items, theme }) => {
+export const Menu: React.FC<MenuProps> = ({ items, theme, buttonStyle }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [expandedSubmenus, setExpandedSubmenus] = useState<Record<number, boolean>>({});
     const menuRef = useRef<HTMLDivElement>(null);
@@ -157,16 +158,7 @@ export const Menu: React.FC<MenuProps> = ({ items, theme }) => {
         <div ref={menuRef} style={{ position: 'relative', display: 'inline-block' }}>
             <button
                 onClick={toggleMenu}
-                style={{
-                    padding: '8px 16px',
-                    borderRadius: '20px',
-                    border: 'none',
-                    background: theme === 'dark' ? '#30363d' : '#e1e4e8',
-                    color: theme === 'dark' ? '#c9d1d9' : '#24292e',
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-                }}
+                style={buttonStyle}
             >
                 ☰ Menu
             </button>

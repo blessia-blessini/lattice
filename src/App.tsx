@@ -116,7 +116,17 @@ function App() {
   //****************************************************************************
   // State Management
   //****************************************************************************
-  const [m_theme, setTheme] = useState<'dark' | 'light'>('dark'); // Local theme (current window)
+  const [m_theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const toolbarBtnStyle: React.CSSProperties = {
+    padding: '6px 16px',
+    borderRadius: '10px',
+    border: 'none',
+    background: m_theme === 'dark' ? 'rgba(48,54,61,0.75)' : 'rgba(225,228,232,0.75)',
+    color: m_theme === 'dark' ? '#c9d1d9' : '#24292e',
+    cursor: 'pointer',
+    fontWeight: 600,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+  }; // Local theme (current window)
   const [m_previewTheme, setPreviewTheme] = useState<'dark' | 'light'>('light'); // Preview pane theme (independent)
   const [m_wordWrap, setWordWrap] = useState(false);
   const [m_dailyNotesPath, setDailyNotesPath] = useState<string>('');
@@ -1009,14 +1019,7 @@ function App() {
             value={viewMode}
             onChange={e => setViewMode(e.target.value as ViewMode)}
             style={{
-              padding: '8px 16px',
-              borderRadius: '20px',
-              border: 'none',
-              backgroundColor: m_theme === 'dark' ? '#30363d' : '#e1e4e8',
-              color: m_theme === 'dark' ? '#c9d1d9' : '#24292e',
-              cursor: 'pointer',
-              fontWeight: 600,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              ...toolbarBtnStyle,
               appearance: 'none',
               paddingRight: '28px',
               backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='${m_theme === 'dark' ? '%23c9d1d9' : '%2324292e'}' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
@@ -1035,21 +1038,13 @@ function App() {
 
           <button
             onClick={toggleTheme}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '20px',
-              border: 'none',
-              background: m_theme === 'dark' ? '#30363d' : '#e1e4e8',
-              color: m_theme === 'dark' ? '#c9d1d9' : '#24292e',
-              cursor: 'pointer',
-              fontWeight: 600,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-            }}
+            style={toolbarBtnStyle}
           >
             {m_theme === 'dark' ? '🌙' : '☀️'}
           </button>
           <Menu
             theme={m_theme}
+            buttonStyle={toolbarBtnStyle}
             items={[
               { label: (!m_isDirty ? "(no unsaved changes)" : (m_currentFilePath ? "Save" : "Save ...")), onClick: handleSave, disabled: !m_isDirty },
               { label: "Save as ...", onClick: () => handleSave(false), disabled: !m_currentFilePath },
