@@ -1045,11 +1045,11 @@ function App() {
                 mismatch). The filled half-square also conveys which pane is
                 the editor at a glance. */}
             <option value={VIEW_EDIT}>▤  Edit</option>
-            <option value={VIEW_PREVIEW}>▥  Preview</option>
-            <option value={VIEW_DUAL}>◧  Dual (edit on the left)</option>
-            <option value={VIEW_DUAL_SWAP}>◨  Dual (edit on the right)</option>
-            <option value={VIEW_DUAL_TOP}>⬒  Dual (edit on top)</option>
-            <option value={VIEW_DUAL_BOTTOM}>⬓  Dual (edit on bottom)</option>
+            <option value={VIEW_PREVIEW}>▥ Preview</option>
+            <option value={VIEW_DUAL}>◨ Dual (edit on the left)</option>
+            <option value={VIEW_DUAL_SWAP}>◧ Dual (edit on the right)</option>
+            <option value={VIEW_DUAL_TOP}>⬓ Dual (edit on top)</option>
+            <option value={VIEW_DUAL_BOTTOM}>⬒ Dual (edit on bottom)</option>
           </select>
 
           <button
