@@ -171,13 +171,7 @@ function App() {
   const editorRef = useRef<import("./components/Editor").EditorHandle>(null);
   const previewPaneRef = useRef<HTMLDivElement>(null);
 
-  const suppressNextPreviewSyncRef = useRef(false);
-
   const handleEditorChange = useCallback((content: string) => {
-    if (suppressNextPreviewSyncRef.current) {
-      suppressNextPreviewSyncRef.current = false;
-      return;
-    }
     setPreviewContent(content);
   }, []);
 
@@ -1053,12 +1047,8 @@ function App() {
     },
     // GFM task-list checkboxes. remark-gfm renders them as
     // <input type="checkbox" disabled [checked]>. We override that to
-    // make them clickable and, crucially, to avoid re-rendering the
-    // whole preview on toggle: we let the native click flip the DOM
-    // state (the :has(:checked) CSS rule picks up the strikethrough
-    // automatically), push `[ ]` <-> `[x]` into the editor document,
-    // and set the suppressNextPreviewSync ref so the editor's onChange
-    // does not feed back into setPreviewContent. No preview re-render.
+    // make them clickable and to avoid re-rendering the
+    // whole preview on toggle.
     input(props) {
       const anyProps = props as any;
       if (anyProps.type === 'checkbox') {
@@ -1067,16 +1057,12 @@ function App() {
           <input
             type="checkbox"
             className={`task-checkbox ${anyProps.className || ''}`.trim()}
-            // `defaultChecked` (uncontrolled) rather than `checked`
-            // (controlled): with a controlled input React would re-assert
-            // the prop value onto the DOM on any future render, undoing
-            // our optimistic native-click state. With uncontrolled, the
-            // DOM is the source of truth between clicks; when the parsed
-            // markdown genuinely changes the checked state (e.g. user
-            // edited `[ ]` -> `[x]` in the source pane), a new input
-            // element is mounted in a different place in the tree so
-            // defaultChecked applies correctly at mount time.
-            defaultChecked={!!anyProps.checked}
+            // GFM task-list checkboxes. We use `checked` (controlled) to
+            // ensure the DOM stays in sync with the source pane, especially
+            // during undo/redo. React's reconciliation, combined with the
+            // stable component identities from useMemo, handles the
+            // update efficiently without remounting or flickering.
+            checked={!!anyProps.checked}
             onChange={(e) => {
               let line: number | null = directLine ? Number(directLine) : null;
               if (!line || !Number.isFinite(line)) {
@@ -1086,17 +1072,10 @@ function App() {
                 if (raw) line = Number(raw);
               }
               if (line && Number.isFinite(line)) {
-                // Order matters: set the flag BEFORE calling the editor
-                // so the synchronous updateListener -> handleEditorChange
-                // callback sees the flag and skips setPreviewContent.
-                suppressNextPreviewSyncRef.current = true;
                 const toggled = editorRef.current?.toggleTaskAtLine(line);
                 if (!toggled) {
                   // Regex didn't match the line — nothing got dispatched
-                  // to CodeMirror, so no onChange will fire and we must
-                  // clear the flag manually. Also undo the native click
-                  // so the UI doesn't claim a state that isn't in the doc.
-                  suppressNextPreviewSyncRef.current = false;
+                  // to CodeMirror, so undo the native click.
                   e.currentTarget.checked = !e.currentTarget.checked;
                 }
               }
