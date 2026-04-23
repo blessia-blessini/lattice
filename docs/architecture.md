@@ -2,6 +2,25 @@
 
 Lattice is a local-first Markdown editor built with **Tauri**, combining a **Rust** backend for system interactions and performance with a **React (TypeScript)** frontend for the user interface. This document reflects the current architecture, including the introduction of a more robust file tracking system, new UI components, and a formal testing and CI pipeline.
 
+## Table of Content (Structure of document)
+<!-- TOC -->
+- [Table of Content (Structure of document)](#table-of-content-structure-of-document)
+- [Technology Stack](#technology-stack)
+- [High-Level Architecture](#high-level-architecture)
+- [Key Components & Diagrams](#key-components-diagrams)
+  - [1. File Operation & Concurrency](#1-file-operation-concurrency)
+  - [2. Class and Instance Diagram (UML)](#2-class-and-instance-diagram-uml)
+- [Theme Design](#theme-design)
+  - [Editor Theme](#editor-theme)
+  - [Preview Theme](#preview-theme)
+  - [Independence Guarantee](#independence-guarantee)
+  - [Adding a New Theme Variant](#adding-a-new-theme-variant)
+- [Testing Architecture](#testing-architecture)
+- [Continuous Integration (CI) Architecture](#continuous-integration-ci-architecture)
+  - [CI Pipeline Flow](#ci-pipeline-flow)
+  - [Key CI Steps:](#key-ci-steps)
+<!-- /TOC -->
+
 ## Technology Stack
 
 - **Frontend**: React, TypeScript, Vite, CodeMirror, Vitest
