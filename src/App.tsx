@@ -36,6 +36,7 @@ import { Editor } from "./components/Editor";
 import { Mermaid } from "./components/Mermaid";
 import { Menu } from "./components/Menu";
 import { rehypeAddHeadingIds } from "./lib/rehype-heading-ids";
+import { remarkStripHtmlComments } from "./lib/remark-strip-html-comments";
 // we opted for using the settings pane within the same window
 //  as it will be more mobile-friendly for porting later
 import { Settings } from "./components/Settings";
@@ -1148,7 +1149,7 @@ function App() {
 
   const previewMarkdown = useMemo(() => (
     <ReactMarkdown
-      remarkPlugins={[remarkGfm, remarkMath]}
+      remarkPlugins={[remarkStripHtmlComments, remarkGfm, remarkMath]}
       rehypePlugins={[rehypeAddSourceLines, rehypeAddHeadingIds, rehypeKatex]}
       components={previewComponents}
     >
