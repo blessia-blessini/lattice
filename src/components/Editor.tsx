@@ -12,7 +12,9 @@ import { searchKeymap, highlightSelectionMatches } from '@codemirror/search';
 import { foldKeymap } from '@codemirror/language';
 import { lintKeymap } from '@codemirror/lint';
 import { FileSystem } from '../services/FileSystem';
+import { Toc, TOC_OPEN_MARKER, TOC_CLOSE_MARKER } from '../services/Toc';
 import { symbolPicker } from '../editor-extensions/symbol-picker';
+import { tocTooltip } from '../editor-extensions/toc-tooltip';
 
 interface EditorProps {
     theme: 'light' | 'dark';
@@ -46,6 +48,20 @@ export interface EditorHandle {
      * state) preserves undo/redo history, dirty tracking and autosave.
      */
     toggleTaskAtLine: (line: number) => boolean;
+    /**
+     * Send the current document text to the backend for TOC regeneration. If
+     * the backend returns different text (i.e. at least one TOC block was
+     * present and its body changed) we dispatch a CodeMirror transaction to
+     * replace the doc, preserving undo history. No-op when no TOC blocks are
+     * present.
+     */
+    updateToc: () => Promise<boolean>;
+    /**
+     * Insert a fresh `<!-- TOC --> ... <!-- /TOC -->` block at the cursor and
+     * immediately request the backend to populate it. Returns true if the
+     * block was inserted (always true when an editor view exists).
+     */
+    insertTocBlock: () => Promise<boolean>;
 }
 export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
     theme, wordWrap, onChange, initialDoc, currentFilePath, onDirtyChange
@@ -64,6 +80,47 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
 
     // History Depth State
     const lastSavedDepth = useRef<number>(0);
+
+    //**************************************************************************
+    // refreshTocFromBackend
+    //**************************************************************************
+    /**
+     * Shared TOC-refresh helper used by the imperative API, the menu, and the
+     * keymap. Snapshots the current doc, awaits the Rust backend, and only
+     * applies the result if the doc hasn't moved under us in the meantime.
+     */
+    const refreshTocFromBackend = async (): Promise<boolean> => {
+        const view = viewRef.current;
+        if (!view) return false;
+
+        const before = view.state.doc.toString();
+        let after: string;
+        try {
+            after = await Toc.update(before);
+        } catch (e) {
+            console.error('TOC update failed:', e);
+            return false;
+        }
+
+        // Re-check the view after the await: a remote update or user edit
+        // could have invalidated our snapshot.
+        const liveView = viewRef.current;
+        if (!liveView) return false;
+        if (liveView.state.doc.toString() !== before) {
+            // Concurrent change — drop the stale result rather than clobber.
+            return false;
+        }
+        if (after === before) {
+            // No TOC blocks present, or already in sync.
+            return false;
+        }
+
+        liveView.dispatch({
+            changes: { from: 0, to: liveView.state.doc.length, insert: after },
+        });
+        return true;
+    };
+    // refreshTocFromBackend END ************************************************
 
     useImperativeHandle(ref, () => ({
         markAsSaved: () => {
@@ -117,6 +174,20 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
             const to = from + 3; // "[ ]" / "[x]" are always 3 chars
             view.dispatch({ changes: { from, to, insert } });
             return true;
+        },
+        updateToc: refreshTocFromBackend,
+        insertTocBlock: async () => {
+            const view = viewRef.current;
+            if (!view) return false;
+
+            // Insert the marker pair at the cursor (or replace the selection).
+            // The Rust backend recognises this exact shape and will populate
+            // the empty body on the follow-up refresh.
+            const template = `${TOC_OPEN_MARKER}\n${TOC_CLOSE_MARKER}\n`;
+            view.dispatch(view.state.replaceSelection(template));
+
+            await refreshTocFromBackend();
+            return true;
         }
     }));
 
@@ -155,9 +226,22 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
             ...historyKeymap,
             ...foldKeymap,
             ...completionKeymap,
-            ...lintKeymap
+            ...lintKeymap,
+            // Refresh all TOC blocks in the document. Mod = Cmd on macOS,
+            // Ctrl elsewhere. The handler returns true synchronously and
+            // performs the IPC + dispatch in the background (the helper
+            // already guards against concurrent edits).
+            {
+                key: 'Mod-Shift-t',
+                preventDefault: true,
+                run: () => {
+                    void refreshTocFromBackend();
+                    return true;
+                },
+            },
         ]),
         symbolPicker, // <-- Add our custom extension here
+        tocTooltip,   // <-- Hint when cursor is between TOC markers
         syntaxHighlighting(monoHighlightStyle),
         markdown({
             base: markdownLanguage,

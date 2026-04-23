@@ -1264,6 +1264,15 @@ function App() {
               { label: "Settings ...", onClick: handleOpenSettings, disabled: false },
               { label: "Initialize Vault Here ...", onClick: handleInitializeVault, disabled: !m_currentFilePath },
               { label: "---" },
+              {
+                label: "Insert TOC",
+                onClick: () => { void editorRef.current?.insertTocBlock(); }
+              },
+              {
+                label: "Refresh TOC (Ctrl+Shift+T)",
+                onClick: () => { void editorRef.current?.updateToc(); }
+              },
+              { label: "---" },
               { label: "Exit", onClick: () => invoke('exit_app') }
             ]}
           />

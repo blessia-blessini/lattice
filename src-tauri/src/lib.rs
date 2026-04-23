@@ -41,6 +41,7 @@ static M_PATH: Mutex<String> = Mutex::new(String::new());
 mod file_state;
 mod textcontent_hashing;
 mod settings;
+mod toc;
 
 // APP-wide state to hold watchers per window
 struct WatcherState {
@@ -653,7 +654,8 @@ pub fn run() {
             get_launch_file,
             get_version_string,
             trace_log,
-            exit_app
+            exit_app,
+            toc::update_toc
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
