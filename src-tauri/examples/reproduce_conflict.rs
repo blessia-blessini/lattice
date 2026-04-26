@@ -137,7 +137,7 @@ fn main() {
     #[cfg(target_os = "windows")]
     {
         let _ = Command::new("taskkill")
-            .args(&["/F", "/T", "/PID", &_app_child.id().to_string()])
+            .args(&["/F", "/PID", &_app_child.id().to_string()])
             .output();
     }
     #[cfg(not(target_os = "windows"))]

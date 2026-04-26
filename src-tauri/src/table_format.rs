@@ -292,10 +292,9 @@ fn render_row(
     aligns: &[Alignment],
     is_separator: bool,
 ) -> String {
-    let n = widths.len();
+    // let n = widths.len();
     let mut out = String::from("|");
-    for i in 0..n {
-        let w = widths[i];
+    for (i, &w) in widths.iter().enumerate() { //for i in 0..n {
         let a = aligns.get(i).copied().unwrap_or(Alignment::Default);
         out.push(' ');
         if is_separator {
