@@ -42,6 +42,7 @@ mod file_state;
 mod textcontent_hashing;
 mod settings;
 mod toc;
+mod table_format;
 
 // APP-wide state to hold watchers per window
 struct WatcherState {
@@ -655,7 +656,8 @@ pub fn run() {
             get_version_string,
             trace_log,
             exit_app,
-            toc::update_toc
+            toc::update_toc,
+            table_format::pad_tables
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

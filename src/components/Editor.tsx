@@ -13,6 +13,7 @@ import { foldKeymap } from '@codemirror/language';
 import { lintKeymap } from '@codemirror/lint';
 import { FileSystem } from '../services/FileSystem';
 import { Toc, TOC_OPEN_MARKER, TOC_CLOSE_MARKER } from '../services/Toc';
+import { TableFormat } from '../services/TableFormat';
 import { symbolPicker } from '../editor-extensions/symbol-picker';
 import { tocTooltip } from '../editor-extensions/toc-tooltip';
 
@@ -62,6 +63,15 @@ export interface EditorHandle {
      * block was inserted (always true when an editor view exists).
      */
     insertTocBlock: () => Promise<boolean>;
+    /**
+     * Send the current document to the backend, which detects every GFM-style
+     * pipe table and re-emits it with space-padded columns so all `|`
+     * delimiters line up vertically. Returns true iff the backend produced a
+     * different document and the editor was updated. No-op (returns false) on
+     * documents with no tables, on already-padded tables, or when a concurrent
+     * edit invalidated the snapshot mid-IPC.
+     */
+    padTables: () => Promise<boolean>;
 }
 export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
     theme, wordWrap, onChange, initialDoc, currentFilePath, onDirtyChange
@@ -121,6 +131,50 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
         return true;
     };
     // refreshTocFromBackend END ************************************************
+
+    //**************************************************************************
+    // padTablesFromBackend
+    //**************************************************************************
+    /**
+     * Same shape as `refreshTocFromBackend` (snapshot → IPC → guarded
+     * dispatch). Kept as a separate function rather than parameterising one
+     * helper because each operation has its own logging context and may
+     * grow distinct concurrency rules later (e.g. tables might want to run
+     * over a selection range, while TOC always works on the whole doc).
+     */
+    const padTablesFromBackend = async (): Promise<boolean> => {
+        const view = viewRef.current;
+        if (!view) return false;
+
+        const before = view.state.doc.toString();
+        let after: string;
+        try {
+            after = await TableFormat.pad(before);
+        } catch (e) {
+            console.error('Table padding failed:', e);
+            return false;
+        }
+
+        const liveView = viewRef.current;
+        if (!liveView) return false;
+        if (liveView.state.doc.toString() !== before) {
+            // The user typed (or a remote update arrived) while we were
+            // waiting on Rust — discarding our stale "after" string is the
+            // safe move. They can press the shortcut again.
+            return false;
+        }
+        if (after === before) {
+            // No tables found, or every table was already in canonical
+            // padded form. Either way, no dispatch needed.
+            return false;
+        }
+
+        liveView.dispatch({
+            changes: { from: 0, to: liveView.state.doc.length, insert: after },
+        });
+        return true;
+    };
+    // padTablesFromBackend END *************************************************
 
     useImperativeHandle(ref, () => ({
         markAsSaved: () => {
@@ -188,7 +242,8 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
 
             await refreshTocFromBackend();
             return true;
-        }
+        },
+        padTables: padTablesFromBackend
     }));
 
     const getExtensions = () => [
@@ -236,6 +291,24 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
                 preventDefault: true,
                 run: () => {
                     void refreshTocFromBackend();
+                    return true;
+                },
+            },
+            // Pad / format every GFM-style pipe table in the document so
+            // pipes line up vertically. Same fire-and-forget pattern as the
+            // TOC refresh above — synchronous return so CodeMirror knows the
+            // key was handled, with the actual rewrite landing later via the
+            // helper's guarded dispatch.
+            //
+            // Why Mod-Shift-l: parallels Mod-Shift-t (TOC) so the two doc-
+            // wide refresh ops live in the same keyspace, and the L mnemonic
+            // ("Layout / aLign") is unbound by default in CodeMirror's
+            // standard keymaps on every platform we ship to.
+            {
+                key: 'Mod-Shift-l',
+                preventDefault: true,
+                run: () => {
+                    void padTablesFromBackend();
                     return true;
                 },
             },

@@ -17,6 +17,15 @@ export interface MenuItem {
     disabled?: boolean;
     submenu?: MenuItem[];
     isOpen?: boolean; // For internal state tracking if needed, but better to control via local state map or just simple modification
+    /**
+     * Optional hover tooltip (rendered via the native `title` attribute).
+     * Used to surface keyboard shortcuts and short usage hints without
+     * cluttering the visible label. Native tooltips are good enough here:
+     * we want the platform's standard appearance/timing and they cost
+     * nothing to render. If we ever need richer styling we can swap to a
+     * custom tooltip without touching call sites.
+     */
+    title?: string;
 }
 
 export const Menu: React.FC<MenuProps> = ({ items, theme, buttonStyle }) => {
@@ -72,6 +81,12 @@ export const Menu: React.FC<MenuProps> = ({ items, theme, buttonStyle }) => {
                             }
                         }}
                         className="menu-item"
+                        // Native browser tooltip. Surfaces keyboard shortcuts
+                        // (e.g. "Ctrl+Shift+L") on hover without taking up
+                        // visible label space. Omitted entirely when the
+                        // caller didn't supply one — `title={undefined}`
+                        // doesn't render an empty tooltip.
+                        title={item.title}
                         style={{
                             padding: '8px 16px',
                             cursor: item.disabled ? 'not-allowed' : 'pointer',

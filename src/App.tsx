@@ -1272,7 +1272,16 @@ function App() {
               },
               {
                 label: "Refresh TOC (Ctrl+Shift+T)",
-                onClick: () => { void editorRef.current?.updateToc(); }
+                onClick: () => { void editorRef.current?.updateToc(); },
+                title: "Regenerate every <!-- TOC --> block in the document. Shortcut: Ctrl/Cmd+Shift+T"
+              },
+              {
+                // Pad / format markdown tables. The shortcut is shown both in
+                // the label (for at-a-glance discovery) and as a hover
+                // tooltip (for users who only see the menu briefly).
+                label: "Pad Tables (Ctrl+Shift+L)",
+                onClick: () => { void editorRef.current?.padTables(); },
+                title: "Space-pad every GFM pipe table so columns line up vertically. Shortcut: Ctrl/Cmd+Shift+L"
               },
               { label: "---" },
               { label: "Exit", onClick: () => invoke('exit_app') }
