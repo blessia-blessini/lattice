@@ -19,6 +19,16 @@ Lattice is a local-first Markdown editor built with **Tauri**, combining a **Rus
 - [Continuous Integration (CI) Architecture](#continuous-integration-ci-architecture)
   - [CI Pipeline Flow](#ci-pipeline-flow)
   - [Key CI Steps:](#key-ci-steps)
+- [Feature: Table of Contents (TOC)](#feature-table-of-contents-toc)
+  - [Overview](#overview)
+  - [Rust Backend — `toc.rs`](#rust-backend--tocrs)
+  - [Frontend Glue](#frontend-glue)
+  - [TOC Flow Diagram](#toc-flow-diagram)
+- [Feature: Table Padding](#feature-table-padding)
+  - [Overview](#overview-1)
+  - [Rust Backend — `table_format.rs`](#rust-backend--table_formatrs)
+  - [Frontend Glue](#frontend-glue-1)
+  - [Table Padding Flow Diagram](#table-padding-flow-diagram)
 <!-- /TOC -->
 
 ## Technology Stack
@@ -293,3 +303,127 @@ graph TD
     -   **Build**: Compiles the Rust backend and builds the frontend, finally bundling them into a native application (`.exe`, `.dmg`, `.AppImage`).
     -   **Test**: Runs `cargo test` for the backend and `npm run test` (Vitest) for the frontend to ensure correctness.
     -   **Artifacts**: The final compiled applications and documentation are uploaded as artifacts for download and deployment.
+
+---
+
+## Feature: Table of Contents (TOC)
+
+### Overview
+
+The TOC feature lets a user insert a `<!-- TOC -->` / `<!-- /TOC -->` marker pair anywhere in the document and have Lattice auto-generate (and later regenerate) a linked heading list inside it. The feature follows the same architectural pattern as all pure-logic features: **all parsing and rewriting logic lives in Rust**; the frontend is a thin glue layer that hands text to the backend and dispatches the result back into CodeMirror.
+
+### Rust Backend — `toc.rs`
+
+The module exposes one public entry-point:
+
+```
+update_toc_in_document(content: &str) -> String
+```
+
+It performs a single-pass scan of the document and replaces the body of every `<!-- TOC … -->` / `<!-- /TOC -->` block with a freshly generated bulleted list of headings. Key properties:
+
+- **Marker parsing**: The opening marker accepts optional `minLevel=N` and `maxLevel=N` key-value options (defaults: H2–H6). Unknown options are silently ignored for forward compatibility.
+- **Heading collection**: Headings are gathered only from text that lies outside fenced code blocks (` ``` ` / `~~~`). Headings that themselves sit inside the TOC body are skipped, so the generated list never references its own entries.
+- **Slug generation**: Each heading is converted to a GitHub-style anchor slug (lowercase, non-alphanumerics stripped, spaces to hyphens). Duplicate headings are disambiguated with `-1`, `-2`, … suffixes.
+- **Idempotency**: Running the command on an already up-to-date document produces a string-equal result — the caller can rely on this to avoid spurious CodeMirror dispatches.
+- **Newline preservation**: CRLF line endings in the original document are preserved in the output.
+
+The Tauri command `update_toc` is a thin wrapper that calls `update_toc_in_document` and returns the result string.
+
+### Frontend Glue
+
+| Layer | File | Responsibility |
+|---|---|---|
+| Service | `src/services/Toc.ts` | Wraps `invoke('update_toc', { content })`. Also exports `TOC_OPEN_MARKER` / `TOC_CLOSE_MARKER` constants so other layers don't duplicate the literal strings. |
+| CodeMirror extension | `src/editor-extensions/toc-tooltip.ts` | A `StateField` + `showTooltip` that re-evaluates on every cursor move. If the cursor's line is between a TOC open marker and its matching close marker, a tooltip reading *"Press Ctrl/Cmd+Shift+T to refresh TOC"* is shown. Detection is intentionally done on the frontend (not via IPC) to keep the tooltip latency imperceptible. |
+| Editor handle | `src/components/Editor.tsx` | Exposes `updateToc()` and `insertTocBlock()` on the imperative `EditorHandle`. Both call `refreshTocFromBackend()`, which snapshots the document, calls `Toc.update`, then guards the dispatch: if the document changed during the IPC round-trip, the stale result is discarded instead of clobbering the user's edits. `Mod-Shift-T` is bound to the refresh command. |
+| Menu | `src/App.tsx` | "Insert TOC" triggers `insertTocBlock()` (inserts the marker pair then immediately refreshes). "Refresh TOC" triggers `updateToc()`. |
+
+### TOC Flow Diagram
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Menu as Menu / Keyboard (Mod-Shift-T)
+    participant Editor as Editor.tsx (EditorHandle)
+    participant Toc as Toc.ts (Service)
+    participant Rust as Rust — toc.rs
+    participant CM as CodeMirror View
+
+    User->>Menu: "Refresh TOC" or Mod-Shift-T
+    Menu->>Editor: updateToc()
+    Editor->>CM: snapshot doc text (before)
+    Editor->>Toc: Toc.update(before)
+    Toc->>Rust: invoke('update_toc', { content })
+    Rust->>Rust: update_toc_in_document(content)
+    Rust-->>Toc: updated content (string)
+    Toc-->>Editor: after
+
+    alt doc unchanged since snapshot
+        Editor->>CM: dispatch full-document replace with after
+    else doc changed during IPC (race)
+        Editor->>Editor: discard stale result (no dispatch)
+    end
+```
+
+---
+
+## Feature: Table Padding
+
+### Overview
+
+The Table Padding feature reformats any GFM pipe table in the document so that every column is space-padded to the width of its widest cell, making tables easier to read in raw Markdown. Like TOC, all detection and rewriting logic is **pure Rust**; the frontend layer is a minimal IPC wrapper.
+
+### Rust Backend — `table_format.rs`
+
+The module exposes one public entry-point:
+
+```
+pad_tables_in_document(content: &str) -> String
+```
+
+It performs a linear scan looking for table candidates and rewrites each one in place. Key properties:
+
+- **Table detection**: A table candidate is a run of consecutive non-blank lines where (1) the first line contains at least one `|`, (2) the second line is a GFM alignment-separator row (each cell matches `:?-+:?`), and (3) all subsequent lines in the run also contain at least one `|`. Lines inside fenced code blocks are unconditionally skipped.
+- **Column alignment**: The `Alignment` enum captures four states — `Default` (no marker), `Left` (`:---`), `Right` (`---:`), and `Center` (`:---:`). Cell content is padded on the appropriate side; the separator row is regenerated with the correct number of `-` characters (minimum 3) and `:` markers.
+- **Row normalisation**: Rows with fewer cells than the widest row are right-extended with empty cells. Rows with extra cells keep their extra cells.
+- **Output shape**: Every rewritten row uses the canonical `| cell | cell |` form — leading and trailing pipes are always present, cells are surrounded by a single space.
+- **Width measurement**: Column width is measured in Unicode scalar value count (`char`), not bytes — a practical approximation for typical Markdown content without pulling in a `unicode-width` dependency.
+- **Idempotency**: Tables that are already in canonical padded form are emitted unchanged; the caller can detect a no-op by comparing the returned string to the input.
+
+The Tauri command `pad_tables` is a thin wrapper that calls `pad_tables_in_document` and returns the result string.
+
+### Frontend Glue
+
+| Layer | File | Responsibility |
+|---|---|---|
+| Service | `src/services/TableFormat.ts` | Wraps `invoke('pad_tables', { content })`. Mirrors the shape of `Toc.ts` so both document-rewriting operations are interchangeable at call sites. |
+| Editor handle | `src/components/Editor.tsx` | Exposes `padTables()` on `EditorHandle`. Internally `padTablesFromBackend()` uses the same snapshot → IPC → guarded-dispatch pattern as the TOC refresh: if the document changed during the round-trip the stale result is discarded. `Mod-Shift-L` is bound to the command. |
+| Menu | `src/components/Menu.tsx` + `src/App.tsx` | A "Pad Tables" menu item calls `padTables()` on the editor handle. |
+
+### Table Padding Flow Diagram
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Menu as Menu / Keyboard (Mod-Shift-L)
+    participant Editor as Editor.tsx (EditorHandle)
+    participant Svc as TableFormat.ts (Service)
+    participant Rust as Rust — table_format.rs
+    participant CM as CodeMirror View
+
+    User->>Menu: "Pad Tables" or Mod-Shift-L
+    Menu->>Editor: padTables()
+    Editor->>CM: snapshot doc text (before)
+    Editor->>Svc: TableFormat.pad(before)
+    Svc->>Rust: invoke('pad_tables', { content })
+    Rust->>Rust: pad_tables_in_document(content)
+    Rust-->>Svc: padded content (string)
+    Svc-->>Editor: after
+
+    alt doc unchanged AND content differs
+        Editor->>CM: dispatch full-document replace with after
+    else doc changed during IPC (race) OR no tables found
+        Editor->>Editor: discard / no-op
+    end
+```
