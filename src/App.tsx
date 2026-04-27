@@ -926,18 +926,15 @@ function App() {
       // tag rather than a static rule because the value is only known at
       // runtime.  Escape backslashes and double-quotes for CSS string safety.
       const esc = fileName.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      // Scale the print body font from an 11 pt baseline using the current
+      // zoom level so Ctrl-P / Save-as-PDF honours the +/- zoom setting.
+      const printPt = ((11 * m_fontSize) / 100).toFixed(2);
       const style = document.createElement('style');
       style.id = 'lattice-print-dynamic';
-      style.textContent = [
-        '@page {',
-        '  @top-center {',
-        `    content: "${esc}";`,
-        '    font-size: 9pt;',
-        '    font-family: Arial, Helvetica, sans-serif;',
-        '    color: #555;',
-        '  }',
-        '}',
-      ].join('\n');
+      const pageCss = '@page {\n  @top-center {\n    content: "' + esc + '";\n    font-size: 9pt;\n    font-family: Arial, Helvetica, sans-serif;\n    color: #555;\n  }\n}\n';
+      const zoomCss = '.preview-pane, .preview-pane__body, .markdown-body { font-size: ' + printPt + 'pt !important; }\n'
+                    + '.cm-content, .cm-line { font-size: ' + printPt + 'pt !important; }';
+      style.textContent = pageCss + zoomCss;
       document.head.appendChild(style);
     };
 
@@ -956,7 +953,7 @@ function App() {
       window.removeEventListener('beforeprint', handleBeforePrint);
       window.removeEventListener('afterprint', handleAfterPrint);
     };
-  }, [m_currentFilePath]); // Re-bind if m_currentFilePath changes
+  }, [m_currentFilePath, m_fontSize]); // Re-bind when path or zoom changes
 
   //****************************************************************************
   // Dual View Scroll Synchronization (line-accurate)

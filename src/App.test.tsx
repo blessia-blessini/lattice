@@ -731,6 +731,8 @@ describe('App — print event handlers', () => {
         const style = document.getElementById('lattice-print-dynamic');
         expect(style).not.toBeNull();
         expect(style!.textContent).toContain('my-note.md');
+        // Font-size rule is injected using the current zoom level (default 100% = 11.00pt).
+        expect(style!.textContent).toContain('font-size: 11.00pt');
     });
 
     it('afterprint removes the injected style tag', async () => {
