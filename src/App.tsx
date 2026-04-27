@@ -904,12 +904,36 @@ function App() {
     //**************************************************************************
     const handleBeforePrint = () => {
       // Strip " - lattice (...)" from title for clean printing
-      document.title = m_currentFilePath ? m_currentFilePath.split(/[\\/]/).pop() || "Untitled" : "Untitled";
+      const fileName = m_currentFilePath
+        ? m_currentFilePath.split(/[\\/]/).pop() || "Untitled"
+        : "Untitled";
+      document.title = fileName;
+
+      // Inject @page @top-center with the file name so it appears as a
+      // running header on every printed page.  We write it as a <style>
+      // tag rather than a static rule because the value is only known at
+      // runtime.  Escape backslashes and double-quotes for CSS string safety.
+      const esc = fileName.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      const style = document.createElement('style');
+      style.id = 'lattice-print-dynamic';
+      style.textContent = [
+        '@page {',
+        '  @top-center {',
+        `    content: "${esc}";`,
+        '    font-size: 9pt;',
+        '    font-family: Arial, Helvetica, sans-serif;',
+        '    color: #555;',
+        '  }',
+        '}',
+      ].join('\n');
+      document.head.appendChild(style);
     };
 
     const handleAfterPrint = () => {
       // Restore full title
       setWindowTitle(m_currentFilePath, m_isDirty);
+      // Remove the dynamically injected print header style
+      document.getElementById('lattice-print-dynamic')?.remove();
     };
 
     window.addEventListener('beforeprint', handleBeforePrint);

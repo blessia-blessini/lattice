@@ -116,7 +116,7 @@ export function isLineInsideTocBlock(allLines: string[], lineNumber: number): bo
  * and where. We anchor the tooltip at the cursor position so it follows the
  * caret around as the user moves through the block.
  */
-function computeTocTooltip(state: EditorState): readonly Tooltip[] {
+export function computeTocTooltip(state: EditorState): readonly Tooltip[] {
     // Only show when the selection is a simple cursor (no range) — otherwise
     // a multi-line selection would make the tooltip flicker in unhelpful
     // places.

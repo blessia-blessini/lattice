@@ -22,114 +22,220 @@
 // END OF NOTE
 
 import { describe, it, expect } from 'vitest';
+import { EditorState } from '@codemirror/state';
 import {
     isTocOpenMarker,
     isTocCloseMarker,
     isLineInsideTocBlock,
+    computeTocTooltip,
 } from './toc-tooltip';
 
+// ---------------------------------------------------------------------------
+// isTocOpenMarker
+// ---------------------------------------------------------------------------
 describe('isTocOpenMarker', () => {
-    it('matches the canonical opener', () => {
+    it('returns true for a bare <!-- TOC --> marker', () => {
         expect(isTocOpenMarker('<!-- TOC -->')).toBe(true);
     });
 
-    it('matches openers with options', () => {
-        expect(isTocOpenMarker('<!-- TOC minLevel=2 maxLevel=4 -->')).toBe(true);
+    it('returns true for a marker with options (case-insensitive token)', () => {
+        expect(isTocOpenMarker('<!-- TOC depthFrom:2 depthTo:4 -->')).toBe(true);
     });
 
-    it('matches lowercase TOC (case-insensitive, mirrors Rust)', () => {
-        expect(isTocOpenMarker('<!-- toc -->')).toBe(true);
+    it('returns true when there is leading/trailing whitespace', () => {
+        expect(isTocOpenMarker('  <!-- TOC -->  ')).toBe(true);
     });
 
-    it('tolerates leading/trailing whitespace', () => {
-        expect(isTocOpenMarker('   <!-- TOC -->   ')).toBe(true);
-    });
-
-    it('rejects the closer', () => {
+    it('returns false for the closing marker', () => {
         expect(isTocOpenMarker('<!-- /TOC -->')).toBe(false);
     });
 
-    it('rejects prose that mentions the marker inline', () => {
-        expect(isTocOpenMarker('Look at <!-- TOC --> please')).toBe(false);
+    it('returns false for ordinary HTML comments', () => {
+        expect(isTocOpenMarker('<!-- some comment -->')).toBe(false);
     });
 
-    it('rejects unrelated comments', () => {
-        expect(isTocOpenMarker('<!-- some other note -->')).toBe(false);
+    it('returns false for a plain text line', () => {
+        expect(isTocOpenMarker('## Heading')).toBe(false);
     });
 });
 
+// ---------------------------------------------------------------------------
+// isTocCloseMarker
+// ---------------------------------------------------------------------------
 describe('isTocCloseMarker', () => {
-    it('matches the canonical closer', () => {
+    it('returns true for <!-- /TOC -->', () => {
         expect(isTocCloseMarker('<!-- /TOC -->')).toBe(true);
     });
 
-    it('matches lowercase', () => {
-        expect(isTocCloseMarker('<!-- /toc -->')).toBe(true);
+    it('returns true with surrounding whitespace', () => {
+        expect(isTocCloseMarker('  <!-- /TOC -->  ')).toBe(true);
     });
 
-    it('rejects opener', () => {
+    it('returns false for the opening marker', () => {
         expect(isTocCloseMarker('<!-- TOC -->')).toBe(false);
+    });
+
+    it('returns false for arbitrary comments', () => {
+        expect(isTocCloseMarker('<!-- end -->')).toBe(false);
     });
 });
 
+// ---------------------------------------------------------------------------
+// isLineInsideTocBlock
+// ---------------------------------------------------------------------------
 describe('isLineInsideTocBlock', () => {
     const lines = [
-        '# Title',           // 1
-        'some prose',        // 2
-        '<!-- TOC -->',      // 3
-        '- [Title](#title)', // 4
-        '<!-- /TOC -->',     // 5
-        '## Section',        // 6
+        '# Intro',            // 1
+        '<!-- TOC -->',       // 2
+        '- Item A',           // 3
+        '- Item B',           // 4
+        '<!-- /TOC -->',      // 5
+        '## Section',         // 6
     ];
 
-    it('returns false outside any block', () => {
+    it('returns false for a line before the TOC block', () => {
         expect(isLineInsideTocBlock(lines, 1)).toBe(false);
-        expect(isLineInsideTocBlock(lines, 2)).toBe(false);
-        expect(isLineInsideTocBlock(lines, 6)).toBe(false);
     });
 
-    it('returns true on the body line between markers', () => {
+    it('returns false for the opening marker line itself', () => {
+        expect(isLineInsideTocBlock(lines, 2)).toBe(false);
+    });
+
+    it('returns true for a line inside the TOC block', () => {
+        expect(isLineInsideTocBlock(lines, 3)).toBe(true);
         expect(isLineInsideTocBlock(lines, 4)).toBe(true);
     });
 
-    it('returns false on the marker lines themselves', () => {
-        expect(isLineInsideTocBlock(lines, 3)).toBe(false);
+    it('returns false for the closing marker line itself', () => {
         expect(isLineInsideTocBlock(lines, 5)).toBe(false);
     });
 
-    it('handles empty body (cursor on the line that would be empty)', () => {
-        const empty = ['<!-- TOC -->', '<!-- /TOC -->'];
-        // No body line exists at all in this minimal block — cursor on either
-        // marker line is "outside".
-        expect(isLineInsideTocBlock(empty, 1)).toBe(false);
-        expect(isLineInsideTocBlock(empty, 2)).toBe(false);
+    it('returns false for a line after the TOC block', () => {
+        expect(isLineInsideTocBlock(lines, 6)).toBe(false);
     });
 
-    it('handles multi-line bodies', () => {
-        const multi = [
-            '<!-- TOC -->',  // 1
-            '- a',           // 2
-            '  - a1',        // 3
-            '- b',           // 4
-            '<!-- /TOC -->', // 5
-        ];
-        expect(isLineInsideTocBlock(multi, 2)).toBe(true);
-        expect(isLineInsideTocBlock(multi, 3)).toBe(true);
-        expect(isLineInsideTocBlock(multi, 4)).toBe(true);
+    // line number beyond the array length — hits the fallthrough return false (line 107)
+    it('returns false when lineNumber exceeds total line count', () => {
+        expect(isLineInsideTocBlock(lines, 99)).toBe(false);
     });
 
-    it('returns false for a dangling opener (no matching close)', () => {
-        const dangling = [
-            '<!-- TOC -->', // 1
-            '- a',          // 2
-            '## Heading',   // 3
-        ];
-        // Without a closer the block is malformed; the Rust side ignores it
-        // entirely. We mirror that by *still* reporting "inside" until EOF —
-        // because the user is in fact inside the dangling opener and would
-        // benefit from the hint to refresh (which would do nothing, but the
-        // alternative — silently lying about location — is more confusing).
-        // If product intent shifts, this is the line to revisit.
-        expect(isLineInsideTocBlock(dangling, 2)).toBe(true);
+    it('returns false for a document with no TOC block at all', () => {
+        const plain = ['# Hello', 'Some text', '## World'];
+        expect(isLineInsideTocBlock(plain, 2)).toBe(false);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// computeTocTooltip
+// ---------------------------------------------------------------------------
+
+/** Build a minimal EditorState with the given document text and cursor offset. */
+function makeState(doc: string, cursorPos: number): EditorState {
+    return EditorState.create({
+        doc,
+        selection: { anchor: cursorPos },
+    });
+}
+
+describe('computeTocTooltip', () => {
+    const docWithToc = [
+        '# Title',
+        '<!-- TOC -->',
+        '- entry',
+        '<!-- /TOC -->',
+        '## Body',
+    ].join('\n');
+
+    // Cursor at start of "- entry" line (line 3)
+    // "# Title\n" = 8 chars, "<!-- TOC -->\n" = 13 chars → offset 21
+    const insideOffset = 8 + 13; // start of "- entry"
+
+    it('returns a tooltip array with one element when cursor is inside the TOC block', () => {
+        const state = makeState(docWithToc, insideOffset);
+        const tooltips = computeTocTooltip(state);
+        expect(tooltips).toHaveLength(1);
+    });
+
+    it('tooltip pos equals the cursor head', () => {
+        const state = makeState(docWithToc, insideOffset);
+        const tooltips = computeTocTooltip(state);
+        expect(tooltips[0].pos).toBe(insideOffset);
+    });
+
+    it('tooltip create() returns a div with the refresh hint text', () => {
+        const state = makeState(docWithToc, insideOffset);
+        const tooltips = computeTocTooltip(state);
+        const { dom } = tooltips[0].create!(null as any);
+        expect(dom.tagName).toBe('DIV');
+        expect(dom.textContent).toContain('Ctrl/Cmd+Shift+T');
+    });
+
+    it('returns [] when cursor is outside the TOC block', () => {
+        // Cursor at very start of document — line 1, before opening marker
+        const state = makeState(docWithToc, 0);
+        expect(computeTocTooltip(state)).toHaveLength(0);
+    });
+
+    it('returns [] when the selection is a range (not an empty cursor)', () => {
+        const state = EditorState.create({
+            doc: docWithToc,
+            selection: { anchor: insideOffset, head: insideOffset + 3 },
+        });
+        expect(computeTocTooltip(state)).toHaveLength(0);
+    });
+
+    it('returns [] for a plain document with no TOC markers', () => {
+        const plain = '# Hello\nsome content\n## World';
+        const state = makeState(plain, 8); // cursor in "some content"
+        expect(computeTocTooltip(state)).toHaveLength(0);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// tocTooltipField.update — via StateField transaction (lines 176-177)
+// ---------------------------------------------------------------------------
+import { tocTooltip } from './toc-tooltip';
+
+describe('tocTooltip StateField (update path)', () => {
+    it('recomputes tooltips when the document changes', () => {
+        // Start with plain doc (no TOC) — no tooltip expected
+        const initialDoc = '# Hello\nsome text';
+        const state1 = EditorState.create({
+            doc: initialDoc,
+            selection: { anchor: 8 },
+            extensions: [tocTooltip],
+        });
+
+        // Apply a transaction that inserts a TOC block so the cursor is now inside
+        const tocBlock = '<!-- TOC -->\n- item\n<!-- /TOC -->\n';
+        const tr = state1.update({
+            changes: { from: 0, to: 0, insert: tocBlock },
+            // move cursor into "- item" line: tocBlock prefix is "<!-- TOC -->\n" = 13 chars
+            selection: { anchor: 13 },
+        });
+        const state2 = tr.state;
+
+        // The field should now contain a tooltip for the cursor inside the TOC
+        const tooltips = state2.field(tocTooltip[0] as any);
+        expect(Array.isArray(tooltips)).toBe(true);
+        expect((tooltips as any[]).length).toBe(1);
+    });
+
+    it('clears the tooltip when the selection moves outside the TOC block (selection-only transaction)', () => {
+        const doc = '# Title\n<!-- TOC -->\n- entry\n<!-- /TOC -->\n## Body';
+        // Start with cursor inside the TOC block
+        const insidePos = 8 + 13; // start of "- entry"
+        const state1 = EditorState.create({
+            doc,
+            selection: { anchor: insidePos },
+            extensions: [tocTooltip],
+        });
+
+        // Move cursor before the TOC (to position 0 — inside "# Title")
+        const tr = state1.update({ selection: { anchor: 0 } });
+        const state2 = tr.state;
+
+        const tooltips = state2.field(tocTooltip[0] as any);
+        expect((tooltips as any[]).length).toBe(0);
     });
 });

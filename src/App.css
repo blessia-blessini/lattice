@@ -114,7 +114,7 @@ body {
    Preview Pane  (own orthogonal theme via data-preview-theme)
    ============================================================ */
 .preview-pane {
-  padding: 2rem;
+  padding: 2rem 1rem;
   overflow-y: auto;
   min-width: 0;
   /* height is set via inline style — vertical splits need auto, horizontal need 100% */
@@ -123,8 +123,8 @@ body {
 
 .preview-pane__body {
   background-color: transparent;
-  max-width: 80%;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
 }
 
 /* ============================================================
@@ -217,16 +217,39 @@ body {
     break-inside: avoid;
   }
 
-  /* Force the markdown body to use full paper width but keep margins since @page is 0 */
+  /* Force the markdown body to use full paper width.
+     @page margin provides outer spacing — no extra padding needed here. */
   .markdown-body {
     max-width: 100% !important;
     margin: 0 !important;
   }
+
+  /* Strip the 5% side-padding so the full @page margin is used. */
+  .preview-pane {
+    padding: 0 !important;
+  }
 }
 
 @page {
-  /* Let browser handle margins (usually shows Header/Footer) */
-  margin: 0.9cm;
+  /* 2 cm on all sides — comfortable margins for A4 / Letter. */
+  margin: 2cm;
+
+  /* ── Header: file name injected dynamically by handleBeforePrint ──
+     The @top-center rule itself is written into a <style> tag just
+     before window.print() fires; here we only silence the other slots
+     so the browser cannot fill them with its own date / title. */
+  @top-left   { content: none; }
+  @top-right  { content: none; }
+
+  /* ── Footer: Page X of Y — suppresses the browser's URL footer ── */
+  @bottom-left  { content: none; }
+  @bottom-center {
+    content: "Page " counter(page) " of " counter(pages);
+    font-size: 9pt;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #555;
+  }
+  @bottom-right { content: none; }
 }
 
 /* Force CodeMirror Tooltip Visibility - High Specificity & Theming */
