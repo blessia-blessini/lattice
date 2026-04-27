@@ -114,7 +114,7 @@ body {
    Preview Pane  (own orthogonal theme via data-preview-theme)
    ============================================================ */
 .preview-pane {
-  padding: 2rem;
+  padding: 2rem 1rem;
   overflow-y: auto;
   min-width: 0;
   /* height is set via inline style — vertical splits need auto, horizontal need 100% */
@@ -123,8 +123,8 @@ body {
 
 .preview-pane__body {
   background-color: transparent;
-  max-width: 80%;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
 }
 
 /* ============================================================
@@ -217,16 +217,24 @@ body {
     break-inside: avoid;
   }
 
-  /* Force the markdown body to use full paper width but keep margins since @page is 0 */
+  /* Force the markdown body to use full paper width.
+     @page margin is 0 (to suppress the browser URL footer), so we
+     compensate with padding on the preview pane itself. */
   .markdown-body {
     max-width: 100% !important;
     margin: 0 !important;
   }
+
+  .preview-pane {
+    padding: 0.9cm !important;
+  }
 }
 
 @page {
-  /* Let browser handle margins (usually shows Header/Footer) */
-  margin: 0.9cm;
+  /* Zero out page margins so the browser does not print its own
+     header (title) and footer (URL / localhost:1420 / page number).
+     Content margins are handled explicitly in the @media print block. */
+  margin: 0;
 }
 
 /* Force CodeMirror Tooltip Visibility - High Specificity & Theming */
