@@ -20,6 +20,7 @@ import { tocTooltip } from '../editor-extensions/toc-tooltip';
 interface EditorProps {
     theme: 'light' | 'dark';
     wordWrap: boolean;
+    fontSize: number; // percentage, e.g. 100 = 100%
     onChange?: (doc: string) => void;
     initialDoc?: string;
     currentFilePath?: string | null;
@@ -74,12 +75,13 @@ export interface EditorHandle {
     padTables: () => Promise<boolean>;
 }
 export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
-    theme, wordWrap, onChange, initialDoc, currentFilePath, onDirtyChange
+    theme, wordWrap, fontSize, onChange, initialDoc, currentFilePath, onDirtyChange
 }, ref) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
     const themeCompartment = useRef(new Compartment());
     const wrappingCompartment = useRef(new Compartment());
+    const fontSizeCompartment = useRef(new Compartment());
     const historyCompartment = useRef(new Compartment());
     const isRemoteUpdate = useRef(false);
     const currentFilePathRef = useRef(currentFilePath);
@@ -323,6 +325,7 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
         }),
         themeCompartment.current.of(theme === 'dark' ? githubDark : githubLight),
         wrappingCompartment.current.of(wordWrap ? EditorView.lineWrapping : []),
+        fontSizeCompartment.current.of(EditorView.theme({ '.cm-content': { fontSize: `${fontSize}%` }, '.cm-gutters': { fontSize: `${fontSize}%` } })),
         EditorView.updateListener.of((update) => {
             if (update.docChanged && onChange && !isRemoteUpdate.current) {
                 onChange(update.state.doc.toString());
@@ -440,6 +443,17 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
             });
         }
     }, [wordWrap]);
+
+    // Update font size when prop changes
+    useEffect(() => {
+        if (viewRef.current) {
+            viewRef.current.dispatch({
+                effects: fontSizeCompartment.current.reconfigure(
+                    EditorView.theme({ '.cm-content': { fontSize: `${fontSize}%` }, '.cm-gutters': { fontSize: `${fontSize}%` } })
+                )
+            });
+        }
+    }, [fontSize]);
 
     return <div ref={editorRef} className="editor-container" />;
 });

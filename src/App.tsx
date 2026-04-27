@@ -120,7 +120,9 @@ function App() {
   //****************************************************************************
   const [m_theme, setTheme] = useState<'dark' | 'light'>('dark');
   const toolbarBtnStyle: React.CSSProperties = {
-    padding: '6px 16px',
+    height: '32px',
+    boxSizing: 'border-box',
+    padding: '0 16px',
     borderRadius: '10px',
     border: 'none',
     // Use backgroundColor (not the `background` shorthand) so components that
@@ -215,6 +217,32 @@ function App() {
 
   // MRU State
   const [mruList, setMruList] = useState<string[]>([]);
+
+  const FONT_SIZE_KEY = 'lattice-font-size';
+  const FONT_SIZE_MIN = 70;
+  const FONT_SIZE_MAX = 200;
+  const FONT_SIZE_STEP = 5;
+  const [m_fontSize, setFontSize] = useState<number>(() => {
+    const saved = localStorage.getItem(FONT_SIZE_KEY);
+    const parsed = saved ? parseInt(saved, 10) : NaN;
+    return isNaN(parsed) ? 100 : Math.min(FONT_SIZE_MAX, Math.max(FONT_SIZE_MIN, parsed));
+  });
+
+  const handleFontSizeIncrease = useCallback(() => {
+    setFontSize(prev => {
+      const next = Math.min(FONT_SIZE_MAX, prev + FONT_SIZE_STEP);
+      localStorage.setItem(FONT_SIZE_KEY, String(next));
+      return next;
+    });
+  }, []);
+
+  const handleFontSizeDecrease = useCallback(() => {
+    setFontSize(prev => {
+      const next = Math.max(FONT_SIZE_MIN, prev - FONT_SIZE_STEP);
+      localStorage.setItem(FONT_SIZE_KEY, String(next));
+      return next;
+    });
+  }, []);
 
   // Load MRU from localStorage on mount
   useEffect(() => {
@@ -1231,6 +1259,31 @@ function App() {
           display: 'flex',
           gap: '0.5rem'
         }}>
+          {/* Font size controls */}
+          <div style={{ display: 'flex', alignItems: 'stretch', gap: '2px' }}>
+            <button
+              onClick={handleFontSizeDecrease}
+              disabled={m_fontSize <= FONT_SIZE_MIN}
+              title="Decrease font size"
+              style={{ ...toolbarBtnStyle, padding: '0 10px' }}
+            >−</button>
+            <span style={{
+              ...toolbarBtnStyle,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minWidth: '3.5em',
+              cursor: 'default',
+              userSelect: 'none',
+            }}>{m_fontSize}%</span>
+            <button
+              onClick={handleFontSizeIncrease}
+              disabled={m_fontSize >= FONT_SIZE_MAX}
+              title="Increase font size"
+              style={{ ...toolbarBtnStyle, padding: '0 10px' }}
+            >+</button>
+          </div>
+
           <select
             data-testid="view-mode-select"
             value={viewMode}
@@ -1328,6 +1381,7 @@ function App() {
               ref={editorRef}
               theme={m_theme}
               wordWrap={m_wordWrap}
+              fontSize={m_fontSize}
               initialDoc={m_loadedContent}
               currentFilePath={m_currentFilePath}
               onDirtyChange={setIsDirty}
@@ -1353,7 +1407,8 @@ function App() {
           }}>
             <div className="markdown-body preview-pane__body" data-theme={m_previewTheme}
               style={{ backgroundColor: PREVIEW_THEME_COLORS[m_previewTheme].backgroundColor,
-                       color: PREVIEW_THEME_COLORS[m_previewTheme].color }}>
+                       color: PREVIEW_THEME_COLORS[m_previewTheme].color,
+                       fontSize: `${m_fontSize}%` }}>
               {/* Rendered via useMemo above — see `previewMarkdown`. Using
                   the cached element here means unrelated App re-renders do
                   not re-invoke ReactMarkdown, and a checkbox click (which
