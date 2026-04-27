@@ -874,22 +874,6 @@ function App() {
 
 
   //****************************************************************************
-  // Settings Window
-  //****************************************************************************
-  if (m_isSettingsWindow) {
-    return <Settings
-      defaultTheme={m_theme}
-      onDefaultThemeChange={setTheme}
-      wordWrap={m_wordWrap}
-      onWordWrapChange={setWordWrap}
-      saveOnBlur={saveOnBlur}
-      dailyNotesPath={m_dailyNotesPath}
-      onDailyNotesPathChange={setDailyNotesPath}
-      settingsPath={m_vaultSettingsPath || ""}
-    />;
-
-  } // if (isSettingsWindow) END ***********************************************
-
   //****************************************************************************
   // Main App
   //****************************************************************************
@@ -1208,6 +1192,22 @@ function App() {
       {previewContent}
     </ReactMarkdown>
   ), [previewContent, previewComponents]);
+
+  // Settings Window
+  //****************************************************************************
+  if (m_isSettingsWindow) {
+    return <Settings
+      defaultTheme={m_theme}
+      onDefaultThemeChange={setTheme}
+      wordWrap={m_wordWrap}
+      onWordWrapChange={setWordWrap}
+      saveOnBlur={saveOnBlur}
+      dailyNotesPath={m_dailyNotesPath}
+      onDailyNotesPathChange={setDailyNotesPath}
+      settingsPath={m_vaultSettingsPath || ""}
+    />;
+
+  } // if (isSettingsWindow) END ***********************************************
 
   return (
     <>

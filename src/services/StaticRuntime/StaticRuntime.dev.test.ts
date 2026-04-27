@@ -180,3 +180,42 @@ describe('StaticRuntime.dev', () => {
         });
     });
 });
+
+// ---------------------------------------------------------------------------
+// setupTestModeListeners — event callback body (lines 99-114)
+// ---------------------------------------------------------------------------
+describe('setupTestModeListeners — event callback body', () => {
+    it('invokes write_text_file with conflict_success.txt when the file-changed callback fires', async () => {
+        // Capture the callback registered with listen
+        let capturedCallback: ((event: any) => Promise<void>) | undefined;
+        vi.mocked(TauriEvent.listen).mockImplementationOnce((_event, cb) => {
+            capturedCallback = cb as any;
+            return Promise.resolve(vi.fn());
+        });
+
+        await StaticRuntime.setupTestModeListeners();
+        expect(capturedCallback).toBeDefined();
+
+        vi.clearAllMocks();
+        await capturedCallback!({ payload: '/vault/note.md' });
+
+        expect(TauriCore.invoke).toHaveBeenCalledWith('write_text_file', {
+            path: 'conflict_success.txt',
+            content: expect.stringContaining('/vault/note.md'),
+        });
+    });
+
+    it('does not throw when write_text_file rejects inside the callback', async () => {
+        let capturedCallback: ((event: any) => Promise<void>) | undefined;
+        vi.mocked(TauriEvent.listen).mockImplementationOnce((_event, cb) => {
+            capturedCallback = cb as any;
+            return Promise.resolve(vi.fn());
+        });
+
+        await StaticRuntime.setupTestModeListeners();
+        vi.mocked(TauriCore.invoke).mockRejectedValueOnce(new Error('disk full'));
+
+        // callback swallows the error internally — must not throw
+        await expect(capturedCallback!({ payload: 'any.md' })).resolves.toBeUndefined();
+    });
+});
