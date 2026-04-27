@@ -218,23 +218,38 @@ body {
   }
 
   /* Force the markdown body to use full paper width.
-     @page margin is 0 (to suppress the browser URL footer), so we
-     compensate with padding on the preview pane itself. */
+     @page margin provides outer spacing — no extra padding needed here. */
   .markdown-body {
     max-width: 100% !important;
     margin: 0 !important;
   }
 
+  /* Strip the 5% side-padding so the full @page margin is used. */
   .preview-pane {
-    padding: 0.9cm !important;
+    padding: 0 !important;
   }
 }
 
 @page {
-  /* Zero out page margins so the browser does not print its own
-     header (title) and footer (URL / localhost:1420 / page number).
-     Content margins are handled explicitly in the @media print block. */
-  margin: 0;
+  /* 2 cm on all sides — comfortable margins for A4 / Letter. */
+  margin: 2cm;
+
+  /* ── Header: file name injected dynamically by handleBeforePrint ──
+     The @top-center rule itself is written into a <style> tag just
+     before window.print() fires; here we only silence the other slots
+     so the browser cannot fill them with its own date / title. */
+  @top-left   { content: none; }
+  @top-right  { content: none; }
+
+  /* ── Footer: Page X of Y — suppresses the browser's URL footer ── */
+  @bottom-left  { content: none; }
+  @bottom-center {
+    content: "Page " counter(page) " of " counter(pages);
+    font-size: 9pt;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #555;
+  }
+  @bottom-right { content: none; }
 }
 
 /* Force CodeMirror Tooltip Visibility - High Specificity & Theming */
