@@ -235,7 +235,8 @@ describe('Menu', () => {
         fireEvent.click(getByRole('button'));
         const item = getByText('Hover Me').closest('.menu-item') as HTMLElement;
         fireEvent.mouseEnter(item);
-        expect(item.style.backgroundColor).toBe('#1f6feb');
+        // JSDOM normalises hex colours set via JS inline style to rgb() form
+        expect(item.style.backgroundColor).toBe('rgb(31, 111, 235)');
     });
 
     it('restores transparent background on mouseLeave (dark theme)', () => {
@@ -256,7 +257,8 @@ describe('Menu', () => {
         fireEvent.click(getByRole('button'));
         const item = getByText('Hover Me').closest('.menu-item') as HTMLElement;
         fireEvent.mouseEnter(item);
-        expect(item.style.backgroundColor).toBe('#0366d6');
+        // JSDOM normalises hex colours set via JS inline style to rgb() form
+        expect(item.style.backgroundColor).toBe('rgb(3, 102, 214)');
     });
 
     it('restores correct text color on mouseLeave (light theme)', () => {
@@ -267,7 +269,8 @@ describe('Menu', () => {
         const item = getByText('Hover Me').closest('.menu-item') as HTMLElement;
         fireEvent.mouseEnter(item);
         fireEvent.mouseLeave(item);
-        expect(item.style.color).toBe('#24292e');
+        // JSDOM normalises hex colours set via JS inline style to rgb() form
+        expect(item.style.color).toBe('rgb(36, 41, 46)');
     });
 
     // -----------------------------------------------------------------------
@@ -282,6 +285,37 @@ describe('Menu', () => {
         const bgBefore = item.style.backgroundColor;
         fireEvent.mouseEnter(item);
         expect(item.style.backgroundColor).toBe(bgBefore);
+    });
+
+    // -----------------------------------------------------------------------
+    // Hover effects — sub-items inside expanded submenus
+    // -----------------------------------------------------------------------
+    it('highlights a sub-item on mouseEnter (dark theme)', () => {
+        const { getByRole, getByText } = render(<Menu items={items} theme="dark" />);
+        fireEvent.click(getByRole('button'));
+        fireEvent.click(getByText('Has Submenu'));
+        const subItem = getByText('Sub Item A') as HTMLElement;
+        fireEvent.mouseEnter(subItem);
+        expect(subItem.style.backgroundColor).toBe('rgba(31, 111, 235, 0.2)');
+    });
+
+    it('resets sub-item background on mouseLeave (dark theme)', () => {
+        const { getByRole, getByText } = render(<Menu items={items} theme="dark" />);
+        fireEvent.click(getByRole('button'));
+        fireEvent.click(getByText('Has Submenu'));
+        const subItem = getByText('Sub Item A') as HTMLElement;
+        fireEvent.mouseEnter(subItem);
+        fireEvent.mouseLeave(subItem);
+        expect(subItem.style.backgroundColor).toBe('transparent');
+    });
+
+    it('highlights a sub-item on mouseEnter (light theme)', () => {
+        const { getByRole, getByText } = render(<Menu items={items} theme="light" />);
+        fireEvent.click(getByRole('button'));
+        fireEvent.click(getByText('Has Submenu'));
+        const subItem = getByText('Sub Item A') as HTMLElement;
+        fireEvent.mouseEnter(subItem);
+        expect(subItem.style.backgroundColor).toBe('rgba(3, 102, 214, 0.1)');
     });
 
     // -----------------------------------------------------------------------

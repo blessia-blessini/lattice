@@ -105,6 +105,7 @@ describe('App', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         sessionStorage.clear();
+        localStorage.clear();
         delete (window as any).__LATTICE_INIT_DATA__;
     });
 
@@ -423,6 +424,7 @@ describe('App — Settings modal', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         sessionStorage.clear();
+        localStorage.clear();
         delete (window as any).__LATTICE_INIT_DATA__;
         vi.mocked(TauriCore.invoke).mockImplementation(makeInvokeMock());
     });
@@ -464,6 +466,7 @@ describe('App — menu action items', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         sessionStorage.clear();
+        localStorage.clear();
         delete (window as any).__LATTICE_INIT_DATA__;
         vi.mocked(TauriCore.invoke).mockImplementation(makeInvokeMock());
     });
@@ -541,6 +544,7 @@ describe('App — previewComponents', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         sessionStorage.clear();
+        localStorage.clear();
         delete (window as any).__LATTICE_INIT_DATA__;
         vi.mocked(TauriCore.invoke).mockImplementation(makeInvokeMock());
     });
@@ -594,5 +598,21 @@ describe('App — previewComponents', () => {
             expect(img).not.toBeNull();
             expect(img.src).toContain('example.com/pic.png');
         });
+    });
+
+    it('loads a local image via read_file_base64 and sets img src to the base64 result', async () => {
+        // __LATTICE_INIT_DATA__ path '/vault/test.md' -> m_currentFilePath = '/vault/test.md'
+        // src './local-image.png' -> absolutePath = '/vault/local-image.png'
+        const { container } = await renderInDualMode('![local](./local-image.png)');
+        await waitFor(() => {
+            const img = container.querySelector('.preview-pane img') as HTMLImageElement;
+            expect(img).not.toBeNull();
+            // makeInvokeMock resolves read_file_base64 to this value
+            expect(img.src).toContain('data:image/png;base64');
+        });
+        expect(TauriCore.invoke).toHaveBeenCalledWith(
+            'read_file_base64',
+            expect.objectContaining({ path: '/vault/local-image.png' })
+        );
     });
 });

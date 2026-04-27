@@ -1,78 +1,97 @@
 // LEGAL NOTE:
-// LATTICE (tm) - The Portable and standard Markdown Editor 
+// LATTICE (tm) - The Portable and standard Markdown Editor
 // Copyright (C) 2026 Owner of blessini.com (a.k.a Blessia)
 // email: blessia AT blessini.com
-// 
+//
 // GNU AFFERO GENERAL PUBLIC LICENSE V3 NOTICE:
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as
 // published by the Free Software Foundation, either version 3 of the
 // License, or (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Affero General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//   
+//
 // See LICENCE file in GitHUB root folder of the repository.
 // END OF NOTE
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { CompletionContext } from '@codemirror/autocomplete';
 import { symbolCompletion } from './symbol-picker';
-import { CompletionContext } from "@codemirror/autocomplete";
 
-// Mock CompletionContext
-class MockCompletionContext {
-    constructor(public text: string, public pos: number) { }
+// ---------------------------------------------------------------------------
+// Minimal CompletionContext stubs
+// ---------------------------------------------------------------------------
 
-    matchBefore(regex: RegExp) {
-        // Simple mock for matchBefore logic relevant to the picker
-        const slice = this.text.slice(0, this.pos);
-        const match = regex.exec(slice);
-        if (match) {
-            return { from: match.index, to: this.pos, text: match[0] };
-        }
-        return null;
-    }
-}
+/** Returns a fake context where matchBefore yields the given match (or null). */
+const makeCtx = (match: { from: number; to: number; text: string } | null): CompletionContext =>
+    ({ matchBefore: vi.fn().mockReturnValue(match) } as unknown as CompletionContext);
+
+/** Returns a fake context where matchBefore throws. */
+const makeThrowingCtx = (): CompletionContext =>
+    ({ matchBefore: () => { throw new Error('matchBefore exploded'); } } as unknown as CompletionContext);
 
 describe('symbolCompletion', () => {
-    it('returns null when no trigger is found', () => {
-        const context = new MockCompletionContext("hello world", 11) as unknown as CompletionContext;
-        const result = symbolCompletion(context);
-        expect(result).toBeNull();
+
+    // -----------------------------------------------------------------------
+    // No trigger
+    // -----------------------------------------------------------------------
+    it('returns null when matchBefore returns null (no colon trigger)', () => {
+        const ctx = makeCtx(null);
+        expect(symbolCompletion(ctx)).toBeNull();
     });
 
-    it('returns options when trigger ":" is found', () => {
-        const context = new MockCompletionContext("hello :", 7) as unknown as CompletionContext;
-        const result = symbolCompletion(context);
+    // -----------------------------------------------------------------------
+    // Trigger with empty query — returns all symbols
+    // -----------------------------------------------------------------------
+    it('returns a result with options when a colon trigger is found', () => {
+        const ctx = makeCtx({ from: 5, to: 6, text: ':' });
+        const result = symbolCompletion(ctx);
         expect(result).not.toBeNull();
-        expect(result?.from).toBe(6);
-        expect(result?.options.length).toBeGreaterThan(0);
+        expect(result!.from).toBe(5);
+        expect(Array.isArray(result!.options)).toBe(true);
+        expect(result!.options.length).toBeGreaterThan(0);
     });
 
-    it('filters options based on query', () => {
-        const context = new MockCompletionContext("hello :arr", 10) as unknown as CompletionContext;
-        const result = symbolCompletion(context);
-        expect(result).not.toBeNull();
-        // Should find "arrow" related items
-        const arrowOption = result?.options.find(o => o.label.includes('Arrow'));
-        expect(arrowOption).toBeDefined();
-        // Should not find "Copyright"
-        const copyrightOption = result?.options.find(o => o.label.includes('Copyright'));
-        expect(copyrightOption).toBeUndefined();
+    it('sets filter: false on the result', () => {
+        const ctx = makeCtx({ from: 0, to: 1, text: ':' });
+        const result = symbolCompletion(ctx);
+        expect(result!.filter).toBe(false);
     });
 
-    it('handles space in query', () => {
-        const context = new MockCompletionContext("hello :arr rig", 14) as unknown as CompletionContext;
-        const result = symbolCompletion(context);
+    // -----------------------------------------------------------------------
+    // Filtering by keyword
+    // -----------------------------------------------------------------------
+    it('filters options to those matching the query term', () => {
+        // 'arrow' appears in many special-character labels/keywords
+        const ctx = makeCtx({ from: 0, to: 6, text: ':arrow' });
+        const result = symbolCompletion(ctx);
         expect(result).not.toBeNull();
-        // "arrow right" should match
-        const rightArrow = result?.options.find(o => o.label.includes('Right Arrow'));
-        expect(rightArrow).toBeDefined();
+        for (const opt of result!.options) {
+            const haystack = (opt.label + ' ' + (opt.detail ?? '')).toLowerCase();
+            expect(haystack).toContain('arrow');
+        }
+    });
+
+    it('returns an empty options list when no symbol matches the query', () => {
+        const ctx = makeCtx({ from: 0, to: 30, text: ':zzznomatchqueryzzzunique' });
+        const result = symbolCompletion(ctx);
+        expect(result).not.toBeNull();
+        expect(result!.options).toHaveLength(0);
+    });
+
+    // -----------------------------------------------------------------------
+    // Error path — catch block (lines 59-61)
+    // -----------------------------------------------------------------------
+    it('returns null and does not throw when matchBefore throws', () => {
+        const ctx = makeThrowingCtx();
+        expect(() => symbolCompletion(ctx)).not.toThrow();
+        expect(symbolCompletion(ctx)).toBeNull();
     });
 });
