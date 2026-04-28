@@ -919,4 +919,34 @@ describe('App — font size controls', () => {
         const { display } = await renderAndFind();
         expect(display()).toBe('120%');
     });
+
+    it('Ctrl+ScrollUp increases font size', async () => {
+        const { display } = await renderAndFind();
+        fireEvent.wheel(window, { ctrlKey: true, deltaY: -100 });
+        expect(display()).toBe('105%');
+    });
+
+    it('Ctrl+ScrollDown decreases font size', async () => {
+        const { display } = await renderAndFind();
+        fireEvent.wheel(window, { ctrlKey: true, deltaY: 100 });
+        expect(display()).toBe('95%');
+    });
+
+    it('plain scroll (no modifier) does not change font size', async () => {
+        const { display } = await renderAndFind();
+        fireEvent.wheel(window, { ctrlKey: false, deltaY: -100 });
+        expect(display()).toBe('100%');
+    });
+
+    it('Meta+ScrollUp increases font size (macOS Cmd key)', async () => {
+        const { display } = await renderAndFind();
+        fireEvent.wheel(window, { metaKey: true, deltaY: -100 });
+        expect(display()).toBe('105%');
+    });
+
+    it('Meta+ScrollDown decreases font size (macOS Cmd key)', async () => {
+        const { display } = await renderAndFind();
+        fireEvent.wheel(window, { metaKey: true, deltaY: 100 });
+        expect(display()).toBe('95%');
+    });
 });

@@ -914,6 +914,21 @@ function App() {
     //**************************************************************************
     // Print Handling
     //**************************************************************************
+    // Ctrl/Cmd + Scroll wheel → zoom in / out (mirrors the +/− toolbar buttons).
+    // { passive: false } is required so preventDefault() actually suppresses the
+    // browser's own pinch-zoom / page-zoom on the WKWebView/WebView2 host.
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        if (e.deltaY < 0) {
+          handleFontSizeIncrease();
+        } else if (e.deltaY > 0) {
+          handleFontSizeDecrease();
+        }
+      }
+    };
+    window.addEventListener('wheel', handleWheel, { passive: false });
+
     const handleBeforePrint = () => {
       // Strip " - lattice (...)" from title for clean printing
       const fileName = m_currentFilePath
@@ -950,6 +965,7 @@ function App() {
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('wheel', handleWheel);
       window.removeEventListener('beforeprint', handleBeforePrint);
       window.removeEventListener('afterprint', handleAfterPrint);
     };
