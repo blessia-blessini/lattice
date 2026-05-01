@@ -10,43 +10,33 @@
 COMMIT_MSG_FILE="$1"
 COMMIT_TITLE=$(head -1 "$COMMIT_MSG_FILE" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
 
-# ── Skip conditions ─────────────────────────────────────────────────────────
-# Empty message
+# Skip conditions
 [ -z "$COMMIT_TITLE" ] && exit 0
 
-# Merge / rebase commits
 git rev-parse --verify MERGE_HEAD > /dev/null 2>&1 && exit 0
 [ -n "$GIT_REBASE_HEAD" ] && exit 0
 
-# Conventional prefixes we don't want as changelog noise:
-#   Merge …, Revert …, fixup! …, squash! …, chore(changelog): …
 case "$COMMIT_TITLE" in
   Merge\ *|Revert\ *|fixup\!*|squash\!*|"chore(changelog):"*) exit 0 ;;
 esac
 
-# Explicit opt-out
 [[ "$COMMIT_TITLE" == *"[skip-changelog]"* ]] && exit 0
 
-# ── Update CHANGELOG.md ──────────────────────────────────────────────────────
+# Update CHANGELOG.md
 REPO_ROOT=$(git rev-parse --show-toplevel)
-CHANGELOG="$REPO_ROOT/CHANGELOG.md"
-[ -f "$CHANGELOG" ] || exit 0
 
-# Locate the compiled Rust binary (Unix or Windows via Git-Bash/MSYS)
 BINARY="$REPO_ROOT/.githooks/changelog-update"
 [ -f "$BINARY" ] || BINARY="$REPO_ROOT/.githooks/changelog-update.exe"
-[ -f "$BINARY" ] || exit 0  # binary not built yet (setup not run); skip silently
+[ -f "$BINARY" ] || exit 0
 
-# On Windows the binary is a .exe; Git Bash gives it a MSYS-style path
-# (/c/Users/...) which Windows can't resolve. Convert to native Windows path.
-CHANGELOG_ARG="$CHANGELOG"
-if [[ "$BINARY" == *.exe ]]; then
-    CHANGELOG_ARG=$(cygpath -w "$CHANGELOG" 2>/dev/null || echo "$CHANGELOG")
-fi
+# cd to repo root so binary and git-add both use plain relative paths,
+# avoiding all MSYS/Win32 path-conversion issues.
+cd "$REPO_ROOT" || exit 0
+[ -f "CHANGELOG.md" ] || exit 0
 
-"$BINARY" "$COMMIT_TITLE" "$CHANGELOG_ARG"
+"$BINARY" "$COMMIT_TITLE" "CHANGELOG.md"
 
-# Stage CHANGELOG.md so the update is part of this very commit
-git add "$CHANGELOG"
+# Stage so the update is part of this very commit
+git add CHANGELOG.md
 
-exit 0  # never block a commit
+exit 0
