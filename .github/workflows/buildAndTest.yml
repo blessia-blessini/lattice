@@ -386,7 +386,6 @@ jobs:
       # But usually we run them on standard desktop runners.
       # Note: 'npm install/ci' was done in step 150/151.
       run: |
-        npm run test:run
         ./scripts/build-test.sh
 
     ################################################################
@@ -508,10 +507,7 @@ jobs:
         cd ..
 
         # Extract the block that starts with "## $VERSION" up to the next "## "
-        awk "/^## ${VERSION}$/,/^## /" _src/CHANGELOG.md \
-          | head -n -1 \
-          | sed '1d' \
-          > release-notes.md
+        awk "/^## ${VERSION}$/,/---/" _src/CHANGELOG.md | head -n -1 | sed '1d' > release-notes.md
 
         # Fallback: if nothing was extracted, use a generic note
         if [ ! -s release-notes.md ]; then
