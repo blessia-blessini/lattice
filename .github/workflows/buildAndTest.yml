@@ -599,6 +599,8 @@ jobs:
         printf '%s\n' "---" "title: \"Lattice ${VERSION}\"" "layout: default" "---" "" \
           "# Lattice ${VERSION}" "" \
           "**Released:** ${DATE}" "" \
+         "$( [ -f release-notes.md ] && cat release-notes.md )" "" \
+          \
           "## Downloads" "" \
           "| File | Size |" \
           "|------|------|" > "$OUT"
@@ -612,8 +614,8 @@ jobs:
         # Footer
         printf '\n%s\n' "## Notes" "" \
           "- [Full release on GitHub](${RELEASE_URL})" \
-          "- Executables are provided as-is; see [LICENSE](https://lattice-technologies.com/LICENSE) for terms." \
-          "" >> "$OUT"
+          "- Executables are provided as-is; see as download [LICENSE](https://lattice-technologies.com/LICENSE) for terms." \
+          "LICENCE IS: GNU AFFERO GENERAL PUBLIC LICENSE." >> "$OUT"
 
         # Commit only the tiny index.md — no binaries in git
         cd release-site

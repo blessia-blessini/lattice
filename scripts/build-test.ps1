@@ -50,9 +50,9 @@ try {
         exit $cargoResult
     }
 
-    # 2. Run Frontend Tests
-    Write-Output "Running Frontend Tests..."
-    npm run test:run
+    # 2. Run Frontend Tests Run Later with Coverage
+    # Write-Output "Running Frontend Tests..."
+    # npm run test:run
 
     # 2b. Run Frontend Coverage
     Write-Output "Running Frontend Coverage..."

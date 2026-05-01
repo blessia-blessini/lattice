@@ -5,21 +5,20 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ---
 
-
-## vCurrent #v0.2.21
-
 <!-- older versions below 
 ### Added    
 ### Fixed
 - N/A
 -->
 
+## v0.2.22
 
-### Changed  <!-- Automatically added comment messages comments -->
-- Fix typo in build scripts
-- Refactor changelog parsing and test execution
-- Bump version to 0.2.21
-- Move changelog update to post-commit hook Refactor changelog update to post-commit hook
+### Changes
+  - Made tests run faster by avoiding repetative runs
+  - Published changes Release `index.md`
+  - Various Minor Fixes
+
+---
 
 ## v0.2.21
 
@@ -39,3 +38,16 @@ Edit the section for your next version **before** pushing the release tag like v
 ## vSEED
 ---
 <!-- older versions below -->
+
+
+## vCurrent 
+  WIP #v0.2.23
+
+### Changed  <!-- Automatically added comment messages comments -->
+- Bump version to 0.2.22
+- Add release notes to index.md
+- Tests are executed ONLY with coverage.
+- Fix typo in build scripts
+- Refactor changelog parsing and test execution
+- Bump version to 0.2.21
+- Move changelog update to post-commit hook Refactor changelog update to post-commit hook
