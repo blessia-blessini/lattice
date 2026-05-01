@@ -207,8 +207,8 @@ chmod +x .githooks/changelog-update
 
 echo "[INFO] Registering .githooks/ as the git hooks directory..."
 git config core.hooksPath .githooks
-chmod +x .githooks/commit-msg
-echo "[OK] Git hooks enabled (commit-msg → auto-update CHANGELOG.md)"
+chmod +x .githooks/post-commit
+echo "[OK] Git hooks enabled (post-commit → auto-update CHANGELOG.md)"
 
 echo "[INFO] Locking presence of env initialization file from git changes..."
 git update-index --skip-worktree _env-not-yet-initialized.md

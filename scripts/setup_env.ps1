@@ -84,7 +84,7 @@ Copy-Item .\utils\changelog-update\changelog-update.exe .githooks\
 
 Write-Host "[INFO] Registering .githooks/ as the git hooks directory..."
 git config core.hooksPath .githooks
-Write-Host "[OK] Git hooks enabled (commit-msg -> auto-update CHANGELOG.md)"
+Write-Host "[OK] Git hooks enabled (post-commit -> auto-update CHANGELOG.md)"
 
 Write-Host "Locking presence of env initialization file from git changes..."
 git update-index --skip-worktree _env-not-yet-initialized.md
