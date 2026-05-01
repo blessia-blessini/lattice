@@ -15,6 +15,7 @@ Edit the section for your next version **before** pushing the release tag like v
 -->
 
 ### Changed  <!-- Automatically added comment messages comments -->
+- Update dependencies and version numbers. Fixes #15
 - Bump version to 0.2.21
 - Move changelog update to post-commit hook Refactor changelog update to post-commit hook
 
