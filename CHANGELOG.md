@@ -16,6 +16,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 
 ### Changed  <!-- Automatically added comment messages comments -->
+- Add release notes to index.md
 - Tests are executed ONLY with coverage.
 - Fix typo in build scripts
 - Refactor changelog parsing and test execution
