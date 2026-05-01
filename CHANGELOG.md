@@ -15,12 +15,18 @@ Edit the section for your next version **before** pushing the release tag like v
 -->
 
 ### Changed  <!-- Automatically added comment messages comments -->
+- Bump version to 0.2.21
 - Move changelog update to post-commit hook Refactor changelog update to post-commit hook
 
-## v0.2.20
+## v0.2.21
 
 ### Changed
  - The zoom-in/out with mouse `CTRL + Mouse-Scroll` (macOS: ⌘ + Mouse-Scroll) works now.
+ - Automated Changelog and Release Notes
+ - 
+
+
+## v0.2.20
 
 ---
 
