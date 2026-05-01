@@ -9,7 +9,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## vCurrent #v0.2.21
 
 <!-- older versions below 
-### Added
+### Added 
 ### Fixed
 - N/A
 -->

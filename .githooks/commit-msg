@@ -34,9 +34,23 @@ BINARY="$REPO_ROOT/.githooks/changelog-update"
 cd "$REPO_ROOT" || exit 0
 [ -f "CHANGELOG.md" ] || exit 0
 
-"$BINARY" "$COMMIT_TITLE" "CHANGELOG.md"
+BINARY_OUT=$("$BINARY" "$COMMIT_TITLE" "CHANGELOG.md" 2>&1)
+BINARY_EXIT=$?
 
-# Stage so the update is part of this very commit
-git add CHANGELOG.md
+ADD_OUT=$(git add CHANGELOG.md 2>&1)
+ADD_EXIT=$?
+
+# Debug log — remove once confirmed working
+LOG="$REPO_ROOT/.githooks/debug-changelog.log"
+{
+  echo "=== $(date) ==="
+  echo "TITLE:        $COMMIT_TITLE"
+  echo "BINARY:       $BINARY"
+  echo "BINARY_EXIT:  $BINARY_EXIT"
+  echo "BINARY_OUT:   $BINARY_OUT"
+  echo "ADD_EXIT:     $ADD_EXIT"
+  echo "ADD_OUT:      $ADD_OUT"
+  echo "CHANGELOG_MD: $(cat CHANGELOG.md | grep -A3 '### Changed' | head -5)"
+} >> "$LOG"
 
 exit 0
