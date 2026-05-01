@@ -1,0 +1,7 @@
+[package]
+name = "changelog-update"
+version = "0.1.0"
+edition = "2021"
+
+# No external dependencies — pure std
+[dependencies]

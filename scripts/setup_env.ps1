@@ -75,6 +75,17 @@ Push-Location .\utils\buildno-gen
 Pop-Location
 Copy-Item .\utils\buildno-gen\buildno-gen.exe  .
 
+Write-Host " ==>> BUILDING changelog-update utility"
+Push-Location .\utils\changelog-update
+.\build.ps1
+Pop-Location
+Write-Host "[INFO] Copying changelog-update.exe to .githooks\"
+Copy-Item .\utils\changelog-update\changelog-update.exe .githooks\
+
+Write-Host "[INFO] Registering .githooks/ as the git hooks directory..."
+git config core.hooksPath .githooks
+Write-Host "[OK] Git hooks enabled (post-commit -> auto-update CHANGELOG.md)"
+
 Write-Host "Locking presence of env initialization file from git changes..."
 git update-index --skip-worktree _env-not-yet-initialized.md
 

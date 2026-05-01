@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# LEGAL NOTE:
+# LATTICE (tm) - The Portable and standard Markdown Editor
+# Copyright (C) 2026 Owner of blessini.com (a.k.a Blessia)
+# email: blessia AT blessini.com
+#
+# GNU AFFERO GENERAL PUBLIC LICENSE V3 NOTICE:
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# See LICENCE file in GitHUB root folder of the repository.
+# END OF NOTE
+
+#############################################################################
+# post-commit hook — auto-insert the commit title into CHANGELOG.md
+#
+# Single source of truth for all commit methods (terminal, Zed, any GUI).
+# Reads the title from the just-created commit, updates CHANGELOG.md,
+# and silently amends the commit to include it — no extra commit created.
+#
+# To skip for one commit, put [skip-changelog] anywhere in the message.
+
+COMMIT_TITLE=$(git log -1 --format="%s")
+
+# Skip conditions (mirror commit-msg hook)
+[ -z "$COMMIT_TITLE" ] && exit 0
+
+git rev-parse --verify MERGE_HEAD > /dev/null 2>&1 && exit 0
+[ -n "$GIT_REBASE_HEAD" ] && exit 0
+
+case "$COMMIT_TITLE" in
+  Merge\ *|Revert\ *|fixup\!*|squash\!*|"chore(changelog):"*) exit 0 ;;
+esac
+
+[[ "$COMMIT_TITLE" == *"[skip-changelog]"* ]] && exit 0
+
+# ── Update CHANGELOG.md ──────────────────────────────────────────────────────
+REPO_ROOT=$(git rev-parse --show-toplevel)
+
+BINARY="$REPO_ROOT/.githooks/changelog-update"
+[ -f "$BINARY" ] || BINARY="$REPO_ROOT/.githooks/changelog-update.exe"
+[ -f "$BINARY" ] || exit 0
+
+cd "$REPO_ROOT" || exit 0
+[ -f "CHANGELOG.md" ] || exit 0
+
+"$BINARY" "$COMMIT_TITLE" "CHANGELOG.md"
+
+# Only amend if the binary actually changed CHANGELOG.md
+if ! git diff --quiet CHANGELOG.md; then
+    git add CHANGELOG.md
+    # --no-verify prevents this amend from triggering hooks again (no loop)
+    git commit --amend --no-edit --no-verify
+fi
+
+exit 0
