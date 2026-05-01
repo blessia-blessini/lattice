@@ -193,6 +193,23 @@ chmod +x buildno-gen # make it executable -- just in case
 echo "   *** return to original folder" && popd # return to previous folder
 
 
+# 7. Build changelog-update utility (git hook helper — pure std Rust, no extra deps)
+echo "**************************************"
+echo "[INFO] Building changelog-update utility ..."
+echo "*   using utils/changelog-update/build.sh"
+echo "**************************************"
+pushd ./utils/changelog-update
+sh build.sh
+popd
+echo "[INFO] Copying changelog-update to .githooks/"
+cp ./utils/changelog-update/changelog-update .githooks/
+chmod +x .githooks/changelog-update
+
+echo "[INFO] Registering .githooks/ as the git hooks directory..."
+git config core.hooksPath .githooks
+chmod +x .githooks/commit-msg
+echo "[OK] Git hooks enabled (commit-msg → auto-update CHANGELOG.md)"
+
 echo "[INFO] Locking presence of env initialization file from git changes..."
 git update-index --skip-worktree _env-not-yet-initialized.md
 

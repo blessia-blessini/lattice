@@ -342,13 +342,14 @@ jobs:
     - name: 350. Build App (Desktop AND Mobile)
       if: matrix.config.platform != 'ios' ### && matrix.config.platform != 'android' # see comment in 350.2
       env:
-        LATTICEBUILD_NO: ${{matrix.config.platform}}-${{ steps.build-no-gen.outputs.BUILD_NO }}
+        # On a tag build, prefix with the tag so the window title shows e.g. "lattice (v0.2.20 · windows-desktop-abc123)"
+        LATTICEBUILD_NO: ${{ startsWith(github.ref, 'refs/tags/') && format('{0} · {1}-{2}', github.ref_name, matrix.config.platform, steps.build-no-gen.outputs.BUILD_NO) || format('{0}-{1}', matrix.config.platform, steps.build-no-gen.outputs.BUILD_NO) }}
       run: npm run tauri ${{ matrix.config.bldprefix }} build -- ${{ matrix.config.args }}
 
     - name: 350.2 Build App (iOS)
       if: matrix.config.platform == 'ios'
       env:
-        LATTICEBUILD_NO: ${{matrix.config.platform}}-${{ steps.build-no-gen.outputs.BUILD_NO }}
+        LATTICEBUILD_NO: ${{ startsWith(github.ref, 'refs/tags/') && format('{0} · {1}-{2}', github.ref_name, matrix.config.platform, steps.build-no-gen.outputs.BUILD_NO) || format('{0}-{1}', matrix.config.platform, steps.build-no-gen.outputs.BUILD_NO) }}
       # iOS build requires code signing identities usually.
       # This step serves as the requested placeholder/cross-build attempt.
       run: |
@@ -483,6 +484,45 @@ jobs:
       run: echo "VERSION=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
 
     ################################################################
+    # 900.5 / Extract release notes from CHANGELOG.md
+    #         Checks out the source repo (sparse, CHANGELOG.md only)
+    #         and pulls out the ## vX.X.X section matching this tag.
+    #         The extracted Markdown is saved to release-notes.md
+    #         for use by step 904.
+    #
+    #         Edit CHANGELOG.md before pushing the tag — that file
+    #         is the single place to write & review the release notes.
+    ################################################################
+    - name: 900.5. Extract release notes from CHANGELOG.md
+      shell: bash
+      run: |
+        VERSION="${{ steps.version.outputs.VERSION }}"
+
+        # Sparse-checkout only CHANGELOG.md so we don't pull the whole tree
+        git clone --no-checkout --depth 1 \
+          "https://github.com/blessia-blessini/lattice.git" _src
+        cd _src
+        git sparse-checkout init --cone
+        git sparse-checkout set CHANGELOG.md
+        git checkout
+        cd ..
+
+        # Extract the block that starts with "## $VERSION" up to the next "## "
+        awk "/^## ${VERSION}$/,/^## /" _src/CHANGELOG.md \
+          | head -n -1 \
+          | sed '1d' \
+          > release-notes.md
+
+        # Fallback: if nothing was extracted, use a generic note
+        if [ ! -s release-notes.md ]; then
+          echo "Automated release — no changelog entry found for ${VERSION}." > release-notes.md
+          echo "See [lattice-technologies.com](https://lattice-technologies.com/Lattice-Releases/) for details." >> release-notes.md
+        fi
+
+        echo "--- Release notes preview ---"
+        cat release-notes.md
+
+    ################################################################
     # 901 / Download every DOWNLOAD-* artifact from this run
     ################################################################
     - name: 901. Download all build artifacts
@@ -534,7 +574,7 @@ jobs:
         RELEASE_URL=$(gh release create "$VERSION" staging/* \
           --repo blessia-blessini/lattice \
           --title "Lattice ${VERSION}" \
-          --notes "Automated release — see [lattice-technologies.com](https://lattice-technologies.com/Lattice-Releases/) for details." \
+          --notes-file release-notes.md \
           --latest)
         echo "RELEASE_URL=$RELEASE_URL" >> $GITHUB_ENV
         echo "Release created: $RELEASE_URL"

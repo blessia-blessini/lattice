@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# commit-msg hook — auto-insert the commit title into CHANGELOG.md
+#
+# Fires after the user writes the commit message, before the commit is
+# finalised. git add inside here includes changes in the same commit,
+# so no separate "update changelog" commit is created.
+#
+# To skip for one commit, put [skip-changelog] anywhere in the message.
+
+COMMIT_MSG_FILE="$1"
+COMMIT_TITLE=$(head -1 "$COMMIT_MSG_FILE" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+# ── Skip conditions ─────────────────────────────────────────────────────────
+# Empty message
+[ -z "$COMMIT_TITLE" ] && exit 0
+
+# Merge / rebase commits
+git rev-parse --verify MERGE_HEAD > /dev/null 2>&1 && exit 0
+[ -n "$GIT_REBASE_HEAD" ] && exit 0
+
+# Conventional prefixes we don't want as changelog noise:
+#   Merge …, Revert …, fixup! …, squash! …, chore(changelog): …
+case "$COMMIT_TITLE" in
+  Merge\ *|Revert\ *|fixup\!*|squash\!*|"chore(changelog):"*) exit 0 ;;
+esac
+
+# Explicit opt-out
+[[ "$COMMIT_TITLE" == *"[skip-changelog]"* ]] && exit 0
+
+# ── Update CHANGELOG.md ──────────────────────────────────────────────────────
+REPO_ROOT=$(git rev-parse --show-toplevel)
+CHANGELOG="$REPO_ROOT/CHANGELOG.md"
+[ -f "$CHANGELOG" ] || exit 0
+
+# Locate the compiled Rust binary (Unix or Windows via Git-Bash/MSYS)
+BINARY="$REPO_ROOT/.githooks/changelog-update"
+[ -f "$BINARY" ] || BINARY="$REPO_ROOT/.githooks/changelog-update.exe"
+[ -f "$BINARY" ] || exit 0  # binary not built yet (setup not run); skip silently
+
+"$BINARY" "$COMMIT_TITLE" "$CHANGELOG"
+
+# Stage CHANGELOG.md so the update is part of this very commit
+git add "$CHANGELOG"
+
+exit 0  # never block a commit
