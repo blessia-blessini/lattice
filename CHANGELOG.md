@@ -17,23 +17,16 @@ Edit the section for your next version **before** pushing the release tag like v
   - Made tests run faster by avoiding repetative runs
   - Published changes Release `index.md`
   - Various Minor Fixes
-
 ---
-
 ## v0.2.21
-
 ### Changed
   - The zoom-in/out with mouse `CTRL + Mouse-Scroll` (macOS: `⌘ + Mouse-Scroll`) works now.
   - Update dependencies and version numbers, thus fixed #15
   - Automated Changelog and Release Notes
-
 ### Fixed
   - Issue #15:[Revisit Dependabot Alert #16: glib VariantStrIter unsoundness (May 2026)](https://github.com/blessia-blessini/lattice/issues/15)
-
 ---
-   
 ## v0.2.20
-
 ---
 ## vSEED
 ---
@@ -44,6 +37,7 @@ Edit the section for your next version **before** pushing the release tag like v
   WIP #v0.2.23
 
 ### Changed  <!-- Automatically added comment messages comments -->
+- Update changelog for v0.2.22
 - Bump version to 0.2.22
 - Add release notes to index.md
 - Tests are executed ONLY with coverage.
