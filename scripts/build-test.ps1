@@ -1,23 +1,23 @@
 # LEGAL NOTE:
-# LATTICE (tm) - The Portable and standard Markdown Editor 
+# LATTICE (tm) - The Portable and standard Markdown Editor
 # Copyright (C) 2026 Owner of blessini.com (a.k.a Blessia)
 # email: blessia AT blessini.com
-# 
+#
 # GNU AFFERO GENERAL PUBLIC LICENSE V3 NOTICE:
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
 # published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-#   
+#
 # See LICENCE file in GitHUB root folder of the repository.
 # END OF NOTE
 # Pre-build checks and setup
@@ -26,7 +26,7 @@ try {
 
 
     # Run the Reproduction Tool
-    Write-Output "Running Conflict Reproducer..." 
+    Write-Output "Running Conflict Reproducer..."
     ./scripts/Test-Conflict.ps1
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Conflict Reproduction failed OR caused failure!"
@@ -59,7 +59,7 @@ try {
     npm run test:coverage
 
     # 3 check version of cargo-llvm-cov
-    cargo llvm-cov --version  
+    cargo llvm-cov --version
     Write-Output "Running 2nd Linter..."
     cargo clippy -- -D warnings
 
@@ -74,7 +74,7 @@ try {
 finally {
     Write-Output "Restoring working directory ..."
     Pop-Location
-    
+
     # restore the old environment variable -- it will work even for "no vallue"
     if ($oldEnv) {
         $env:LATTICEBUILD_NO = $oldEnv
@@ -83,8 +83,8 @@ finally {
     else {
         if (Test-Path Env:LATTICEBUILD_NO) {
             Remove-Item Env:LATTICEBUILD_NO
-            Write-Output "LATTICEBUILD_NO unset as before tunning the script."
+            Write-Output "LATTICEBUILD_NO unset as before running the script."
         }
     }
-   
+
 }

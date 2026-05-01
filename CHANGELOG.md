@@ -16,6 +16,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 
 ### Changed  <!-- Automatically added comment messages comments -->
+- Fix typo in build scripts
 - Refactor changelog parsing and test execution
 - Bump version to 0.2.21
 - Move changelog update to post-commit hook Refactor changelog update to post-commit hook
