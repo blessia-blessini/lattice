@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# post-commit hook — auto-insert the commit title into CHANGELOG.md
+#
+# Single source of truth for all commit methods (terminal, Zed, any GUI).
+# Reads the title from the just-created commit, updates CHANGELOG.md,
+# and silently amends the commit to include it — no extra commit created.
+#
+# To skip for one commit, put [skip-changelog] anywhere in the message.
+
+COMMIT_TITLE=$(git log -1 --format="%s")
+
+# Skip conditions (mirror commit-msg hook)
+[ -z "$COMMIT_TITLE" ] && exit 0
+
+git rev-parse --verify MERGE_HEAD > /dev/null 2>&1 && exit 0
+[ -n "$GIT_REBASE_HEAD" ] && exit 0
+
+case "$COMMIT_TITLE" in
+  Merge\ *|Revert\ *|fixup\!*|squash\!*|"chore(changelog):"*) exit 0 ;;
+esac
+
+[[ "$COMMIT_TITLE" == *"[skip-changelog]"* ]] && exit 0
+
+# ── Update CHANGELOG.md ──────────────────────────────────────────────────────
+REPO_ROOT=$(git rev-parse --show-toplevel)
+
+BINARY="$REPO_ROOT/.githooks/changelog-update"
+[ -f "$BINARY" ] || BINARY="$REPO_ROOT/.githooks/changelog-update.exe"
+[ -f "$BINARY" ] || exit 0
+
+cd "$REPO_ROOT" || exit 0
+[ -f "CHANGELOG.md" ] || exit 0
+
+"$BINARY" "$COMMIT_TITLE" "CHANGELOG.md"
+
+# Only amend if the binary actually changed CHANGELOG.md
+if ! git diff --quiet CHANGELOG.md; then
+    git add CHANGELOG.md
+    # --no-verify prevents this amend from triggering hooks again (no loop)
+    git commit --amend --no-edit --no-verify
+fi
+
+exit 0

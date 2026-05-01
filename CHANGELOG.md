@@ -15,6 +15,7 @@ Edit the section for your next version **before** pushing the release tag like v
 -->
 
 ### Changed  <!-- Automatically added comment messages comments -->
+- Move changelog update to post-commit hook Refactor changelog update to post-commit hook
 
 ## v0.2.20
 
