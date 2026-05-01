@@ -15,8 +15,6 @@ Edit the section for your next version **before** pushing the release tag like v
 -->
 
 ### Changed  <!-- Automatically added comment messages comments -->
-- Test commit 2
-
 
 ## v0.2.20
 

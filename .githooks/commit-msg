@@ -10,6 +10,10 @@
 COMMIT_MSG_FILE="$1"
 COMMIT_TITLE=$(head -1 "$COMMIT_MSG_FILE" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
 
+# DEBUG — top of hook, always fires
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+echo "=== $(date) | TITLE='$COMMIT_TITLE' | MSG_FILE='$COMMIT_MSG_FILE'" >> "$SCRIPT_DIR/debug-changelog.log"
+
 # Skip conditions
 [ -z "$COMMIT_TITLE" ] && exit 0
 
