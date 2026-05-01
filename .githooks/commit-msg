@@ -37,7 +37,14 @@ BINARY="$REPO_ROOT/.githooks/changelog-update"
 [ -f "$BINARY" ] || BINARY="$REPO_ROOT/.githooks/changelog-update.exe"
 [ -f "$BINARY" ] || exit 0  # binary not built yet (setup not run); skip silently
 
-"$BINARY" "$COMMIT_TITLE" "$CHANGELOG"
+# On Windows the binary is a .exe; Git Bash gives it a MSYS-style path
+# (/c/Users/...) which Windows can't resolve. Convert to native Windows path.
+CHANGELOG_ARG="$CHANGELOG"
+if [[ "$BINARY" == *.exe ]]; then
+    CHANGELOG_ARG=$(cygpath -w "$CHANGELOG" 2>/dev/null || echo "$CHANGELOG")
+fi
+
+"$BINARY" "$COMMIT_TITLE" "$CHANGELOG_ARG"
 
 # Stage CHANGELOG.md so the update is part of this very commit
 git add "$CHANGELOG"
