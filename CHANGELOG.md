@@ -23,8 +23,6 @@ Edit the section for your next version **before** pushing the release tag like v
 ### Changed
  - The zoom-in/out with mouse `CTRL + Mouse-Scroll` (macOS: ⌘ + Mouse-Scroll) works now.
  - Automated Changelog and Release Notes
- - 
-
 
 ## v0.2.20
 
