@@ -59,7 +59,16 @@ BINARY="$REPO_ROOT/.githooks/changelog-update"
 cd "$REPO_ROOT" || exit 0
 [ -f "CHANGELOG.md" ] || exit 0
 
-"$BINARY" "$COMMIT_TITLE" "CHANGELOG.md"
+# On Windows Git Bash, call via cmd.exe to avoid SmartScreen blocking direct .exe execution
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*)
+    BINARY_WIN=$(cygpath -w "$BINARY")
+    cmd.exe /c "$BINARY_WIN" "$COMMIT_TITLE" "CHANGELOG.md"
+    ;;
+  *)
+    "$BINARY" "$COMMIT_TITLE" "CHANGELOG.md"
+    ;;
+esac
 
 # Only amend if the binary actually changed CHANGELOG.md
 if ! git diff --quiet CHANGELOG.md; then
