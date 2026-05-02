@@ -31,6 +31,10 @@
 #
 # To skip for one commit, put [skip-changelog] anywhere in the message.
 
+
+echo "post-commit fired"
+echo "post-commit fired t" >> ./tmp/hook-debug.log
+
 COMMIT_TITLE=$(git log -1 --format="%s")
 
 # Skip conditions (mirror commit-msg hook)
