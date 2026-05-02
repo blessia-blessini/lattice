@@ -614,15 +614,16 @@ jobs:
         # Footer
         printf '\n%s\n' "## Notes" "" \
           "- [Full release on GitHub](${RELEASE_URL})" \
-          "- Executables are provided as-is; see as download [LICENSE](https://lattice-technologies.com/LICENSE) for terms." \
-          "LICENCE IS: GNU AFFERO GENERAL PUBLIC LICENSE." >> "$OUT"
+          "- DUAL LICENCE - FOR TERMS DETAILS SEE [README.md section Licencing ](https://github.com/blessia-blessini/lattice#licensing)." \
+          "" >> "$OUT"
 
         # Commit only the tiny index.md — no binaries in git
         cd release-site
         git config user.name  "GitHub Actions"
         git config user.email "actions@github.com"
         git add Lattice-Releases/
-        git commit -m "Release ${VERSION}: add index.md (links to GitHub Release assets)"
+        git commit -m "Release ${VERSION}: add index.md (links to GitHub Release assets)" \
+          -m "Co-authored-by: Blessia-Blessini <273819958+blessia-blessini@users.noreply.github.com>"
         git push
 
     ################################################################
