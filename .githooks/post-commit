@@ -129,7 +129,9 @@ case "$(uname -s)" in
   *)
     # On POSIX (Linux / macOS) just call the binary directly
     trace "posix: calling binary directly"
+    trace "executing: \"$BINARY\" \"$COMMIT_TITLE\" \"CHANGELOG.md\" in $(pwd)"
     "$BINARY" "$COMMIT_TITLE" "CHANGELOG.md"
+
     trace "binary call completed (exit $?)"
     ;;
 esac
