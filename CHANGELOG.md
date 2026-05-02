@@ -11,6 +11,13 @@ Edit the section for your next version **before** pushing the release tag like v
 - N/A
 -->
 
+
+## v0.2.23
+
+### Changes
+  - updated with clear links on release side
+  
+---
 ## v0.2.22
 
 ### Changes
@@ -34,7 +41,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 
 ## vCurrent 
-  WIP #v0.2.23
+  WIP #v0.2.24
 
 ### Changed  <!-- Automatically added comment messages comments -->
 - Update changelog for v0.2.22
