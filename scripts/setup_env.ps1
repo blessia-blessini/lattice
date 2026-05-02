@@ -1,23 +1,23 @@
 # LEGAL NOTE:
-# LATTICE (tm) - The Portable and standard Markdown Editor 
+# LATTICE (tm) - The Portable and standard Markdown Editor
 # Copyright (C) 2026 Owner of blessini.com (a.k.a Blessia)
 # email: blessia AT blessini.com
-# 
+#
 # GNU AFFERO GENERAL PUBLIC LICENSE V3 NOTICE:
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
 # published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-#   
+#
 # See LICENCE file in GitHUB root folder of the repository.
 # END OF NOTE
 Write-Host "=========================================="
@@ -108,17 +108,41 @@ Write-Host "  Answering now so you are not surprised during a later commit."
 Write-Host "=========================================================="
 Write-Host ""
 
+# wait so that user can see the warning
+#
+$seconds = 10
+for ($i = $seconds; $i -gt 0; $i--) {
+    Write-Host "`r *** PLEASE READ THE ABOVE INTO `r *** Continuing in $i seconds... (press any key to proceed now) " -NoNewline -ForegroundColor Yellow
+    if ([Console]::KeyAvailable) {
+        $null = [Console]::ReadKey($true)
+        break
+    }
+    Start-Sleep -Seconds 1
+}
+
+
 # Invoke the binary now (no args = usage print + exit 0, no files touched).
 # This is the moment Windows will show the security confirmation if needed.
 # Capturing the result lets us report back clearly.
 try {
-    $null = & ".\.githooks\changelog-update.exe" 2>&1
+    $p = Start-Process -FilePath ".\.githooks\changelog-update.exe" -Wait -PassThru -ErrorAction Stop
     Write-Host "[OK] changelog-update.exe is trusted. CHANGELOG.md will auto-update on commits."
 }
 catch {
-    Write-Host "[WARN] changelog-update.exe could not be confirmed ($_)."
-    Write-Host "       CHANGELOG.md will NOT be auto-updated. Commits are unaffected."
-    Write-Host "       Re-run this setup at any time to enable auto-update."
+    Write-Host "[WARN] changelog-update.exe could not be confirmed ($_)." -ForegroundColor Yellow
+    Write-Host "       CHANGELOG.md will NOT be auto-updated. Commits are unaffected." -ForegroundColor Yellow
+    Write-Host "       Re-run this setup at any time to enable auto-update." -ForegroundColor Yellow
+    Write-Host ""
+    $seconds = 10
+    for ($i = $seconds; $i -gt 0; $i--) {
+        Write-Host "`r  Continuing in $i seconds... (press any key to proceed now) " -NoNewline -ForegroundColor Yellow
+        if ([Console]::KeyAvailable) {
+            $null = [Console]::ReadKey($true)
+            break
+        }
+        Start-Sleep -Seconds 1
+    }
+    Write-Host ""
 }
 Write-Host ""
 
