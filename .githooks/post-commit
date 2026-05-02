@@ -33,7 +33,7 @@
 
 
 echo "post-commit fired"
-echo "post-commit fired t2" >> ./tmp/hook-debug.log
+echo "post-commit fired t2" >> ./hook-debug.log
 
 COMMIT_TITLE=$(git log -1 --format="%s")
 
