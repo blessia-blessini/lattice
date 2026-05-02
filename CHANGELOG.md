@@ -44,6 +44,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ### Changed  <!-- Automatically added comment messages comments -->
 <!-- INSERT BULLETS UNDER THIS LINE -->
+- Fix: Handle windows paths in post-commit hook
 
 - Update changelog for v0.2.22
 - Bump version to 0.2.22
