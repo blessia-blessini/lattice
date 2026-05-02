@@ -31,40 +31,78 @@
 //!
 //! Always exits 0 — it must never block a git commit.
 
-use std::{env, fs, process};
+use std::{env, fs, io::Write, process, time::{SystemTime, UNIX_EPOCH}};
 
 const MARKER: &str = "INSERT BULLETS UNDER THIS LINE";
+
+////////////////////////////////////////////////////////////////
+/// trace — append a timestamped line to hook-debug.log
+///
+/// Uses the same ./hook-debug.log file as the bash post-commit hook.
+/// Lines are prefixed with [rust] so they are easy to distinguish.
+/// Silently does nothing if the file cannot be opened — tracing
+/// must never block or fail a commit.
+////////////////////////////////////////////////////////////////
+fn trace(msg: &str) {
+    // Compute HH:MM:SS from seconds since Unix epoch (UTC, pure std)
+    let secs = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let h = (secs % 86400) / 3600;
+    let m = (secs % 3600) / 60;
+    let s =  secs % 60;
+
+    // Append to the log; ignore any error (read-only fs, missing dir, etc.)
+    if let Ok(mut f) = fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("./hook-debug.log")
+    {
+        let _ = writeln!(f, "{h:02}:{m:02}:{s:02} [rust] {msg}");
+    }
+} // trace END /////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////
 /// main
 ////////////////////////////////////////////////////////////////
 fn main() {
     let args: Vec<String> = env::args().collect();
+    trace(&format!("binary started, {} arg(s) received", args.len() - 1));
 
     if args.len() < 3 {
         eprintln!("[changelog-update] usage: changelog-update <title> <changelog-path>");
+        trace("exit: too few arguments — printing usage");
         process::exit(0);
     }
 
     let title = args[1].trim();
     let path = &args[2];
+    trace(&format!("args parsed — title: '{title}', path: '{path}'"));
 
     if title.is_empty() {
+        trace("exit: title is empty — nothing to do");
         process::exit(0);
     }
 
     let content = match fs::read_to_string(path) {
-        Ok(c) => c,
+        Ok(c)  => { trace(&format!("changelog read OK ({} bytes)", c.len())); c }
         Err(e) => {
             eprintln!("[changelog-update] warning: cannot read {path}: {e}");
+            trace(&format!("exit: cannot read changelog: {e}"));
             process::exit(0);
         }
     };
 
-    if let Err(e) = update(&content, title, path) {
-        eprintln!("[changelog-update] warning: {e}");
+    match update(&content, title, path) {
+        Ok(())   => trace("update() returned OK"),
+        Err(e)   => {
+            eprintln!("[changelog-update] warning: {e}");
+            trace(&format!("update() returned error: {e}"));
+        }
     }
 
+    trace("binary finished");
     process::exit(0);
 } // main END ////////////////////////////////////////////////////
 
@@ -72,8 +110,12 @@ fn main() {
 /// update
 ////////////////////////////////////////////////////////////////
 fn update(content: &str, title: &str, path: &str) -> Result<(), String> {
+    trace("update() entered");
+
     // Detect and preserve the original line-ending style
     let eol: &str = if content.contains("\r\n") { "\r\n" } else { "\n" };
+    trace(&format!("line-ending style: {}", if eol == "\r\n" { "CRLF" } else { "LF" }));
+
     let trailing_newline = content.ends_with('\n');
 
     // Split into lines, stripping \r for uniform in-memory handling
@@ -88,19 +130,22 @@ fn update(content: &str, title: &str, path: &str) -> Result<(), String> {
             lines.pop();
         }
     }
+    trace(&format!("file split into {} lines", lines.len()));
 
     // ── Locate the marker line ────────────────────────────────────────────
     let marker_idx = match lines.iter().position(|l| l.contains(MARKER)) {
-        Some(i) => i,
-        None    => return Ok(()), // marker not present — nothing to do
+        Some(i) => { trace(&format!("marker found at line {i}")); i }
+        None    => { trace("marker not found — file unchanged, exit OK"); return Ok(()); }
     };
 
     let bullet = format!("- {title}");
+    trace(&format!("bullet to insert: '{bullet}'"));
 
     // ── Amend-safe: skip if the exact bullet already follows the marker ───
     let mut j = marker_idx + 1;
     while j < lines.len() {
         if lines[j] == bullet {
+            trace("duplicate detected — bullet already present, skipping insert");
             return Ok(());
         }
         // Stop scanning at the next section heading or another marker
@@ -112,6 +157,7 @@ fn update(content: &str, title: &str, path: &str) -> Result<(), String> {
 
     // ── Insert immediately after the marker line ──────────────────────────
     lines.insert(marker_idx + 1, bullet.clone());
+    trace(&format!("bullet inserted at line {}", marker_idx + 1));
 
     // Reconstruct with the original EOL, restoring the trailing newline
     let mut new_content = lines.join(eol);
@@ -120,6 +166,7 @@ fn update(content: &str, title: &str, path: &str) -> Result<(), String> {
     }
 
     fs::write(path, new_content).map_err(|e| format!("cannot write {path}: {e}"))?;
+    trace(&format!("file written OK: {path}"));
 
     println!("[changelog] added: {bullet}");
     Ok(())

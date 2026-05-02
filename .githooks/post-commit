@@ -123,7 +123,7 @@ case "$(uname -s)" in
     # cmd.exe /c runs a command and exits immediately when done
     BINARY_WIN=$(cygpath -w "$BINARY")
     trace "windows path: calling via cmd.exe: $BINARY_WIN"
-    trace "executing: \"$BINARY\" \"$COMMIT_TITLE\" \"CHANGELOG.md\" in $(pwd)"
+    trace "executing: $BINARY_WIN \"$COMMIT_TITLE\" \"CHANGELOG.md\" in $(pwd)"
     "$BINARY_WIN" "$COMMIT_TITLE" "CHANGELOG.md"
     trace "binary call completed (exit $?)"
     ;;
