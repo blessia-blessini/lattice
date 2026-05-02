@@ -31,50 +31,129 @@
 #
 # To skip for one commit, put [skip-changelog] anywhere in the message.
 
+# Shorthand: write a timestamped trace line to the debug log
+# Usage: trace "some message"
+# >> appends to the file without overwriting previous lines
+trace() { echo "$(date '+%H:%M:%S') $1" >> ./hook-debug.log; }
 
+# Print to terminal so the developer can see the hook is running
 echo "post-commit fired"
-echo "post-commit fired t2" >> ./hook-debug.log
+trace "hook started"
 
+# Read the title (first line) of the commit that was just made
+# git log -1 = last commit only, --format="%s" = subject line only
 COMMIT_TITLE=$(git log -1 --format="%s")
+trace "commit title read: '$COMMIT_TITLE'"
 
-# Skip conditions (mirror commit-msg hook)
-[ -z "$COMMIT_TITLE" ] && exit 0
+# ── Skip conditions ───────────────────────────────────────────────────────────
 
-git rev-parse --verify MERGE_HEAD > /dev/null 2>&1 && exit 0
-[ -n "$GIT_REBASE_HEAD" ] && exit 0
-
-case "$COMMIT_TITLE" in
-  Merge\ *|Revert\ *|fixup\!*|squash\!*|"chore(changelog):"*) exit 0 ;;
-esac
-
-[[ "$COMMIT_TITLE" == *"[skip-changelog]"* ]] && exit 0
-
-# ── Update CHANGELOG.md ──────────────────────────────────────────────────────
-REPO_ROOT=$(git rev-parse --show-toplevel)
-
-BINARY="$REPO_ROOT/.githooks/changelog-update"
-[ -f "$BINARY" ] || BINARY="$REPO_ROOT/.githooks/changelog-update.exe"
-[ -f "$BINARY" ] || exit 0
-
-cd "$REPO_ROOT" || exit 0
-[ -f "CHANGELOG.md" ] || exit 0
-
-# On Windows Git Bash, call via cmd.exe to avoid SmartScreen blocking direct .exe execution
-case "$(uname -s)" in
-  MINGW*|MSYS*|CYGWIN*)
-    BINARY_WIN=$(cygpath -w "$BINARY")
-    cmd.exe /c "$BINARY_WIN" "$COMMIT_TITLE" "CHANGELOG.md"
-    ;;
-  *)
-    "$BINARY" "$COMMIT_TITLE" "CHANGELOG.md"
-    ;;
-esac
-
-# Only amend if the binary actually changed CHANGELOG.md
-if ! git diff --quiet CHANGELOG.md; then
-    git add CHANGELOG.md
-    # --no-verify prevents this amend from triggering hooks again (no loop)
-    git commit --amend --no-edit --no-verify
+# -z means "is empty string" — nothing to do if there is no commit title
+if [ -z "$COMMIT_TITLE" ]; then
+    trace "skip: empty commit title"
+    exit 0
 fi
 
+# During a merge, MERGE_HEAD file exists — skip to avoid polluting the changelog
+# > /dev/null 2>&1 silences both stdout and stderr (we only care about exit code)
+if git rev-parse --verify MERGE_HEAD > /dev/null 2>&1; then
+    trace "skip: merge commit detected"
+    exit 0
+fi
+
+# During a rebase, git sets GIT_REBASE_HEAD — skip for the same reason
+# -n means "is NOT empty string"
+if [ -n "$GIT_REBASE_HEAD" ]; then
+    trace "skip: rebase in progress"
+    exit 0
+fi
+
+# Skip commits whose titles start with Merge, Revert, fixup!, squash!,
+# or chore(changelog): — these are housekeeping commits, not real changes
+# The \ before spaces and ! is bash escaping
+case "$COMMIT_TITLE" in
+  Merge\ *|Revert\ *|fixup\!*|squash\!*|"chore(changelog):"*)
+    trace "skip: housekeeping commit pattern matched"
+    exit 0
+    ;;
+esac
+
+# Skip if the developer explicitly put [skip-changelog] anywhere in the title
+# The * wildcards mean "anything before or after the tag"
+if [[ "$COMMIT_TITLE" == *"[skip-changelog]"* ]]; then
+    trace "skip: [skip-changelog] tag found in title"
+    exit 0
+fi
+
+# ── Update CHANGELOG.md ──────────────────────────────────────────────────────
+
+# Find the absolute path to the root of the repo (where CHANGELOG.md lives)
+REPO_ROOT=$(git rev-parse --show-toplevel)
+trace "repo root: $REPO_ROOT"
+
+# Try the POSIX binary name first (Linux / macOS)
+BINARY="$REPO_ROOT/.githooks/changelog-update"
+
+# If the POSIX binary is not found, fall back to the Windows .exe
+[ -f "$BINARY" ] || BINARY="$REPO_ROOT/.githooks/changelog-update.exe"
+trace "binary resolved: $BINARY"
+
+# If neither binary exists (setup_env was never run), skip silently
+if [ ! -f "$BINARY" ]; then
+    trace "skip: binary not found — setup_env may not have been run"
+    exit 0
+fi
+
+# Move into the repo root so relative paths (like CHANGELOG.md) work correctly
+cd "$REPO_ROOT" || exit 0
+trace "cd to repo root OK"
+
+# If CHANGELOG.md does not exist, nothing to update — skip silently
+if [ ! -f "CHANGELOG.md" ]; then
+    trace "skip: CHANGELOG.md not found"
+    exit 0
+fi
+trace "CHANGELOG.md found"
+
+# Call the changelog-update binary with the commit title and changelog path.
+# On Windows Git Bash the binary must be launched via cmd.exe to avoid
+# SmartScreen intercepting a direct .exe call from a bash process.
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*)
+    # cygpath -w converts the Unix-style path to a Windows path (C:\...)
+    # cmd.exe /c runs a command and exits immediately when done
+    BINARY_WIN=$(cygpath -w "$BINARY")
+    trace "windows path: calling via cmd.exe: $BINARY_WIN"
+    cmd.exe /c "$BINARY_WIN" "$COMMIT_TITLE" "CHANGELOG.md"
+    trace "binary call completed (exit $?)"
+    ;;
+  *)
+    # On POSIX (Linux / macOS) just call the binary directly
+    trace "posix: calling binary directly"
+    "$BINARY" "$COMMIT_TITLE" "CHANGELOG.md"
+    trace "binary call completed (exit $?)"
+    ;;
+esac
+
+# Check if the binary actually modified CHANGELOG.md
+# git diff --quiet exits 0 if no changes, non-zero if there are changes
+# The ! inverts the result, so we enter the if-block only when there ARE changes
+if ! git diff --quiet CHANGELOG.md; then
+    trace "CHANGELOG.md was modified — staging and amending commit"
+
+    # Stage the updated CHANGELOG.md so it becomes part of this commit
+    git add CHANGELOG.md
+    trace "git add CHANGELOG.md done"
+
+    # Amend the commit that was just made to include the CHANGELOG.md update.
+    # --no-edit    = keep the original commit message unchanged
+    # --no-verify  = do NOT run hooks again (prevents this hook triggering itself)
+    git commit --amend --no-edit --no-verify
+    trace "git commit --amend done"
+else
+    trace "CHANGELOG.md unchanged — no amend needed"
+fi
+
+trace "hook finished OK"
+
+# Always exit 0 — this hook must never block or fail a commit
 exit 0
