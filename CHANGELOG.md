@@ -43,6 +43,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## vCurrent 
 
 ### Changed  <!-- Automatically added comment messages comments -->
+<!-- INSERT BULLETS UNDER THIS LINE -->
 - Update changelog for v0.2.22
 - Bump version to 0.2.22
 - Add release notes to index.md

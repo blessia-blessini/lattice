@@ -23,8 +23,8 @@
 
 //! changelog-update
 //! ----------------
-//! Inserts a commit-title bullet under `### Changed` inside the
-//! `## vCurrent` section of CHANGELOG.md.
+//! Inserts a commit-title bullet immediately after the first line that
+//! contains the marker `INSERT BULLETS UNDER THIS LINE` in CHANGELOG.md.
 //!
 //! Usage:
 //!   changelog-update "<commit title>" "<path-to-CHANGELOG.md>"
@@ -32,6 +32,8 @@
 //! Always exits 0 — it must never block a git commit.
 
 use std::{env, fs, process};
+
+const MARKER: &str = "INSERT BULLETS UNDER THIS LINE";
 
 ////////////////////////////////////////////////////////////////
 /// main
@@ -87,42 +89,29 @@ fn update(content: &str, title: &str, path: &str) -> Result<(), String> {
         }
     }
 
-    // ── Locate ## vCurrent → ### Changed ──────────────────────────────────
-    let mut in_vcurrent = false;
-    let mut changed_idx: Option<usize> = None;
-
-    for (i, line) in lines.iter().enumerate() {
-        if line.starts_with("## vCurrent") {
-            in_vcurrent = true;
-            continue;
-        }
-        if line.starts_with("## ") && in_vcurrent {
-            break; // left the section without finding ### Changed
-        }
-        if in_vcurrent && line.starts_with("### Changed") {
-            changed_idx = Some(i);
-            break;
-        }
-    }
-
-    let changed_idx = match changed_idx {
+    // ── Locate the marker line ────────────────────────────────────────────
+    let marker_idx = match lines.iter().position(|l| l.contains(MARKER)) {
         Some(i) => i,
-        None => return Ok(()), // nothing to do
+        None    => return Ok(()), // marker not present — nothing to do
     };
 
     let bullet = format!("- {title}");
 
-    // ── Amend-safe: skip if the exact bullet is already present ───────────
-    let mut j = changed_idx + 1;
-    while j < lines.len() && !lines[j].starts_with('#') {
+    // ── Amend-safe: skip if the exact bullet already follows the marker ───
+    let mut j = marker_idx + 1;
+    while j < lines.len() {
         if lines[j] == bullet {
             return Ok(());
+        }
+        // Stop scanning at the next section heading or another marker
+        if lines[j].starts_with('#') || lines[j].contains(MARKER) {
+            break;
         }
         j += 1;
     }
 
-    // ── Insert right after ### Changed ────────────────────────────────────
-    lines.insert(changed_idx + 1, bullet.clone());
+    // ── Insert immediately after the marker line ──────────────────────────
+    lines.insert(marker_idx + 1, bullet.clone());
 
     // Reconstruct with the original EOL, restoring the trailing newline
     let mut new_content = lines.join(eol);
@@ -143,20 +132,35 @@ fn update(content: &str, title: &str, path: &str) -> Result<(), String> {
 mod tests {
     use super::*;
 
-    fn make_changelog(changed_bullets: &str) -> String {
+    fn make_changelog(bullets: &str) -> String {
         format!(
-            "# Changelog\n\n## vCurrent\n\n### Changed\n{changed_bullets}\n\n## v0.1.0\n\n### Changed\n- old thing\n"
+            "# Changelog\n\n## vCurrent\n\n<!-- INSERT BULLETS UNDER THIS LINE -->\n{bullets}\n## v0.1.0\n\n<!-- INSERT BULLETS UNDER THIS LINE -->\n- old thing\n"
         )
     }
 
     #[test]
-    fn inserts_bullet_under_changed() {
+    fn inserts_bullet_after_marker() {
         let content = make_changelog("");
         let tmp = std::env::temp_dir().join("cl_test1.md");
         fs::write(&tmp, &content).unwrap();
         update(&content, "add new feature", tmp.to_str().unwrap()).unwrap();
         let result = fs::read_to_string(&tmp).unwrap();
         assert!(result.contains("- add new feature"));
+    }
+
+    #[test]
+    fn bullet_is_placed_immediately_after_marker() {
+        let content = make_changelog("");
+        let tmp = std::env::temp_dir().join("cl_test4.md");
+        fs::write(&tmp, &content).unwrap();
+        update(&content, "first entry", tmp.to_str().unwrap()).unwrap();
+        let result = fs::read_to_string(&tmp).unwrap();
+        let marker_pos  = result.find(MARKER).unwrap();
+        let bullet_pos  = result.find("- first entry").unwrap();
+        assert!(bullet_pos > marker_pos, "bullet must come after marker");
+        // Nothing between marker line and bullet line
+        let between = &result[marker_pos..bullet_pos];
+        assert_eq!(between.lines().count(), 1, "bullet must be on the very next line");
     }
 
     #[test]
@@ -170,17 +174,28 @@ mod tests {
     }
 
     #[test]
-    fn does_not_touch_older_versions() {
+    fn does_not_touch_older_version_section() {
         let content = make_changelog("");
         let tmp = std::env::temp_dir().join("cl_test3.md");
         fs::write(&tmp, &content).unwrap();
-        update(&content, "something", tmp.to_str().unwrap()).unwrap();
+        update(&content, "something new", tmp.to_str().unwrap()).unwrap();
         let result = fs::read_to_string(&tmp).unwrap();
+        // Old bullet must still be there
         assert!(result.contains("- old thing"));
-        // The insertion must be before the v0.1.0 section
-        let vcurrent_pos = result.find("## vCurrent").unwrap();
-        let new_bullet_pos = result.find("- something").unwrap();
-        let old_section_pos = result.find("## v0.1.0").unwrap();
-        assert!(vcurrent_pos < new_bullet_pos && new_bullet_pos < old_section_pos);
+        // New bullet must appear before the v0.1.0 section
+        let new_pos = result.find("- something new").unwrap();
+        let old_pos = result.find("## v0.1.0").unwrap();
+        assert!(new_pos < old_pos, "new bullet must be before the old version section");
+    }
+
+    #[test]
+    fn no_marker_means_no_change() {
+        let content = "# Changelog\n\n- existing\n".to_string();
+        let tmp = std::env::temp_dir().join("cl_test5.md");
+        fs::write(&tmp, &content).unwrap();
+        update(&content, "new thing", tmp.to_str().unwrap()).unwrap();
+        let result = fs::read_to_string(&tmp).unwrap();
+        assert!(!result.contains("- new thing"), "must not modify file without marker");
+        assert!(result.contains("- existing"));
     }
 } // tests END ////////////////////////////////////////////////////
