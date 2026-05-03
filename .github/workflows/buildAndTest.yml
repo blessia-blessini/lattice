@@ -625,7 +625,10 @@ jobs:
         # Copy coverage HTML into the release folder so it is browseable
         COVERAGE_DIR="$OUT_DIR/coverage"
         mkdir -p "$COVERAGE_DIR"
-        cp -r ../coverage-html/. "$COVERAGE_DIR/"
+        ls
+        pwd
+        ls ..
+        cp -r ./coverage-html/. "$COVERAGE_DIR/"
         COVERAGE_URL="https://lattice-technologies.com/Lattice-Releases/assets-${VERSION}/coverage/"
 
         # Append coverage link to index.md

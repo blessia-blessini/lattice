@@ -54,6 +54,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ### Changed  <!-- Automatically added comment messages comments -->
 
 <!-- INSERT BULLETS UNDER THIS LINE -->
+- Add debugging logs for coverage directory
 - Fix: Mock mermaid.render with diagramType
 - Add backend code coverage reporting and publishing
 - Update dependencies, fix CI bld warning and message fix typos.
