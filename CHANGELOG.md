@@ -8,11 +8,22 @@ Edit the section for your next version **before** pushing the release tag like v
 <!-- older versions below 
 ### Added    
 ### Fixed
+
 - N/A
 -->
 
-## v0.2.22
 
+## v0.2.24
+### Changes
+  - Refactor changelog update to use Rust binary
+  - Update post-commit
+---
+## v0.2.23
+### Changes
+  - updated with clear links on release site
+  
+---
+## v0.2.22
 ### Changes
   - Made tests run faster by avoiding repetative runs
   - Published changes Release `index.md`
@@ -34,9 +45,12 @@ Edit the section for your next version **before** pushing the release tag like v
 
 
 ## vCurrent 
-  WIP #v0.2.23
 
 ### Changed  <!-- Automatically added comment messages comments -->
+
+<!-- INSERT BULLETS UNDER THIS LINE -->
+- docs: update v0.2.24 changelog and correct typo in v0.2.23 entry
+- Refactor changelog update to use Rust binary
 - Update post-commit
 - Update changelog for v0.2.22
 - Bump version to 0.2.22
