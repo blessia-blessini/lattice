@@ -122,7 +122,7 @@ for ($i = $seconds; $i -gt 0; $i--) {
         $consoleCanWait = $true
     }
     catch {
-         Write-Host "[INFO] THIS CONSOLE CANNOT BE KEYBOARD WAITED "
+         Write-Host "[INFO] THIS CONSOLE CANNOT BE KEYBOARD WAITED"
     }
     finally {
        Start-Sleep -Seconds 1
