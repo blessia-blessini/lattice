@@ -633,7 +633,8 @@ jobs:
 
         # Append coverage link to index.md
         printf '\n%s\n' "## Test Coverage" "" \
-          "- [View HTML coverage report](${COVERAGE_URL})" \
+          " - [View HTML coverage report BACKEND](${COVERAGE_URL}src-tauri/target/llvm-cov/html/)" \
+          " - [View HTML coverage report FRONTEND](${COVERAGE_URL}coverage/)" \
           "" >> "$OUT"
 
         # Commit index.md + coverage HTML to the release site
