@@ -49,6 +49,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ### Changed  <!-- Automatically added comment messages comments -->
 
 <!-- INSERT BULLETS UNDER THIS LINE -->
+- Adjust waiting logic in env setup
 - Refactor changelog update logic
 - docs: update v0.2.24 changelog and correct typo in v0.2.23 entry
 - Refactor changelog update to use Rust binary
