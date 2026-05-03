@@ -66,6 +66,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ### Changed  <!-- Automatically added comment messages comments -->
 
 <!-- INSERT BULLETS UNDER THIS LINE -->
+- Bump version to 0.2.28
 - feat: Improve release notes generation
 - Add Dignose trace to Fix awk command for CHANGELOG extraction
 - Fix CHANGELOG for version to v0.2.27
