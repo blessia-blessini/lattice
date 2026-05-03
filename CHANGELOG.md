@@ -43,15 +43,10 @@ Edit the section for your next version **before** pushing the release tag like v
 ## vCurrent 
 
 ### Changed  <!-- Automatically added comment messages comments -->
+
 <!-- INSERT BULLETS UNDER THIS LINE -->
 - Refactor changelog update to use Rust binary
-
-- mmm,,mmmm
-- Fix: Handle windows paths in post-commit ophook
-
-- mmmm
-- Fix: Handle windows paths in post-commit lhook
-
+- Update post-commit
 - Update changelog for v0.2.22
 - Bump version to 0.2.22
 - Add release notes to index.md
