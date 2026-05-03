@@ -31,7 +31,7 @@ source ./scripts/_pre-build.sh
 # 1. Run Backend Tests (Rust)
 echo "Running Backend Tests..."
 pushd src-tauri || exit
-cargo test
+cargo llvm-cov --html # cargo test
 CARGO_RESULT=$?
 popd || exit
 
@@ -46,7 +46,7 @@ fi
 
 # 2b. Run Frontend Coverage
 echo "Running Frontend Coverage... --> in folder coverage"
-npm run test:coverage
+npm run test:coverage --html
 
 
 if [ "$(uname)" == "Linux" ] && command -v xvfb-run >/dev/null 2>&1; then

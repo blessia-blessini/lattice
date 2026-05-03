@@ -358,23 +358,7 @@ jobs:
         echo "iOS build requires provisioning profiles. Skipping actual build command for CI demo."
         echo "  ideally, it should be done like in the step above (even _in_ the step above (not just _like_ in step above))"
 
-    ################################################################
-    # 370/ Run Automatic Tests
-    ################################################################
-    - name: 370.1 Run Rust Tests (Backend)
-      # Run on all desktop platforms.
-      # For Android/iOS matrix items, we can still run host tests (Linux/Mac) to verify shared logic.
-      # TODO: Consider uncommenting
-      if: matrix.config.platform != 'ios' ### && matrix.config.platform != 'android' # see comment in 350.2
-      working-directory: src-tauri
-      env:
-        LATTICEBUILD_NO: TSTBE-${{matrix.config.platform}}-${{ steps.build-no-gen.outputs.BUILD_NO }}
-        RUSTFLAGS: "--cfg integration_test"
-        RUST_BACKTRACE: 1
-      run: |
-        cargo test # removed --verbose
-
-    - name: 370.2 Run Frontend Tests (React/Tauri)
+    - name: 370.2 Run Frontend AND Backend Tests (React/Tauri)
       # TODO: Consider uncommenting for now we are saving some action minutes by not running tests on mobile
       if: matrix.config.platform != 'ios' && matrix.config.platform != 'windows-arm-desktop' && matrix.config.platform != 'android' # see comment in 350.2
       shell: bash
@@ -432,6 +416,18 @@ jobs:
         name: DOCS
         path: |
           docs/gen
+
+    ################################################################
+    # 415 / Upload Coverage HTML report (Linux only)
+    ################################################################
+    - name: 415. Upload Coverage Report
+      if: matrix.config.platform == 'linux-desktop'
+      uses: actions/upload-artifact@v7
+      with:
+        name: COVERAGE
+        path: |
+          src-tauri/target/llvm-cov/html/
+          coverage/
 
     ################################################################
     # 400 / Upload Artifacts
@@ -529,6 +525,15 @@ jobs:
         merge-multiple: false
 
     ################################################################
+    # 901.5 / Download coverage HTML report
+    ################################################################
+    - name: 901.5. Download coverage report
+      uses: actions/download-artifact@v8
+      with:
+        name: COVERAGE
+        path: coverage-html
+
+    ################################################################
     # 902 / Checkout lattice-docs-releases
     #       Requires secret RELEASE_SITE_TOKEN (PAT with contents:write
     #       on blessia-blessini/lattice-docs-releases)
@@ -617,12 +622,23 @@ jobs:
           "- DUAL LICENCE - FOR TERMS DETAILS SEE [README.md section Licencing ](https://github.com/blessia-blessini/lattice#licensing)." \
           "" >> "$OUT"
 
-        # Commit only the tiny index.md — no binaries in git
+        # Copy coverage HTML into the release folder so it is browseable
+        COVERAGE_DIR="$OUT_DIR/coverage"
+        mkdir -p "$COVERAGE_DIR"
+        cp -r ../coverage-html/. "$COVERAGE_DIR/"
+        COVERAGE_URL="https://lattice-technologies.com/Lattice-Releases/assets-${VERSION}/coverage/"
+
+        # Append coverage link to index.md
+        printf '\n%s\n' "## Test Coverage" "" \
+          "- [View HTML coverage report](${COVERAGE_URL})" \
+          "" >> "$OUT"
+
+        # Commit index.md + coverage HTML to the release site
         cd release-site
         git config user.name  "GitHub Actions"
         git config user.email "actions@github.com"
         git add Lattice-Releases/
-        git commit -m "Release ${VERSION}: add index.md (links to GitHub Release assets)" \
+        git commit -m "Release ${VERSION}: add index.md and coverage report" \
           -m "Co-authored-by: Blessia-Blessini <273819958+blessia-blessini@users.noreply.github.com>"
         git push
 
@@ -636,3 +652,4 @@ jobs:
         echo "### Release published" >> $GITHUB_STEP_SUMMARY
         echo "- GitHub Release: ${RELEASE_URL}" >> $GITHUB_STEP_SUMMARY
         echo "- Release page: https://lattice-technologies.com/Lattice-Releases/assets-${VERSION}/" >> $GITHUB_STEP_SUMMARY
+        echo "- Coverage report: https://lattice-technologies.com/Lattice-Releases/assets-${VERSION}/coverage/" >> $GITHUB_STEP_SUMMARY

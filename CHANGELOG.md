@@ -14,10 +14,10 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ## v0.2.25
 ### Changes
+  - Add backend code coverage reporting and publishing
   - resolved CI Build warnings for OLD node engine
   - updated npm dependencies
-  - corrected typos in error messages
-  - 
+  - corrected typos in error messages 
 ---
 ## v0.2.24
 ### Changes
@@ -54,6 +54,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ### Changed  <!-- Automatically added comment messages comments -->
 
 <!-- INSERT BULLETS UNDER THIS LINE -->
+- Add backend code coverage reporting and publishing
 - Update dependencies, fix CI bld warning and message fix typos.
 - Fix: Update catch logic
 - Adjust waiting logic in env setup

@@ -41,7 +41,7 @@ try {
     Write-Output "Running Backend Tests..."
     Push-Location src-tauri
     if ($LASTEXITCODE -eq 0) {
-        cargo test
+        cargo llvm-cov # cargo test
         $cargoResult = $LASTEXITCODE
     }
 
