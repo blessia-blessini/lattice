@@ -62,6 +62,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ### Changed  <!-- Automatically added comment messages comments -->
 
 <!-- INSERT BULLETS UNDER THIS LINE -->
+- Add Dignose trace to Fix awk command for CHANGELOG extraction
 - Fix CHANGELOG for version to v0.2.27
 - Add frontend/backend coverage link to workflow
 - Add debugging logs for coverage directory

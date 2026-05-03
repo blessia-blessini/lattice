@@ -500,19 +500,29 @@ jobs:
         git sparse-checkout init --cone
         git sparse-checkout set CHANGELOG.md
         git checkout
+        echo "--- All the CHANGELOG.md file ---"
+        cat release-notes.md
         cd ..
 
         # Extract the block that starts with "## $VERSION" up to the next "## "
-        awk "/^## ${VERSION}$/,/---/" _src/CHANGELOG.md | head -n -1 | sed '1d' > release-notes.md
+        PARAM1 = "/^## ${VERSION}$/,/---/"
+        echo "PARAM1 is between the xx: xx${PARAM1}xx"
+        echo "===================="
+        echo "./src/CHANGELOG.md"
+        echo "===================="
+        cat ./src/CHANGELOG.md
+        echo "===================="
+        awk  "${PARAM1}" ./_src/CHANGELOG.md | head -n -1 | sed '1d' > release-notes.md
 
         # Fallback: if nothing was extracted, use a generic note
         if [ ! -s release-notes.md ]; then
           echo "Automated release — no changelog entry found for ${VERSION}." > release-notes.md
-          echo "See [lattice-technologies.com](https://lattice-technologies.com/Lattice-Releases/) for details." >> release-notes.md
+          echo "" >> release-notes.md
         fi
 
-        echo "--- Release notes preview ---"
+        echo "--- Release notes preview ----------"
         cat release-notes.md
+        echo "--- end of Release notes preview ---"
 
     ################################################################
     # 901 / Download every DOWNLOAD-* artifact from this run
