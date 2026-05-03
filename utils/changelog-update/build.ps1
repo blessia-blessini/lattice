@@ -27,6 +27,17 @@ echo ".     Building changelog-update utility (Windows)"
 echo ".   **********************************************"
 echo ".     cargo build --release"
 cargo build --release
+
+echo ".   **********************************************"
+echo ".     Running changelog-update tests"
+echo ".   **********************************************"
+cargo test
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "[ERROR] changelog-update tests failed — aborting setup."
+    exit $LASTEXITCODE
+}
+echo ".     Tests passed OK"
+
 echo ".     Copying result to root of the utility"
 Copy-Item target/release/changelog-update.exe .
 echo ".   **********************************************"

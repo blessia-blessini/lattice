@@ -23,46 +23,86 @@
 
 //! changelog-update
 //! ----------------
-//! Inserts a commit-title bullet under `### Changed` inside the
-//! `## vCurrent` section of CHANGELOG.md.
+//! Inserts a commit-title bullet immediately after the first line that
+//! contains the marker `INSERT BULLETS UNDER THIS LINE` in CHANGELOG.md.
 //!
 //! Usage:
 //!   changelog-update "<commit title>" "<path-to-CHANGELOG.md>"
 //!
 //! Always exits 0 — it must never block a git commit.
 
-use std::{env, fs, process};
+use std::{env, fs, io::Write, process, time::{SystemTime, UNIX_EPOCH}};
+
+const MARKER: &str = "INSERT BULLETS UNDER THIS LINE";
+
+////////////////////////////////////////////////////////////////
+/// trace — append a timestamped line to hook-debug.log
+///
+/// Uses the same ./hook-debug.log file as the bash post-commit hook.
+/// Lines are prefixed with [rust] so they are easy to distinguish.
+/// Silently does nothing if the file cannot be opened — tracing
+/// must never block or fail a commit.
+////////////////////////////////////////////////////////////////
+fn trace(msg: &str) {
+    // Compute HH:MM:SS from seconds since Unix epoch (UTC, pure std)
+    let secs = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let h = (secs % 86400) / 3600;
+    let m = (secs % 3600) / 60;
+    let s =  secs % 60;
+
+    // Append to the log; ignore any error (read-only fs, missing dir, etc.)
+    if let Ok(mut f) = fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("./hook-debug.log")
+    {
+        let _ = writeln!(f, "{h:02}:{m:02}:{s:02} [rust] {msg}");
+    }
+} // trace END /////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////
 /// main
 ////////////////////////////////////////////////////////////////
 fn main() {
     let args: Vec<String> = env::args().collect();
+    trace(&format!("binary started, {} arg(s) received", args.len() - 1));
 
     if args.len() < 3 {
         eprintln!("[changelog-update] usage: changelog-update <title> <changelog-path>");
+        trace("exit: too few arguments — printing usage");
         process::exit(0);
     }
 
     let title = args[1].trim();
     let path = &args[2];
+    trace(&format!("args parsed — title: '{title}', path: '{path}'"));
 
     if title.is_empty() {
+        trace("exit: title is empty — nothing to do");
         process::exit(0);
     }
 
     let content = match fs::read_to_string(path) {
-        Ok(c) => c,
+        Ok(c)  => { trace(&format!("changelog read OK ({} bytes)", c.len())); c }
         Err(e) => {
             eprintln!("[changelog-update] warning: cannot read {path}: {e}");
+            trace(&format!("exit: cannot read changelog: {e}"));
             process::exit(0);
         }
     };
 
-    if let Err(e) = update(&content, title, path) {
-        eprintln!("[changelog-update] warning: {e}");
+    match update(&content, title, path) {
+        Ok(())   => trace("update() returned OK"),
+        Err(e)   => {
+            eprintln!("[changelog-update] warning: {e}");
+            trace(&format!("update() returned error: {e}"));
+        }
     }
 
+    trace("binary finished");
     process::exit(0);
 } // main END ////////////////////////////////////////////////////
 
@@ -70,8 +110,12 @@ fn main() {
 /// update
 ////////////////////////////////////////////////////////////////
 fn update(content: &str, title: &str, path: &str) -> Result<(), String> {
+    trace("update() entered");
+
     // Detect and preserve the original line-ending style
     let eol: &str = if content.contains("\r\n") { "\r\n" } else { "\n" };
+    trace(&format!("line-ending style: {}", if eol == "\r\n" { "CRLF" } else { "LF" }));
+
     let trailing_newline = content.ends_with('\n');
 
     // Split into lines, stripping \r for uniform in-memory handling
@@ -86,43 +130,34 @@ fn update(content: &str, title: &str, path: &str) -> Result<(), String> {
             lines.pop();
         }
     }
+    trace(&format!("file split into {} lines", lines.len()));
 
-    // ── Locate ## vCurrent → ### Changed ──────────────────────────────────
-    let mut in_vcurrent = false;
-    let mut changed_idx: Option<usize> = None;
-
-    for (i, line) in lines.iter().enumerate() {
-        if line.starts_with("## vCurrent") {
-            in_vcurrent = true;
-            continue;
-        }
-        if line.starts_with("## ") && in_vcurrent {
-            break; // left the section without finding ### Changed
-        }
-        if in_vcurrent && line.starts_with("### Changed") {
-            changed_idx = Some(i);
-            break;
-        }
-    }
-
-    let changed_idx = match changed_idx {
-        Some(i) => i,
-        None => return Ok(()), // nothing to do
+    // ── Locate the marker line ────────────────────────────────────────────
+    let marker_idx = match lines.iter().position(|l| l.contains(MARKER)) {
+        Some(i) => { trace(&format!("marker found at line {i}")); i }
+        None    => { trace("marker not found — file unchanged, exit OK"); return Ok(()); }
     };
 
     let bullet = format!("- {title}");
+    trace(&format!("bullet to insert: '{bullet}'"));
 
-    // ── Amend-safe: skip if the exact bullet is already present ───────────
-    let mut j = changed_idx + 1;
-    while j < lines.len() && !lines[j].starts_with('#') {
+    // ── Amend-safe: skip if the exact bullet already follows the marker ───
+    let mut j = marker_idx + 1;
+    while j < lines.len() {
         if lines[j] == bullet {
+            trace("duplicate detected — bullet already present, skipping insert");
             return Ok(());
+        }
+        // Stop scanning at the next section heading or another marker
+        if lines[j].starts_with('#') || lines[j].contains(MARKER) {
+            break;
         }
         j += 1;
     }
 
-    // ── Insert right after ### Changed ────────────────────────────────────
-    lines.insert(changed_idx + 1, bullet.clone());
+    // ── Insert immediately after the marker line ──────────────────────────
+    lines.insert(marker_idx + 1, bullet.clone());
+    trace(&format!("bullet inserted at line {}", marker_idx + 1));
 
     // Reconstruct with the original EOL, restoring the trailing newline
     let mut new_content = lines.join(eol);
@@ -131,6 +166,7 @@ fn update(content: &str, title: &str, path: &str) -> Result<(), String> {
     }
 
     fs::write(path, new_content).map_err(|e| format!("cannot write {path}: {e}"))?;
+    trace(&format!("file written OK: {path}"));
 
     println!("[changelog] added: {bullet}");
     Ok(())
@@ -143,20 +179,35 @@ fn update(content: &str, title: &str, path: &str) -> Result<(), String> {
 mod tests {
     use super::*;
 
-    fn make_changelog(changed_bullets: &str) -> String {
+    fn make_changelog(bullets: &str) -> String {
         format!(
-            "# Changelog\n\n## vCurrent\n\n### Changed\n{changed_bullets}\n\n## v0.1.0\n\n### Changed\n- old thing\n"
+            "# Changelog\n\n## vCurrent\n\n<!-- INSERT BULLETS UNDER THIS LINE -->\n{bullets}\n## v0.1.0\n\n<!-- INSERT BULLETS UNDER THIS LINE -->\n- old thing\n"
         )
     }
 
     #[test]
-    fn inserts_bullet_under_changed() {
+    fn inserts_bullet_after_marker() {
         let content = make_changelog("");
         let tmp = std::env::temp_dir().join("cl_test1.md");
         fs::write(&tmp, &content).unwrap();
         update(&content, "add new feature", tmp.to_str().unwrap()).unwrap();
         let result = fs::read_to_string(&tmp).unwrap();
         assert!(result.contains("- add new feature"));
+    }
+
+    #[test]
+    fn bullet_is_placed_immediately_after_marker() {
+        let content = make_changelog("");
+        let tmp = std::env::temp_dir().join("cl_test4.md");
+        fs::write(&tmp, &content).unwrap();
+        update(&content, "first entry", tmp.to_str().unwrap()).unwrap();
+        let result = fs::read_to_string(&tmp).unwrap();
+        let marker_pos  = result.find(MARKER).unwrap();
+        let bullet_pos  = result.find("- first entry").unwrap();
+        assert!(bullet_pos > marker_pos, "bullet must come after marker");
+        // Nothing between marker line and bullet line
+        let between = &result[marker_pos..bullet_pos];
+        assert_eq!(between.lines().count(), 1, "bullet must be on the very next line");
     }
 
     #[test]
@@ -170,17 +221,28 @@ mod tests {
     }
 
     #[test]
-    fn does_not_touch_older_versions() {
+    fn does_not_touch_older_version_section() {
         let content = make_changelog("");
         let tmp = std::env::temp_dir().join("cl_test3.md");
         fs::write(&tmp, &content).unwrap();
-        update(&content, "something", tmp.to_str().unwrap()).unwrap();
+        update(&content, "something new", tmp.to_str().unwrap()).unwrap();
         let result = fs::read_to_string(&tmp).unwrap();
+        // Old bullet must still be there
         assert!(result.contains("- old thing"));
-        // The insertion must be before the v0.1.0 section
-        let vcurrent_pos = result.find("## vCurrent").unwrap();
-        let new_bullet_pos = result.find("- something").unwrap();
-        let old_section_pos = result.find("## v0.1.0").unwrap();
-        assert!(vcurrent_pos < new_bullet_pos && new_bullet_pos < old_section_pos);
+        // New bullet must appear before the v0.1.0 section
+        let new_pos = result.find("- something new").unwrap();
+        let old_pos = result.find("## v0.1.0").unwrap();
+        assert!(new_pos < old_pos, "new bullet must be before the old version section");
+    }
+
+    #[test]
+    fn no_marker_means_no_change() {
+        let content = "# Changelog\n\n- existing\n".to_string();
+        let tmp = std::env::temp_dir().join("cl_test5.md");
+        fs::write(&tmp, &content).unwrap();
+        update(&content, "new thing", tmp.to_str().unwrap()).unwrap();
+        let result = fs::read_to_string(&tmp).unwrap();
+        assert!(!result.contains("- new thing"), "must not modify file without marker");
+        assert!(result.contains("- existing"));
     }
 } // tests END ////////////////////////////////////////////////////

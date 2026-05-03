@@ -75,3 +75,5 @@ src-tauri/conflict_success.txt
 **/temp/*
 **/temp
 
+utils/changelog-update/changelog-update
+.githooks/changelog-update

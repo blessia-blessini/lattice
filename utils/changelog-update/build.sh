@@ -27,6 +27,17 @@ echo "   ***********************************************"
 echo "   ****** Building changelog-update utility ******"
 echo "   Building changelog-update... on posix system"
 cargo build --release
+
+echo "   ***********************************************"
+echo "   Running changelog-update tests ..."
+cargo test
+if [ $? -ne 0 ]; then
+    echo "[ERROR] changelog-update tests failed — aborting setup."
+    exit 1
+fi
+echo "   Tests passed OK"
+echo "   ***********************************************"
+
 echo "   Copying to the root of the utility"
 cp target/release/changelog-update .
 chmod +x changelog-update
