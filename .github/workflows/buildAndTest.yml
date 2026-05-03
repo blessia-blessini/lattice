@@ -522,7 +522,7 @@ jobs:
     # 901 / Download every DOWNLOAD-* artifact from this run
     ################################################################
     - name: 901. Download all build artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         pattern: DOWNLOAD-*
         path: downloaded-artifacts

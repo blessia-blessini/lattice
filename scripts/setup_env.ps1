@@ -113,7 +113,7 @@ Write-Host ""
 $seconds = 5
 $consoleCanWait = $false
 for ($i = $seconds; $i -gt 0; $i--) {
-    Write-Host "`r *** PLEASE READ THE ABOVE INTO `r *** Continuing in $i seconds... (press any key to proceed now) " -NoNewline -ForegroundColor Yellow
+    Write-Host "`r *** PLEASE READ THE ABOVE INTRO `r *** Continuing in $i seconds... (press any key to proceed now) " -NoNewline -ForegroundColor Yellow
     try {
         if ([Console]::KeyAvailable) {
             $null = [Console]::ReadKey($true)

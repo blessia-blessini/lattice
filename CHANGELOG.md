@@ -12,8 +12,13 @@ Edit the section for your next version **before** pushing the release tag like v
 - N/A
 -->
 
-
-
+## v0.2.25
+### Changes
+  - resolved CI Build warnings for OLD node engine
+  - updated npm dependencies
+  - corrected typos in error messages
+  - 
+---
 ## v0.2.24
 ### Changes
   - Refactor changelog update to use Rust binary
@@ -49,6 +54,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ### Changed  <!-- Automatically added comment messages comments -->
 
 <!-- INSERT BULLETS UNDER THIS LINE -->
+- Update dependencies, fix CI bld warning and message fix typos.
 - Fix: Update catch logic
 - Adjust waiting logic in env setup
 - Refactor changelog update logic
