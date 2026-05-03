@@ -488,29 +488,30 @@ jobs:
     #         Edit CHANGELOG.md before pushing the tag — that file
     #         is the single place to write & review the release notes.
     ################################################################
+    - name: 900.5a. Sparse-checkout CHANGELOG.md
+      uses: actions/checkout@v4
+      with:
+        sparse-checkout: |
+          CHANGELOG.md
+        sparse-checkout-cone-mode: true
+        fetch-depth: 1
+        path: _src
+
     - name: 900.5. Extract release notes from CHANGELOG.md
       shell: bash
       run: |
         VERSION="${{ steps.version.outputs.VERSION }}"
 
-        # Sparse-checkout only CHANGELOG.md so we don't pull the whole tree
-        git clone --no-checkout --depth 1 \
-          "https://github.com/blessia-blessini/lattice.git" _src
-        cd _src
-        git sparse-checkout init --cone
-        git sparse-checkout set CHANGELOG.md
-        git checkout
         echo "--- All the CHANGELOG.md file ---"
-        cat release-notes.md
-        cd ..
+        cat ./_src/CHANGELOG.md
 
         # Extract the block that starts with "## $VERSION" up to the next "## "
-        PARAM1 = "/^## ${VERSION}$/,/---/"
+        PARAM1="/^## ${VERSION}$/,/---/"
         echo "PARAM1 is between the xx: xx${PARAM1}xx"
         echo "===================="
-        echo "./src/CHANGELOG.md"
+        echo "./_src/CHANGELOG.md"
         echo "===================="
-        cat ./src/CHANGELOG.md
+        cat ./_src/CHANGELOG.md
         echo "===================="
         awk  "${PARAM1}" ./_src/CHANGELOG.md | head -n -1 | sed '1d' > release-notes.md
 

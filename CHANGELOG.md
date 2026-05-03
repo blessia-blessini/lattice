@@ -66,6 +66,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ### Changed  <!-- Automatically added comment messages comments -->
 
 <!-- INSERT BULLETS UNDER THIS LINE -->
+- Refactor CHANGELOG extraction to use sparse-checkout
 - Bump version to 0.2.28
 - feat: Improve release notes generation
 - Add Dignose trace to Fix awk command for CHANGELOG extraction
