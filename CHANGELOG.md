@@ -12,6 +12,14 @@ Edit the section for your next version **before** pushing the release tag like v
 - N/A
 -->
 
+## v0.2.27
+### Changes
+  - Add frontend/backend coverage link to workflow
+---
+## v0.2.26
+### Changes
+  - Test Release
+---
 ## v0.2.25
 ### Changes
   - Add backend code coverage reporting and publishing
@@ -54,6 +62,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ### Changed  <!-- Automatically added comment messages comments -->
 
 <!-- INSERT BULLETS UNDER THIS LINE -->
+- Fix CHANGELOG for version to v0.2.27
 - Add frontend/backend coverage link to workflow
 - Add debugging logs for coverage directory
 - Fix: Mock mermaid.render with diagramType
