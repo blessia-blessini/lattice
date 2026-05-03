@@ -12,6 +12,10 @@ Edit the section for your next version **before** pushing the release tag like v
 - N/A
 -->
 
+## v0.2.28
+### Changes
+  - Add Dignose trace to Fix awk command for CHANGELOG extraction
+---
 ## v0.2.27
 ### Changes
   - Add frontend/backend coverage link to workflow
@@ -62,6 +66,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ### Changed  <!-- Automatically added comment messages comments -->
 
 <!-- INSERT BULLETS UNDER THIS LINE -->
+- feat: Improve release notes generation
 - Add Dignose trace to Fix awk command for CHANGELOG extraction
 - Fix CHANGELOG for version to v0.2.27
 - Add frontend/backend coverage link to workflow
