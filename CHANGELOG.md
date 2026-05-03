@@ -12,9 +12,18 @@ Edit the section for your next version **before** pushing the release tag like v
 - N/A
 -->
 
+
+
+## v0.2.29
+### Changes
+  <!-- INSERT BULLETS UNDER THIS LINE -->
+- Updated ChangeLog; Bump version to 0.2.29
+  
+---
 ## v0.2.28
 ### Changes
   - Add Dignose trace to Fix awk command for CHANGELOG extraction
+  - Refactor CHANGELOG extraction to use sparse-checkout
 ---
 ## v0.2.27
 ### Changes
@@ -65,7 +74,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## vCurrent
 ### Changed  <!-- Automatically added comment messages comments -->
 
-<!-- INSERT BULLETS UNDER THIS LINE -->
+
 - Refactor CHANGELOG extraction to use sparse-checkout
 - Bump version to 0.2.28
 - feat: Improve release notes generation
