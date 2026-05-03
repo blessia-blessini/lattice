@@ -45,6 +45,7 @@ describe('Mermaid', () => {
         vi.clearAllMocks();
         vi.mocked(mermaid.render).mockResolvedValue({
             svg: '<svg data-testid="mock-svg">diagram</svg>',
+            diagramType: 'graph',
         });
     });
 
