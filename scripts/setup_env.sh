@@ -201,6 +201,10 @@ echo "**************************************"
 pushd ./utils/changelog-update
 sh build.sh
 popd
+
+echo "[INFO] Installing cargo-llvm-cov"
+cargo install cargo-llvm-cov
+
 echo "[INFO] Copying changelog-update to .githooks/"
 cp ./utils/changelog-update/changelog-update .githooks/
 chmod +x .githooks/changelog-update

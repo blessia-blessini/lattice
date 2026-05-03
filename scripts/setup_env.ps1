@@ -58,6 +58,10 @@ else {
     .\rustup-init.exe -y
 }
 
+# 2a. LLVM tools for code coverage
+Write-Host " ==>> INSTALLING LLVM tools"
+cargo install cargo-llvm-cov
+
 # 3. Install NPM Dependencies
 Write-Host "[INFO] Installing NPM dependencies..."
 npm ci
