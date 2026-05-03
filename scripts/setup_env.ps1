@@ -110,14 +110,20 @@ Write-Host ""
 
 # wait so that user can see the warning
 #
-$seconds = 10
+$seconds = 5
+$consoleCanWait = $false
 for ($i = $seconds; $i -gt 0; $i--) {
     Write-Host "`r *** PLEASE READ THE ABOVE INTO `r *** Continuing in $i seconds... (press any key to proceed now) " -NoNewline -ForegroundColor Yellow
-    if ([Console]::KeyAvailable) {
-        $null = [Console]::ReadKey($true)
-        break
+    try {
+        if ([Console]::KeyAvailable) {
+            $null = [Console]::ReadKey($true)
+            break
+        }
+        $consoleCanWait = $true
     }
-    Start-Sleep -Seconds 1
+    finally {
+       Start-Sleep -Seconds 1
+    }
 }
 
 
@@ -125,8 +131,11 @@ for ($i = $seconds; $i -gt 0; $i--) {
 # This is the moment Windows will show the security confirmation if needed.
 # Capturing the result lets us report back clearly.
 try {
-    $p = Start-Process -FilePath ".\.githooks\changelog-update.exe" -Wait -PassThru -ErrorAction Stop
+    Start-Process -FilePath ".\.githooks\changelog-update.exe" -Wait -PassThru -ErrorAction Stop
     Write-Host "[OK] changelog-update.exe is trusted. CHANGELOG.md will auto-update on commits."
+
+    # uncomment the line to test the catch code and then comment it back
+    # throw "testing catch code"
 }
 catch {
     Write-Host "[WARN] changelog-update.exe could not be confirmed ($_)." -ForegroundColor Yellow
@@ -136,7 +145,7 @@ catch {
     $seconds = 10
     for ($i = $seconds; $i -gt 0; $i--) {
         Write-Host "`r  Continuing in $i seconds... (press any key to proceed now) " -NoNewline -ForegroundColor Yellow
-        if ([Console]::KeyAvailable) {
+        if ($consoleCanWait -and [Console]::KeyAvailable) {
             $null = [Console]::ReadKey($true)
             break
         }
