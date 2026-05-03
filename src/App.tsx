@@ -181,6 +181,9 @@ function App() {
 
   const autoSaveTimer = useRef<number | null>(null);
   const mainContentRef = useRef<HTMLDivElement>(null);
+  // Used to skip the initial run of the m_currentFilePath effect so that the
+  // sessionStorage session-restore item isn't wiped before checkLaunch reads it.
+  const isInitialMount = useRef(true);
 
   const handleDividerMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -276,6 +279,13 @@ function App() {
 
   // TRACE: Monitor m_currentFilePath state changes + persist for refresh recovery
   useEffect(() => {
+    // Skip the very first run (initial mount with null) so that a sessionStorage
+    // key set by a previous session is still readable by checkLaunch below.
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      console.log(`TRACE: State 'm_currentFilePath' changed to: ${m_currentFilePath} (initial — skipping sessionStorage update)`);
+      return;
+    }
     console.log(`TRACE: State 'm_currentFilePath' changed to: ${m_currentFilePath}`);
     if (m_currentFilePath) {
       sessionStorage.setItem('lattice-last-open-path', m_currentFilePath);

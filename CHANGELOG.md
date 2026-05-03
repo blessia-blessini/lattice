@@ -11,14 +11,16 @@ Edit the section for your next version **before** pushing the release tag like v
 
 - N/A
 -->
-
-
-
-## v0.2.29
+## v0.2.30
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
-- Updated ChangeLog; Bump version to 0.2.29
-  
+- Add App coverage tests
+
+---
+## v0.2.29
+### Changes
+  - Add App coverage tests
+  - Updated ChangeLog; Bump version to 0.2.29
 ---
 ## v0.2.28
 ### Changes
