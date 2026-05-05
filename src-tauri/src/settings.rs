@@ -19,6 +19,9 @@ pub struct Settings {
 
     #[serde(default)]
     pub daily_notes_path: String,
+
+    #[serde(default = "default_highlight_mark")]
+    pub highlight_mark: bool,
 }
 
 fn default_theme() -> String {
@@ -30,6 +33,9 @@ fn default_word_wrap() -> bool {
 fn default_save_on_blur() -> bool {
     true
 }
+fn default_highlight_mark() -> bool {
+    true
+}
 
 impl Default for Settings {
     fn default() -> Self {
@@ -38,6 +44,7 @@ impl Default for Settings {
             word_wrap: default_word_wrap(),
             save_on_blur: default_save_on_blur(),
             daily_notes_path: "".to_string(),
+            highlight_mark: default_highlight_mark(),
         }
     }
 }
@@ -246,6 +253,119 @@ mod tests {
         
         let condensed2 = condense_daily_notes_path(s2, &vault_root);
         assert_eq!(condensed2.daily_notes_path, outside_str);
+    }
+
+    // -----------------------------------------------------------------------
+    // test_default_factory_fns
+    // -----------------------------------------------------------------------
+    /// Verify each `#[serde(default = "...")]` factory function directly.
+    /// These are often missed because coverage only sees them via serde reflection.
+    #[test]
+    fn test_default_factory_fns() {
+        assert_eq!(default_theme(), "dark");
+        assert_eq!(default_word_wrap(), false);
+        assert_eq!(default_save_on_blur(), true);
+        assert_eq!(default_highlight_mark(), true);
+    }
+
+    // -----------------------------------------------------------------------
+    // test_settings_default_trait
+    // -----------------------------------------------------------------------
+    #[test]
+    fn test_settings_default_trait() {
+        let s = Settings::default();
+        assert_eq!(s.default_open_theme, "dark");
+        assert_eq!(s.word_wrap, false);
+        assert_eq!(s.save_on_blur, true);
+        assert_eq!(s.daily_notes_path, "");
+        assert_eq!(s.highlight_mark, true);
+    }
+
+    // -----------------------------------------------------------------------
+    // test_settings_serde_defaults_on_empty_json
+    // -----------------------------------------------------------------------
+    /// Deserialising `{}` must apply serde defaults via the factory functions.
+    #[test]
+    fn test_settings_serde_defaults_on_empty_json() {
+        let s: Settings = serde_json::from_str("{}").unwrap();
+        assert_eq!(s.default_open_theme, "dark");
+        assert!(!s.word_wrap);
+        assert!(s.save_on_blur);
+        assert_eq!(s.daily_notes_path, "");
+        assert!(s.highlight_mark);
+    }
+
+    // -----------------------------------------------------------------------
+    // test_highlight_mark_default_and_roundtrip
+    // -----------------------------------------------------------------------
+    /// Verify highlightMark defaults to true when absent from JSON and that
+    /// it survives a serialize → deserialize round-trip with both values.
+    #[test]
+    fn test_highlight_mark_default_and_roundtrip() {
+        // Missing key → defaults to true
+        let s: Settings = serde_json::from_str("{}").unwrap();
+        assert!(s.highlight_mark);
+
+        // Explicit false survives roundtrip
+        let json_off = r#"{"highlightMark": false}"#;
+        let s_off: Settings = serde_json::from_str(json_off).unwrap();
+        assert!(!s_off.highlight_mark);
+        let serialized = serde_json::to_string(&s_off).unwrap();
+        let s_off2: Settings = serde_json::from_str(&serialized).unwrap();
+        assert!(!s_off2.highlight_mark);
+
+        // Explicit true survives roundtrip
+        let json_on = r#"{"highlightMark": true}"#;
+        let s_on: Settings = serde_json::from_str(json_on).unwrap();
+        assert!(s_on.highlight_mark);
+    }
+
+    // -----------------------------------------------------------------------
+    // test_settings_clone_and_partial_eq
+    // -----------------------------------------------------------------------
+    #[test]
+    fn test_settings_clone_and_partial_eq() {
+        let s1 = Settings::default();
+        let s2 = s1.clone();
+        assert_eq!(s1, s2);
+
+        let mut s3 = s1.clone();
+        s3.word_wrap = true;
+        assert_ne!(s1, s3);
+    }
+
+    // -----------------------------------------------------------------------
+    // test_get_vault_root_no_home_dir_req
+    // -----------------------------------------------------------------------
+    /// When `home_dir_req` is `None` the function should still resolve the vault
+    /// root from the `.lattice` hierarchy without the home-directory check.
+    #[test]
+    fn test_get_vault_root_no_home_dir_req() {
+        let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("~"));
+        let vault = home.join("my").join("vault");
+        let settings_path = vault.join(".lattice").join("settings.json");
+
+        let result = get_vault_root(&settings_path.to_string_lossy(), None);
+        assert!(result.is_ok(), "Expected Ok, got {:?}", result);
+        assert_eq!(result.unwrap(), vault);
+    }
+
+    // -----------------------------------------------------------------------
+    // test_merge_settings_non_object_current_json
+    // -----------------------------------------------------------------------
+    /// When `current_json` is not a JSON object (e.g. an array or null), the
+    /// merge must not panic and must still produce valid JSON.
+    #[test]
+    fn test_merge_settings_non_object_current_json() {
+        // Array input
+        let current_arr = serde_json::json!([1, 2, 3]);
+        let result = merge_settings(&current_arr, &Settings::default());
+        assert!(result.is_ok(), "merge_settings must not fail on array input");
+
+        // Null input
+        let current_null = serde_json::json!(null);
+        let result2 = merge_settings(&current_null, &Settings::default());
+        assert!(result2.is_ok(), "merge_settings must not fail on null input");
     }
 
     #[test]

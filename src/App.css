@@ -139,6 +139,39 @@ body {
   opacity: 0.7;
 }
 
+/* ============================================================
+   ==highlight mark== — editor pane (CodeMirror decoration)
+   and preview pane (<mark> element).
+   Light theme: soft amber; Dark theme: toned down.
+   ============================================================ */
+
+/* Editor pane: applied via MatchDecorator class */
+.cm-marker-highlight {
+  background-color: #ffe000;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+[data-theme="dark"] .cm-marker-highlight {
+  background-color: rgba(255, 220, 0, 0.50);
+}
+
+/* Preview pane: applied to <mark> elements produced by rehypeHighlightMark */
+.markdown-body mark {
+  background-color: #ffe000;
+  border-radius: 2px;
+  padding: 0 1px;
+  color: inherit;
+}
+
+.markdown-body[data-theme="dark"] mark {
+  background-color: rgba(255, 220, 0, 0.50);
+}
+
+.markdown-body[data-theme="dark"] mark {
+  background-color: rgba(255, 215, 0, 0.22);
+}
+
 [data-theme="dark"] .pane-divider {
   background-color: #30363d;
 }

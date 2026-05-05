@@ -36,6 +36,7 @@ import { Editor } from "./components/Editor";
 import { Mermaid } from "./components/Mermaid";
 import { Menu } from "./components/Menu";
 import { rehypeAddHeadingIds } from "./lib/rehype-heading-ids";
+import { rehypeHighlightMark } from "./lib/rehype-highlight-mark";
 import { remarkStripHtmlComments } from "./lib/remark-strip-html-comments";
 // we opted for using the settings pane within the same window
 //  as it will be more mobile-friendly for porting later
@@ -139,6 +140,7 @@ function App() {
   }; // Local theme (current window)
   const [m_previewTheme, setPreviewTheme] = useState<'dark' | 'light'>('light'); // Preview pane theme (independent)
   const [m_wordWrap, setWordWrap] = useState(false);
+  const [m_highlightMark, setHighlightMark] = useState(true);
   const [m_dailyNotesPath, setDailyNotesPath] = useState<string>('');
   const [viewMode, setViewMode] = useState<ViewMode>(VIEW_EDIT);
   const [splitPct, setSplitPct] = useState(57); // editor share in %, preview gets remainder
@@ -318,6 +320,7 @@ function App() {
       setWordWrap(settings.wordWrap === true);
       setSaveOnBlur(settings.saveOnBlur !== false); // default true
       setDailyNotesPath(settings.dailyNotesPath || '');
+      setHighlightMark(settings.highlightMark !== false); // default true
 
     } catch (error) {
       console.log("Settings file not found or invalid, using default.", error);
@@ -1209,12 +1212,17 @@ function App() {
   const previewMarkdown = useMemo(() => (
     <ReactMarkdown
       remarkPlugins={[remarkStripHtmlComments, remarkGfm, remarkMath]}
-      rehypePlugins={[rehypeAddSourceLines, rehypeAddHeadingIds, rehypeKatex]}
+      rehypePlugins={[
+        rehypeAddSourceLines,
+        rehypeAddHeadingIds,
+        rehypeKatex,
+        ...(m_highlightMark ? [rehypeHighlightMark] : []),
+      ]}
       components={previewComponents}
     >
       {previewContent}
     </ReactMarkdown>
-  ), [previewContent, previewComponents]);
+  ), [previewContent, previewComponents, m_highlightMark]);
 
   // Settings Window
   //****************************************************************************
@@ -1227,6 +1235,8 @@ function App() {
       saveOnBlur={saveOnBlur}
       dailyNotesPath={m_dailyNotesPath}
       onDailyNotesPathChange={setDailyNotesPath}
+      highlightMark={m_highlightMark}
+      onHighlightMarkChange={setHighlightMark}
       settingsPath={m_vaultSettingsPath || ""}
     />;
 
@@ -1254,6 +1264,8 @@ function App() {
             saveOnBlur={saveOnBlur}
             dailyNotesPath={m_dailyNotesPath}
             onDailyNotesPathChange={setDailyNotesPath}
+            highlightMark={m_highlightMark}
+            onHighlightMarkChange={setHighlightMark}
             onClose={() => setShowSettingsModal(false)}
             settingsPath={m_vaultSettingsPath || ""}
           />
@@ -1405,6 +1417,7 @@ function App() {
               theme={m_theme}
               wordWrap={m_wordWrap}
               fontSize={m_fontSize}
+              highlightMark={m_highlightMark}
               initialDoc={m_loadedContent}
               currentFilePath={m_currentFilePath}
               onDirtyChange={setIsDirty}

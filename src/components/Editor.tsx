@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useImperativeHandle } from 'react';
-import { EditorView, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, dropCursor, rectangularSelection, crosshairCursor, highlightActiveLine, keymap } from '@codemirror/view';
+import { EditorView, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, dropCursor, rectangularSelection, crosshairCursor, highlightActiveLine, keymap, MatchDecorator, ViewPlugin, DecorationSet, ViewUpdate, Decoration } from '@codemirror/view';
 import { EditorState, Compartment, StateEffect } from '@codemirror/state';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
@@ -21,11 +21,36 @@ interface EditorProps {
     theme: 'light' | 'dark';
     wordWrap: boolean;
     fontSize: number; // percentage, e.g. 100 = 100%
+    highlightMark: boolean; // Render ==text== with a highlighted background
     onChange?: (doc: string) => void;
     initialDoc?: string;
     currentFilePath?: string | null;
     onDirtyChange?: (isDirty: boolean) => void;
 }
+
+//******************************************************************************
+// ==highlight== extension
+// Uses MatchDecorator so only visible ranges are scanned — no full-doc pass.
+//******************************************************************************
+const _highlightMarkDeco = Decoration.mark({ class: 'cm-marker-highlight' });
+const _highlightMarkDecorator = new MatchDecorator({
+    regexp: /==([^=\n]+?)==/g,
+    decoration: () => _highlightMarkDeco,
+});
+const highlightMarkExtension = ViewPlugin.fromClass(
+    class {
+        decorations: DecorationSet;
+        constructor(view: EditorView) {
+            this.decorations = _highlightMarkDecorator.createDeco(view);
+        }
+        update(update: ViewUpdate) {
+            this.decorations = _highlightMarkDecorator.updateDeco(update, this.decorations);
+        }
+    },
+    { decorations: (v) => v.decorations }
+);
+// highlight extension END ********************************************
+
 const monoHighlightStyle = HighlightStyle.define([
     { tag: tags.monospace, fontFamily: "'Fira Code', 'Consolas', monospace", backgroundColor: "transparent" },
     { tag: tags.comment, backgroundColor: "#2d333b", color: "#8b949e", fontStyle: "italic" }
@@ -75,7 +100,7 @@ export interface EditorHandle {
     padTables: () => Promise<boolean>;
 }
 export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
-    theme, wordWrap, fontSize, onChange, initialDoc, currentFilePath, onDirtyChange
+    theme, wordWrap, fontSize, highlightMark, onChange, initialDoc, currentFilePath, onDirtyChange
 }, ref) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
@@ -83,6 +108,7 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
     const wrappingCompartment = useRef(new Compartment());
     const fontSizeCompartment = useRef(new Compartment());
     const historyCompartment = useRef(new Compartment());
+    const highlightMarkCompartment = useRef(new Compartment());
     const isRemoteUpdate = useRef(false);
     const currentFilePathRef = useRef(currentFilePath);
 
@@ -326,6 +352,7 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
         themeCompartment.current.of(theme === 'dark' ? githubDark : githubLight),
         wrappingCompartment.current.of(wordWrap ? EditorView.lineWrapping : []),
         fontSizeCompartment.current.of(EditorView.theme({ '.cm-content': { fontSize: `${fontSize}%` }, '.cm-gutters': { fontSize: `${fontSize}%` } })),
+        highlightMarkCompartment.current.of(highlightMark ? highlightMarkExtension : []),
         EditorView.updateListener.of((update) => {
             if (update.docChanged && onChange && !isRemoteUpdate.current) {
                 onChange(update.state.doc.toString());
@@ -454,6 +481,17 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
             });
         }
     }, [fontSize]);
+
+    // Update highlight-mark extension when prop changes
+    useEffect(() => {
+        if (viewRef.current) {
+            viewRef.current.dispatch({
+                effects: highlightMarkCompartment.current.reconfigure(
+                    highlightMark ? highlightMarkExtension : []
+                )
+            });
+        }
+    }, [highlightMark]);
 
     return <div ref={editorRef} className="editor-container" />;
 });

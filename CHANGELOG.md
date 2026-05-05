@@ -14,6 +14,8 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.30
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- feat: Add highlight mark setting and operation
+- Add tests for file state and settings module
 - Fixed warnings in the unittest run
 - Fixed vulnerability GHSA-w5hq-g745-h8pq
 - Bump version to 0.2.30
