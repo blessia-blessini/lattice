@@ -988,6 +988,296 @@ mod tests {
         assert!(log_missing.contains("Exists: false"));
     }
     // test_debug_file_probe_logic END *************************************
+
+    //**************************************************************************
+    // test_debug_file_probe_valid_image
+    //**************************************************************************
+    /// Exercises the "Integrity: OK" success path inside debug_file_probe.
+    /// Uses a minimal but valid 1×1 transparent GIF (same bytes as the known
+    /// base64 constant used elsewhere in the test suite).
+    #[test]
+    fn test_debug_file_probe_valid_image() {
+        let gif_bytes = general_purpose::STANDARD
+            .decode("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
+            .unwrap();
+
+        let temp_dir = tempfile::tempdir().unwrap();
+        let file_path = temp_dir.path().join("tiny.gif");
+        fs::write(&file_path, &gif_bytes).unwrap();
+
+        let log = debug_file_probe(file_path.to_string_lossy().to_string());
+        assert!(
+            log.contains("Integrity: OK"),
+            "Expected successful image decode, got:\n{}",
+            log
+        );
+        assert!(log.contains("Dimensions: 1x1"));
+    }
+    // test_debug_file_probe_valid_image END ***********************************
+
+    //**************************************************************************
+    // test_debug_file_probe_non_image_fails_decode
+    //**************************************************************************
+    /// Exercises the "Integrity: FAILED" decode-error branch.
+    #[test]
+    fn test_debug_file_probe_non_image_fails_decode() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let file_path = temp_dir.path().join("not_an_image.dat");
+        fs::write(&file_path, b"this is plain text, not a valid image format").unwrap();
+
+        let log = debug_file_probe(file_path.to_string_lossy().to_string());
+        assert!(
+            log.contains("Integrity: FAILED"),
+            "Expected failed decode, got:\n{}",
+            log
+        );
+    }
+    // test_debug_file_probe_non_image_fails_decode END ************************
+
+    //**************************************************************************
+    // test_debug_file_probe_missing_path_shows_parent
+    //**************************************************************************
+    /// When the path does not exist the probe should log its parent directory.
+    #[test]
+    fn test_debug_file_probe_missing_path_shows_parent() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let missing = temp_dir.path().join("does_not_exist.bin");
+
+        let log = debug_file_probe(missing.to_string_lossy().to_string());
+        assert!(log.contains("Exists: false"));
+        assert!(log.contains("Parent"), "Expected parent info in log:\n{}", log);
+    }
+    // test_debug_file_probe_missing_path_shows_parent END ********************
+
+    //**************************************************************************
+    // test_trace_log_does_not_panic
+    //**************************************************************************
+    #[test]
+    fn test_trace_log_does_not_panic() {
+        // trace_log is a thin println! wrapper; the only contract is no panic
+        trace_log("test message from unit test".to_string());
+    }
+    // test_trace_log_does_not_panic END ***************************************
+
+    //**************************************************************************
+    // test_read_file_base64_mime_types
+    //**************************************************************************
+    /// Verifies every mime-type branch in read_file_base64.
+    #[test]
+    fn test_read_file_base64_mime_types() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let cases: &[(&str, &str)] = &[
+            ("test.jpg",  "image/jpeg"),
+            ("test.jpeg", "image/jpeg"),
+            ("test.gif",  "image/gif"),
+            ("test.svg",  "image/svg+xml"),
+            ("test.webp", "image/webp"),
+            ("test.png",  "image/png"),
+            ("test.bin",  "image/png"), // unknown extension falls back to png
+        ];
+        for (filename, expected_mime) in cases {
+            let path = temp_dir.path().join(filename);
+            fs::write(&path, b"fake bytes").unwrap();
+            let result = read_file_base64(path.to_string_lossy().to_string())
+                .expect("read_file_base64 should succeed");
+            assert!(
+                result.starts_with(&format!("data:{};base64,", expected_mime)),
+                "Wrong mime for '{}': got prefix '{}'",
+                filename,
+                &result[..result.len().min(50)]
+            );
+        }
+    }
+    // test_read_file_base64_mime_types END ************************************
+
+    //**************************************************************************
+    // test_read_file_base64_missing_file_returns_err
+    //**************************************************************************
+    #[test]
+    fn test_read_file_base64_missing_file_returns_err() {
+        let result = read_file_base64("/nonexistent_xyz_lattice/file.png".to_string());
+        assert!(result.is_err());
+    }
+    // test_read_file_base64_missing_file_returns_err END *********************
+
+    //**************************************************************************
+    // test_initialize_vault_settings_with_directory_path
+    //**************************************************************************
+    /// When the supplied path is a directory (not a file) the function must
+    /// create `.lattice/settings.json` inside that directory.
+    #[test]
+    fn test_initialize_vault_settings_with_directory_path() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let dir_path = temp_dir.path().to_string_lossy().to_string();
+
+        let result = initialize_vault_settings(dir_path);
+        assert!(result.is_ok(), "Expected Ok, got {:?}", result);
+        let settings_path = result.unwrap();
+        assert!(settings_path.contains(".lattice"));
+        assert!(settings_path.ends_with("settings.json"));
+        assert!(Path::new(&settings_path).exists());
+    }
+    // test_initialize_vault_settings_with_directory_path END *****************
+
+    //**************************************************************************
+    // test_initialize_vault_settings_idempotent
+    //**************************************************************************
+    /// Calling twice on the same path must not error and must return the same
+    /// settings path both times (existing settings.json is not overwritten).
+    #[test]
+    fn test_initialize_vault_settings_idempotent() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let file_path = temp_dir.path().join("doc.md");
+        fs::write(&file_path, "").unwrap();
+        let path_str = file_path.to_string_lossy().to_string();
+
+        let r1 = initialize_vault_settings(path_str.clone()).unwrap();
+        let r2 = initialize_vault_settings(path_str).unwrap();
+        assert_eq!(r1, r2, "Second call must return the same settings path");
+    }
+    // test_initialize_vault_settings_idempotent END ***************************
+
+    //**************************************************************************
+    // test_find_vault_internal_directory_input
+    //**************************************************************************
+    /// When file_path is itself a directory that contains a .lattice folder,
+    /// the function must find the existing vault without climbing to the parent.
+    #[test]
+    fn test_find_vault_internal_directory_input() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let home = temp_dir.path();
+
+        // Pre-create the vault settings directory
+        let lattice_dir = temp_dir.path().join(".lattice");
+        fs::create_dir_all(&lattice_dir).unwrap();
+
+        // Pass the temp dir itself (a directory, not a file) as the search start
+        let result = find_vault_settings_file_internal(
+            temp_dir.path().to_string_lossy().to_string(),
+            home,
+        );
+        assert!(result.is_ok());
+        let found = result.unwrap().expect("Should find a settings path");
+        assert!(found.ends_with("settings.json"), "Expected settings.json, got: {}", found);
+    }
+    // test_find_vault_internal_directory_input END ****************************
+
+    //**************************************************************************
+    // test_find_vault_settings_file_fallback_to_home
+    //**************************************************************************
+    /// Exercises find_vault_settings_file_internal when the file has no .lattice
+    /// in its own directory.  The function either finds an ancestor .lattice (valid)
+    /// or exhausts the walk and falls back to home_dir (also valid).  We verify
+    /// the behavioural contract — Ok(Some(path)) where path is an existing
+    /// settings.json — without assuming which branch fired, because the loop
+    /// walks the real filesystem and a system-level .lattice may exist above the
+    /// temp dir on the developer's machine.
+    #[test]
+    fn test_find_vault_settings_file_fallback_to_home() {
+        let isolated_root = tempfile::tempdir().unwrap();
+        let sub = isolated_root.path().join("deep").join("subdir");
+        fs::create_dir_all(&sub).unwrap();
+        let file_path = sub.join("note.md");
+        fs::write(&file_path, "hello").unwrap();
+
+        let home_temp = tempfile::tempdir().unwrap();
+
+        let result = find_vault_settings_file_internal(
+            file_path.to_string_lossy().to_string(),
+            home_temp.path(),
+        );
+
+        assert!(result.is_ok(), "Function must not return an error");
+        let found = result.unwrap().expect("Must return Some settings path");
+        assert!(
+            found.ends_with("settings.json"),
+            "Returned path must end with settings.json, got: {}",
+            found
+        );
+        assert!(
+            Path::new(&found).exists(),
+            "settings.json must exist on disk at: {}",
+            found
+        );
+    }
+    // test_find_vault_settings_file_fallback_to_home END **********************
+
+    //**************************************************************************
+    // test_save_image_assets_dir_already_exists
+    //**************************************************************************
+    /// Covers the branch inside save_image where assets_dir already exists
+    /// (the `if !assets_dir.exists()` branch evaluates to false).
+    #[test]
+    fn test_save_image_assets_dir_already_exists() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let doc_path = temp_dir.path().join("existing_doc.md");
+        fs::write(&doc_path, "# doc").unwrap();
+        let doc_str = doc_path.to_string_lossy().to_string();
+        let b64 = "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+
+        // First call — creates the assets directory
+        let r1 = save_image(doc_str.clone(), b64.to_string()).unwrap();
+
+        // Second call — assets directory now already exists; exercises the else branch
+        let r2 = save_image(doc_str.clone(), b64.to_string()).unwrap();
+
+        // Both paths must sit inside the assets directory
+        assert!(r1.contains("existing_doc_assets"));
+        assert!(r2.contains("existing_doc_assets"));
+
+        let p1 = temp_dir.path().join(&r1);
+        let p2 = temp_dir.path().join(&r2);
+        assert!(p1.exists());
+        assert!(p2.exists());
+    }
+    // test_save_image_assets_dir_already_exists END ***************************
+
+    //**************************************************************************
+    // test_debug_file_probe_short_file_no_header_hex
+    //**************************************************************************
+    /// Covers the `else` branch of `if bytes.len() >= 4` in debug_file_probe.
+    /// A file shorter than 4 bytes will fail image decode AND skip the hex header.
+    #[test]
+    fn test_debug_file_probe_short_file_no_header_hex() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let file_path = temp_dir.path().join("two_bytes.dat");
+        fs::write(&file_path, b"AB").unwrap(); // 2 bytes — fails decode, < 4 bytes
+
+        let log = debug_file_probe(file_path.to_string_lossy().to_string());
+
+        assert!(log.contains("Integrity: FAILED"));
+        // Header hex line must NOT appear because len < 4
+        assert!(
+            !log.contains("Header (Hex)"),
+            "Should not log header hex for files < 4 bytes, got:\n{}",
+            log
+        );
+    }
+    // test_debug_file_probe_short_file_no_header_hex END **********************
+
+    //**************************************************************************
+    // test_get_version_string_not_empty
+    //**************************************************************************
+    /// get_version_string reads a compile-time constant via include_str!.
+    /// The build script always generates the file, so this is safe to call in tests.
+    #[test]
+    fn test_get_version_string_not_empty() {
+        let v = get_version_string();
+        assert!(!v.trim().is_empty(), "Version string should not be blank");
+    }
+    // test_get_version_string_not_empty END ***********************************
+
+    //**************************************************************************
+    // test_maybe_sabotage_file_noop
+    //**************************************************************************
+    /// In production builds (cfg not integration_test) maybe_sabotage_file is a
+    /// no-op. Just calling it proves the function body is reachable.
+    #[test]
+    fn test_maybe_sabotage_file_noop() {
+        // Should return immediately without side-effects
+        super::test_utils::maybe_sabotage_file("irrelevant_path.md");
+    }
+    // test_maybe_sabotage_file_noop END ***************************************
 }
 // mod END *****************************************************************
 

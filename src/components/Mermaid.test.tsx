@@ -52,13 +52,19 @@ describe('Mermaid', () => {
     // -----------------------------------------------------------------------
     // Basic rendering
     // -----------------------------------------------------------------------
-    it('renders a container with class "mermaid"', () => {
-        const { container } = render(<Mermaid chart={CHART} theme="dark" />);
+    it('renders a container with class "mermaid"', async () => {
+        let container!: HTMLElement;
+        await act(async () => {
+            ({ container } = render(<Mermaid chart={CHART} theme="dark" />));
+        });
         expect(container.querySelector('.mermaid')).not.toBeNull();
     });
 
-    it('is centred via flex layout', () => {
-        const { container } = render(<Mermaid chart={CHART} theme="dark" />);
+    it('is centred via flex layout', async () => {
+        let container!: HTMLElement;
+        await act(async () => {
+            ({ container } = render(<Mermaid chart={CHART} theme="dark" />));
+        });
         const div = container.querySelector('.mermaid') as HTMLElement;
         expect(div.style.justifyContent).toBe('center');
     });

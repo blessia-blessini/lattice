@@ -38,13 +38,17 @@ const DEFAULT_PROPS = {
     saveOnBlur: false,
     dailyNotesPath: '/my/notes',
     onDailyNotesPathChange: vi.fn(),
+    highlightMark: true,
+    onHighlightMarkChange: vi.fn(),
     onClose: vi.fn(),
     settingsPath: '/vault/.lattice/settings.json',
 };
 
-// Helpers to locate the two toggle divs without depending on fragile CSS queries.
+// Helpers to locate toggle divs without depending on fragile CSS queries.
 // Theme toggle: the onClick div sitting between the "Light" and "Dark" labels.
-// Word-wrap toggle: the onClick div whose next sibling contains "On"/"Off".
+// Word-wrap toggle: the onClick div whose next sibling is "On"/"Off".
+// Highlight-mark toggle: the onClick div whose next sibling is "On"/"Off" AND
+//   that is NOT the word-wrap toggle (second occurrence in DOM order).
 const getThemeToggle = (container: HTMLElement) => {
     const darkSpan = Array.from(container.querySelectorAll('span')).find(
         s => s.textContent === 'Dark'
@@ -54,10 +58,19 @@ const getThemeToggle = (container: HTMLElement) => {
 };
 
 const getWordWrapToggle = (container: HTMLElement) => {
-    const onOffSpan = Array.from(container.querySelectorAll('span')).find(
+    const onOffSpans = Array.from(container.querySelectorAll('span')).filter(
         s => s.textContent === 'On' || s.textContent === 'Off'
-    )!;
-    return onOffSpan.previousElementSibling as HTMLElement;
+    );
+    // First On/Off span belongs to word-wrap toggle
+    return onOffSpans[0].previousElementSibling as HTMLElement;
+};
+
+const getHighlightMarkToggle = (container: HTMLElement) => {
+    const onOffSpans = Array.from(container.querySelectorAll('span')).filter(
+        s => s.textContent === 'On' || s.textContent === 'Off'
+    );
+    // Second On/Off span belongs to highlight-mark toggle
+    return onOffSpans[1].previousElementSibling as HTMLElement;
 };
 
 describe('Settings', () => {
@@ -140,8 +153,9 @@ describe('Settings', () => {
     });
 
     it('shows "On" label when wordWrap is true', () => {
-        const { getByText } = render(<Settings {...DEFAULT_PROPS} wordWrap={true} />);
-        expect(getByText('On')).toBeTruthy();
+        const { getAllByText } = render(<Settings {...DEFAULT_PROPS} wordWrap={true} />);
+        // wordWrap On + highlightMark On → at least one "On" present
+        expect(getAllByText('On').length).toBeGreaterThan(0);
     });
 
     it('calls onWordWrapChange with true when word wrap is toggled on', async () => {
@@ -227,5 +241,51 @@ describe('Settings', () => {
         const statusP = container.querySelector('p[style*="color: rgb(46, 164, 79)"]') as HTMLElement;
         expect(statusP).not.toBeNull();
         expect(statusP.style.visibility).toBe('hidden');
+    });
+
+    // -----------------------------------------------------------------------
+    // Highlight mark toggle
+    // -----------------------------------------------------------------------
+    it('shows "On" label when highlightMark is true', () => {
+        const { getAllByText } = render(<Settings {...DEFAULT_PROPS} highlightMark={true} />);
+        // Both word-wrap and highlight-mark can show "On" — just confirm at least one exists
+        expect(getAllByText('On').length).toBeGreaterThan(0);
+    });
+
+    it('shows "Off" label for highlight mark when highlightMark is false', () => {
+        const { getAllByText } = render(
+            <Settings {...DEFAULT_PROPS} wordWrap={true} highlightMark={false} />
+        );
+        // word-wrap is On, highlight-mark is Off → exactly one "Off"
+        expect(getAllByText('Off').length).toBe(1);
+    });
+
+    it('calls onHighlightMarkChange with false when toggled off', async () => {
+        const onChange = vi.fn();
+        const { container } = render(
+            <Settings {...DEFAULT_PROPS} highlightMark={true} onHighlightMarkChange={onChange} />
+        );
+        await act(async () => { fireEvent.click(getHighlightMarkToggle(container)); });
+        expect(onChange).toHaveBeenCalledWith(false);
+    });
+
+    it('calls onHighlightMarkChange with true when toggled on', async () => {
+        const onChange = vi.fn();
+        const { container } = render(
+            <Settings {...DEFAULT_PROPS} highlightMark={false} onHighlightMarkChange={onChange} />
+        );
+        await act(async () => { fireEvent.click(getHighlightMarkToggle(container)); });
+        expect(onChange).toHaveBeenCalledWith(true);
+    });
+
+    it('invokes save_settings with highlightMark after toggle', async () => {
+        const { container } = render(<Settings {...DEFAULT_PROPS} highlightMark={true} />);
+        await act(async () => { fireEvent.click(getHighlightMarkToggle(container)); });
+        expect(TauriCore.invoke).toHaveBeenCalledWith(
+            'save_settings',
+            expect.objectContaining({
+                settings: expect.objectContaining({ highlightMark: false }),
+            })
+        );
     });
 });

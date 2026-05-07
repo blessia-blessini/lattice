@@ -1103,6 +1103,143 @@ mod integration_tests {
             assert!(tracker.is_empty());
         }
     }
+    // -----------------------------------------------------------------------
+    // test_write_to_root_path_errors
+    // -----------------------------------------------------------------------
+    /// Passing "/" (no parent) as a write target must return an error from
+    /// do_writefile rather than panicking.
+    #[test]
+    #[cfg(unix)]
+    fn test_write_to_root_path_errors() {
+        use std::collections::HashMap;
+        use std::sync::{Arc, Mutex};
+
+        let state = FileTrackerState {
+            files: Arc::new(Mutex::new(HashMap::new())),
+        };
+        // "/" has no parent — the do_writefile guard should return Err
+        let result = write_text_file_internal("/".to_string(), "data".to_string(), &state);
+        assert!(result.is_err(), "Expected Err for root path, got Ok");
+    }
+
+    // -----------------------------------------------------------------------
+    // test_close_file_unknown_path_is_noop
+    // -----------------------------------------------------------------------
+    /// Closing a path that is not in the tracker should silently succeed.
+    #[test]
+    fn test_close_file_unknown_path_is_noop() {
+        use std::collections::HashMap;
+        use std::sync::{Arc, Mutex};
+
+        let state = FileTrackerState {
+            files: Arc::new(Mutex::new(HashMap::new())),
+        };
+        let res = super::close_file_internal(
+            "never_opened.md".to_string(),
+            "win1".to_string(),
+            &state,
+        );
+        assert!(res.is_ok());
+        assert!(state.files.lock().unwrap().is_empty());
+    }
+
+    // -----------------------------------------------------------------------
+    // test_cleanup_window_state_window_not_in_any_file
+    // -----------------------------------------------------------------------
+    /// cleanup_window_state for a window that owns no files should be a no-op.
+    #[test]
+    fn test_cleanup_window_state_window_not_in_any_file() {
+        use super::{FileState, FileTrackerState, FileWishedFormat, cleanup_window_state};
+        use std::collections::HashMap;
+        use std::sync::{Arc, Mutex};
+
+        let state = FileTrackerState {
+            files: Arc::new(Mutex::new(HashMap::new())),
+        };
+        {
+            let mut t = state.files.lock().unwrap();
+            t.insert(
+                "file.md".to_string(),
+                FileState {
+                    last_hash: "h".to_string(),
+                    last_accessed: 0,
+                    window_ids: vec!["win2".to_string()],
+                    wished_format: FileWishedFormat::NewLineLFLikeUnix,
+                },
+            );
+        }
+        // "win1" owns nothing — sweep must leave "file.md" intact
+        cleanup_window_state("win1", &state);
+        let t = state.files.lock().unwrap();
+        assert!(t.contains_key("file.md"), "file.md should still be tracked");
+        assert_eq!(t["file.md"].window_ids, vec!["win2".to_string()]);
+    }
+
+    // -----------------------------------------------------------------------
+    // test_read_file_adds_window_without_duplication
+    // -----------------------------------------------------------------------
+    /// Re-reading a file for the same window should NOT duplicate the window ID.
+    /// Reading with a second window should add it once.
+    #[test]
+    fn test_read_file_adds_window_without_duplication() {
+        use std::collections::HashMap;
+        use std::sync::{Arc, Mutex};
+
+        let state = FileTrackerState {
+            files: Arc::new(Mutex::new(HashMap::new())),
+        };
+        let temp_dir = tempfile::tempdir().unwrap();
+        let file_path = temp_dir.path().join("multi_win.md");
+        std::fs::write(&file_path, "hello").unwrap();
+        let path_str = file_path.to_string_lossy().to_string();
+
+        // First read — registers win1
+        read_text_file_internal(path_str.clone(), Some("win1".to_string()), &state).unwrap();
+        // Same window reads again — win1 must NOT be pushed twice
+        read_text_file_internal(path_str.clone(), Some("win1".to_string()), &state).unwrap();
+        // Different window — win2 added
+        read_text_file_internal(path_str.clone(), Some("win2".to_string()), &state).unwrap();
+
+        let tracker = state.files.lock().unwrap();
+        let entry = tracker.get(&path_str).unwrap();
+        assert_eq!(entry.window_ids.len(), 2, "Expected exactly 2 distinct windows");
+        assert!(entry.window_ids.contains(&"win1".to_string()));
+        assert!(entry.window_ids.contains(&"win2".to_string()));
+    }
+
+    // -----------------------------------------------------------------------
+    // test_write_twice_no_conflict
+    // -----------------------------------------------------------------------
+    /// Writing to a known file without any external modification must overwrite
+    /// cleanly (same path returned, no conflict copy).
+    #[test]
+    fn test_write_twice_no_conflict() {
+        use std::collections::HashMap;
+        use std::sync::{Arc, Mutex};
+
+        let state = FileTrackerState {
+            files: Arc::new(Mutex::new(HashMap::new())),
+        };
+        let temp_dir = tempfile::tempdir().unwrap();
+        let file_path = temp_dir.path().join("no_conflict.md");
+        let path_str = file_path.to_string_lossy().to_string();
+
+        // First write — creates the file
+        let res1 = write_text_file_internal(path_str.clone(), "initial".to_string(), &state)
+            .unwrap();
+        assert_eq!(res1.path, path_str);
+
+        // Sync state: read so the tracker holds the exact on-disk hash
+        read_text_file_internal(path_str.clone(), None, &state).unwrap();
+
+        // Second write — no external change, must NOT produce a conflict copy
+        let res2 = write_text_file_internal(path_str.clone(), "updated".to_string(), &state)
+            .unwrap();
+        assert_eq!(res2.path, path_str, "Path must be unchanged (no conflict)");
+
+        let disk = std::fs::read_to_string(&file_path).unwrap();
+        assert!(disk.contains("updated"));
+    }
 }
 // test_write_text_file_conflict END **************************************
 

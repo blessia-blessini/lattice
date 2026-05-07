@@ -1,7 +1,7 @@
 {
   "name": "lattice",
   "private": true,
-  "version": "0.2.29",
+  "version": "0.2.30",
   "type": "module",
   "engines": {
     "node": ">=24"
@@ -57,5 +57,8 @@
     "typescript": "~5.8.3",
     "vite": "^7.3.2",
     "vitest": "^4.0.16"
+  },
+  "overrides": {
+    "uuid": "^14.0.0"
   }
 }

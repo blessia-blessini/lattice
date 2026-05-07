@@ -10,6 +10,8 @@ interface SettingsProps {
     saveOnBlur: boolean;
     dailyNotesPath: string;
     onDailyNotesPathChange: (path: string) => void;
+    highlightMark: boolean;
+    onHighlightMarkChange: (enabled: boolean) => void;
     onClose?: () => void;
     settingsPath: string;
 }
@@ -17,18 +19,20 @@ interface SettingsProps {
 //******************************************************************************
 // Settings
 //******************************************************************************
-export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultThemeChange, wordWrap, onWordWrapChange, saveOnBlur, dailyNotesPath, onDailyNotesPathChange, onClose, settingsPath }) => {
+export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultThemeChange, wordWrap, onWordWrapChange, saveOnBlur, dailyNotesPath, onDailyNotesPathChange, highlightMark, onHighlightMarkChange, onClose, settingsPath }) => {
     const [status, setStatus] = useState<string>('');
 
     const saveSettings = async (newTheme: 'light' | 'dark',
         newWordWrap: boolean,
-        newDailyNotesPath: string) => {
+        newDailyNotesPath: string,
+        newHighlightMark: boolean) => {
         try {
             const settingsObject = {
                 defaultOpenTheme: newTheme,
                 wordWrap: newWordWrap,
                 saveOnBlur: saveOnBlur,
-                dailyNotesPath: newDailyNotesPath
+                dailyNotesPath: newDailyNotesPath,
+                highlightMark: newHighlightMark,
             };
             await invoke('save_settings', { settingsPath, settings: settingsObject });
             setStatus('Saved!');
@@ -41,19 +45,25 @@ export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultTheme
 
     const handleThemeChange = (newTheme: 'light' | 'dark') => {
         onDefaultThemeChange(newTheme);
-        saveSettings(newTheme, wordWrap, dailyNotesPath);
+        saveSettings(newTheme, wordWrap, dailyNotesPath, highlightMark);
     };
 
     const handleWordWrapChange = () => {
         const newWrap = !wordWrap;
         onWordWrapChange(newWrap);
-        saveSettings(defaultTheme, newWrap, dailyNotesPath);
+        saveSettings(defaultTheme, newWrap, dailyNotesPath, highlightMark);
     };
 
     const handleDailyNotesPathChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newPath = e.target.value;
         onDailyNotesPathChange(newPath);
-        saveSettings(defaultTheme, wordWrap, newPath);
+        saveSettings(defaultTheme, wordWrap, newPath, highlightMark);
+    };
+
+    const handleHighlightMarkChange = () => {
+        const newValue = !highlightMark;
+        onHighlightMarkChange(newValue);
+        saveSettings(defaultTheme, wordWrap, dailyNotesPath, newValue);
     };
 
     return (
@@ -126,6 +136,41 @@ export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultTheme
                         }} />
                     </div>
                     <span>{wordWrap ? 'On' : 'Off'}</span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '1.5rem' }}>
+                    <span>Highlight Mark (<code style={{
+                            backgroundColor: highlightMark ? '#ffe000' : undefined,
+                            color: highlightMark ? '#1a1a1a' : undefined,
+                            borderRadius: '2px',
+                            padding: '0 2px',
+                            transition: 'background-color 0.2s, color 0.2s',
+                        }}>==text==</code>):</span>
+                    <div
+                        onClick={handleHighlightMarkChange}
+                        style={{
+                            width: '50px',
+                            height: '24px',
+                            backgroundColor: highlightMark ? '#2ea44f' : '#ccc',
+                            borderRadius: '12px',
+                            position: 'relative',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.2s'
+                        }}
+                    >
+                        <div style={{
+                            width: '20px',
+                            height: '20px',
+                            backgroundColor: '#fff',
+                            borderRadius: '50%',
+                            position: 'absolute',
+                            top: '2px',
+                            left: highlightMark ? '28px' : '2px',
+                            transition: 'left 0.2s',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+                        }} />
+                    </div>
+                    <span>{highlightMark ? 'On' : 'Off'}</span>
                 </div>
 
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '1.5rem', width: '100%' }}>
