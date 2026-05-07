@@ -15,10 +15,12 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.31
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Bump dependencies in /src-tauri
 - ammended Changelog
 
 ## v0.2.30
 ### Changes
+- Bump **tauri** from 2.11.0 to 2.11.1 in /src-tauri in the cargo group across 1 directory
 - feat: Add highlight mark setting and operation for ==highlighted test==
 - Add tests for file state and settings module
 - Fixed warnings in the unittest run
