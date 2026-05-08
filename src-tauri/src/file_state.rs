@@ -1240,6 +1240,130 @@ mod integration_tests {
         let disk = std::fs::read_to_string(&file_path).unwrap();
         assert!(disk.contains("updated"));
     }
+
+    // -----------------------------------------------------------------------
+    // test_create_daily_note_creates_nonexistent_directory
+    // -----------------------------------------------------------------------
+    /// create_daily_note_file must call create_dir_all when the target
+    /// directory does not yet exist. Passing a nested path that has never
+    /// been created verifies this branch.
+    #[test]
+    fn test_create_daily_note_creates_nonexistent_directory() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        // Build a nested path that does NOT exist yet.
+        let notes_path = temp_dir
+            .path()
+            .join("deep")
+            .join("nested")
+            .join("notes");
+        assert!(!notes_path.exists(), "Pre-condition: directory must not exist");
+
+        let path_str = notes_path.to_string_lossy().to_string();
+        let result = create_daily_note_file(path_str);
+
+        assert!(result.is_ok(), "Expected Ok, got: {:?}", result.err());
+        let file_path = result.unwrap();
+        assert!(
+            std::path::Path::new(&file_path).exists(),
+            "Created daily-note file must exist on disk"
+        );
+        assert!(
+            notes_path.exists(),
+            "Directory must have been created by create_dir_all"
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // test_create_daily_note_file_collision_counter_loop
+    // -----------------------------------------------------------------------
+    /// When the base daily-note file exists but cannot be read (permission
+    /// denied), create_daily_note_file must walk the counter loop and return
+    /// the first suffixed path it can create (e.g. `YYYYMMDD-DDD-1.md`).
+    /// The first suffix is always writable (fresh path), so exactly one
+    /// iteration is needed.
+    #[test]
+    #[cfg(unix)]
+    fn test_create_daily_note_file_collision_counter_loop() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let temp_dir = tempfile::tempdir().unwrap();
+        let notes_path = temp_dir.path().to_string_lossy().to_string();
+
+        // Create the base daily-note so we know its name.
+        let base_path_str = create_daily_note_file(notes_path.clone()).unwrap();
+        let base_path = std::path::Path::new(&base_path_str);
+
+        // Make the base file unreadable so `fs::read` will fail.
+        let mut perms = std::fs::metadata(base_path).unwrap().permissions();
+        perms.set_mode(0o000);
+        std::fs::set_permissions(base_path, perms).unwrap();
+
+        // Now call again: base exists but is unreadable → loop → creates -1 variant.
+        let result = create_daily_note_file(notes_path.clone());
+
+        // Restore permissions so the temp_dir cleanup doesn't fail.
+        let mut perms2 = std::fs::metadata(base_path).unwrap().permissions();
+        perms2.set_mode(0o644);
+        std::fs::set_permissions(base_path, perms2).unwrap();
+
+        assert!(result.is_ok(), "Expected collision counter to find a slot: {:?}", result.err());
+        let new_path = result.unwrap();
+        // Must differ from the base (a suffix was appended).
+        assert_ne!(new_path, base_path_str, "Collision must produce a different path");
+        assert!(
+            std::path::Path::new(&new_path).exists(),
+            "Collision-resolved file must exist"
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // test_write_conflict_when_file_exists_but_is_unreadable
+    // -----------------------------------------------------------------------
+    /// When the tracker holds an expected hash for a file that exists on disk
+    /// but cannot be read (permission denied), write_text_file_internal must
+    /// detect the read failure and resolve by creating a new copy.
+    #[test]
+    #[cfg(unix)]
+    fn test_write_conflict_when_file_exists_but_is_unreadable() {
+        use std::collections::HashMap;
+        use std::os::unix::fs::PermissionsExt;
+        use std::sync::{Arc, Mutex};
+
+        let state = FileTrackerState {
+            files: Arc::new(Mutex::new(HashMap::new())),
+        };
+        let temp_dir = tempfile::tempdir().unwrap();
+        let file_path = temp_dir.path().join("unreadable.md");
+        let path_str = file_path.to_string_lossy().to_string();
+
+        // 1. Create and register the file normally.
+        write_text_file_internal(path_str.clone(), "original".to_string(), &state).unwrap();
+        read_text_file_internal(path_str.clone(), None, &state).unwrap();
+
+        // 2. Remove read permission so the conflict-check read will fail.
+        let mut perms = std::fs::metadata(&file_path).unwrap().permissions();
+        perms.set_mode(0o000);
+        std::fs::set_permissions(&file_path, perms.clone()).unwrap();
+
+        // 3. Attempt a write — file exists but is unreadable → conflict path.
+        let result = write_text_file_internal(path_str.clone(), "new content".to_string(), &state);
+
+        // Restore permissions before any assertions so temp cleanup works.
+        perms.set_mode(0o644);
+        std::fs::set_permissions(&file_path, perms).unwrap();
+
+        assert!(result.is_ok(), "Expected Ok (conflict copy), got: {:?}", result.err());
+        let response = result.unwrap();
+        // The response path must differ — a new conflict copy was made.
+        assert_ne!(
+            response.path, path_str,
+            "An unreadable file must trigger a conflict copy"
+        );
+        assert!(
+            std::path::Path::new(&response.path).exists(),
+            "Conflict copy must exist on disk"
+        );
+    }
 }
 // test_write_text_file_conflict END **************************************
 

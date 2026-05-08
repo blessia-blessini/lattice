@@ -94,4 +94,18 @@ describe('symbolCompletion', () => {
         expect(() => symbolCompletion(ctx)).not.toThrow();
         expect(symbolCompletion(ctx)).toBeNull();
     });
+
+    // -----------------------------------------------------------------------
+    // Options guard — the !Array.isArray(options) defensive branch
+    // -----------------------------------------------------------------------
+    it('returns null when Array.isArray reports options is not an array', () => {
+        // The module-level `options` is always a real array, but the guard
+        // exists to protect against exotic environments. We fake the check by
+        // spying on Array.isArray so it returns false for the first call while
+        // the trigger IS present — hitting the `return null` at the guard line.
+        const spy = vi.spyOn(Array, 'isArray').mockReturnValueOnce(false);
+        const ctx = makeCtx({ from: 0, to: 1, text: ':' });
+        expect(symbolCompletion(ctx)).toBeNull();
+        spy.mockRestore();
+    });
 });

@@ -215,4 +215,58 @@ describe('rehypeHighlightMark', () => {
         process(tree);
         expect(tree.children[0].children).toHaveLength(0);
     });
+
+    it('does not throw when walk is called with a null/undefined child node', () => {
+        // The `if (!node) return;` guard at the top of walk() protects against
+        // null children that can appear in malformed or synthetic HAST trees.
+        const tree = {
+            type: 'element',
+            tagName: 'div',
+            properties: {},
+            // One real paragraph and one null sentinel
+            children: [
+                { type: 'text', value: 'before' },
+                null,
+                para('==mark=='),
+            ],
+        };
+        expect(() => process(tree)).not.toThrow();
+    });
+
+    it('recurses into non-code element children without expanding plain text', () => {
+        // A text node inside an element that contains NO `==` markers must
+        // pass through the `else { walk(child, nowInCode) }` branch unchanged.
+        // We nest a plain-text paragraph inside a <section> to verify that
+        // the else/recurse path fires and the text is untouched.
+        const inner = para('plain text no marks');
+        const section: any = {
+            type: 'element',
+            tagName: 'section',
+            properties: {},
+            children: [inner],
+        };
+        const tree = root(section);
+        process(tree);
+        // The paragraph's text child must be unchanged.
+        expect(inner.children[0].value).toBe('plain text no marks');
+        expect(inner.children).toHaveLength(1);
+    });
+
+    it('expands marks inside a nested element that is not code or pre', () => {
+        // A <mark>-able text inside a <blockquote> (not code/pre) must be
+        // expanded — this exercises the TRUE branch of the marks check when
+        // the owning element is reached through recursive descent.
+        const innerPara = para('==highlighted==');
+        const blockquote: any = {
+            type: 'element',
+            tagName: 'blockquote',
+            properties: {},
+            children: [innerPara],
+        };
+        const tree = root(blockquote);
+        process(tree);
+        // The inner paragraph should now have a <mark> child.
+        expect(innerPara.children[0].tagName).toBe('mark');
+        expect(innerPara.children[0].children[0].value).toBe('highlighted');
+    });
 });

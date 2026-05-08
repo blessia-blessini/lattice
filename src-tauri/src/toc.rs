@@ -867,5 +867,136 @@ text
         let doc = "Inline mention of <!-- TOC --> should be ignored.\n## A\n";
         assert_eq!(update_toc_in_document(doc), doc);
     }
+
+    //*************************************************************************
+    // test_parse_toc_options_non_toc_leading_token
+    //*************************************************************************
+    /// parse_toc_options is called only on lines already validated by
+    /// is_toc_open_marker, but the function has a defensive branch for the
+    /// case where the inner content starts with something other than "TOC".
+    /// Calling it directly with a non-TOC leading token must return defaults.
+    #[test]
+    fn test_parse_toc_options_non_toc_leading_token() {
+        // Inner splits on whitespace → first token is "NOTOC" ≠ "TOC".
+        // The Some(_) arm sets rest = inner (the whole inner string).
+        // "something" has no '=' so it is silently ignored, and both levels
+        // stay at their defaults.  (Using key=value pairs here would still be
+        // parsed from `inner`, so we deliberately omit them.)
+        let o = parse_toc_options("<!-- NOTOC something -->");
+        assert_eq!(o.min_level, DEFAULT_MIN_LEVEL);
+        assert_eq!(o.max_level, DEFAULT_MAX_LEVEL);
+    }
+
+    //*************************************************************************
+    // test_seven_or_more_hashes_not_a_heading
+    //*************************************************************************
+    /// ATX headings are limited to six `#` characters; a seventh makes the
+    /// line a non-heading, so it must be excluded from the TOC.
+    #[test]
+    fn test_seven_or_more_hashes_not_a_heading() {
+        let doc = "\
+<!-- TOC -->
+<!-- /TOC -->
+####### Too Deep (7 hashes)
+## Visible
+";
+        let out = update_toc_in_document(doc);
+        assert!(out.contains("- [Visible](#visible)"));
+        // The 7-hash line is NOT a heading so it must not appear as a TOC
+        // list entry.  The raw line still exists in the document body, so we
+        // check for the link form rather than the text alone.
+        assert!(!out.contains("- [Too Deep]"), "7-hash line must not produce a TOC entry");
+    }
+
+    //*************************************************************************
+    // test_empty_heading_text_after_hash_strip
+    //*************************************************************************
+    /// A heading whose display text is entirely consumed by trailing-hash
+    /// stripping (e.g. `## ##`) produces an empty string and must be ignored —
+    /// an id-less entry in the TOC would produce a broken link.
+    #[test]
+    fn test_empty_heading_text_after_hash_strip() {
+        // "## ##" → raw_text is "##", trim is "##", strip_trailing_hashes("##")
+        // returns "" after stripping the hash run preceded by "" (whitespace).
+        // parse_atx_heading returns None for empty text.
+        let doc = "\
+<!-- TOC -->
+<!-- /TOC -->
+## ##
+## Real
+";
+        let out = update_toc_in_document(doc);
+        // Only the real heading appears in the TOC.
+        assert!(out.contains("- [Real](#real)"));
+        // The "## ##" line must not produce a link.
+        assert!(!out.contains("(#)"));
+    }
+
+    //*************************************************************************
+    // test_strip_trailing_hashes_no_space_before
+    //*************************************************************************
+    /// If the hash run at the end of the heading text is NOT preceded by
+    /// whitespace, the run is part of the text (e.g. "C#") and must be left
+    /// intact. strip_trailing_hashes should return the original `s` unchanged.
+    #[test]
+    fn test_strip_trailing_hashes_no_space_before() {
+        // "## C#" → raw_text "C#", trailing '#' has no preceding whitespace
+        // so strip_trailing_hashes returns "C#" (the `s` branch).
+        let doc = "\
+<!-- TOC -->
+<!-- /TOC -->
+## C#
+";
+        let out = update_toc_in_document(doc);
+        // Heading text "C#" must appear in the TOC.
+        assert!(out.contains("- [C#](#c)"), "expected C# slug, got:\n{}", out);
+    }
+
+    //*************************************************************************
+    // test_nested_toc_opener_aborts_block
+    //*************************************************************************
+    /// When a second `<!-- TOC -->` opener is encountered while scanning for
+    /// a closer, the current pair is abandoned (we do not support nesting).
+    /// The document must come back unchanged.
+    #[test]
+    fn test_nested_toc_opener_aborts_block() {
+        // The outer opener aborts when the scanner sees a second opener.
+        // The second opener then scans forward but finds no closing marker,
+        // so no TocBlock is ever pushed.  Result: blocks is empty → the
+        // document is returned verbatim.
+        //
+        // Note: adding a <!-- /TOC --> would let the *second* opener pair
+        // with it, forming a valid block.  To exercise the break-with-no-
+        // closer path we deliberately omit the close marker.
+        let doc = "<!-- TOC -->\n<!-- TOC -->\n## Heading\n";
+        assert_eq!(update_toc_in_document(doc), doc);
+    }
+
+    //*************************************************************************
+    // test_is_toc_open_marker_empty_inner_comment
+    //*************************************************************************
+    /// A comment with no inner content (`<!-- -->`) must not be treated as a
+    /// TOC opener. The `split_whitespace().next()` call returns None for an
+    /// empty string, hitting the `None => false` arm.
+    #[test]
+    fn test_is_toc_open_marker_empty_inner_comment() {
+        // "<!-- -->" → inner is "" → split_whitespace().next() is None → false.
+        assert!(!is_toc_open_marker("<!-- -->"));
+        // A single space comment.
+        assert!(!is_toc_open_marker("<!---->"));
+    }
+
+    //*************************************************************************
+    // test_update_toc_command_wrapper
+    //*************************************************************************
+    /// The public Tauri command `update_toc` is a thin String-owning wrapper
+    /// around `update_toc_in_document`. Calling it directly verifies the
+    /// wrapper compiles correctly and delegates properly.
+    #[test]
+    fn test_update_toc_command_wrapper() {
+        let input = "<!-- TOC -->\n<!-- /TOC -->\n## X\n".to_string();
+        let out = update_toc(input);
+        assert!(out.contains("- [X](#x)"));
+    }
 }
 // tests END ******************************************************************

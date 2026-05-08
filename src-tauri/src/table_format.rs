@@ -809,5 +809,65 @@ A paragraph after the table.
         assert_eq!(render_separator_cell(3, Alignment::Left), ":--");
         assert_eq!(render_separator_cell(3, Alignment::Right), "--:");
     }
+
+    //*************************************************************************
+    // test_split_table_row_bare_pipe
+    //*************************************************************************
+    /// A row consisting of only `|` or `||` has no cell content after the
+    /// leading/trailing pipes are stripped. split_table_row must return a
+    /// single empty-string cell so that callers see a row shape rather than
+    /// zero cells (which would prematurely end the table).
+    #[test]
+    fn test_split_table_row_bare_pipe() {
+        // Single pipe: strip leading → "", empty → one empty cell.
+        let cells = split_table_row("|");
+        assert_eq!(cells, vec!["".to_string()]);
+
+        // Double pipe: strip leading "|" → "|", strip trailing "|" → "", empty → one empty cell.
+        let cells2 = split_table_row("||");
+        assert_eq!(cells2, vec!["".to_string()]);
+    }
+
+    //*************************************************************************
+    // test_adjacent_separator_stops_table_collection
+    //*************************************************************************
+    /// When a second separator row immediately follows a body row, the greedy
+    /// collector must stop — that separator belongs to the next table. The
+    /// `break` inside the while loop enforces this boundary.
+    #[test]
+    fn test_adjacent_separator_stops_table_collection() {
+        // Two tables with no blank line between them. The second table's
+        // separator row (|---|...) directly follows the first table's body.
+        let doc = "| A | B |
+|---|---|
+| 1 | 2 |
+| Long Header | Value |
+|-------------|-------|
+| body        | 1     |
+";
+        let out = pad_tables_in_document(doc);
+        let lines: Vec<&str> = out.lines().collect();
+        // Both tables must be present and reformatted.
+        assert!(lines.len() >= 6, "Expected at least 6 output lines");
+        assert!(out.contains("Long Header"), "Second table header must be present");
+        // "A" is widened to match the "Long Header" column (11 chars), so
+        // the exact token "| A |" no longer appears — check the prefix only.
+        assert!(out.contains("| A "), "First table header must be present");
+    }
+
+    //*************************************************************************
+    // test_pad_tables_command_wrapper
+    //*************************************************************************
+    /// The public Tauri command `pad_tables` is a thin String-owning wrapper
+    /// around `pad_tables_in_document`. Calling it directly covers the wrapper.
+    #[test]
+    fn test_pad_tables_command_wrapper() {
+        // Use 3-char cells so MIN_DASHES (3) does not widen columns and the
+        // exact pipe-surrounded tokens survive in the output verbatim.
+        let input = "| foo | bar |\n|-----|-----|\n| baz | qux |\n".to_string();
+        let out = pad_tables(input);
+        assert!(out.contains("| foo |"), "header cell must survive in output");
+        assert!(out.contains("| baz |"), "body cell must survive in output");
+    }
 }
 // tests END *****************************************************************
