@@ -15,6 +15,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.31
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Increased auto test quality and coverage
 - Update test_fs_helpers to use icacls on Windows
 - Refactor file state tests with helpers
 - Refactor tests into separate/dedicated modules

@@ -506,3 +506,187 @@ fn test_maybe_sabotage_file_noop() {
     super::test_utils::maybe_sabotage_file("irrelevant_path.md");
 }
 // test_maybe_sabotage_file_noop END ***************************************
+
+//**************************************************************************
+// test_save_image_invalid_base64_returns_err
+//**************************************************************************
+/// save_image must return Err when the image_data string is not valid base64.
+#[test]
+fn test_save_image_invalid_base64_returns_err() {
+    let temp_dir = tempfile::tempdir().unwrap();
+    let doc_path = temp_dir.path().join("doc.md");
+    fs::write(&doc_path, "# doc").unwrap();
+
+    let result = save_image(doc_path.to_string_lossy().to_string(), "!!!not base64!!!".to_string());
+    assert!(result.is_err(), "Expected Err for invalid base64, got Ok");
+}
+// test_save_image_invalid_base64_returns_err END **************************
+
+//**************************************************************************
+// test_get_launch_file_smoke
+//**************************************************************************
+/// get_launch_file must not panic and must return Option<String>.
+/// During `cargo test` the first non-flag argv is the test binary itself,
+/// which starts with nothing unusual — this exercises the function path.
+#[test]
+fn test_get_launch_file_smoke() {
+    // Simply calling it exercises the function body (parse_launch_args is
+    // tested separately for all branches; here we just prove no panic).
+    let _ = get_launch_file();
+}
+// test_get_launch_file_smoke END ******************************************
+
+//**************************************************************************
+// test_find_vault_preexisting_settings_not_overwritten
+//**************************************************************************
+/// When a .lattice/settings.json already exists the function must return
+/// its path without overwriting the content (the `if !settings_path.exists()`
+/// false branch inside the traversal loop).
+#[test]
+fn test_find_vault_preexisting_settings_not_overwritten() {
+    let temp = tempfile::tempdir().unwrap();
+    let home = temp.path();
+    let vault_root = temp.path().join("project");
+    let lattice_dir = vault_root.join(".lattice");
+    fs::create_dir_all(&lattice_dir).unwrap();
+
+    let settings_path = lattice_dir.join("settings.json");
+    let custom_content = r#"{"wordWrap": true}"#;
+    fs::write(&settings_path, custom_content).unwrap();
+
+    let doc_path = vault_root.join("doc.md");
+    fs::write(&doc_path, "hello").unwrap();
+
+    let found = find_vault_settings_file_internal(
+        doc_path.to_string_lossy().to_string(),
+        home,
+    )
+    .unwrap()
+    .expect("Must find the vault settings");
+
+    assert_eq!(found, settings_path.to_string_lossy().as_ref());
+    // Original content must be intact — not reset to "{}"
+    let on_disk = fs::read_to_string(&settings_path).unwrap();
+    assert_eq!(on_disk.trim(), custom_content);
+}
+// test_find_vault_preexisting_settings_not_overwritten END ****************
+
+//**************************************************************************
+// test_find_vault_fallback_lattice_exists_settings_missing
+//**************************************************************************
+/// Covers the branch where .lattice exists but settings.json does not:
+/// the function must create settings.json and return its path.
+///
+/// The file lives inside the same temp root that owns the .lattice dir.
+/// The traversal climbs to that root and finds the .lattice there — fully
+/// under test control.  Using a separate tempdir would land the file under
+/// the real %TEMP% hierarchy, which may be inside the developer's home dir
+/// where a real .lattice already exists, causing a false positive mismatch.
+#[test]
+fn test_find_vault_fallback_lattice_exists_settings_missing() {
+    let temp = tempfile::tempdir().unwrap();
+    let home = temp.path();
+
+    // Pre-create the .lattice dir but NOT settings.json
+    let lattice_dir = home.join(".lattice");
+    fs::create_dir_all(&lattice_dir).unwrap();
+
+    // File sits inside home/subdir so the traversal climbs to home and
+    // finds home/.lattice — the dir-exists-but-settings-missing branch.
+    let sub = home.join("deep").join("sub");
+    fs::create_dir_all(&sub).unwrap();
+    let file = sub.join("note.md");
+    fs::write(&file, "hi").unwrap();
+
+    let found = find_vault_settings_file_internal(
+        file.to_string_lossy().to_string(),
+        home,
+    )
+    .unwrap()
+    .expect("Must return settings path");
+
+    let expected = lattice_dir.join("settings.json");
+    assert_eq!(found, expected.to_string_lossy().as_ref());
+    assert!(expected.exists(), "settings.json must have been created");
+}
+// test_find_vault_fallback_lattice_exists_settings_missing END ************
+
+//**************************************************************************
+// test_find_vault_fallback_both_exist_returns_existing
+//**************************************************************************
+/// Covers the branch where .lattice/settings.json already exists:
+/// the function must return the existing path without touching the file.
+///
+/// The file lives inside the same temp root that owns the .lattice dir so
+/// the traversal finds it under our controlled temp tree rather than the
+/// developer's real home directory (which also has .lattice on this machine).
+#[test]
+fn test_find_vault_fallback_both_exist_returns_existing() {
+    let temp = tempfile::tempdir().unwrap();
+    let home = temp.path();
+
+    let lattice_dir = home.join(".lattice");
+    fs::create_dir_all(&lattice_dir).unwrap();
+    let settings_path = lattice_dir.join("settings.json");
+    let sentinel = r#"{"wordWrap": true}"#;
+    fs::write(&settings_path, sentinel).unwrap();
+
+    // File sits inside home/subdir so the traversal climbs to home and
+    // finds the existing home/.lattice/settings.json — the both-exist branch.
+    let sub = home.join("subdir");
+    fs::create_dir_all(&sub).unwrap();
+    let file = sub.join("note.md");
+    fs::write(&file, "hi").unwrap();
+
+    let found = find_vault_settings_file_internal(
+        file.to_string_lossy().to_string(),
+        home,
+    )
+    .unwrap()
+    .expect("Must return existing settings");
+
+    assert_eq!(found, settings_path.to_string_lossy().as_ref());
+    // Content must be untouched
+    let on_disk = fs::read_to_string(&settings_path).unwrap();
+    assert_eq!(on_disk.trim(), sentinel);
+}
+// test_find_vault_fallback_both_exist_returns_existing END ****************
+
+//**************************************************************************
+// test_find_vault_internal_from_file_inside_vault
+//**************************************************************************
+/// When the search starts from a file that is a direct child of the vault
+/// root containing .lattice, the function must find the vault in one hop
+/// (exercises the `current.is_file()` → parent branch at the top).
+#[test]
+fn test_find_vault_internal_from_file_inside_vault() {
+    let temp = tempfile::tempdir().unwrap();
+    let home = temp.path().join("home");
+    let vault_root = temp.path().join("vault");
+    let lattice_dir = vault_root.join(".lattice");
+    fs::create_dir_all(&lattice_dir).unwrap();
+
+    let file = vault_root.join("note.md");
+    fs::write(&file, "test").unwrap();
+
+    let found = find_vault_settings_file_internal(
+        file.to_string_lossy().to_string(),
+        &home,
+    )
+    .unwrap()
+    .expect("Should find vault settings");
+
+    assert!(found.ends_with("settings.json"));
+    assert!(std::path::Path::new(&found).exists());
+}
+// test_find_vault_internal_from_file_inside_vault END *********************
+
+//**************************************************************************
+// test_parse_launch_args_empty_args
+//**************************************************************************
+/// Edge case: args vector is completely empty (no binary name either).
+#[test]
+fn test_parse_launch_args_empty_args() {
+    assert_eq!(parse_launch_args(vec![]), None);
+}
+// test_parse_launch_args_empty_args END ***********************************

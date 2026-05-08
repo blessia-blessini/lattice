@@ -1,23 +1,23 @@
 // LEGAL NOTE:
-// LATTICE (tm) - The Portable and standard Markdown Editor 
+// LATTICE (tm) - The Portable and standard Markdown Editor
 // Copyright (C) 2026 Owner of blessini.com (a.k.a Blessia)
 // email: blessia AT blessini.com
-// 
+//
 // GNU AFFERO GENERAL PUBLIC LICENSE V3 NOTICE:
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as
 // published by the Free Software Foundation, either version 3 of the
 // License, or (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Affero General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//   
+//
 // See LICENCE file in GitHUB root folder of the repository.
 // END OF NOTE
 
@@ -56,7 +56,25 @@ struct WatcherState {
 //******************************************************************************
 // calc_base_path
 //******************************************************************************
-pub(crate) fn calc_base_path_internal(_app: tauri::AppHandle) -> Result<String, String> {
+/// Returns the application's root storage path as a `String`.
+/// Calculates the base path for the application.
+///
+/// On desktop platforms, this returns the user's home directory.
+/// On mobile platforms, this returns the app's data directory.
+/// The path is cached after the first successful calculation.
+///
+/// # Arguments
+///
+/// * `_app` - The Tauri `AppHandle`, used to resolve directories on mobile.
+///
+/// # Returns
+///
+/// A `Result` containing the path as a `String` if successful, or an error
+/// message `String` if the path could not be resolved.
+/// The first `String` is the path and the second `String` is the error message.
+pub(crate) fn calc_base_path_internal<R: tauri::Runtime>(
+    _app: tauri::AppHandle<R>,
+) -> Result<String, String> {
     // todo: mobile folder .. the root of the sandbox
     // the following is for desktop only
     #[cfg(desktop)]
@@ -77,30 +95,44 @@ pub(crate) fn calc_base_path_internal(_app: tauri::AppHandle) -> Result<String, 
     Ok(l_path)
 }
 
+/// Tauri command — exposes `calc_base_path_internal` to the frontend.
+///
+/// Thin shim that delegates to `calc_base_path_internal` with the real
+/// Wry runtime.  The frontend calls this once on startup to learn the
+/// root directory under which all user data is stored.
+///
+/// # Arguments
+///
+/// * `_app` - The Tauri `AppHandle`, forwarded to `calc_base_path_internal`.
+///
+/// # Returns
+///
+/// A `Result` containing the root path as a `String` on success, or an
+/// error message `String` if the path could not be resolved.
 #[tauri::command]
 fn calc_base_path(_app: tauri::AppHandle) -> Result<String, String> {
     calc_base_path_internal(_app)
-}
-// calc_base_path END *****************************************************
+} // calc_base_path END *****************************************************
 
-//******************************************************************************
-// get_base_path
-//******************************************************************************
-// /// a simple getter from the private variable M_PATH
-// /// Returns None if the path has not been initialized yet.
-// fn get_base_path() -> Option<String> {
-//    let m_path = M_PATH.lock().unwrap();
-//    if m_path.is_empty() {
-//        None
-//    } else {
-//        Some(m_path.clone())
-//    }
-// }
-// get_base_path END ***********************************************************
-
-//******************************************************************************
-// open_new_window
-//******************************************************************************
+/// Opens a new Lattice editor window.
+/// Optionally pre-loads a file using the Direct Push pattern.
+///
+/// If `path` is `Some`, the file is read immediately and its content is
+/// injected into the new window via the `window.__LATTICE_INIT_DATA__`
+/// JavaScript global so the renderer has the file content before the first
+/// paint — no extra IPC round-trip after load.  If `path` is `None`, an
+/// empty editor window is opened.  Each window receives a unique label from
+/// `generate_new_window_label`.
+///
+/// # Arguments
+///
+/// * `app`  - The Tauri `AppHandle` used to build the new window.
+/// * `path` - Optional file system path of the document to open.
+///
+/// # Returns
+///
+/// A `Result` containing `()` on success, or an error message `String` if
+/// the file cannot be read or the window cannot be built.
 #[tauri::command]
 async fn open_new_window(app: tauri::AppHandle, path: Option<String>) -> Result<(), String> {
     info!("open_new_window called. Path: {:?}", path);
@@ -144,12 +176,23 @@ async fn open_new_window(app: tauri::AppHandle, path: Option<String>) -> Result<
 
     info!("Window '{}' created successfully.", label);
     Ok(())
-}
-// open_new_window END *****************************************************
+} // open_new_window END *****************************************************
 
 //******************************************************************************
 // generate_new_window_label
 //******************************************************************************
+/// Generates a process-unique label for a new Tauri editor window.
+///
+/// Labels follow the pattern `lattice-{N}-window` where `N` is a
+/// monotonically increasing counter backed by a module-level `AtomicUsize`.
+/// The counter is never reset within a process lifetime, so labels remain
+/// unique even when windows are opened and closed repeatedly.  Tauri
+/// requires all open window labels to be unique; this scheme satisfies that
+/// without tracking freed labels.
+///
+/// # Returns
+///
+/// A `String` of the form `"lattice-{N}-window"`.
 fn generate_new_window_label() -> String {
     use std::sync::atomic::{AtomicUsize, Ordering};
     // This static variable is initialized once and persists across function calls,
@@ -162,8 +205,26 @@ fn generate_new_window_label() -> String {
 // generate_new_window_label END *******************************************
 
 //******************************************************************************
-/// open_settings_window
+// open_settings_window
 //******************************************************************************
+/// Opens the settings window, or focuses it if it is already open.
+///
+/// If a window with the label `"settings"` already exists, it is brought
+/// to the foreground.  Otherwise a new 600 × 400 window is created on
+/// desktop; on Windows it is parented to the calling window so it behaves
+/// as a modal dialog.  The command emits `app:settings-opened` on creation
+/// and registers a listener that emits `app:settings-closed` when the
+/// window is destroyed, letting the frontend react to both lifecycle events.
+///
+/// # Arguments
+///
+/// * `app`     - The Tauri `AppHandle` used to create or locate the window.
+/// * `_window` - The calling `WebviewWindow`, used as the parent on Windows.
+///
+/// # Returns
+///
+/// A `Result` containing `()` on success, or an error message `String` if
+/// the window cannot be created or focused.
 #[tauri::command]
 async fn open_settings_window(
     app: tauri::AppHandle,
@@ -216,6 +277,20 @@ async fn open_settings_window(
 //******************************************************************************
 // close_settings_window
 //******************************************************************************
+/// Closes and destroys the settings window if it is currently open.
+///
+/// On desktop, if no settings window is open the call is a no-op and
+/// returns `Ok(())`.  On mobile the entire function body is compiled out
+/// because settings are presented differently on those platforms.
+///
+/// # Arguments
+///
+/// * `_app` - The Tauri `AppHandle` used to locate the settings window.
+///
+/// # Returns
+///
+/// A `Result` containing `()` on success, or an error message `String` if
+/// the window exists but cannot be destroyed.
 #[tauri::command]
 async fn close_settings_window(_app: tauri::AppHandle) -> Result<(), String> {
     #[cfg(desktop)]
@@ -229,21 +304,45 @@ async fn close_settings_window(_app: tauri::AppHandle) -> Result<(), String> {
 // read_text_file and write_text_file moved to file_state.rs
 
 //******************************************************************************
-/// is_dir
+// is_dir
 //******************************************************************************
+/// Returns whether `path` refers to an existing directory.
+///
+/// Non-existent paths and regular files both return `false`.  Exposed to
+/// the frontend so the UI can distinguish files from folders without
+/// issuing a separate metadata call.
+///
+/// # Arguments
+///
+/// * `path` - The file system path to test.
+///
+/// # Returns
+///
+/// `true` if `path` exists and is a directory, `false` otherwise.
 #[tauri::command]
 fn is_dir(path: String) -> bool {
     std::path::Path::new(&path).is_dir()
 } // is_dir END **********************************************************
 
-///  Find the path to the vault settings file or the vault directory .lattice
-///  if not found returns OK(None)
-///  otherwise returns Ok(jsonfilepath) if it exists
-///  otherwise if it does not exists returns .lattice directory path
+//******************************************************************************
+// find_vault_settings_file
+//******************************************************************************
+/// Tauri command — locates the vault `settings.json` for a given file path.
 ///
-//******************************************************************************
-/// find_vault_settings_file
-//******************************************************************************
+/// Resolves the home directory via `calc_base_path_internal`, then delegates
+/// the full search to `find_vault_settings_file_internal`.  See that function
+/// for the complete walk-up-and-fallback algorithm.
+///
+/// # Arguments
+///
+/// * `app`       - The Tauri `AppHandle` used to resolve the home directory.
+/// * `file_path` - Path of any file or folder inside the vault to search from.
+///
+/// # Returns
+///
+/// A `Result` containing `Some(path)` with the absolute path to
+/// `settings.json` on success, or an error message `String` if the home
+/// directory cannot be determined or required files cannot be created.
 #[tauri::command]
 fn find_vault_settings_file(
     app: tauri::AppHandle,
@@ -261,6 +360,25 @@ fn find_vault_settings_file(
     find_vault_settings_file_internal(file_path, home_dir)
 }
 
+/// Pure implementation of the vault-settings search.
+/// Decoupled from the Tauri runtime so it can be unit-tested with any `home_dir`.
+///
+/// Starting from `file_path`, the function walks up the directory tree looking
+/// for a `.lattice` directory.  When found, it ensures `settings.json` exists
+/// inside it (writing `{}` if absent) and returns its path.  If no `.lattice`
+/// ancestor is found, the function falls back to `home_dir/.lattice/settings.json`,
+/// creating the directory and file as needed.
+///
+/// # Arguments
+///
+/// * `file_path` - Starting path for the upward search (file or directory).
+/// * `home_dir`  - Fallback root used when no vault is found in the ancestry.
+///
+/// # Returns
+///
+/// A `Result` containing `Some(path)` with the absolute path to
+/// `settings.json` on success, or an error message `String` if a required
+/// directory or file cannot be created.
 fn find_vault_settings_file_internal(
     file_path: String,
     home_dir: &Path,
@@ -305,17 +423,28 @@ fn find_vault_settings_file_internal(
     Ok(Some(settings_path.to_string_lossy().to_string()))
 } // find_vault_settings_file END ******************************************
 
-/////////////////////////////////////////////////////////////////
-/// initialize_vault_settings:
-///   Initialize a vault by placing a .lattice directory
-///      in the parent directory of the file path
-///      and a settings.json file in the .lattice directory
-///   ON success returns the path to the settings.json file path
-///   ON failure returns an error message
-///
 //******************************************************************************
 // initialize_vault_settings
 //******************************************************************************
+/// Initialises a vault by creating a `.lattice` directory and `settings.json`.
+/// Idempotent — safe to call on a vault that already exists.
+///
+/// If `file_path` is a regular file, `.lattice` is created alongside it in
+/// the parent directory.  If it is a directory, `.lattice` is created inside
+/// it.  An existing `settings.json` is never overwritten.  OS error 30
+/// (read-only filesystem — common with some cloud-sync providers such as
+/// Google Drive) is translated into a clear, user-facing error message.
+///
+/// # Arguments
+///
+/// * `file_path` - Path of the document or directory where the vault should
+///   be initialised.
+///
+/// # Returns
+///
+/// A `Result` containing the absolute path to `settings.json` as a `String`
+/// on success, or a human-readable error message `String` if the directory
+/// cannot be created.
 #[tauri::command]
 fn initialize_vault_settings(file_path: String) -> Result<String, String> {
     let path = Path::new(&file_path);
@@ -349,8 +478,29 @@ fn initialize_vault_settings(file_path: String) -> Result<String, String> {
 } // initialize_vault_settings END *****************************************
 
 //******************************************************************************
-/// watch_file
+// watch_file
 //******************************************************************************
+/// Registers a filesystem watcher on `path` for the given `window`.
+/// Replaces any existing watcher registered for that window.
+///
+/// Uses the `notify` crate's recommended backend (inotify / FSEvents /
+/// ReadDirectoryChangesW depending on the OS).  Each window may watch at
+/// most one path at a time; re-calling this command for a window that
+/// already has a watcher silently drops the previous one.  On `Modify`,
+/// `Create`, or `Remove` events a `"file-changed"` event is broadcast on
+/// the app handle, carrying the watched path as its payload.
+///
+/// # Arguments
+///
+/// * `app`    - The Tauri `AppHandle` used to emit events.
+/// * `path`   - Absolute file system path to watch.
+/// * `window` - The calling window; its label is used as the watcher key.
+/// * `state`  - App-managed `WatcherState` holding the watcher registry.
+///
+/// # Returns
+///
+/// A `Result` containing `()` on success, or an error message `String` if
+/// the watcher cannot be created or the path cannot be registered.
 #[tauri::command]
 fn watch_file(
     app: tauri::AppHandle,
@@ -421,8 +571,29 @@ fn watch_file(
 // watch_file END **********************************************************
 
 //******************************************************************************
-/// save_image
+// save_image
 //******************************************************************************
+/// Decodes a Base64 image and saves it beside the document at `file_path`.
+/// Returns a Markdown-ready relative path to the saved image.
+///
+/// The image is written into a sibling directory named `{stem}_assets/`,
+/// created on demand.  The filename is `img_{timestamp_ms}.png`, where the
+/// timestamp ensures uniqueness without requiring a counter.  The returned
+/// path uses forward slashes for Markdown compatibility regardless of the
+/// host OS.
+///
+/// # Arguments
+///
+/// * `file_path`  - Absolute path to the document the image belongs to;
+///   determines the parent directory and the assets-folder name.
+/// * `image_data` - Raw Base64-encoded image bytes (no data-URL prefix).
+///
+/// # Returns
+///
+/// A `Result` containing the relative path to the saved image as a `String`
+/// (e.g. `"doc_assets/img_1714000000000.png"`) on success, or an error
+/// message `String` if the path is malformed, the Base64 is invalid, or
+/// any I/O operation fails.
 #[tauri::command]
 fn save_image(file_path: String, image_data: String) -> Result<String, String> {
     let path = Path::new(&file_path);
@@ -464,8 +635,26 @@ fn save_image(file_path: String, image_data: String) -> Result<String, String> {
 } // save_image END ********************************************************
 
 //******************************************************************************
-/// debug_file_probe
+// debug_file_probe
 //******************************************************************************
+/// Probes a file path and returns a multi-line diagnostic report string.
+/// Intended for developer diagnostics, not user-facing workflows.
+///
+/// The report records: whether the path is absolute, whether it exists, its
+/// type (file/dir), byte length, permissions, and — for files up to 60 MB —
+/// an attempt to decode the bytes as an image.  A successful decode logs the
+/// colour format and dimensions; a failed decode logs the first four header
+/// bytes in hexadecimal.  Files larger than 60 MB are skipped to prevent
+/// memory and CPU exhaustion.
+///
+/// # Arguments
+///
+/// * `path` - The file system path to probe.
+///
+/// # Returns
+///
+/// A multi-line `String` containing the diagnostic report.  Never errors;
+/// any I/O failures are recorded as lines inside the report itself.
 #[tauri::command]
 fn debug_file_probe(path: String) -> String {
     const MAX_MB: u64 = 60;
@@ -532,8 +721,26 @@ fn debug_file_probe(path: String) -> String {
 } // debug_file_probe END **************************************************
 
 //******************************************************************************
-/// read_file_base64
+// read_file_base64
 //******************************************************************************
+/// Reads a file from disk and returns it as a Base64 data URL.
+/// Bypasses the Tauri asset scope for arbitrary-path image loading.
+///
+/// The MIME type is derived from the file extension: `jpg`/`jpeg` →
+/// `image/jpeg`, `gif` → `image/gif`, `svg` → `image/svg+xml`,
+/// `webp` → `image/webp`, all other extensions → `image/png`.
+/// The returned string is ready to use as an `<img src="...">` value
+/// without any additional encoding.
+///
+/// # Arguments
+///
+/// * `path` - Absolute file system path of the image file to read.
+///
+/// # Returns
+///
+/// A `Result` containing the data URL as a `String` in the form
+/// `"data:{mime};base64,{data}"` on success, or an error message `String`
+/// if the file cannot be read.
 #[tauri::command]
 fn read_file_base64(path: String) -> Result<String, String> {
     // Read raw bytes using std::fs (Bypassing Tauri Scope)
@@ -560,8 +767,18 @@ fn read_file_base64(path: String) -> Result<String, String> {
 } // read_file_base64 END **************************************************
 
 //******************************************************************************
-/// get_launch_file
+// get_launch_file
 //******************************************************************************
+/// Returns the file path supplied on the command line at launch, if any.
+///
+/// Reads `std::env::args()` and delegates to `parse_launch_args`.  The
+/// frontend calls this once on startup to detect the file-association /
+/// "open with" flow and pre-load the correct document.
+///
+/// # Returns
+///
+/// `Some(path)` with the first non-flag CLI argument, or `None` if the
+/// application was launched without a file path.
 #[tauri::command]
 fn get_launch_file() -> Option<String> {
     let args: Vec<String> = std::env::args().collect();
@@ -583,6 +800,21 @@ fn get_launch_file() -> Option<String> {
 //******************************************************************************
 // parse_launch_args
 //******************************************************************************
+/// Extracts the first non-flag argument from an argument list.
+/// Pure function — does not call `std::env::args()`, making it fully unit-testable.
+///
+/// `args[0]` is assumed to be the binary name and is always skipped.  The
+/// first element at index ≥ 1 that does not start with `'-'` is returned as
+/// the file path to open.
+///
+/// # Arguments
+///
+/// * `args` - Full argument vector, typically from `std::env::args().collect()`.
+///
+/// # Returns
+///
+/// `Some(path)` with the first non-flag argument, or `None` if every
+/// argument is a flag or the vector contains only the binary name.
 fn parse_launch_args(args: Vec<String>) -> Option<String> {
     if args.len() > 1 {
         let potential_file = &args[1];
@@ -597,6 +829,16 @@ fn parse_launch_args(args: Vec<String>) -> Option<String> {
 //******************************************************************************
 // trace_log
 //******************************************************************************
+/// Writes a trace message to stdout, prefixed with `DEBUG_TRACE:`.
+///
+/// Exposed as a Tauri command so the TypeScript frontend can emit messages
+/// that appear in the same terminal stream as backend log output.  Useful
+/// during development when the browser DevTools console and the native
+/// process output need to be correlated.
+///
+/// # Arguments
+///
+/// * `msg` - The message string to print.
 #[tauri::command]
 fn trace_log(msg: String) {
     println!("DEBUG_TRACE: {}", msg);
@@ -605,6 +847,15 @@ fn trace_log(msg: String) {
 //******************************************************************************
 // exit_app
 //******************************************************************************
+/// Terminates the application with exit code 0.
+///
+/// Called by the frontend when the user selects "Quit" from the menu or
+/// when the last window is closed on platforms where that action should
+/// exit the process (Windows, Linux).
+///
+/// # Arguments
+///
+/// * `app` - The Tauri `AppHandle` used to call `exit(0)`.
 #[tauri::command]
 fn exit_app(app: tauri::AppHandle) {
     app.exit(0);
@@ -613,6 +864,16 @@ fn exit_app(app: tauri::AppHandle) {
 //******************************************************************************
 // get_version_string
 //******************************************************************************
+/// Returns the application build version string.
+///
+/// The string is embedded at compile time via `include_str!` from
+/// `$OUT_DIR/build_number.txt`, which is generated by `build.rs`.  No
+/// runtime file access is required.  The frontend displays this value in
+/// the window title bar and the "About" panel.
+///
+/// # Returns
+///
+/// A `String` containing the build version (e.g. `"0.2.31-abc1234"`).
 #[tauri::command]
 fn get_version_string() -> String {
     // This reads the file generated by build.rs at compile time
@@ -624,6 +885,16 @@ fn get_version_string() -> String {
 //******************************************************************************
 // run
 //******************************************************************************
+/// Application entry point — configures and starts the Tauri runtime.
+/// Does not return under normal operation.
+///
+/// Registers all plugins (log, opener, fs, dialog), app-managed state
+/// (`WatcherState`, `FileTrackerState`), and the full set of Tauri command
+/// handlers, then starts the event loop via `tauri::Builder::run`.  If the
+/// runtime cannot start, the process panics with an error message.  On
+/// mobile targets the function is annotated with
+/// `#[tauri::mobile_entry_point]` so the platform's native launcher
+/// (Android JNI / iOS UIApplicationMain) can call it directly.
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -670,6 +941,26 @@ pub fn run() {
 //******************************************************************************
 // setup_handler
 //******************************************************************************
+/// Tauri setup callback — runs once after the runtime initialises, before the event loop.
+///
+/// Collects non-flag CLI arguments (skipping `--color` injected by Cargo
+/// during `cargo tauri dev`).  For each collected file path — or for a
+/// single empty window when none are given — the function builds a
+/// `WebviewWindow` and injects file content via the
+/// `window.__LATTICE_INIT_DATA__` JavaScript global (Direct Push pattern),
+/// so the renderer has the document before first paint.  A `Destroyed`
+/// event listener is attached to each window so `file_state` can release
+/// its per-window tracking state when the window closes.
+///
+/// # Arguments
+///
+/// * `app` - Mutable reference to the Tauri `App` provided by the Tauri
+///   builder during setup.
+///
+/// # Returns
+///
+/// A `Result` containing `()` on success, or a boxed `Error` if a window
+/// cannot be built, causing Tauri to abort startup.
 fn setup_handler(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     // 1. Logic for File Association (Desktop)
     // Collect all non-flag arguments as file paths

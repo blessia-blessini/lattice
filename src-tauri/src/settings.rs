@@ -132,48 +132,69 @@ pub fn merge_settings(
 // merge_settings END ******************************************
 
 //**************************************************************
-// load_settings
+// load_settings_internal  (pure — no AppHandle)
 //**************************************************************
-#[tauri::command]
-pub fn load_settings(app: tauri::AppHandle, settings_path: String) -> Result<Settings, String> {
-    let content = fs::read_to_string(&settings_path).unwrap_or_else(|_| "{}".to_string());
+pub fn load_settings_internal(settings_path: &str, home_path: &Path) -> Result<Settings, String> {
+    let content = fs::read_to_string(settings_path).unwrap_or_else(|_| "{}".to_string());
     let settings: Settings = serde_json::from_str(&content).unwrap_or_default();
 
-    let home_path_str = crate::calc_base_path(app)?;
-    let home_path = Path::new(&home_path_str);
-
-    match get_vault_root(&settings_path, Some(home_path)) {
+    match get_vault_root(settings_path, Some(home_path)) {
         Ok(vault_root) => Ok(expand_daily_notes_path(settings, &vault_root)),
         Err(_) => Ok(settings),
     }
 }
+// load_settings_internal END **********************************
+
+//**************************************************************
+// load_settings
+//**************************************************************
+#[tauri::command]
+pub fn load_settings<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+    settings_path: String,
+) -> Result<Settings, String> {
+    let home_path_str = crate::calc_base_path_internal(app)?;
+    let home_path_owned = PathBuf::from(&home_path_str);
+    load_settings_internal(&settings_path, &home_path_owned)
+}
 // load_settings END *******************************************
+
+//**************************************************************
+// save_settings_internal  (pure — no AppHandle)
+//**************************************************************
+pub fn save_settings_internal(
+    settings_path: &str,
+    settings: Settings,
+    home_path: &Path,
+) -> Result<(), String> {
+    let mut final_settings = settings;
+    if let Ok(vault_root) = get_vault_root(settings_path, Some(home_path)) {
+        final_settings = condense_daily_notes_path(final_settings, &vault_root);
+    }
+
+    let current_content = fs::read_to_string(settings_path).unwrap_or_else(|_| "{}".to_string());
+    let current_json: serde_json::Value =
+        serde_json::from_str(&current_content).unwrap_or(serde_json::json!({}));
+
+    let formatted_json = merge_settings(&current_json, &final_settings)?;
+    fs::write(settings_path, formatted_json).map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+// save_settings_internal END **********************************
 
 //**************************************************************
 // save_settings
 //**************************************************************
 #[tauri::command]
-pub fn save_settings(
-    app: tauri::AppHandle,
+pub fn save_settings<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
     settings_path: String,
     settings: Settings,
 ) -> Result<(), String> {
-    let home_path_str = crate::calc_base_path(app)?;
-    let home_path = Path::new(&home_path_str);
-
-    let mut final_settings = settings;
-    if let Ok(vault_root) = get_vault_root(&settings_path, Some(home_path)) {
-        final_settings = condense_daily_notes_path(final_settings, &vault_root);
-    }
-
-    let current_content = fs::read_to_string(&settings_path).unwrap_or_else(|_| "{}".to_string());
-    let current_json: serde_json::Value =
-        serde_json::from_str(&current_content).unwrap_or(serde_json::json!({}));
-
-    let formatted_json = merge_settings(&current_json, &final_settings)?;
-    fs::write(&settings_path, formatted_json).map_err(|e| e.to_string())?;
-
-    Ok(())
+    let home_path_str = crate::calc_base_path_internal(app)?;
+    let home_path_owned = PathBuf::from(&home_path_str);
+    save_settings_internal(&settings_path, settings, &home_path_owned)
 }
 
 #[cfg(test)]
