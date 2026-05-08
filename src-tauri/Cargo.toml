@@ -61,6 +61,7 @@ chrono = "0.4.44"
 
 [dev-dependencies]
 tempfile = "3.24.0"
+tauri = { version = "2", features = ["test"] }
 
 [profile.dev]
 opt-level = 0

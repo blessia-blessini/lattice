@@ -690,3 +690,68 @@ fn test_parse_launch_args_empty_args() {
     assert_eq!(parse_launch_args(vec![]), None);
 }
 // test_parse_launch_args_empty_args END ***********************************
+
+//**************************************************************************
+// test_save_image_no_parent_directory
+//**************************************************************************
+/// Covers the `Cannot_get_parent_directory` branch in save_image.
+/// An empty string path has no parent component — `path.parent()` returns None.
+#[test]
+fn test_save_image_no_parent_directory() {
+    let result = save_image("".to_string(), "base64data".to_string());
+    assert_eq!(
+        result.unwrap_err(),
+        "Cannot_get_parent_directory",
+        "Empty path should yield Cannot_get_parent_directory"
+    );
+}
+// test_save_image_no_parent_directory END **********************************
+
+//**************************************************************************
+// test_save_image_no_file_stem
+//**************************************************************************
+/// Covers the `Cannot_get_file_stem` branch in save_image.
+///
+/// A path whose last component is `..` has `Some(parent)` (the traversal
+/// gives the directory before `..`) but `file_name()` — and therefore
+/// `file_stem()` — returns `None` because `..` is a special path component
+/// that has no file-name meaning.  This is the only portable way on stable
+/// Rust to reach `Cannot_get_file_stem` without a real file being absent.
+#[test]
+fn test_save_image_no_file_stem() {
+    let temp = tempfile::tempdir().unwrap();
+    // temp/.. → parent = Some(temp_path), file_name = None → file_stem = None
+    let dotdot_path = temp.path().join("..").to_string_lossy().to_string();
+    let result = save_image(dotdot_path, "base64data".to_string());
+    assert_eq!(
+        result.unwrap_err(),
+        "Cannot_get_file_stem",
+        "Path ending in '..' should yield Cannot_get_file_stem"
+    );
+}
+// test_save_image_no_file_stem END *****************************************
+
+//**************************************************************************
+// test_read_file_base64_no_extension_defaults_to_png
+//**************************************************************************
+/// Covers the `unwrap_or("png")` branch in `read_file_base64`.
+///
+/// When a file has no extension at all, `path.extension()` returns `None`
+/// and `and_then(|e| e.to_str())` propagates `None`, so `unwrap_or("png")`
+/// fires.  The existing mime-type matrix only tests files *with* extensions;
+/// this test covers the extension-absent code path.
+#[test]
+fn test_read_file_base64_no_extension_defaults_to_png() {
+    let temp = tempfile::tempdir().unwrap();
+    // A filename with no dot has no extension → extension() = None → unwrap_or("png")
+    let path = temp.path().join("noextension");
+    fs::write(&path, b"fake bytes").unwrap();
+    let result = read_file_base64(path.to_string_lossy().to_string())
+        .expect("read_file_base64 should succeed for a file with no extension");
+    assert!(
+        result.starts_with("data:image/png;base64,"),
+        "File with no extension must default to image/png, got prefix: {}",
+        &result[..result.len().min(50)]
+    );
+}
+// test_read_file_base64_no_extension_defaults_to_png END ******************

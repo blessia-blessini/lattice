@@ -40,7 +40,7 @@ static M_PATH: Mutex<String> = Mutex::new(String::new());
 
 mod file_state;
 mod textcontent_hashing;
-mod settings;
+pub mod settings;
 mod toc;
 mod table_format;
 

@@ -462,38 +462,25 @@ fn test_get_vault_root_no_parent_for_lattice() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Wiring / integration tests
+// Shim-path smoke tests  (unit level)
 // ─────────────────────────────────────────────────────────────────────────
-// These tests exercise the exact data path that the thin Tauri command shims
-// (load_settings, save_settings) follow at runtime — without instantiating a
-// Tauri runtime.
+// These tests verify the logical data path of the command shims by calling
+// load_settings_internal / save_settings_internal directly with the same
+// home path that calc_base_path_internal would supply on desktop.
 //
-// Design rationale
-// ────────────────
-// The natural approach for wiring tests would be tauri::test::MockRuntime
-// (feature = "test").  That works on Linux but fatally crashes on Windows
-// with STATUS_ENTRYPOINT_NOT_FOUND (0xc0000139): the test runtime links
-// against Windows Common Controls v6 (TaskDialogIndirect in comctl32.dll v6),
-// which must be activated by a Windows application manifest.  tauri-build
-// embeds this manifest into the application binary, but test binaries carry no
-// such manifest, so the entry point is absent and the process aborts before
-// the first test runs.
-//
-// On desktop, calc_base_path_internal ignores the AppHandle completely and
-// resolves to dirs::home_dir().  The shims therefore do exactly two things:
-//   1. Call calc_base_path_internal(app) → home_path
-//   2. Delegate to load_settings_internal / save_settings_internal
-//
-// Replicating step 1 here with dirs::home_dir() produces an identical call
-// chain without a runtime dependency.  The three scenarios below thus cover:
-//   • The home-path derivation logic (step 1)
-//   • The full load/save_settings_internal round-trip (step 2)
-//   • The result flowing back through the logical command boundary unmodified
+// The true end-to-end wiring tests — which construct a live MockRuntime
+// AppHandle and call load_settings / save_settings through it — live in
+// tests/wiring.rs (a proper Cargo [[test]] target).  They sit there because:
+//   • cargo:rustc-link-arg-tests (needed to embed the Windows comctl32 v6
+//     manifest for MockRuntime) only applies to [[test]] targets, not to
+//     inline #[cfg(test)] modules inside [lib].
+//   • tests/wiring.rs compiles as a separate binary that receives the
+//     manifest, so MockRuntime works there without any new crate dependency.
 // ═══════════════════════════════════════════════════════════════════════════
 mod wiring {
     use super::*;
 
-    /// Returns the home path exactly as `calc_base_path_internal` would on
+    /// Returns the home path exactly as `calc_base_path_internal` does on
     /// desktop — without needing an `AppHandle` or a live Tauri runtime.
     fn desktop_home() -> PathBuf {
         dirs::home_dir().expect("could not resolve home directory")
@@ -507,8 +494,8 @@ mod wiring {
     #[test]
     fn test_load_settings_shim_missing_file_returns_defaults() {
         let home = desktop_home();
-        // Path deliberately has no .lattice component so get_vault_root also
-        // returns Err, exercising the Err(_) branch inside load_settings_internal.
+        // Path has no .lattice component so get_vault_root returns Err,
+        // exercising the Err(_) branch inside load_settings_internal.
         let result = load_settings_internal("/nonexistent_lattice_path/settings.json", &home);
         assert!(result.is_ok(), "Shim must not error on missing file: {:?}", result);
         let s = result.unwrap();

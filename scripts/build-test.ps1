@@ -25,30 +25,47 @@ $oldEnv = $env:LATTICEBUILD_NO
 try {
 
 
-    # Run the Reproduction Tool
-    Write-Output "Running Conflict Reproducer..."
-    ./scripts/Test-Conflict.ps1
+    # call the preambule script
+    . "$PSScriptRoot\_pre-build.ps1" -DefaultBuildNo "TESTVERSION" -ScriptName "build-test.ps1"
+    # 1. Run Backend Unit Tests (Rust)
+    # --no-report accumulates coverage data without generating a report yet,
+    # so it can be merged with the integration-test run below into one table.
+    Write-Output "Running Backend Unit Tests..."
+    Push-Location src-tauri
+    cargo llvm-cov --no-report --lib
+    $cargoResult = $LASTEXITCODE
+
+    if ($cargoResult -ne 0) {
+        Write-Output "Backend unit tests failed!"
+        exit $cargoResult
+    }
+
+    # 1b. Run Integration Tests (Rust)
+    # --no-report keeps accumulating into the same coverage data set.
+    # Tests run exactly once; no duplication with the unit-test run above.
+    Write-Output "Running Integration Tests..."
+    cargo llvm-cov --no-report --test wiring
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "Conflict Reproduction failed OR caused failure!"
+        Write-Output "Integration tests failed!"
         exit $LASTEXITCODE
     }
 
-
-    # call the preambule script
-    . "$PSScriptRoot\_pre-build.ps1" -DefaultBuildNo "TESTVERSION" -ScriptName "build-test.ps1"
-    # 1. Run Backend Tests (Rust)
-
-    Write-Output "Running Backend Tests..."
-    Push-Location src-tauri
-    if ($LASTEXITCODE -eq 0) {
-        cargo llvm-cov # cargo test
-        $cargoResult = $LASTEXITCODE
+    # 1c. Run E2E / Conflict Reproducer (Rust example)
+    # The example spawns the full Lattice app as a child process.
+    # When CARGO_LLVM_COV is set, reproduce_conflict.rs forwards
+    # -C instrument-coverage via RUSTFLAGS to the child compilation so
+    # the child's profraw data is written to the same directory and merged
+    # into the combined HTML report in step 4.
+    Write-Output "Running E2E Conflict Reproducer..."
+    cargo llvm-cov --no-report --example reproduce_conflict
+    if ($LASTEXITCODE -ne 0) {
+        Write-Output "E2E Conflict Reproducer failed!"
+        exit $LASTEXITCODE
     }
 
-    if ($cargoResult -ne 0) {
-        Write-Output "Backend tests failed!"
-        exit $cargoResult
-    }
+    Write-Output "Gather and print all data in an output table ..."
+    cargo llvm-cov report
+    Write-Output "****************************************************"
 
     # 2. Run Frontend Tests Run Later with Coverage
     # Write-Output "Running Frontend Tests..."
@@ -58,17 +75,17 @@ try {
     Write-Output "Running Frontend Coverage..."
     npm run test:coverage
 
-    # 3 check version of cargo-llvm-cov
+    # 3. Linter
     cargo llvm-cov --version
     Write-Output "Running 2nd Linter..."
     cargo clippy -- -D warnings
 
-    # Write-Output "Running text cover ..."
-    # cargo llvm-cov --text
-    Write-Output "Running html cover ..."
-    cargo llvm-cov --html
-    # Write-Output "Running summary cover ..."
-    # cargo llvm-cov --summary-only
+    # 4. Generate combined coverage report from the accumulated data.
+    #    Neither call re-runs any tests — they only read the profraw files
+    #    written by steps 1, 1b, and 1c.
+    Write-Output "Running combined html coverage report..."
+    cargo llvm-cov report --html        # HTML file in target/llvm-cov/html/
+    cargo llvm-cov report               # Text summary table printed to console
 
 }
 finally {
