@@ -755,3 +755,36 @@ fn test_read_file_base64_no_extension_defaults_to_png() {
     );
 }
 // test_read_file_base64_no_extension_defaults_to_png END ******************
+
+#[test]
+fn test_find_vault_settings_file_missing_settings() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("vault");
+    let lattice_dir = root.join(".lattice");
+    fs::create_dir_all(&lattice_dir).unwrap();
+    let file_path = root.join("note.md");
+    fs::write(&file_path, "hi").unwrap();
+
+    let result = find_vault_settings_file_internal(file_path.to_string_lossy().to_string(), temp.path()).unwrap();
+    let found = result.unwrap();
+    assert!(found.ends_with("settings.json"));
+    assert!(Path::new(&found).exists());
+}
+
+
+#[test]
+fn test_initialize_vault_settings_readonly() {
+    let temp = tempfile::tempdir().unwrap();
+    let parent_dir = temp.path().join("parent");
+    fs::create_dir(&parent_dir).unwrap();
+    
+    // Create a file named .lattice so that create_dir_all(".lattice") fails
+    let lattice_file = parent_dir.join(".lattice");
+    fs::write(&lattice_file, "blocking file").unwrap();
+
+    let result = initialize_vault_settings(parent_dir.to_string_lossy().to_string());
+    assert!(result.is_err());
+    let err = result.unwrap_err();
+    assert!(err.contains("Cannot Initialize Vault:"));
+}
+

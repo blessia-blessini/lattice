@@ -15,6 +15,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.31
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Add vault settings file tests
 - Add comprehensive testing strategy document
 - Increased auto test quality and coverage
 - Update test_fs_helpers to use icacls on Windows
