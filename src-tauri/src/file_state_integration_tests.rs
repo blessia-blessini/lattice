@@ -22,6 +22,9 @@
 // END OF NOTE
 
 use crate::file_state::determine_wished_format;
+use crate::test_fs_helpers::{
+    can_test_unreadable, invalid_root_path, make_unreadable, native_newline,
+};
 
 use super::{
     DetectedLineEndings, FileTrackerState, create_daily_note_file, read_text_file_internal,
@@ -278,10 +281,9 @@ fn test_write_text_file_conflict() {
     // 2. Simulator: Another process changes the file on disk
     // Note: write_text_file expects internal format on input but writes physical.
     // We simulate disk write directly.
-    #[cfg(target_os = "windows")]
-    let disk_content = "Version 1 Modified on Disk\n".replace("\n", "\r\n");
-    #[cfg(not(target_os = "windows"))]
-    let disk_content = "Version 1 Modified on Disk\n";
+    // Use the OS-native line ending to simulate a write by another process.
+    let disk_content = "Version 1 Modified on Disk\n"
+        .replace('\n', native_newline());
 
     fs::write(&file_path, disk_content).unwrap();
 
@@ -420,10 +422,13 @@ fn test_close_file_and_cleanup_state() {
 // -----------------------------------------------------------------------
 // test_write_to_root_path_errors
 // -----------------------------------------------------------------------
-/// Passing "/" (no parent) as a write target must return an error from
-/// do_writefile rather than panicking.
+/// Passing a root path (no parent directory) as a write target must return
+/// an error from do_writefile rather than panicking.
+///
+/// `invalid_root_path()` returns "/" which has `parent() == None` on both
+/// Unix and Windows in Rust's Path implementation, so this test runs on
+/// every platform without any OS-specific guard.
 #[test]
-#[cfg(unix)]
 fn test_write_to_root_path_errors() {
     use std::collections::HashMap;
     use std::sync::{Arc, Mutex};
@@ -431,8 +436,11 @@ fn test_write_to_root_path_errors() {
     let state = FileTrackerState {
         files: Arc::new(Mutex::new(HashMap::new())),
     };
-    // "/" has no parent — the do_writefile guard should return Err
-    let result = write_text_file_internal("/".to_string(), "data".to_string(), &state);
+    let result = write_text_file_internal(
+        invalid_root_path().to_string(),
+        "data".to_string(),
+        &state,
+    );
     assert!(result.is_err(), "Expected Err for root path, got Ok");
 }
 
@@ -596,10 +604,7 @@ fn test_create_daily_note_creates_nonexistent_directory() {
 /// The first suffix is always writable (fresh path), so exactly one
 /// iteration is needed.
 #[test]
-#[cfg(unix)]
 fn test_create_daily_note_file_collision_counter_loop() {
-    use std::os::unix::fs::PermissionsExt;
-
     let temp_dir = tempfile::tempdir().unwrap();
     let notes_path = temp_dir.path().to_string_lossy().to_string();
 
@@ -607,27 +612,30 @@ fn test_create_daily_note_file_collision_counter_loop() {
     let base_path_str = create_daily_note_file(notes_path.clone()).unwrap();
     let base_path = std::path::Path::new(&base_path_str);
 
-    // Make the base file unreadable so `fs::read` will fail.
-    let mut perms = std::fs::metadata(base_path).unwrap().permissions();
-    perms.set_mode(0o000);
-    std::fs::set_permissions(base_path, perms).unwrap();
+    // Make the base file unreadable so `fs::read` will fail and the collision
+    // counter is forced to walk to the next suffix.
+    // The guard restores permissions on drop (even on panic).
+    let _guard = make_unreadable(base_path);
 
-    // Now call again: base exists but is unreadable → loop → creates -1 variant.
+    // Call again: on platforms where make_unreadable works, base exists but
+    // is unreadable → loop → creates a -1 variant.
     let result = create_daily_note_file(notes_path.clone());
+    drop(_guard); // restore permissions before assertions
 
-    // Restore permissions so the temp_dir cleanup doesn't fail.
-    let mut perms2 = std::fs::metadata(base_path).unwrap().permissions();
-    perms2.set_mode(0o644);
-    std::fs::set_permissions(base_path, perms2).unwrap();
-
-    assert!(result.is_ok(), "Expected collision counter to find a slot: {:?}", result.err());
-    let new_path = result.unwrap();
-    // Must differ from the base (a suffix was appended).
-    assert_ne!(new_path, base_path_str, "Collision must produce a different path");
-    assert!(
-        std::path::Path::new(&new_path).exists(),
-        "Collision-resolved file must exist"
-    );
+    if can_test_unreadable() {
+        // On Unix (Linux, macOS, Android, iOS): the collision counter must
+        // find a free slot and return a path different from the base.
+        assert!(result.is_ok(), "collision counter must find a slot: {:?}", result.err());
+        let new_path = result.unwrap();
+        assert_ne!(new_path, base_path_str, "collision must produce a different path");
+        assert!(
+            std::path::Path::new(&new_path).exists(),
+            "collision-resolved file must exist on disk"
+        );
+    }
+    // On platforms where make_unreadable is a no-op (Windows without ACL
+    // elevation) we only verify the function did not panic, which is still a
+    // meaningful check.
 }
 
 // -----------------------------------------------------------------------
@@ -637,10 +645,8 @@ fn test_create_daily_note_file_collision_counter_loop() {
 /// but cannot be read (permission denied), write_text_file_internal must
 /// detect the read failure and resolve by creating a new copy.
 #[test]
-#[cfg(unix)]
 fn test_write_conflict_when_file_exists_but_is_unreadable() {
     use std::collections::HashMap;
-    use std::os::unix::fs::PermissionsExt;
     use std::sync::{Arc, Mutex};
 
     let state = FileTrackerState {
@@ -650,31 +656,33 @@ fn test_write_conflict_when_file_exists_but_is_unreadable() {
     let file_path = temp_dir.path().join("unreadable.md");
     let path_str = file_path.to_string_lossy().to_string();
 
-    // 1. Create and register the file normally.
+    // 1. Create and register the file normally so the tracker holds a hash.
     write_text_file_internal(path_str.clone(), "original".to_string(), &state).unwrap();
     read_text_file_internal(path_str.clone(), None, &state).unwrap();
 
-    // 2. Remove read permission so the conflict-check read will fail.
-    let mut perms = std::fs::metadata(&file_path).unwrap().permissions();
-    perms.set_mode(0o000);
-    std::fs::set_permissions(&file_path, perms.clone()).unwrap();
+    // 2. Remove access so the conflict-check read will fail.
+    //    The guard restores permissions on drop (even on panic).
+    let _guard = make_unreadable(&file_path);
 
-    // 3. Attempt a write — file exists but is unreadable → conflict path.
+    // 3. Attempt a write — on platforms where the guard works the file is
+    //    unreadable, triggering conflict resolution.
     let result = write_text_file_internal(path_str.clone(), "new content".to_string(), &state);
+    drop(_guard); // restore permissions before assertions / temp-dir cleanup
 
-    // Restore permissions before any assertions so temp cleanup works.
-    perms.set_mode(0o644);
-    std::fs::set_permissions(&file_path, perms).unwrap();
-
-    assert!(result.is_ok(), "Expected Ok (conflict copy), got: {:?}", result.err());
-    let response = result.unwrap();
-    // The response path must differ — a new conflict copy was made.
-    assert_ne!(
-        response.path, path_str,
-        "An unreadable file must trigger a conflict copy"
-    );
-    assert!(
-        std::path::Path::new(&response.path).exists(),
-        "Conflict copy must exist on disk"
-    );
+    if can_test_unreadable() {
+        // On Unix (Linux, macOS, Android, iOS): the write must succeed but
+        // return a new conflict path because the original was unreadable.
+        assert!(result.is_ok(), "expected Ok (conflict copy), got: {:?}", result.err());
+        let response = result.unwrap();
+        assert_ne!(
+            response.path, path_str,
+            "unreadable file must trigger a conflict copy at a new path"
+        );
+        assert!(
+            std::path::Path::new(&response.path).exists(),
+            "conflict copy must exist on disk"
+        );
+    }
+    // On platforms where make_unreadable is a no-op (Windows without ACL
+    // elevation) we only verify the call did not panic.
 }

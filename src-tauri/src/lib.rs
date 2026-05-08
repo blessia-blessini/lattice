@@ -44,6 +44,10 @@ mod settings;
 mod toc;
 mod table_format;
 
+#[cfg(test)]
+#[path = "test_fs_helpers.rs"]
+pub mod test_fs_helpers;
+
 // APP-wide state to hold watchers per window
 struct WatcherState {
     watchers: Arc<Mutex<HashMap<String, RecommendedWatcher>>>,
