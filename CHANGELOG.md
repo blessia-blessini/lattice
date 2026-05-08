@@ -15,6 +15,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.31
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Bump version to 0.2.31
 - Bump dependencies in /src-tauri
 - ammended Changelog
 
