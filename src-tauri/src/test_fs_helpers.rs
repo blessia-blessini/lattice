@@ -29,13 +29,12 @@
 //! `PermissionsExt`, or `#[cfg(unix)]` should appear outside this file.
 //!
 //! Supported platforms:
-//! | Target              | make_unreadable       | can_test_unreadable |
-//! |---------------------|-----------------------|---------------------|
-//! | Linux / macOS       | chmod 000             | true                |
-//! | Android / iOS       | chmod 000 (unix)      | true                |
-//! | Windows             | no-op (ACL needs      | false               |
-//! |                     | elevated privileges)  |                     |
-//! | Other               | no-op                 | false               |
+//! | Target              | make_unreadable           | can_test_unreadable |
+//! |---------------------|---------------------------|---------------------|
+//! | Linux / macOS       | chmod 000                 | true                |
+//! | Android / iOS       | chmod 000 (unix)          | true                |
+//! | Windows             | icacls /denyaLL :(R,RX)   | true             |
+//! | Other               | no-op                     | false               |
 
 use std::path::Path;
 
@@ -58,10 +57,6 @@ impl Drop for PermGuard {
 }
 
 impl PermGuard {
-    fn noop() -> Self {
-        PermGuard { restore: None }
-    }
-
     fn with_restore(f: impl FnOnce() + Send + 'static) -> Self {
         PermGuard {
             restore: Some(Box::new(f)),
@@ -74,9 +69,9 @@ impl PermGuard {
 /// Deny all access to `path` for the current process and return a `PermGuard`
 /// that restores the original permissions on drop.
 ///
-/// Tests that assert a "permission denied" outcome must also check
-/// `can_test_unreadable()` before making those assertions, because on Windows
-/// this function returns a no-op guard without modifying the file.
+/// Tests that assert a "permission denied" outcome should also check
+/// `can_test_unreadable()` before making those assertions, because on exotic
+/// targets (WASM, etc.) this function returns a no-op guard.
 pub fn make_unreadable(path: &Path) -> PermGuard {
     // ── Unix branch (Linux, macOS, Android, iOS) ───────────────────────────
     #[cfg(unix)]
@@ -104,29 +99,37 @@ pub fn make_unreadable(path: &Path) -> PermGuard {
     }
 
     // ── Windows branch ─────────────────────────────────────────────────────
-    // Making a file truly unreadable on Windows requires DACL manipulation
-    // via SetSecurityInfo / icacls, which requires elevated privileges and is
-    // impractical in a unit-test context.  We return a no-op guard here;
-    // callers should skip permission-denied assertions when
-    // `can_test_unreadable()` is false.
+    // `icacls` is a Windows built-in that can add a DENY ACE for the current
+    // user without requiring elevation (the file owner always has WRITE_DAC).
+    // Deny Everyone read access, then remove the DENY ACE on restore.
     #[cfg(all(windows, not(unix)))]
     {
-        let _ = path;
-        PermGuard::noop()
+        let path_str = path.to_string_lossy().into_owned();
+
+        std::process::Command::new("icacls")
+            .args([&path_str, "/deny", "Everyone:(R,RX)"])
+            .status()
+            .expect("make_unreadable: icacls /deny failed");
+
+        PermGuard::with_restore(move || {
+            let _ = std::process::Command::new("icacls")
+                .args([&path_str, "/remove:d", "Everyone"])
+                .status();
+        })
     }
 
     // ── Fallback for any other target (e.g. WASM, exotic embedded) ─────────
     #[cfg(not(any(unix, windows)))]
     {
         let _ = path;
-        PermGuard::noop()
+        PermGuard { restore: None }
     }
 }
 
 // ─── can_test_unreadable ────────────────────────────────────────────────────
 
 /// Returns `true` on platforms where `make_unreadable` actually restricts
-/// file access (currently: all Unix-family targets including Android and iOS).
+/// file access (Unix-family targets and Windows via `icacls`).
 ///
 /// Usage pattern in tests:
 /// ```ignore
@@ -137,7 +140,7 @@ pub fn make_unreadable(path: &Path) -> PermGuard {
 /// }
 /// ```
 pub fn can_test_unreadable() -> bool {
-    cfg!(unix)
+    cfg!(any(unix, windows))
 }
 
 // ─── invalid_root_path ─────────────────────────────────────────────────────
