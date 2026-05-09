@@ -15,6 +15,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.31
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Remove unnecessary header from release notes
 - Remove outdated action plan from docs
 - Add vault settings file tests
 - Add comprehensive testing strategy document

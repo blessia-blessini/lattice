@@ -612,11 +612,7 @@ jobs:
           --jq '.assets[] | [.name, .browser_download_url, .size] | @tsv')
 
         # Header
-        printf '%s\n' "---" "title: \"Lattice ${VERSION}\"" "layout: default" "---" "" \
-          "# Lattice ${VERSION}" "" \
-          "**Released:** ${DATE}" "" \
-         "$( [ -f release-notes.md ] && cat release-notes.md )" "" \
-          \
+        printf "" \
           "## Downloads" "" \
           "| File | Size |" \
           "|------|------|" > "$OUT"
