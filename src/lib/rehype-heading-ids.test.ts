@@ -141,4 +141,41 @@ describe('rehypeAddHeadingIds', () => {
         expect(a.children[0].properties.id).toBe('setup');
         expect(b.children[0].properties.id).toBe('setup');
     });
+
+    it('initialises node.properties to {} when it is undefined/null', () => {
+        // The plugin uses `node.properties = node.properties || {}`.
+        // This covers the falsy arm: when a synthesised node has no properties
+        // object at all, the plugin must create one before writing .id.
+        const h = {
+            type: 'element',
+            tagName: 'h2',
+            // properties deliberately omitted (undefined)
+            children: [text('No Props')],
+        };
+        const tree = root([h]);
+        transform(tree);
+        // The id must still be written via the freshly-created properties obj.
+        expect((h as any).properties).toBeDefined();
+        expect((h as any).properties.id).toBe('no-props');
+    });
+
+    it('reserves the same explicit id a second time without collision (seen-count > 0 path)', () => {
+        // The `else` branch does: seen.set(existing, (seen.get(existing) ?? 0) + 1)
+        // The `?? 0` default fires on the FIRST reservation (seen.get returns undefined).
+        // To cover the path where seen.get already returns a number (> 0), we
+        // need two headings with the same explicit id — the second reservation
+        // increments the counter from 1 to 2, and any subsequent auto-slug
+        // must be disambiguated accordingly.
+        const tree = root([
+            elem('h2', [text('Topic')], { id: 'topic' }),  // 1st reservation → seen["topic"] = 1
+            elem('h2', [text('Topic')], { id: 'topic' }),  // 2nd reservation → seen["topic"] = 2 (covers the non-undefined branch of ??)
+            elem('h2', [text('Topic')]),                    // auto-slug: first available is "topic-2"
+        ]);
+        transform(tree);
+        // The two explicit ids survive unchanged.
+        expect(tree.children[0].properties.id).toBe('topic');
+        expect(tree.children[1].properties.id).toBe('topic');
+        // The auto-slug must skip "topic" (count=2) and "topic-1" (count not tracked) → "topic-2".
+        expect(tree.children[2].properties.id).toBe('topic-2');
+    });
 });

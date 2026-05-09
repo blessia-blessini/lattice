@@ -41,15 +41,27 @@ fn main() {
     println!("**************************************************************");
 
     // 1. Setup paths
+    //
+    // `cargo llvm-cov --example reproduce_conflict` runs with cwd = src-tauri/.
+    // `Test-Conflict.ps1 / .sh` run with cwd = repo root.
+    // Normalise to repo root so file paths and npm invocations are always correct.
     let current_dir = env::current_dir().expect("Failed to get current directory");
-    let file_path = current_dir.join(TEST_FILENAME);
+    let repo_root = if current_dir.ends_with("src-tauri") {
+        current_dir
+            .parent()
+            .expect("src-tauri has no parent")
+            .to_path_buf()
+    } else {
+        current_dir.clone()
+    };
+    let file_path = repo_root.join(TEST_FILENAME);
 
     // We modify this to use npm run tauri dev
     // This assumes the user has npm in their PATH (and is on Windows per instructions)
 
+    println!("[INFO] Repo root  : {}", repo_root.display());
     println!("[INFO] Target File: {}", file_path.display());
     println!("[INFO] Lattice App will be launched via 'npm run tauri dev'");
-
     // 2. Create initial file
     println!("[INFO] Created/Reset {}", file_path.display());
     fs::write(&file_path, "# Conflict Test File\n\nInitial content.")
@@ -82,17 +94,29 @@ fn main() {
         vec!["run", "tauri", "dev", "--", file_path.to_str().unwrap()],
     );
 
+    // When running under `cargo llvm-cov`, propagate coverage instrumentation
+    // to the child Tauri app so its profraw data lands in the same coverage
+    // directory (LLVM_PROFILE_FILE is inherited automatically).
+    // `CARGO_LLVM_COV` is set by cargo-llvm-cov whenever it is active.
+    let mut rustflags = "--cfg integration_test".to_string();
+    if env::var("CARGO_LLVM_COV").is_ok() {
+        rustflags.push_str(" -C instrument-coverage");
+    }
+
     let mut _app_child = Command::new(prog)
         .args(&args)
-        .env("RUSTFLAGS", "--cfg integration_test") // COMPILE-TIME ACTIVATION
+        // npm / tauri must be invoked from the repo root (where package.json lives),
+        // not from src-tauri/.
+        .current_dir(&repo_root)
+        .env("RUSTFLAGS", rustflags) // COMPILE-TIME ACTIVATION (+ coverage if active)
         .spawn()
         .expect("Failed to launch npm run tauri dev");
 
     // 5. Wait for success marker or timeout (AUTOMATED)
     println!("\n[ACTION] Waiting up to 60s for automated test success (Feature Flag Mode)...");
 
-    let success_path = current_dir.join("conflict_success.txt");
-    let success_path_alt = current_dir.join("src-tauri").join("conflict_success.txt");
+    let success_path = repo_root.join("conflict_success.txt");
+    let success_path_alt = repo_root.join("src-tauri").join("conflict_success.txt");
     let start_time = std::time::Instant::now();
     let timeout = Duration::from_secs(300); // Allow 5 mins for full rebuild
     let mut success = false;

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+  Minimal Windows application manifest for Lattice test binaries.
+
+  Purpose
+  ───────
+  tauri::test::MockRuntime (feature = "test") links against TaskDialogIndirect
+  in comctl32.dll v6.  That entry point only exists once the Common Controls v6
+  activation context is in place — which normally happens because tauri-build
+  embeds this manifest into the *app* binary at link time.
+
+  Test binaries produced by `cargo test` are linked separately and do not go
+  through tauri-build, so they lack the manifest.  build.rs passes this file
+  to the MSVC linker via /MANIFEST:EMBED + /MANIFESTINPUT for test binaries
+  only (cargo:rustc-link-arg-tests), which causes Windows to activate the
+  correct version of comctl32 when any test binary is loaded, preventing the
+  STATUS_ENTRYPOINT_NOT_FOUND (0xc0000139) fatal error.
+-->
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+  <dependency>
+    <dependentAssembly>
+      <assemblyIdentity
+        type="win32"
+        name="Microsoft.Windows.Common-Controls"
+        version="6.0.0.0"
+        processorArchitecture="*"
+        publicKeyToken="6595b64144ccf1df"
+        language="*"
+      />
+    </dependentAssembly>
+  </dependency>
+</assembly>

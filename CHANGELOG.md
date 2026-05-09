@@ -11,14 +11,23 @@ Edit the section for your next version **before** pushing the release tag like v
 
 - N/A
 -->
+## v0.2.32
+### Changes
+  <!-- INSERT BULLETS UNDER THIS LINE -->
+- Update CHANGELOG for v0.2.31 prep for x.32
+
 
 ## v0.2.31
 ### Changes
-  <!-- INSERT BULLETS UNDER THIS LINE -->
-- ammended Changelog
+- Add comprehensive testing strategy document
+- Increased auto test quality and coverage
+- Refactor file state tests with helpers
+- Refactor tests into separate/dedicated modules
+- Fix: Add tests for file state, table formatting, and TOC
 
 ## v0.2.30
 ### Changes
+- Bump **tauri** from 2.11.0 to 2.11.1 in /src-tauri in the cargo group across 1 directory
 - feat: Add highlight mark setting and operation for ==highlighted test==
 - Add tests for file state and settings module
 - Fixed warnings in the unittest run
@@ -85,7 +94,20 @@ Edit the section for your next version **before** pushing the release tag like v
 ## vCurrent
 ### Changed  <!-- Automatically added comment messages comments -->
 
-
+- v0.2.31
+- Remove unnecessary header from release notes
+- Remove outdated action plan from docs
+- Add vault settings file tests
+- Add comprehensive testing strategy document
+- Increased auto test quality and coverage
+- Update test_fs_helpers to use icacls on Windows
+- Refactor file state tests with helpers
+- Refactor tests into separate/dedicated modules
+- Fix: Add tests for file state, table formatting, and TOC
+- Bump version to 0.2.31
+- Bump dependencies in /src-tauri
+- ammended Changelog
+- v0.2.30
 - Refactor CHANGELOG extraction to use sparse-checkout
 - Bump version to 0.2.28
 - feat: Improve release notes generation

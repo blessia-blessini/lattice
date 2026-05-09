@@ -219,3 +219,38 @@ describe('setupTestModeListeners — event callback body', () => {
         await expect(capturedCallback!({ payload: 'any.md' })).resolves.toBeUndefined();
     });
 });
+
+// ---------------------------------------------------------------------------
+// sendTrace — invoke rejection swallowed by .catch(() => {})
+// ---------------------------------------------------------------------------
+describe('sendTrace — .catch handler swallows invoke rejections', () => {
+    it('does not propagate when invoke("trace_log") rejects', () => {
+        // The sendTrace helper does `invoke(...).catch(() => {})`. If invoke
+        // rejects and the catch handler were missing, the unhandled rejection
+        // would surface. We verify it is silently swallowed.
+        vi.mocked(TauriCore.invoke).mockRejectedValueOnce(new Error('backend unavailable'));
+        // StaticRuntime.log calls sendTrace internally — must not throw sync or async.
+        expect(() => StaticRuntime.log('trigger catch handler')).not.toThrow();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// init — typeof original !== 'function' guard inside forEach
+// ---------------------------------------------------------------------------
+describe('init — skips patching when a console method is not a function', () => {
+    it('does not throw when a console method has been replaced with a non-function', () => {
+        // The `if (typeof original === 'function')` guard protects against
+        // environments where console methods have been overwritten.
+        // We replace console.debug with a non-function value before calling init().
+        const origDebug = console.debug;
+        (console as any).debug = 42; // not a function
+
+        try {
+            expect(() => StaticRuntime.init()).not.toThrow();
+        } finally {
+            // Always restore so other tests are unaffected.
+            console.debug = origDebug;
+            delete (console as any).__isPatched;
+        }
+    });
+});

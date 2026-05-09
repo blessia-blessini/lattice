@@ -90,6 +90,13 @@ function walk(node: any, inCode: boolean): void {
         if (Array.isArray(node.children)) {
             const newChildren: any[] = [];
             for (const child of node.children) {
+                if (!child) {
+                    // Null/undefined sentinels can appear in synthetic or
+                    // malformed HAST trees.  Pass them through unchanged so
+                    // the tree shape is preserved and no TypeError is thrown.
+                    newChildren.push(child);
+                    continue;
+                }
                 if (!nowInCode && child.type === 'text' && MARK_RE.test(child.value)) {
                     // Expand this text node into text + <mark> sequences.
                     newChildren.push(...splitAtMarks(child.value));

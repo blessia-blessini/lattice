@@ -88,6 +88,26 @@ fn main() {
         //writeln!(file, "").ok();
     }
 
+    // Embed the Common Controls v6 activation manifest into integration-test
+    // binaries on Windows.  Without it, tauri::test::MockRuntime crashes with
+    // STATUS_ENTRYPOINT_NOT_FOUND (0xc0000139) because TaskDialogIndirect in
+    // comctl32.dll v6 is only available once an activation context is in place.
+    // tauri-build does this for the app binary; we replicate it for the test
+    // binaries produced from tests/ (proper [[test]] Cargo targets) via
+    // cargo:rustc-link-arg-tests — stable since Cargo 1.64, and scoped to
+    // test targets only so the app binary is not affected.
+    //
+    // Note: cargo:rustc-link-arg-tests does NOT apply to inline #[cfg(test)]
+    // modules inside [lib] — only to explicit tests/ integration-test targets.
+    // That is why the true MockRuntime wiring tests live in tests/wiring.rs.
+    if env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("windows") {
+        let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+        let test_manifest = std::path::Path::new(&manifest_dir).join("test.manifest");
+        println!("cargo:rerun-if-changed=test.manifest");
+        println!("cargo:rustc-link-arg-tests=/MANIFEST:EMBED");
+        println!("cargo:rustc-link-arg-tests=/MANIFESTINPUT:{}", test_manifest.display());
+    }
+
     tauri_build::build()
 }
 // main END ********************************************************************
