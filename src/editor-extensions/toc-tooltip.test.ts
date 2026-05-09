@@ -238,4 +238,29 @@ describe('tocTooltip StateField (update path)', () => {
         const tooltips = state2.field(tocTooltip[0] as any);
         expect((tooltips as any[]).length).toBe(0);
     });
+
+    it('returns the cached tooltips unchanged when neither doc nor selection changes', () => {
+        // This covers the early-return branch in the update() function:
+        //   `if (!tr.docChanged && !tr.selection) return tooltips;`
+        // We create a state with cursor OUTSIDE the TOC, then apply a
+        // transaction that carries no doc change and no selection annotation
+        // (only metadata). The field must return the same empty-array reference.
+        const doc = '# Hello\nSome text without any TOC markers';
+        const state1 = EditorState.create({
+            doc,
+            selection: { anchor: 0 },
+            extensions: [tocTooltip],
+        });
+        const tooltipsBefore = state1.field(tocTooltip[0] as any) as any[];
+
+        // Apply a no-op transaction (no doc change, no explicit selection).
+        const tr = state1.update({});
+        const state2 = tr.state;
+
+        const tooltipsAfter = state2.field(tocTooltip[0] as any) as any[];
+        // Both should be empty and, because the update short-circuits, they
+        // should be the identical array reference.
+        expect(tooltipsAfter).toHaveLength(0);
+        expect(tooltipsAfter).toBe(tooltipsBefore);
+    });
 });

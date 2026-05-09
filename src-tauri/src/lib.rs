@@ -1,23 +1,23 @@
 // LEGAL NOTE:
-// LATTICE (tm) - The Portable and standard Markdown Editor 
+// LATTICE (tm) - The Portable and standard Markdown Editor
 // Copyright (C) 2026 Owner of blessini.com (a.k.a Blessia)
 // email: blessia AT blessini.com
-// 
+//
 // GNU AFFERO GENERAL PUBLIC LICENSE V3 NOTICE:
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as
 // published by the Free Software Foundation, either version 3 of the
 // License, or (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Affero General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//   
+//
 // See LICENCE file in GitHUB root folder of the repository.
 // END OF NOTE
 
@@ -40,9 +40,13 @@ static M_PATH: Mutex<String> = Mutex::new(String::new());
 
 mod file_state;
 mod textcontent_hashing;
-mod settings;
+pub mod settings;
 mod toc;
 mod table_format;
+
+#[cfg(test)]
+#[path = "test_fs_helpers.rs"]
+pub mod test_fs_helpers;
 
 // APP-wide state to hold watchers per window
 struct WatcherState {
@@ -52,7 +56,25 @@ struct WatcherState {
 //******************************************************************************
 // calc_base_path
 //******************************************************************************
-pub(crate) fn calc_base_path_internal(_app: tauri::AppHandle) -> Result<String, String> {
+/// Returns the application's root storage path as a `String`.
+/// Calculates the base path for the application.
+///
+/// On desktop platforms, this returns the user's home directory.
+/// On mobile platforms, this returns the app's data directory.
+/// The path is cached after the first successful calculation.
+///
+/// # Arguments
+///
+/// * `_app` - The Tauri `AppHandle`, used to resolve directories on mobile.
+///
+/// # Returns
+///
+/// A `Result` containing the path as a `String` if successful, or an error
+/// message `String` if the path could not be resolved.
+/// The first `String` is the path and the second `String` is the error message.
+pub(crate) fn calc_base_path_internal<R: tauri::Runtime>(
+    _app: tauri::AppHandle<R>,
+) -> Result<String, String> {
     // todo: mobile folder .. the root of the sandbox
     // the following is for desktop only
     #[cfg(desktop)]
@@ -73,30 +95,44 @@ pub(crate) fn calc_base_path_internal(_app: tauri::AppHandle) -> Result<String, 
     Ok(l_path)
 }
 
+/// Tauri command — exposes `calc_base_path_internal` to the frontend.
+///
+/// Thin shim that delegates to `calc_base_path_internal` with the real
+/// Wry runtime.  The frontend calls this once on startup to learn the
+/// root directory under which all user data is stored.
+///
+/// # Arguments
+///
+/// * `_app` - The Tauri `AppHandle`, forwarded to `calc_base_path_internal`.
+///
+/// # Returns
+///
+/// A `Result` containing the root path as a `String` on success, or an
+/// error message `String` if the path could not be resolved.
 #[tauri::command]
 fn calc_base_path(_app: tauri::AppHandle) -> Result<String, String> {
     calc_base_path_internal(_app)
-}
-// calc_base_path END *****************************************************
+} // calc_base_path END *****************************************************
 
-//******************************************************************************
-// get_base_path
-//******************************************************************************
-// /// a simple getter from the private variable M_PATH
-// /// Returns None if the path has not been initialized yet.
-// fn get_base_path() -> Option<String> {
-//    let m_path = M_PATH.lock().unwrap();
-//    if m_path.is_empty() {
-//        None
-//    } else {
-//        Some(m_path.clone())
-//    }
-// }
-// get_base_path END ***********************************************************
-
-//******************************************************************************
-// open_new_window
-//******************************************************************************
+/// Opens a new Lattice editor window.
+/// Optionally pre-loads a file using the Direct Push pattern.
+///
+/// If `path` is `Some`, the file is read immediately and its content is
+/// injected into the new window via the `window.__LATTICE_INIT_DATA__`
+/// JavaScript global so the renderer has the file content before the first
+/// paint — no extra IPC round-trip after load.  If `path` is `None`, an
+/// empty editor window is opened.  Each window receives a unique label from
+/// `generate_new_window_label`.
+///
+/// # Arguments
+///
+/// * `app`  - The Tauri `AppHandle` used to build the new window.
+/// * `path` - Optional file system path of the document to open.
+///
+/// # Returns
+///
+/// A `Result` containing `()` on success, or an error message `String` if
+/// the file cannot be read or the window cannot be built.
 #[tauri::command]
 async fn open_new_window(app: tauri::AppHandle, path: Option<String>) -> Result<(), String> {
     info!("open_new_window called. Path: {:?}", path);
@@ -140,12 +176,23 @@ async fn open_new_window(app: tauri::AppHandle, path: Option<String>) -> Result<
 
     info!("Window '{}' created successfully.", label);
     Ok(())
-}
-// open_new_window END *****************************************************
+} // open_new_window END *****************************************************
 
 //******************************************************************************
 // generate_new_window_label
 //******************************************************************************
+/// Generates a process-unique label for a new Tauri editor window.
+///
+/// Labels follow the pattern `lattice-{N}-window` where `N` is a
+/// monotonically increasing counter backed by a module-level `AtomicUsize`.
+/// The counter is never reset within a process lifetime, so labels remain
+/// unique even when windows are opened and closed repeatedly.  Tauri
+/// requires all open window labels to be unique; this scheme satisfies that
+/// without tracking freed labels.
+///
+/// # Returns
+///
+/// A `String` of the form `"lattice-{N}-window"`.
 fn generate_new_window_label() -> String {
     use std::sync::atomic::{AtomicUsize, Ordering};
     // This static variable is initialized once and persists across function calls,
@@ -158,8 +205,26 @@ fn generate_new_window_label() -> String {
 // generate_new_window_label END *******************************************
 
 //******************************************************************************
-/// open_settings_window
+// open_settings_window
 //******************************************************************************
+/// Opens the settings window, or focuses it if it is already open.
+///
+/// If a window with the label `"settings"` already exists, it is brought
+/// to the foreground.  Otherwise a new 600 × 400 window is created on
+/// desktop; on Windows it is parented to the calling window so it behaves
+/// as a modal dialog.  The command emits `app:settings-opened` on creation
+/// and registers a listener that emits `app:settings-closed` when the
+/// window is destroyed, letting the frontend react to both lifecycle events.
+///
+/// # Arguments
+///
+/// * `app`     - The Tauri `AppHandle` used to create or locate the window.
+/// * `_window` - The calling `WebviewWindow`, used as the parent on Windows.
+///
+/// # Returns
+///
+/// A `Result` containing `()` on success, or an error message `String` if
+/// the window cannot be created or focused.
 #[tauri::command]
 async fn open_settings_window(
     app: tauri::AppHandle,
@@ -212,6 +277,20 @@ async fn open_settings_window(
 //******************************************************************************
 // close_settings_window
 //******************************************************************************
+/// Closes and destroys the settings window if it is currently open.
+///
+/// On desktop, if no settings window is open the call is a no-op and
+/// returns `Ok(())`.  On mobile the entire function body is compiled out
+/// because settings are presented differently on those platforms.
+///
+/// # Arguments
+///
+/// * `_app` - The Tauri `AppHandle` used to locate the settings window.
+///
+/// # Returns
+///
+/// A `Result` containing `()` on success, or an error message `String` if
+/// the window exists but cannot be destroyed.
 #[tauri::command]
 async fn close_settings_window(_app: tauri::AppHandle) -> Result<(), String> {
     #[cfg(desktop)]
@@ -225,21 +304,45 @@ async fn close_settings_window(_app: tauri::AppHandle) -> Result<(), String> {
 // read_text_file and write_text_file moved to file_state.rs
 
 //******************************************************************************
-/// is_dir
+// is_dir
 //******************************************************************************
+/// Returns whether `path` refers to an existing directory.
+///
+/// Non-existent paths and regular files both return `false`.  Exposed to
+/// the frontend so the UI can distinguish files from folders without
+/// issuing a separate metadata call.
+///
+/// # Arguments
+///
+/// * `path` - The file system path to test.
+///
+/// # Returns
+///
+/// `true` if `path` exists and is a directory, `false` otherwise.
 #[tauri::command]
 fn is_dir(path: String) -> bool {
     std::path::Path::new(&path).is_dir()
 } // is_dir END **********************************************************
 
-///  Find the path to the vault settings file or the vault directory .lattice
-///  if not found returns OK(None)
-///  otherwise returns Ok(jsonfilepath) if it exists
-///  otherwise if it does not exists returns .lattice directory path
+//******************************************************************************
+// find_vault_settings_file
+//******************************************************************************
+/// Tauri command — locates the vault `settings.json` for a given file path.
 ///
-//******************************************************************************
-/// find_vault_settings_file
-//******************************************************************************
+/// Resolves the home directory via `calc_base_path_internal`, then delegates
+/// the full search to `find_vault_settings_file_internal`.  See that function
+/// for the complete walk-up-and-fallback algorithm.
+///
+/// # Arguments
+///
+/// * `app`       - The Tauri `AppHandle` used to resolve the home directory.
+/// * `file_path` - Path of any file or folder inside the vault to search from.
+///
+/// # Returns
+///
+/// A `Result` containing `Some(path)` with the absolute path to
+/// `settings.json` on success, or an error message `String` if the home
+/// directory cannot be determined or required files cannot be created.
 #[tauri::command]
 fn find_vault_settings_file(
     app: tauri::AppHandle,
@@ -257,6 +360,25 @@ fn find_vault_settings_file(
     find_vault_settings_file_internal(file_path, home_dir)
 }
 
+/// Pure implementation of the vault-settings search.
+/// Decoupled from the Tauri runtime so it can be unit-tested with any `home_dir`.
+///
+/// Starting from `file_path`, the function walks up the directory tree looking
+/// for a `.lattice` directory.  When found, it ensures `settings.json` exists
+/// inside it (writing `{}` if absent) and returns its path.  If no `.lattice`
+/// ancestor is found, the function falls back to `home_dir/.lattice/settings.json`,
+/// creating the directory and file as needed.
+///
+/// # Arguments
+///
+/// * `file_path` - Starting path for the upward search (file or directory).
+/// * `home_dir`  - Fallback root used when no vault is found in the ancestry.
+///
+/// # Returns
+///
+/// A `Result` containing `Some(path)` with the absolute path to
+/// `settings.json` on success, or an error message `String` if a required
+/// directory or file cannot be created.
 fn find_vault_settings_file_internal(
     file_path: String,
     home_dir: &Path,
@@ -301,17 +423,28 @@ fn find_vault_settings_file_internal(
     Ok(Some(settings_path.to_string_lossy().to_string()))
 } // find_vault_settings_file END ******************************************
 
-/////////////////////////////////////////////////////////////////
-/// initialize_vault_settings:
-///   Initialize a vault by placing a .lattice directory
-///      in the parent directory of the file path
-///      and a settings.json file in the .lattice directory
-///   ON success returns the path to the settings.json file path
-///   ON failure returns an error message
-///
 //******************************************************************************
 // initialize_vault_settings
 //******************************************************************************
+/// Initialises a vault by creating a `.lattice` directory and `settings.json`.
+/// Idempotent — safe to call on a vault that already exists.
+///
+/// If `file_path` is a regular file, `.lattice` is created alongside it in
+/// the parent directory.  If it is a directory, `.lattice` is created inside
+/// it.  An existing `settings.json` is never overwritten.  OS error 30
+/// (read-only filesystem — common with some cloud-sync providers such as
+/// Google Drive) is translated into a clear, user-facing error message.
+///
+/// # Arguments
+///
+/// * `file_path` - Path of the document or directory where the vault should
+///   be initialised.
+///
+/// # Returns
+///
+/// A `Result` containing the absolute path to `settings.json` as a `String`
+/// on success, or a human-readable error message `String` if the directory
+/// cannot be created.
 #[tauri::command]
 fn initialize_vault_settings(file_path: String) -> Result<String, String> {
     let path = Path::new(&file_path);
@@ -345,8 +478,29 @@ fn initialize_vault_settings(file_path: String) -> Result<String, String> {
 } // initialize_vault_settings END *****************************************
 
 //******************************************************************************
-/// watch_file
+// watch_file
 //******************************************************************************
+/// Registers a filesystem watcher on `path` for the given `window`.
+/// Replaces any existing watcher registered for that window.
+///
+/// Uses the `notify` crate's recommended backend (inotify / FSEvents /
+/// ReadDirectoryChangesW depending on the OS).  Each window may watch at
+/// most one path at a time; re-calling this command for a window that
+/// already has a watcher silently drops the previous one.  On `Modify`,
+/// `Create`, or `Remove` events a `"file-changed"` event is broadcast on
+/// the app handle, carrying the watched path as its payload.
+///
+/// # Arguments
+///
+/// * `app`    - The Tauri `AppHandle` used to emit events.
+/// * `path`   - Absolute file system path to watch.
+/// * `window` - The calling window; its label is used as the watcher key.
+/// * `state`  - App-managed `WatcherState` holding the watcher registry.
+///
+/// # Returns
+///
+/// A `Result` containing `()` on success, or an error message `String` if
+/// the watcher cannot be created or the path cannot be registered.
 #[tauri::command]
 fn watch_file(
     app: tauri::AppHandle,
@@ -417,8 +571,29 @@ fn watch_file(
 // watch_file END **********************************************************
 
 //******************************************************************************
-/// save_image
+// save_image
 //******************************************************************************
+/// Decodes a Base64 image and saves it beside the document at `file_path`.
+/// Returns a Markdown-ready relative path to the saved image.
+///
+/// The image is written into a sibling directory named `{stem}_assets/`,
+/// created on demand.  The filename is `img_{timestamp_ms}.png`, where the
+/// timestamp ensures uniqueness without requiring a counter.  The returned
+/// path uses forward slashes for Markdown compatibility regardless of the
+/// host OS.
+///
+/// # Arguments
+///
+/// * `file_path`  - Absolute path to the document the image belongs to;
+///   determines the parent directory and the assets-folder name.
+/// * `image_data` - Raw Base64-encoded image bytes (no data-URL prefix).
+///
+/// # Returns
+///
+/// A `Result` containing the relative path to the saved image as a `String`
+/// (e.g. `"doc_assets/img_1714000000000.png"`) on success, or an error
+/// message `String` if the path is malformed, the Base64 is invalid, or
+/// any I/O operation fails.
 #[tauri::command]
 fn save_image(file_path: String, image_data: String) -> Result<String, String> {
     let path = Path::new(&file_path);
@@ -460,8 +635,26 @@ fn save_image(file_path: String, image_data: String) -> Result<String, String> {
 } // save_image END ********************************************************
 
 //******************************************************************************
-/// debug_file_probe
+// debug_file_probe
 //******************************************************************************
+/// Probes a file path and returns a multi-line diagnostic report string.
+/// Intended for developer diagnostics, not user-facing workflows.
+///
+/// The report records: whether the path is absolute, whether it exists, its
+/// type (file/dir), byte length, permissions, and — for files up to 60 MB —
+/// an attempt to decode the bytes as an image.  A successful decode logs the
+/// colour format and dimensions; a failed decode logs the first four header
+/// bytes in hexadecimal.  Files larger than 60 MB are skipped to prevent
+/// memory and CPU exhaustion.
+///
+/// # Arguments
+///
+/// * `path` - The file system path to probe.
+///
+/// # Returns
+///
+/// A multi-line `String` containing the diagnostic report.  Never errors;
+/// any I/O failures are recorded as lines inside the report itself.
 #[tauri::command]
 fn debug_file_probe(path: String) -> String {
     const MAX_MB: u64 = 60;
@@ -528,8 +721,26 @@ fn debug_file_probe(path: String) -> String {
 } // debug_file_probe END **************************************************
 
 //******************************************************************************
-/// read_file_base64
+// read_file_base64
 //******************************************************************************
+/// Reads a file from disk and returns it as a Base64 data URL.
+/// Bypasses the Tauri asset scope for arbitrary-path image loading.
+///
+/// The MIME type is derived from the file extension: `jpg`/`jpeg` →
+/// `image/jpeg`, `gif` → `image/gif`, `svg` → `image/svg+xml`,
+/// `webp` → `image/webp`, all other extensions → `image/png`.
+/// The returned string is ready to use as an `<img src="...">` value
+/// without any additional encoding.
+///
+/// # Arguments
+///
+/// * `path` - Absolute file system path of the image file to read.
+///
+/// # Returns
+///
+/// A `Result` containing the data URL as a `String` in the form
+/// `"data:{mime};base64,{data}"` on success, or an error message `String`
+/// if the file cannot be read.
 #[tauri::command]
 fn read_file_base64(path: String) -> Result<String, String> {
     // Read raw bytes using std::fs (Bypassing Tauri Scope)
@@ -556,8 +767,18 @@ fn read_file_base64(path: String) -> Result<String, String> {
 } // read_file_base64 END **************************************************
 
 //******************************************************************************
-/// get_launch_file
+// get_launch_file
 //******************************************************************************
+/// Returns the file path supplied on the command line at launch, if any.
+///
+/// Reads `std::env::args()` and delegates to `parse_launch_args`.  The
+/// frontend calls this once on startup to detect the file-association /
+/// "open with" flow and pre-load the correct document.
+///
+/// # Returns
+///
+/// `Some(path)` with the first non-flag CLI argument, or `None` if the
+/// application was launched without a file path.
 #[tauri::command]
 fn get_launch_file() -> Option<String> {
     let args: Vec<String> = std::env::args().collect();
@@ -579,6 +800,21 @@ fn get_launch_file() -> Option<String> {
 //******************************************************************************
 // parse_launch_args
 //******************************************************************************
+/// Extracts the first non-flag argument from an argument list.
+/// Pure function — does not call `std::env::args()`, making it fully unit-testable.
+///
+/// `args[0]` is assumed to be the binary name and is always skipped.  The
+/// first element at index ≥ 1 that does not start with `'-'` is returned as
+/// the file path to open.
+///
+/// # Arguments
+///
+/// * `args` - Full argument vector, typically from `std::env::args().collect()`.
+///
+/// # Returns
+///
+/// `Some(path)` with the first non-flag argument, or `None` if every
+/// argument is a flag or the vector contains only the binary name.
 fn parse_launch_args(args: Vec<String>) -> Option<String> {
     if args.len() > 1 {
         let potential_file = &args[1];
@@ -593,6 +829,16 @@ fn parse_launch_args(args: Vec<String>) -> Option<String> {
 //******************************************************************************
 // trace_log
 //******************************************************************************
+/// Writes a trace message to stdout, prefixed with `DEBUG_TRACE:`.
+///
+/// Exposed as a Tauri command so the TypeScript frontend can emit messages
+/// that appear in the same terminal stream as backend log output.  Useful
+/// during development when the browser DevTools console and the native
+/// process output need to be correlated.
+///
+/// # Arguments
+///
+/// * `msg` - The message string to print.
 #[tauri::command]
 fn trace_log(msg: String) {
     println!("DEBUG_TRACE: {}", msg);
@@ -601,6 +847,15 @@ fn trace_log(msg: String) {
 //******************************************************************************
 // exit_app
 //******************************************************************************
+/// Terminates the application with exit code 0.
+///
+/// Called by the frontend when the user selects "Quit" from the menu or
+/// when the last window is closed on platforms where that action should
+/// exit the process (Windows, Linux).
+///
+/// # Arguments
+///
+/// * `app` - The Tauri `AppHandle` used to call `exit(0)`.
 #[tauri::command]
 fn exit_app(app: tauri::AppHandle) {
     app.exit(0);
@@ -609,6 +864,16 @@ fn exit_app(app: tauri::AppHandle) {
 //******************************************************************************
 // get_version_string
 //******************************************************************************
+/// Returns the application build version string.
+///
+/// The string is embedded at compile time via `include_str!` from
+/// `$OUT_DIR/build_number.txt`, which is generated by `build.rs`.  No
+/// runtime file access is required.  The frontend displays this value in
+/// the window title bar and the "About" panel.
+///
+/// # Returns
+///
+/// A `String` containing the build version (e.g. `"0.2.31-abc1234"`).
 #[tauri::command]
 fn get_version_string() -> String {
     // This reads the file generated by build.rs at compile time
@@ -620,6 +885,16 @@ fn get_version_string() -> String {
 //******************************************************************************
 // run
 //******************************************************************************
+/// Application entry point — configures and starts the Tauri runtime.
+/// Does not return under normal operation.
+///
+/// Registers all plugins (log, opener, fs, dialog), app-managed state
+/// (`WatcherState`, `FileTrackerState`), and the full set of Tauri command
+/// handlers, then starts the event loop via `tauri::Builder::run`.  If the
+/// runtime cannot start, the process panics with an error message.  On
+/// mobile targets the function is annotated with
+/// `#[tauri::mobile_entry_point]` so the platform's native launcher
+/// (Android JNI / iOS UIApplicationMain) can call it directly.
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -666,6 +941,26 @@ pub fn run() {
 //******************************************************************************
 // setup_handler
 //******************************************************************************
+/// Tauri setup callback — runs once after the runtime initialises, before the event loop.
+///
+/// Collects non-flag CLI arguments (skipping `--color` injected by Cargo
+/// during `cargo tauri dev`).  For each collected file path — or for a
+/// single empty window when none are given — the function builds a
+/// `WebviewWindow` and injects file content via the
+/// `window.__LATTICE_INIT_DATA__` JavaScript global (Direct Push pattern),
+/// so the renderer has the document before first paint.  A `Destroyed`
+/// event listener is attached to each window so `file_state` can release
+/// its per-window tracking state when the window closes.
+///
+/// # Arguments
+///
+/// * `app` - Mutable reference to the Tauri `App` provided by the Tauri
+///   builder during setup.
+///
+/// # Returns
+///
+/// A `Result` containing `()` on success, or a boxed `Error` if a window
+/// cannot be built, causing Tauri to abort startup.
 fn setup_handler(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     // 1. Logic for File Association (Desktop)
     // Collect all non-flag arguments as file paths
@@ -785,501 +1080,10 @@ fn setup_handler(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
     Ok(())
 } // setup_handler END *****************************************************
 
-//*****************************************************************************
-//
-//*****************************************************************************
-///
-/// Consider moving to another file
-///
+
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    //*************************************************************************
-    // test_is_dir
-    //*************************************************************************
-    #[test]
-    fn test_is_dir() {
-        let temp_dir = tempfile::tempdir().unwrap();
-        let dir_path = temp_dir.path().to_string_lossy().to_string();
-
-        // Test existing directory
-        assert!(is_dir(dir_path.clone()));
-
-        // Test file (should not be dir)
-        let file_path = temp_dir.path().join("test_file.txt");
-        fs::write(&file_path, "content").unwrap();
-        assert!(!is_dir(file_path.to_string_lossy().to_string()));
-
-        // Test non-existent path
-        let non_existent = temp_dir.path().join("fake_dir");
-        assert!(!is_dir(non_existent.to_string_lossy().to_string()));
-    }
-    // test_is_dir END ********************************************************
-
-    //*************************************************************************
-    // test_vault_initialization
-    //*************************************************************************
-    #[test]
-    fn test_vault_initialization() {
-        let temp_dir = tempfile::tempdir().unwrap();
-        // Use temp_dir as home for this test
-        let home_dir = temp_dir.path();
-
-        let doc_path = temp_dir.path().join("docs").join("note.md");
-        fs::create_dir_all(doc_path.parent().unwrap()).unwrap();
-        fs::write(&doc_path, "note").unwrap();
-        let doc_path_str = doc_path.to_string_lossy().to_string();
-
-        // 1. Initialize Vault
-        let settings_path = initialize_vault_settings(doc_path_str.clone()).unwrap();
-
-        // Verify .lattice/settings.json created
-        assert!(Path::new(&settings_path).exists());
-        assert!(settings_path.contains(".lattice"));
-        assert!(settings_path.contains("settings.json"));
-
-        // 2. Find Vault Settings (should find the one we just made)
-        // Use internal function so we can pass mocked home
-        let found_path = find_vault_settings_file_internal(doc_path_str.clone(), home_dir).unwrap();
-        assert_eq!(found_path, Some(settings_path));
-
-        // 3. Find from distinct file in same dir
-        let doc2 = temp_dir.path().join("docs").join("note2.md");
-        fs::write(&doc2, "note2").unwrap();
-        let found_path_2 =
-            find_vault_settings_file_internal(doc2.to_string_lossy().to_string(), home_dir)
-                .unwrap();
-        assert!(found_path_2.is_some());
-
-        // 4. Test Fallback when no vault found (Force Fallback)
-        // Use a path that is unlikely to have a .lattice parent (e.g. C:\ or /)
-        // This forces traversal to fail and triggers the fallback logic using the provided home_dir (temp)
-        #[cfg(desktop)]
-        let root_path = dirs::home_dir().unwrap().to_string_lossy().to_string();
-        #[cfg(not(desktop))]
-        let root_path = "/".to_string();
-
-        // Note: We use the 'home_dir' variable from line 745 (temp_dir), NOT real home
-        let res = find_vault_settings_file_internal(root_path.to_string(), home_dir).unwrap();
-
-        let expected_fallback_path = home_dir.join(".lattice").join("settings.json");
-
-        // Ensure result matches the fallback path in our temp home
-        let real_vault_path = std::path::Path::new(&root_path)
-            .join(".lattice")
-            .join("settings.json");
-        let fallback_str = expected_fallback_path.to_string_lossy().to_string();
-        let real_str = real_vault_path.to_string_lossy().to_string();
-
-        let found = res.expect("Should find a vault path");
-
-        // Either fallback (temp dir) OR real existing vault (user home) is acceptable
-        if found == real_str {
-            // Found existing vault, fallback logic was skipped correctly due to existing vault
-        } else if found == fallback_str {
-            // Fallback used, verify file created
-            assert!(expected_fallback_path.exists());
-        } else {
-            panic!(
-                "Expected vault at {:?} or existing {:?}, but got {:?}",
-                fallback_str, real_str, found
-            );
-        }
-    }
-    // test_vault_initialization END *******************************************
-
-    //*************************************************************************
-    // test_save_image_and_base64
-    //*************************************************************************
-    #[test]
-    fn test_save_image_and_base64() {
-        let temp_dir = tempfile::tempdir().unwrap();
-        let doc_path = temp_dir.path().join("image_doc.md");
-        fs::write(&doc_path, "# Doc").unwrap();
-        let doc_path_str = doc_path.to_string_lossy().to_string();
-
-        // Tiny 1x1 GIF Base64
-        let b64_gif = "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
-
-        // 1. Save Image
-        let rel_path = save_image(doc_path_str.clone(), b64_gif.to_string()).unwrap();
-
-        // Verify structure: [filename]_assets/img_[timestamp].png
-        assert!(rel_path.contains("image_doc_assets"));
-        assert!(rel_path.ends_with(".png"));
-
-        // Construct absolute path to verify existence
-        let parent = doc_path.parent().unwrap();
-        let abs_asset_path = parent.join(&rel_path);
-        assert!(abs_asset_path.exists());
-
-        // 2. Read back as Base64
-        let read_b64_res = read_file_base64(abs_asset_path.to_string_lossy().to_string()).unwrap();
-
-        // Should start with data:image/png;base64,... (save_image forces png extension logic in our code currently?
-        // Actually save_image saves as .png, so read should detect png)
-        assert!(read_b64_res.starts_with("data:image/png;base64,"));
-
-        // Verify content (loose check since we might re-encode or it might not be bit-exact if image lib touches it)
-        // But here we just wrote bytes. Wait, save_image decodes b64 to bytes, then writes.
-        // read_file_base64 reads bytes, encodes to b64. Should be identical.
-        let payload = read_b64_res.split(',').nth(1).unwrap();
-        assert_eq!(payload, b64_gif);
-    }
-    // test_save_image_and_base64 END ******************************************
-
-    //**************************************************************************
-    // test_generate_new_window_label
-    //**************************************************************************
-    #[test]
-    fn test_generate_new_window_label() {
-        let label1 = generate_new_window_label();
-        std::thread::sleep(std::time::Duration::from_millis(1)); // Ensure time passes
-        let label2 = generate_new_window_label();
-
-        assert!(!label1.is_empty());
-        assert!(!label2.is_empty());
-        assert_ne!(label1, label2); // should differ
-    } // test_generate_new_window_label END ************************************
-
-    //**************************************************************************
-    // test_parse_launch_args
-    //**************************************************************************
-    #[test]
-    fn test_parse_launch_args() {
-        let no_args = vec!["app_binary".to_string()];
-        assert_eq!(parse_launch_args(no_args), None);
-
-        let file_arg = vec!["app_binary".to_string(), "doc.md".to_string()];
-        assert_eq!(parse_launch_args(file_arg), Some("doc.md".to_string()));
-
-        let flag_arg = vec!["app_binary".to_string(), "--flag".to_string()];
-        assert_eq!(parse_launch_args(flag_arg), None);
-
-        // Multi arg, takes first if not flag
-        let multi = vec![
-            "app_binary".to_string(),
-            "doc.md".to_string(),
-            "--other".to_string(),
-        ];
-        assert_eq!(parse_launch_args(multi), Some("doc.md".to_string()));
-    }
-    // test_parse_launch_args END **********************************************
-
-    //**************************************************************************
-    // test_debug_file_probe_logic
-    //**************************************************************************
-    #[test]
-    fn test_debug_file_probe_logic() {
-        let temp_dir = tempfile::tempdir().unwrap();
-        let file_path = temp_dir.path().join("probe.txt");
-        fs::write(&file_path, "probe me").unwrap();
-
-        let path_str = file_path.to_string_lossy().to_string();
-        let log = debug_file_probe(path_str);
-
-        assert!(log.contains("Probe for:"));
-        assert!(log.contains("Is File: true"));
-        assert!(log.contains("Len: 8")); // "probe me" length
-
-        let missing = temp_dir.path().join("missing.txt");
-        let log_missing = debug_file_probe(missing.to_string_lossy().to_string());
-        assert!(log_missing.contains("Exists: false"));
-    }
-    // test_debug_file_probe_logic END *************************************
-
-    //**************************************************************************
-    // test_debug_file_probe_valid_image
-    //**************************************************************************
-    /// Exercises the "Integrity: OK" success path inside debug_file_probe.
-    /// Uses a minimal but valid 1×1 transparent GIF (same bytes as the known
-    /// base64 constant used elsewhere in the test suite).
-    #[test]
-    fn test_debug_file_probe_valid_image() {
-        let gif_bytes = general_purpose::STANDARD
-            .decode("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
-            .unwrap();
-
-        let temp_dir = tempfile::tempdir().unwrap();
-        let file_path = temp_dir.path().join("tiny.gif");
-        fs::write(&file_path, &gif_bytes).unwrap();
-
-        let log = debug_file_probe(file_path.to_string_lossy().to_string());
-        assert!(
-            log.contains("Integrity: OK"),
-            "Expected successful image decode, got:\n{}",
-            log
-        );
-        assert!(log.contains("Dimensions: 1x1"));
-    }
-    // test_debug_file_probe_valid_image END ***********************************
-
-    //**************************************************************************
-    // test_debug_file_probe_non_image_fails_decode
-    //**************************************************************************
-    /// Exercises the "Integrity: FAILED" decode-error branch.
-    #[test]
-    fn test_debug_file_probe_non_image_fails_decode() {
-        let temp_dir = tempfile::tempdir().unwrap();
-        let file_path = temp_dir.path().join("not_an_image.dat");
-        fs::write(&file_path, b"this is plain text, not a valid image format").unwrap();
-
-        let log = debug_file_probe(file_path.to_string_lossy().to_string());
-        assert!(
-            log.contains("Integrity: FAILED"),
-            "Expected failed decode, got:\n{}",
-            log
-        );
-    }
-    // test_debug_file_probe_non_image_fails_decode END ************************
-
-    //**************************************************************************
-    // test_debug_file_probe_missing_path_shows_parent
-    //**************************************************************************
-    /// When the path does not exist the probe should log its parent directory.
-    #[test]
-    fn test_debug_file_probe_missing_path_shows_parent() {
-        let temp_dir = tempfile::tempdir().unwrap();
-        let missing = temp_dir.path().join("does_not_exist.bin");
-
-        let log = debug_file_probe(missing.to_string_lossy().to_string());
-        assert!(log.contains("Exists: false"));
-        assert!(log.contains("Parent"), "Expected parent info in log:\n{}", log);
-    }
-    // test_debug_file_probe_missing_path_shows_parent END ********************
-
-    //**************************************************************************
-    // test_trace_log_does_not_panic
-    //**************************************************************************
-    #[test]
-    fn test_trace_log_does_not_panic() {
-        // trace_log is a thin println! wrapper; the only contract is no panic
-        trace_log("test message from unit test".to_string());
-    }
-    // test_trace_log_does_not_panic END ***************************************
-
-    //**************************************************************************
-    // test_read_file_base64_mime_types
-    //**************************************************************************
-    /// Verifies every mime-type branch in read_file_base64.
-    #[test]
-    fn test_read_file_base64_mime_types() {
-        let temp_dir = tempfile::tempdir().unwrap();
-        let cases: &[(&str, &str)] = &[
-            ("test.jpg",  "image/jpeg"),
-            ("test.jpeg", "image/jpeg"),
-            ("test.gif",  "image/gif"),
-            ("test.svg",  "image/svg+xml"),
-            ("test.webp", "image/webp"),
-            ("test.png",  "image/png"),
-            ("test.bin",  "image/png"), // unknown extension falls back to png
-        ];
-        for (filename, expected_mime) in cases {
-            let path = temp_dir.path().join(filename);
-            fs::write(&path, b"fake bytes").unwrap();
-            let result = read_file_base64(path.to_string_lossy().to_string())
-                .expect("read_file_base64 should succeed");
-            assert!(
-                result.starts_with(&format!("data:{};base64,", expected_mime)),
-                "Wrong mime for '{}': got prefix '{}'",
-                filename,
-                &result[..result.len().min(50)]
-            );
-        }
-    }
-    // test_read_file_base64_mime_types END ************************************
-
-    //**************************************************************************
-    // test_read_file_base64_missing_file_returns_err
-    //**************************************************************************
-    #[test]
-    fn test_read_file_base64_missing_file_returns_err() {
-        let result = read_file_base64("/nonexistent_xyz_lattice/file.png".to_string());
-        assert!(result.is_err());
-    }
-    // test_read_file_base64_missing_file_returns_err END *********************
-
-    //**************************************************************************
-    // test_initialize_vault_settings_with_directory_path
-    //**************************************************************************
-    /// When the supplied path is a directory (not a file) the function must
-    /// create `.lattice/settings.json` inside that directory.
-    #[test]
-    fn test_initialize_vault_settings_with_directory_path() {
-        let temp_dir = tempfile::tempdir().unwrap();
-        let dir_path = temp_dir.path().to_string_lossy().to_string();
-
-        let result = initialize_vault_settings(dir_path);
-        assert!(result.is_ok(), "Expected Ok, got {:?}", result);
-        let settings_path = result.unwrap();
-        assert!(settings_path.contains(".lattice"));
-        assert!(settings_path.ends_with("settings.json"));
-        assert!(Path::new(&settings_path).exists());
-    }
-    // test_initialize_vault_settings_with_directory_path END *****************
-
-    //**************************************************************************
-    // test_initialize_vault_settings_idempotent
-    //**************************************************************************
-    /// Calling twice on the same path must not error and must return the same
-    /// settings path both times (existing settings.json is not overwritten).
-    #[test]
-    fn test_initialize_vault_settings_idempotent() {
-        let temp_dir = tempfile::tempdir().unwrap();
-        let file_path = temp_dir.path().join("doc.md");
-        fs::write(&file_path, "").unwrap();
-        let path_str = file_path.to_string_lossy().to_string();
-
-        let r1 = initialize_vault_settings(path_str.clone()).unwrap();
-        let r2 = initialize_vault_settings(path_str).unwrap();
-        assert_eq!(r1, r2, "Second call must return the same settings path");
-    }
-    // test_initialize_vault_settings_idempotent END ***************************
-
-    //**************************************************************************
-    // test_find_vault_internal_directory_input
-    //**************************************************************************
-    /// When file_path is itself a directory that contains a .lattice folder,
-    /// the function must find the existing vault without climbing to the parent.
-    #[test]
-    fn test_find_vault_internal_directory_input() {
-        let temp_dir = tempfile::tempdir().unwrap();
-        let home = temp_dir.path();
-
-        // Pre-create the vault settings directory
-        let lattice_dir = temp_dir.path().join(".lattice");
-        fs::create_dir_all(&lattice_dir).unwrap();
-
-        // Pass the temp dir itself (a directory, not a file) as the search start
-        let result = find_vault_settings_file_internal(
-            temp_dir.path().to_string_lossy().to_string(),
-            home,
-        );
-        assert!(result.is_ok());
-        let found = result.unwrap().expect("Should find a settings path");
-        assert!(found.ends_with("settings.json"), "Expected settings.json, got: {}", found);
-    }
-    // test_find_vault_internal_directory_input END ****************************
-
-    //**************************************************************************
-    // test_find_vault_settings_file_fallback_to_home
-    //**************************************************************************
-    /// Exercises find_vault_settings_file_internal when the file has no .lattice
-    /// in its own directory.  The function either finds an ancestor .lattice (valid)
-    /// or exhausts the walk and falls back to home_dir (also valid).  We verify
-    /// the behavioural contract — Ok(Some(path)) where path is an existing
-    /// settings.json — without assuming which branch fired, because the loop
-    /// walks the real filesystem and a system-level .lattice may exist above the
-    /// temp dir on the developer's machine.
-    #[test]
-    fn test_find_vault_settings_file_fallback_to_home() {
-        let isolated_root = tempfile::tempdir().unwrap();
-        let sub = isolated_root.path().join("deep").join("subdir");
-        fs::create_dir_all(&sub).unwrap();
-        let file_path = sub.join("note.md");
-        fs::write(&file_path, "hello").unwrap();
-
-        let home_temp = tempfile::tempdir().unwrap();
-
-        let result = find_vault_settings_file_internal(
-            file_path.to_string_lossy().to_string(),
-            home_temp.path(),
-        );
-
-        assert!(result.is_ok(), "Function must not return an error");
-        let found = result.unwrap().expect("Must return Some settings path");
-        assert!(
-            found.ends_with("settings.json"),
-            "Returned path must end with settings.json, got: {}",
-            found
-        );
-        assert!(
-            Path::new(&found).exists(),
-            "settings.json must exist on disk at: {}",
-            found
-        );
-    }
-    // test_find_vault_settings_file_fallback_to_home END **********************
-
-    //**************************************************************************
-    // test_save_image_assets_dir_already_exists
-    //**************************************************************************
-    /// Covers the branch inside save_image where assets_dir already exists
-    /// (the `if !assets_dir.exists()` branch evaluates to false).
-    #[test]
-    fn test_save_image_assets_dir_already_exists() {
-        let temp_dir = tempfile::tempdir().unwrap();
-        let doc_path = temp_dir.path().join("existing_doc.md");
-        fs::write(&doc_path, "# doc").unwrap();
-        let doc_str = doc_path.to_string_lossy().to_string();
-        let b64 = "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
-
-        // First call — creates the assets directory
-        let r1 = save_image(doc_str.clone(), b64.to_string()).unwrap();
-
-        // Second call — assets directory now already exists; exercises the else branch
-        let r2 = save_image(doc_str.clone(), b64.to_string()).unwrap();
-
-        // Both paths must sit inside the assets directory
-        assert!(r1.contains("existing_doc_assets"));
-        assert!(r2.contains("existing_doc_assets"));
-
-        let p1 = temp_dir.path().join(&r1);
-        let p2 = temp_dir.path().join(&r2);
-        assert!(p1.exists());
-        assert!(p2.exists());
-    }
-    // test_save_image_assets_dir_already_exists END ***************************
-
-    //**************************************************************************
-    // test_debug_file_probe_short_file_no_header_hex
-    //**************************************************************************
-    /// Covers the `else` branch of `if bytes.len() >= 4` in debug_file_probe.
-    /// A file shorter than 4 bytes will fail image decode AND skip the hex header.
-    #[test]
-    fn test_debug_file_probe_short_file_no_header_hex() {
-        let temp_dir = tempfile::tempdir().unwrap();
-        let file_path = temp_dir.path().join("two_bytes.dat");
-        fs::write(&file_path, b"AB").unwrap(); // 2 bytes — fails decode, < 4 bytes
-
-        let log = debug_file_probe(file_path.to_string_lossy().to_string());
-
-        assert!(log.contains("Integrity: FAILED"));
-        // Header hex line must NOT appear because len < 4
-        assert!(
-            !log.contains("Header (Hex)"),
-            "Should not log header hex for files < 4 bytes, got:\n{}",
-            log
-        );
-    }
-    // test_debug_file_probe_short_file_no_header_hex END **********************
-
-    //**************************************************************************
-    // test_get_version_string_not_empty
-    //**************************************************************************
-    /// get_version_string reads a compile-time constant via include_str!.
-    /// The build script always generates the file, so this is safe to call in tests.
-    #[test]
-    fn test_get_version_string_not_empty() {
-        let v = get_version_string();
-        assert!(!v.trim().is_empty(), "Version string should not be blank");
-    }
-    // test_get_version_string_not_empty END ***********************************
-
-    //**************************************************************************
-    // test_maybe_sabotage_file_noop
-    //**************************************************************************
-    /// In production builds (cfg not integration_test) maybe_sabotage_file is a
-    /// no-op. Just calling it proves the function body is reachable.
-    #[test]
-    fn test_maybe_sabotage_file_noop() {
-        // Should return immediately without side-effects
-        super::test_utils::maybe_sabotage_file("irrelevant_path.md");
-    }
-    // test_maybe_sabotage_file_noop END ***************************************
-}
-// mod END *****************************************************************
+#[path = "lib_tests.rs"]
+mod tests;
 
 //******************************************************************************
 // test_utils module (Hidden in Production)
