@@ -37,40 +37,6 @@ Instead of expensive automated mobile farms, use **Manual Verification** on Simu
 1.  Run `tauri android dev` to launch the Emulator.
 2.  Manually verify the "Settings" window (which has unique code for mobile).
 3.  Trust the Unit Tests for the calculation/logic layers.
-
----
-
-## Action Plan
-
-### Phase 1: Enable Frontend Unit Testing (Suggested First Step)
-1.  Install `vitest`, `@testing-library/react`, `jsdom`.
-2.  Create a `setupTests.ts` to mock Tauri.
-3.  Write a simple test for a component.
-
-### Phase 2: Enable Backend Testing
-1.  Add `#[test]` modules to your Rust code (`main.rs` or `lib.rs`).
-2.  Test the `run_my_command` functions directly.
-
-### Phase 3: Automation Scripts
-Update `package.json` to include:
-```json
-"scripts": {
-  "test": "vitest",
-  "test:rust": "cd src-tauri && cargo test",
-  "test:all": "npm run test && npm run test:rust"
-}
-```
-
-## Example: Mocking Tauri in Vitest
-
-```typescript
-// src/__mocks__/@tauri-apps/api/core.ts
-export const invoke = vi.fn((cmd, args) => {
-  if (cmd === 'read_file_base64') return Promise.resolve('data:image/png;base64,...');
-  return Promise.resolve(null);
-});
-```
-
 ---
 
 ## Implemented Test Pipeline (`build-test.ps1` / `build-test.sh`)
