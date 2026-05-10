@@ -612,10 +612,12 @@ jobs:
           --jq '.assets[] | [.name, .browser_download_url, .size] | @tsv')
 
         # Header
-        printf "" \
-          "## Downloads" "" \
-          "| File | Size |" \
-          "|------|------|" > "$OUT"
+        printf "# Lattice ${VERSION}" "" \
+               "**Released:** ${DATE}" "" \
+               "$( [ -f release-notes.md ] && cat release-notes.md )" "" \
+               "## Downloads" "" \
+               "| File | Size |" \
+               "|:-----|-----:|" > "$OUT"
 
         # One row per asset, size in MB
         while IFS=$'\t' read -r name url size_bytes; do

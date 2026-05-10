@@ -2,22 +2,18 @@
 
 All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
-
 ---
 
-<!-- older versions below 
-### Added    
-### Fixed
 
-- N/A
--->
+---
 ## v0.2.32
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Fix: Release script fixed
 - CHANGELOG.md merged
 - Update CHANGELOG for v0.2.31 prep for x.32
 
-
+---
 ## v0.2.31
 ### Changes
 - Add comprehensive testing strategy document
@@ -26,6 +22,7 @@ Edit the section for your next version **before** pushing the release tag like v
 - Refactor tests into separate/dedicated modules
 - Fix: Add tests for file state, table formatting, and TOC
 
+---
 ## v0.2.30
 ### Changes
 - Bump **tauri** from 2.11.0 to 2.11.1 in /src-tauri in the cargo group across 1 directory
