@@ -9,6 +9,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.32
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Add AntivirusOnUrl workflow to GitHub Actions
 - Fix: Release script fixed
 - CHANGELOG.md merged
 - Update CHANGELOG for v0.2.31 prep for x.32
