@@ -623,6 +623,19 @@ jobs:
         while IFS=$'\t' read -r name url size_bytes; do
           size_mb=$(awk "BEGIN {printf \"%.1f MB\", $size_bytes/1048576}")
           printf '| [%s](%s) | %s |\n' "$name" "$url" "$size_mb" >> "$OUT"
+
+          # Antivisrus scan #########################################
+          RESPONSE=$( curl -L \
+                    -X POST \
+                    -H "Accept: application/vnd.github+json" \
+                    -H "Authorization: Bearer $GH_EVTRIGGER" \
+                    -H "X-GitHub-Api-Version: 2022-11-28"    \
+                    "https://api.github.com/repos/${{ github.repository }}/actions/workflows/AntivirusOnUrl.yml/dispatches"                                                    \
+                    -d '{"ref":"${{ github.ref_name }}","inputs":{"url2scan":"$url","submitted_by":"$name"}}' \
+                 )
+          echo "### response from triggering Antivirus scan workflow is: (may be empty) "
+          echo "$RESPONSE" | jq .
+
         done <<< "$ASSETS_JSON"
 
         # Footer
