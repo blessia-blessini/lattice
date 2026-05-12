@@ -597,7 +597,8 @@ jobs:
     ################################################################
     - name: 905. Generate index.md and push to lattice-docs-releases
       env:
-        GH_TOKEN: ${{ secrets.GH_POST_AVTRIGGER }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN2: ${{ secrets.GH_POST_AVTRIGGER }}
       shell: bash
       run: |
         VERSION="${{ steps.version.outputs.VERSION }}"
@@ -628,7 +629,7 @@ jobs:
           RESPONSE=$( curl -L \
                     -X POST \
                     -H "Accept: application/vnd.github+json" \
-                    -H "Authorization: Bearer $GH_EVTRIGGER" \
+                    -H "Authorization: Bearer $GH_TOKEN2" \
                     -H "X-GitHub-Api-Version: 2022-11-28"    \
                     "https://api.github.com/repos/${{ github.repository }}/actions/workflows/AntivirusOnUrl.yml/dispatches"                                                    \
                     -d '{"ref":"${{ github.ref_name }}","inputs":{"url2scan":"$url","submitted_by":"$name"}}' \
