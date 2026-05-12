@@ -6,19 +6,20 @@ Edit the section for your next version **before** pushing the release tag like v
 
 
 ---
-## v0.2.32
+## v0.2.33
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
-- Bump version to 0.2.32
+- Finalize v0.2.33
+
+---
+## v0.2.32
+### Changes
 - npm update and cargo update
 - Add read permissions for AntivirusOnUrl workflow
 - Update GitHub token in build workflow
-- Update GH_TOKEN in buildAndTest workflow
-- Trigger antivirus scan for download links
-- Add AntivirusOnUrl workflow to GitHub Actions
+- WIP: Initial Trigger antivirus scan for download links
+- WIP: Add AntivirusOnUrl workflow to GitHub Actions
 - Fix: Release script fixed
-- CHANGELOG.md merged
-- Update CHANGELOG for v0.2.31 prep for x.32
 
 ---
 ## v0.2.31
