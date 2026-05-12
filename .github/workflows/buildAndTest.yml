@@ -597,7 +597,7 @@ jobs:
     ################################################################
     - name: 905. Generate index.md and push to lattice-docs-releases
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ secrets.GH_POST_AVTRIGGER }}
       shell: bash
       run: |
         VERSION="${{ steps.version.outputs.VERSION }}"

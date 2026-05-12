@@ -9,6 +9,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.32
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Update GH_TOKEN in buildAndTest workflow
 - Trigger antivirus scan for download links
 - Add AntivirusOnUrl workflow to GitHub Actions
 - Fix: Release script fixed
