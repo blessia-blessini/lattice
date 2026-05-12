@@ -1,0 +1,162 @@
+#################################################
+# File: .github/workflows/AntivirusOnUrl.yml
+# Copyright: 2024, 2025, 2026 - Owner of blessio.com
+# Copyright (c): 2026 - blessini.com
+# License: MIT
+#################################################
+# Used the starter here:
+# BUILDS KeepasXC
+#################################################
+name: AntivirusOnUrl
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [ "*" ]
+
+  workflow_dispatch:
+    # You can define inputs that the 'curl' command can pass
+    inputs:
+      url2scan:
+        description: 'URL to CRAW'
+        required: true
+        default: ''
+      submitted_by:
+        description: 'Submitted by'
+        required: false
+        default: 'unknown'
+
+jobs:
+  AntivirusOnUrl:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: 785.ANTIVIRUS SCAN - THERE MAY BE MALWARE IN BUILT BINARIES because of the wide variety of 3rd party libraries used over VCPKG
+        if: ${{ github.event.inputs.url2scan != '' }}
+        shell: bash
+        id: ANTIVIRUS_SCAN
+        continue-on-error: false
+        env:
+          VT_API_KEY: ${{ secrets.VT_API_KEY }}
+          BIN_DOWNLOADS: ${{ github.event.inputs.url2scan }}
+        run: |
+          echo "### Starting ANTIVIRUS SCAN on URL: ${{ env.BIN_DOWNLOADS }}"
+          echo "   SUBMITTED by ${{ github.event.inputs.submitted_by }} "
+          echo "   ****************************************************************"
+
+          ANTIVIRUS_SCAN_REQ=$(curl --request POST --url "https://www.virustotal.com/api/v3/urls"        \
+            --header 'accept: application/json' --header 'content-type: application/x-www-form-urlencoded' \
+            --header "x-apikey: $VT_API_KEY" --data url="${{ env.BIN_DOWNLOADS }}" )
+          echo ***REQ   $ANTIVIRUS_SCAN_REQ
+          ANTIVIRUS_SCAN_ID=$( (echo $ANTIVIRUS_SCAN_REQ) | jq -r '.data.id')
+          echo ***SCANID   $ANTIVIRUS_SCAN_ID
+          ANTIVIRUS_SCAN_REPORT_URL=$(echo $ANTIVIRUS_SCAN_REQ | jq -r '.data.links.self')
+          echo ***URL= $ANTIVIRUS_SCAN_REPORT_URL
+          echo "ANTIVIRUS_SCAN_REPORT_URL=$ANTIVIRUS_SCAN_REPORT_URL" >> $GITHUB_OUTPUT
+          echo "****************************************************************"
+
+          echo "Submitted files for antivirus scan wait a min before picking the json result report ..."
+          ANALYSIS_ID="$ANTIVIRUS_SCAN_ID" # This is the ID you get after *submitting* the URL
+
+          # The API endpoint to check. This example uses the VirusTotal v3 analysis endpoint.
+          API_ENDPOINT="https://www.virustotal.com/api/v3/analyses/$ANALYSIS_ID"
+
+          # How many seconds to wait between each check.
+          # Be careful not to set this too low, or you might get rate-limited (blocked) by the API.
+          POLL_INTERVAL=30
+          # ---------------------
+          echo "Starting to poll for analysis: $ANALYSIS_ID"
+          echo "Checking status every $POLL_INTERVAL seconds..."
+
+          # This is an infinite loop. We will use 'break' to exit it when the job is done.
+          # waiting for the remote server to answer is not very good idea to end a loop
+          TIMELIMIT_IN_MINUTES=20 # 20 Min
+          START_TIME=$(date +%s)
+
+          while true; do
+
+              # make a boolean expression that calculates if since START_TIME we have passed more than
+              if [[ $(($(date +%s) - START_TIME)) -gt $((TIMELIMIT_IN_MINUTES * 60)) ]]; then
+                echo "Time limit of ${TIMELIMIT_IN_MINUTES} minutes has been exceeded!"
+                break # handle the timeout
+              else
+                sleep 1
+              fi
+
+
+              # 1. Call the API
+              # -sS:  -s (silent) hides the progress bar
+              #       -S (show error) still shows errors if curl fails
+              # -H:   Sends the required 'x-apikey' header for authentication
+              RESPONSE=$(curl -sS -H "x-apikey: $VT_API_KEY" "$API_ENDPOINT")
+
+              # 2. Extract the status using jq
+              #    '.data.attributes.status' is the path to the status in the VT v3 JSON.
+              #    You will change this path based on your API's JSON structure.
+              #    We use '|| "error"' as a fallback in case the 'status' field doesn't exist.
+              STATUS=$(echo "$RESPONSE" | jq -r '.data.attributes.status // "error"')
+
+              # 3. Check the status and decide what to do
+              case "$STATUS" in
+                  "completed")
+                      # --- SUCCESS ---
+                      # The job is done. Print a success message and break the loop.
+                      echo "" # Newline
+                      echo "Status is: COMPLETED!"
+                      echo "-----------------------"
+                      echo "Final JSON Report:"
+                      echo "$RESPONSE" | jq .  # Pretty-print the final JSON
+                      break # Exits the 'while true' loop
+                      ;;
+
+                  "queued" | "in-progress")
+                      # --- PENDING ---
+                      # The job is still running. Print a waiting message and sleep.
+                      # 'printf' with '\r' moves the cursor to the start of the line
+                      # for a clean, single-line "waiting" animation.
+                      printf "Status is: %s... (waiting %ss) \r" "$STATUS" "$POLL_INTERVAL"
+                      sleep "$POLL_INTERVAL"
+                      ;;
+
+                  *)
+                      # --- ERROR ---
+                      # Something went wrong (e.g., status is "failed", "error", or jq failed)
+                      echo "" # Newline
+                      echo "Error: Received unknown status '$STATUS' or bad response."
+                      echo "-----------------------"
+                      echo "Full Error Response:"
+                      echo "$RESPONSE" | jq .
+                      exit 1 # Exit the script with an error code
+                      ;;
+              esac
+          done
+          echo "" # Newline
+          echo "Polling finished."
+          ANTIVIRUS_SCAN_RES=$( echo "$RESPONSE" | jq .  )
+          echo "********************************************************"
+          echo ***SCANRES= "$ANTIVIRUS_SCAN_RES"
+          echo "********************************************************"
+          echo "ANTIVIRUS_SCAN_RES=$RESPONSE"  >> GITHUB_OUTPUT
+
+
+          # Count any results that are NOT "clean" or "unrated"
+          ALL_CLEAN=$(echo "$ANTIVIRUS_SCAN_RES" | jq -r '[.data.attributes.results[].result] | all(. == "clean" or . == "unrated")')
+
+
+          echo "### ANTIVIRUS SCAN on URL: ${{ env.BIN_DOWNLOADS }} finished" >> $GITHUB_STEP_SUMMARY
+          echo " - SUBMITTED by ${{ github.event.inputs.submitted_by }} " >> $GITHUB_STEP_SUMMARY
+
+          if [ "$ALL_CLEAN" = "false" ]; then
+              echo "Warning: Found results that are not clean!"
+              echo -e " - 🔴 Some THREATS DETECTED. See detailed json included in log" >> $GITHUB_STEP_SUMMARY
+              exit 1 ### see json for errors
+          else
+              echo "All results are 'clean' or 'unrated'." >> $GITHUB_STEP_SUMMARY
+              echo -e " - 🟢  NO THREATS DETECTED " >> $GITHUB_STEP_SUMMARY
+          fi
+
+      # - 🟢 represents a green circle.
+      # - 🟡 represents a yellow circle.
+      # - 🔴 represents a red circle.
