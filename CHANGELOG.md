@@ -9,6 +9,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.32
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- npm update and cargo update
 - Add read permissions for AntivirusOnUrl workflow
 - Update GitHub token in build workflow
 - Update GH_TOKEN in buildAndTest workflow
