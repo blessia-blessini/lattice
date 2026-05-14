@@ -1,8 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mermaid from 'mermaid';
 
-interface MermaidProps {
+/** Props for the {@link Mermaid} diagram renderer. */
+export interface MermaidProps {
+  /** Mermaid diagram definition string (e.g. a `graph TD` or `sequenceDiagram` block). */
   chart: string;
+  /** Colour scheme passed to Mermaid's initializer (`'dark'` → Mermaid dark theme, `'light'` → default). */
   theme: 'dark' | 'light';
 }
 
