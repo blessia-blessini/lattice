@@ -17,14 +17,23 @@ import { TableFormat } from '../services/TableFormat';
 import { symbolPicker } from '../editor-extensions/symbol-picker';
 import { tocTooltip } from '../editor-extensions/toc-tooltip';
 
-interface EditorProps {
+/** Props for the {@link Editor} component. */
+export interface EditorProps {
+    /** UI colour scheme applied to the CodeMirror theme and gutter. */
     theme: 'light' | 'dark';
+    /** When true, long lines soft-wrap instead of scrolling horizontally. */
     wordWrap: boolean;
-    fontSize: number; // percentage, e.g. 100 = 100%
-    highlightMark: boolean; // Render ==text== with a highlighted background
+    /** Font-size percentage applied to the editor content and gutters (e.g. `100` = 100%). */
+    fontSize: number;
+    /** When true, `==text==` patterns are rendered with a highlighted background. */
+    highlightMark: boolean;
+    /** Called on every document change with the full updated text. */
     onChange?: (doc: string) => void;
+    /** Initial document text loaded into the editor on mount. */
     initialDoc?: string;
+    /** Absolute path of the file currently open; used to resolve relative image paste targets. */
     currentFilePath?: string | null;
+    /** Called whenever the dirty state (unsaved changes) transitions. */
     onDirtyChange?: (isDirty: boolean) => void;
 }
 
@@ -59,13 +68,21 @@ const monoHighlightStyle = HighlightStyle.define([
 //******************************************************************************
 // Editor
 //******************************************************************************
+/** Imperative API exposed by {@link Editor} via `React.forwardRef`. */
 export interface EditorHandle {
+    /** Resets the dirty-tracking baseline to the current document state. */
     markAsSaved: () => void;
+    /** Returns the current document text. */
     getContent: () => string;
+    /** Returns the CodeMirror scroll container element, or `null` when unmounted. */
     getScrollDOM: () => HTMLElement | null;
+    /** Returns the 1-based line number of the topmost visible line, or `null` when unmounted. */
     getTopVisibleLine: () => number | null;
+    /** Scrolls the editor so that `line` (1-based) is at the top of the viewport. */
     scrollToLine: (line: number) => void;
+    /** Undoes the last edit, preserving CodeMirror history. */
     undo: () => void;
+    /** Redoes the last undone edit. */
     redo: () => void;
     /**
      * Toggle a GFM task-list marker on the given 1-based source line.

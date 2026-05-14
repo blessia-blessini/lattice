@@ -2,17 +2,29 @@ import React, { useState } from 'react';
 import { FileSystem } from '../services/FileSystem';
 import { invoke } from '@tauri-apps/api/core';
 
-interface SettingsProps {
+/** Props for the {@link Settings} panel component. */
+export interface SettingsProps {
+    /** Current default theme shown in the toggle on mount. */
     defaultTheme: 'light' | 'dark';
+    /** Called when the user flips the theme toggle. */
     onDefaultThemeChange: (theme: 'light' | 'dark') => void;
+    /** Current word-wrap state shown in the toggle on mount. */
     wordWrap: boolean;
+    /** Called when the user flips the word-wrap toggle. */
     onWordWrapChange: (wrap: boolean) => void;
+    /** Whether the editor auto-saves when it loses focus (display-only in this panel). */
     saveOnBlur: boolean;
+    /** Directory used when creating or opening daily notes. */
     dailyNotesPath: string;
+    /** Called on every keystroke in the daily-notes path field. */
     onDailyNotesPathChange: (path: string) => void;
+    /** Current `==highlight mark==` rendering state shown in the toggle. */
     highlightMark: boolean;
+    /** Called when the user flips the highlight-mark toggle. */
     onHighlightMarkChange: (enabled: boolean) => void;
+    /** Optional override for the close button; falls back to `close_settings_window` Tauri command. */
     onClose?: () => void;
+    /** Absolute path of the settings file; shown at the bottom of the panel. */
     settingsPath: string;
 }
 

@@ -138,7 +138,7 @@ jobs:
           echo "********************************************************"
           echo ***SCANRES= "$ANTIVIRUS_SCAN_RES"
           echo "********************************************************"
-          echo "ANTIVIRUS_SCAN_RES=$RESPONSE"  >> GITHUB_OUTPUT
+          echo "ANTIVIRUS_SCAN_RES=$RESPONSE"  >> $GITHUB_OUTPUT
 
 
           # Count any results that are NOT "clean" or "unrated"

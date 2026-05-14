@@ -2,19 +2,28 @@ import React, { useState, useRef, useEffect } from 'react';
 
 
 
-interface MenuProps {
+/** Props for the {@link Menu} dropdown component. */
+export interface MenuProps {
+    /** Flat or nested list of items to render in the dropdown. */
     items: MenuItem[];
+    /** UI colour scheme used for background, text, and hover colours. */
     theme: 'light' | 'dark';
+    /** Optional inline styles forwarded to the toggle button. */
     buttonStyle?: React.CSSProperties;
 }
 
 //******************************************************************************
 // Menu
 //******************************************************************************
+/** A single entry in a {@link Menu} or nested submenu. */
 export interface MenuItem {
+    /** Visible label text. Use `'---'` to render a horizontal separator. */
     label: string;
+    /** Action invoked when the item is clicked (ignored when `submenu` is set). */
     onClick?: () => void;
+    /** When true the item is rendered muted and clicks are ignored. */
     disabled?: boolean;
+    /** Nested items rendered as an inline sub-list below this entry. */
     submenu?: MenuItem[];
     isOpen?: boolean; // For internal state tracking if needed, but better to control via local state map or just simple modification
     /**
