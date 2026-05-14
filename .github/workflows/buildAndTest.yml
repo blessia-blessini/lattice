@@ -377,8 +377,9 @@ jobs:
     ################################################################
     - name: 380. Generate Documentation
       # This runs on all platforms (and generates the same content for docs)
-      #    but we only upload docs generated from linux
+      #    but we only upload docs generated from linux (most cost effective on GitHub Actions)
       if: matrix.config.platform == 'linux-desktop'
+      shell: bash
       run: |
         # 1. Generate Build Number with Prefix
         # Utility is already built and placed in root by step 151 (setup_env.sh)
@@ -403,7 +404,7 @@ jobs:
 
         # Move output
         mv src-tauri/target/doc docs/gen/backend
-      shell: bash
+
 
     ################################################################
     # 410 / Upload Documentation
@@ -415,7 +416,7 @@ jobs:
       with:
         name: DOCS
         path: |
-          docs/gen
+          docs/
 
     ################################################################
     # 415 / Upload Coverage HTML report (Linux only)
@@ -449,7 +450,7 @@ jobs:
       run: |
         echo "### ${{ matrix.config.download_name }} BUILD" >> $GITHUB_STEP_SUMMARY
         echo " - Download built executable file(s) from: ${{ steps.a-download-exec.outputs.artifact-url }}" >>  $GITHUB_STEP_SUMMARY
-        # echo " - Download built executable file(s) from: ${{ steps.a-download-exec.outputs.artifact-url }}" >>  $GITHUB_STEP_SUMMARY
+        echo " - Download DOC(s) from: ${{ steps.DOCS.outputs.artifact-url }}" >>  $GITHUB_STEP_SUMMARY
 
 
       # - `\u26A0` is the warning emoji  ⚠️.
@@ -459,9 +460,10 @@ jobs:
       # - 🟡 is a yellow circle.
       # - 🔴 is a red circle.
 
-  ################################################################
+  ################################################################################################################################
+  ################################################################################################################################
   # JOB 3: PUBLISH TO RELEASE SITE  (tag vX.X.X builds only)
-  ################################################################
+  ################################################################################################################################
   publish-release-site:
     needs: build-and-test
     if: startsWith(github.ref, 'refs/tags/v')
@@ -584,7 +586,7 @@ jobs:
       run: |
         VERSION="${{ steps.version.outputs.VERSION }}"
         RELEASE_URL=$(gh release create "$VERSION" staging/* \
-          --repo blessia-blessini/lattice \
+          --repo "${{ github.repository }}" \
           --title "Lattice ${VERSION}" \
           --notes-file release-notes.md \
           --latest)
@@ -609,8 +611,12 @@ jobs:
         mkdir -p "$OUT_DIR"
 
         # Fetch asset download URLs from the GitHub Release API
-        ASSETS_JSON=$(gh api repos/blessia-blessini/lattice/releases/tags/${VERSION} \
+        ASSETS_JSON=$(gh api repos/"${{ github.repository }}"/releases/tags/${VERSION} \
           --jq '.assets[] | [.name, .browser_download_url, .size] | @tsv')
+
+        HTPAYLOAD=$(jq -nc \
+          --arg repo "${{ github.repository }}" \
+          'https://api.github.com/repos/$repo/actions/workflows/AntivirusOnUrl.yml/dispatches')
 
         # Header
         printf "# Lattice ${VERSION}\n"  > "$OUT"
@@ -636,7 +642,7 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer $GH_TOKEN2" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/AntivirusOnUrl.yml/dispatches" \
+            "$HTPAYLOAD" \
             -d "$PAYLOAD")
 
           echo "### response from triggering Antivirus scan workflow is: (may be empty) "
@@ -645,10 +651,10 @@ jobs:
         done <<< "$ASSETS_JSON"
 
         # Footer
-        printf "## Notes\n" >> "$OUT"
-        printf '%s\n' "- [Full release on GitHub](${RELEASE_URL})" >> "$OUT"
-        printf "- DUAL LICENCE - FOR TERMS DETAILS SEE [README.md section Licencing ](https://github.com/blessia-blessini/lattice#licensing)."\
-          >> "$OUT"
+        printf '%s\n' "## Notes\n" >> "$OUT"
+        printf '%s\n' " - [Full release on GitHub](${RELEASE_URL})" >> "$OUT"
+        printf '%s\n' " - DUAL LICENCE - FOR TERMS DETAILS SEE [README.md section Licencing](https://github.com/$HTPAYLOAD#licensing)." \
+         "" >> "$OUT"
 
         # Copy coverage HTML into the release folder so it is browseable
         COVERAGE_DIR="$OUT_DIR/coverage"
@@ -660,7 +666,6 @@ jobs:
         COVERAGE_URL="https://lattice-technologies.com/Lattice-Releases/assets-${VERSION}/coverage/"
 
         # Append coverage link to index.md
-        printf '\n'
         printf '%s\n' "## Test Coverage of" \
           " - [BACKEND](${COVERAGE_URL}src-tauri/target/llvm-cov/html/)" \
           " - [FRONTEND](${COVERAGE_URL}coverage/)" \
@@ -683,6 +688,6 @@ jobs:
       run: |
         VERSION="${{ steps.version.outputs.VERSION }}"
         echo "### Release published" >> $GITHUB_STEP_SUMMARY
-        echo "- GitHub Release: ${RELEASE_URL}" >> $GITHUB_STEP_SUMMARY
-        echo "- Release page: https://lattice-technologies.com/Lattice-Releases/assets-${VERSION}/" >> $GITHUB_STEP_SUMMARY
-        echo "- Coverage report: https://lattice-technologies.com/Lattice-Releases/assets-${VERSION}/coverage/" >> $GITHUB_STEP_SUMMARY
+        echo " - GitHub Release: ${RELEASE_URL}" >> $GITHUB_STEP_SUMMARY
+        echo " - Release page: https://lattice-technologies.com/Lattice-Releases/assets-${VERSION}/" >> $GITHUB_STEP_SUMMARY
+        echo " - Coverage report: https://lattice-technologies.com/Lattice-Releases/assets-${VERSION}/coverage/" >> $GITHUB_STEP_SUMMARY
