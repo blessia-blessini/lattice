@@ -9,6 +9,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.33
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Fix AntivirusOnUrl workflow dispatch URL
 - WIP: GitHub Actions release workflow
 - Add JSDoc comments to component props
 - Fix: CI Pipeline WIP AV automatic Run
