@@ -450,7 +450,7 @@ jobs:
       run: |
         echo "### ${{ matrix.config.download_name }} BUILD" >> $GITHUB_STEP_SUMMARY
         echo " - Download built executable file(s) from: ${{ steps.a-download-exec.outputs.artifact-url }}" >>  $GITHUB_STEP_SUMMARY
-        echo " - Download DOC(s) from: ${{ steps.DOCS.outputs.artifact-url }}" >>  $GITHUB_STEP_SUMMARY
+        echo " - Download DOC(s) from: ${{ steps.a-docs-gen.outputs.artifact-url }}" >>  $GITHUB_STEP_SUMMARY
 
 
       # - `\u26A0` is the warning emoji  ⚠️.
