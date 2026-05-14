@@ -614,17 +614,19 @@ jobs:
         ASSETS_JSON=$(gh api repos/"${{ github.repository }}"/releases/tags/${VERSION} \
           --jq '.assets[] | [.name, .browser_download_url, .size] | @tsv')
 
-        HTPAYLOAD=$(jq -nc \
+        HTPAYLOAD=$(jq -nr \
           --arg repo "${{ github.repository }}" \
           '"https://api.github.com/repos/\($repo)/actions/workflows/AntivirusOnUrl.yml/dispatches"')
 
+        printf 'HTTP payload is %s\n' "$HTPAYLOAD"
+
         # Header
-        printf "# Lattice ${VERSION}\n"  > "$OUT"
-        printf "**Released:** ${DATE}\n" >> "$OUT"
-        printf "$( [ -f release-notes.md ] && cat release-notes.md )\n" >> "$OUT"
-        printf "## Downloads\n"          >> "$OUT"
-        printf "| File | Size |\n"       >> "$OUT"
-        printf "|:-----|-----:|\n"       >> "$OUT"
+        printf '%s\n' "# Lattice ${VERSION}"  > "$OUT"
+        printf '%s\n' "**Released:** ${DATE}" >> "$OUT"
+        printf '%s\n' "$( [ -f release-notes.md ] && cat release-notes.md )" >> "$OUT"
+        printf '%s\n' "## Downloads"          >> "$OUT"
+        printf '%s\n' "| File | Size |"       >> "$OUT"
+        printf '%s\n' "|:-----|-----:|"       >> "$OUT"
 
         # One row per asset, size in MB
         while IFS=$'\t' read -r name url size_bytes; do
@@ -653,7 +655,7 @@ jobs:
         # Footer
         printf '%s\n' "## Notes\n" >> "$OUT"
         printf '%s\n' " - [Full release on GitHub](${RELEASE_URL})" >> "$OUT"
-        printf '%s\n' " - DUAL LICENCE - FOR TERMS DETAILS SEE [README.md section Licencing](https://github.com/$HTPAYLOAD#licensing)." \
+        printf '%s\n' " - DUAL LICENCE - FOR TERMS DETAILS SEE [README.md section Licencing](https://github.com/${{ github.repository }}#licensing)." \
          "" >> "$OUT"
 
         # Copy coverage HTML into the release folder so it is browseable

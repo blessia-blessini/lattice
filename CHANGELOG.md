@@ -9,6 +9,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.33
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Fix broken links and release notes formatting
 - Fix build workflow DOCS artifact link
 - Fix AntivirusOnUrl workflow dispatch URL
 - WIP: GitHub Actions release workflow
