@@ -5,18 +5,19 @@ Edit the section for your next version **before** pushing the release tag like v
 ---
 
 
+## v0.2.35
+### Changes
+  <!-- INSERT BULLETS UNDER THIS LINE -->
+- Finalized v0.2.33, prep v.0.2.35
+
 ---
 ## v0.2.33
 ### Changes
-  <!-- INSERT BULLETS UNDER THIS LINE -->
 - Bump dependencies to latest versions (back- and front- end)
 - Fix broken links and release notes formatting
-- Fix build workflow DOCS artifact link
+- Fix build workflow DOCS artifact link on the only build 
+  that builds it automatically (the linux-desktop build)
 - Fix AntivirusOnUrl workflow dispatch URL
-- WIP: GitHub Actions release workflow
-- Add JSDoc comments to component props
-- Fix: CI Pipeline WIP AV automatic Run
-
 
 ---
 ## v0.2.32
