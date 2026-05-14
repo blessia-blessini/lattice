@@ -9,8 +9,8 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.33
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
-- Bump version to 0.2.33
-- Finalize v0.2.33
+- Fix: CI Pipeline WIP AV automatic Run
+
 
 ---
 ## v0.2.32

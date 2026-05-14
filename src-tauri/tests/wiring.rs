@@ -51,7 +51,6 @@
 
 use lattice_lib::settings::{load_settings, save_settings, Settings};
 use std::fs;
-use std::path::Path;
 use tauri::test::{mock_builder, mock_context, noop_assets};
 
 // ─────────────────────────────────────────────────────────────────────────────
