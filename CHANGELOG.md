@@ -8,6 +8,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.35
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Fix: Remove trailing newline from notes header
 - Finalized v0.2.33, prep v.0.2.35
 
 ---

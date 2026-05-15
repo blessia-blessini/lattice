@@ -653,7 +653,7 @@ jobs:
         done <<< "$ASSETS_JSON"
 
         # Footer
-        printf '%s\n' "## Notes\n" >> "$OUT"
+        printf '%s\n' "## Notes" >> "$OUT"
         printf '%s\n' " - [Full release on GitHub](${RELEASE_URL})" >> "$OUT"
         printf '%s\n' " - DUAL LICENCE - FOR TERMS DETAILS SEE [README.md section Licencing](https://github.com/${{ github.repository }}#licensing)." \
          "" >> "$OUT"
