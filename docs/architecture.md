@@ -21,12 +21,12 @@ Lattice is a local-first Markdown editor built with **Tauri**, combining a **Rus
   - [Key CI Steps:](#key-ci-steps)
 - [Feature: Table of Contents (TOC)](#feature-table-of-contents-toc)
   - [Overview](#overview)
-  - [Rust Backend — `toc.rs`](#rust-backend--tocrs)
+  - [Rust Backend — `toc.rs`](#rust-backend-tocrs)
   - [Frontend Glue](#frontend-glue)
   - [TOC Flow Diagram](#toc-flow-diagram)
 - [Feature: Table Padding](#feature-table-padding)
   - [Overview](#overview-1)
-  - [Rust Backend — `table_format.rs`](#rust-backend--table_formatrs)
+  - [Rust Backend — `table_format.rs`](#rust-backend-table_formatrs)
   - [Frontend Glue](#frontend-glue-1)
   - [Table Padding Flow Diagram](#table-padding-flow-diagram)
 <!-- /TOC -->
@@ -332,12 +332,12 @@ The Tauri command `update_toc` is a thin wrapper that calls `update_toc_in_docum
 
 ### Frontend Glue
 
-| Layer | File | Responsibility |
-|---|---|---|
-| Service | `src/services/Toc.ts` | Wraps `invoke('update_toc', { content })`. Also exports `TOC_OPEN_MARKER` / `TOC_CLOSE_MARKER` constants so other layers don't duplicate the literal strings. |
-| CodeMirror extension | `src/editor-extensions/toc-tooltip.ts` | A `StateField` + `showTooltip` that re-evaluates on every cursor move. If the cursor's line is between a TOC open marker and its matching close marker, a tooltip reading *"Press Ctrl/Cmd+Shift+T to refresh TOC"* is shown. Detection is intentionally done on the frontend (not via IPC) to keep the tooltip latency imperceptible. |
-| Editor handle | `src/components/Editor.tsx` | Exposes `updateToc()` and `insertTocBlock()` on the imperative `EditorHandle`. Both call `refreshTocFromBackend()`, which snapshots the document, calls `Toc.update`, then guards the dispatch: if the document changed during the IPC round-trip, the stale result is discarded instead of clobbering the user's edits. `Mod-Shift-T` is bound to the refresh command. |
-| Menu | `src/App.tsx` | "Insert TOC" triggers `insertTocBlock()` (inserts the marker pair then immediately refreshes). "Refresh TOC" triggers `updateToc()`. |
+| Layer                | File                                   | Responsibility                                                                                                                                                                                                                                                                                                                                                          |
+| -------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Service              | `src/services/Toc.ts`                  | Wraps `invoke('update_toc', { content })`. Also exports `TOC_OPEN_MARKER` / `TOC_CLOSE_MARKER` constants so other layers don't duplicate the literal strings.                                                                                                                                                                                                           |
+| CodeMirror extension | `src/editor-extensions/toc-tooltip.ts` | A `StateField` + `showTooltip` that re-evaluates on every cursor move. If the cursor's line is between a TOC open marker and its matching close marker, a tooltip reading *"Press Ctrl/Cmd+Shift+T to refresh TOC"* is shown. Detection is intentionally done on the frontend (not via IPC) to keep the tooltip latency imperceptible.                                  |
+| Editor handle        | `src/components/Editor.tsx`            | Exposes `updateToc()` and `insertTocBlock()` on the imperative `EditorHandle`. Both call `refreshTocFromBackend()`, which snapshots the document, calls `Toc.update`, then guards the dispatch: if the document changed during the IPC round-trip, the stale result is discarded instead of clobbering the user's edits. `Mod-Shift-T` is bound to the refresh command. |
+| Menu                 | `src/App.tsx`                          | "Insert TOC" triggers `insertTocBlock()` (inserts the marker pair then immediately refreshes). "Refresh TOC" triggers `updateToc()`.                                                                                                                                                                                                                                    |
 
 ### TOC Flow Diagram
 
@@ -395,11 +395,11 @@ The Tauri command `pad_tables` is a thin wrapper that calls `pad_tables_in_docum
 
 ### Frontend Glue
 
-| Layer | File | Responsibility |
-|---|---|---|
-| Service | `src/services/TableFormat.ts` | Wraps `invoke('pad_tables', { content })`. Mirrors the shape of `Toc.ts` so both document-rewriting operations are interchangeable at call sites. |
-| Editor handle | `src/components/Editor.tsx` | Exposes `padTables()` on `EditorHandle`. Internally `padTablesFromBackend()` uses the same snapshot → IPC → guarded-dispatch pattern as the TOC refresh: if the document changed during the round-trip the stale result is discarded. `Mod-Shift-L` is bound to the command. |
-| Menu | `src/components/Menu.tsx` + `src/App.tsx` | A "Pad Tables" menu item calls `padTables()` on the editor handle. |
+| Layer         | File                                      | Responsibility                                                                                                                                                                                                                                                               |
+| ------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Service       | `src/services/TableFormat.ts`             | Wraps `invoke('pad_tables', { content })`. Mirrors the shape of `Toc.ts` so both document-rewriting operations are interchangeable at call sites.                                                                                                                            |
+| Editor handle | `src/components/Editor.tsx`               | Exposes `padTables()` on `EditorHandle`. Internally `padTablesFromBackend()` uses the same snapshot → IPC → guarded-dispatch pattern as the TOC refresh: if the document changed during the round-trip the stale result is discarded. `Mod-Shift-L` is bound to the command. |
+| Menu          | `src/components/Menu.tsx` + `src/App.tsx` | A "Pad Tables" menu item calls `padTables()` on the editor handle.                                                                                                                                                                                                           |
 
 ### Table Padding Flow Diagram
 
