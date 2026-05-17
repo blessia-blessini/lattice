@@ -56,12 +56,34 @@ try {
     # -C instrument-coverage via RUSTFLAGS to the child compilation so
     # the child's profraw data is written to the same directory and merged
     # into the combined HTML report in step 4.
+    Write-Output "****************************************************"
     Write-Output "Running E2E Conflict Reproducer..."
-    cargo llvm-cov --no-report --example reproduce_conflict
-    if ($LASTEXITCODE -ne 0) {
-        Write-Output "E2E Conflict Reproducer failed!"
-        exit $LASTEXITCODE
+    $savedRustFlags = $env:RUSTFLAGS
+    Push-Location ..
+    try {
+        # if rustflags do not contain "--cfg integration_test" then add it
+        if ($env:RUSTFLAGS -notlike "*integration_test*" ) { 
+            $env:RUSTFLAGS += " --cfg integration_test"
+        }
+        #cargo llvm-cov --no-report --example reproduce_conflict
+        & cargo run --example reproduce_conflict --manifest-path src-tauri/Cargo.toml
+        $exittodeX = $LASTEXITCODE
+        Start-Sleep -s 5
+        Write-Host "*** Cleaning up processes..." -ForegroundColor Yellow
+        # Force kill potential lingering processes
+        Stop-Process -Name "lattice" -ErrorAction SilentlyContinue -Force
+        Stop-Process -Name "node" -ErrorAction SilentlyContinue -Force
+        if ($exittodeX -ne 0) {
+            Write-Output "*** E2E Conflict Reproducer failed!"
+            exit $exittodeX
+        }
+        # exit 2
     }
+    finally {
+        Pop-Location
+        $env:RUSTFLAGS = $savedRustFlags
+    }
+    Write-Output "****************************************************"
 
     Write-Output "****************************************************"
     Write-Output "Gather and print all data in an output table ..."
