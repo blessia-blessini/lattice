@@ -68,9 +68,9 @@ pushd src-tauri || exit
        RUSTFLAGS="--cfg integration_test" xvfb-run --auto-servernum cargo llvm-cov --no-report --example reproduce_conflict
    else
        RUSTFLAGS="--cfg integration_test" cargo llvm-cov --no-report --example reproduce_conflict
-fi
-# source ./scripts/Test-Conflict.sh
-E2E_RESULT=$?
+   fi
+   # source ./scripts/Test-Conflict.sh
+   E2E_RESULT=$?
 popd  || exit
 
 if [ $E2E_RESULT -ne 0 ]; then
