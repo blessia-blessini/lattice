@@ -360,7 +360,7 @@ jobs:
 
     - name: 370.2 Run Frontend AND Backend Tests (React/Tauri)
       # TODO: Consider uncommenting for now we are saving some action minutes by not running tests on mobile
-      if: matrix.config.platform != 'ios' && matrix.config.platform != 'windows-arm-desktop' && matrix.config.platform != 'android' # see comment in 350.2
+      if: matrix.config.platform != 'ios' && matrix.config.platform != 'windows-arm-desktop' # && matrix.config.platform != 'android' # see comment in 350.2
       shell: bash
       env:
         LATTICEBUILD_NO: TSTFrontEnd-${{matrix.config.platform}}-${{ steps.build-no-gen.outputs.BUILD_NO }}

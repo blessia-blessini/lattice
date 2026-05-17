@@ -8,6 +8,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.35
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Re-enabled Android test execution
 - Update attest-build-provenance to v4
 - Add build provenance attestation
 - Fix: Remove trailing newline from notes header
