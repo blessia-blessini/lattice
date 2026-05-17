@@ -77,3 +77,4 @@ src-tauri/conflict_success.txt
 
 utils/changelog-update/changelog-update
 .githooks/changelog-update
+src-tauri/irrelevant_path.md
