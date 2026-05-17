@@ -27,7 +27,7 @@ try {
 
     # call the preambule script
     . "$PSScriptRoot\_pre-build.ps1" -DefaultBuildNo "TESTVERSION" -ScriptName "build-test.ps1"
-    # 1. Run Backend Unit Tests (Rust)
+    # 1a. Run Backend Unit Tests (Rust)
     # --no-report accumulates coverage data without generating a report yet,
     # so it can be merged with the integration-test run below into one table.
     Write-Output "Running Backend Unit Tests..."
@@ -63,7 +63,10 @@ try {
         exit $LASTEXITCODE
     }
 
+    Write-Output "****************************************************"
     Write-Output "Gather and print all data in an output table ..."
+    Write-Output "Print on console this is done later once again after"
+    Write-Output " HTML report generation as a summary"
     cargo llvm-cov report
     Write-Output "****************************************************"
 
@@ -73,10 +76,16 @@ try {
 
     # 2b. Run Frontend Coverage
     Write-Output "Running Frontend Coverage..."
-    npm run test:coverage
+    # reverse push/pop Location
+    Push-Location ..
+    try {
+        npm run test:coverage
+    }
+    finally {
+        Pop-Location
+    }
 
     # 3. Linter
-    cargo llvm-cov --version
     Write-Output "Running 2nd Linter..."
     cargo clippy -- -D warnings
 
@@ -86,6 +95,8 @@ try {
     Write-Output "Running combined html coverage report..."
     cargo llvm-cov report --html        # HTML file in target/llvm-cov/html/
     cargo llvm-cov report               # Text summary table printed to console
+    # print out the llvm-cov version
+    cargo llvm-cov --version
 
 }
 finally {

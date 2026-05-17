@@ -1,23 +1,23 @@
 # LEGAL NOTE:
-# LATTICE (tm) - The Portable and standard Markdown Editor 
+# LATTICE (tm) - The Portable and standard Markdown Editor
 # Copyright (C) 2026 Owner of blessini.com (a.k.a Blessia)
 # email: blessia AT blessini.com
-# 
+#
 # GNU AFFERO GENERAL PUBLIC LICENSE V3 NOTICE:
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
 # published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-#   
+#
 # See LICENCE file in GitHUB root folder of the repository.
 # END OF NOTE
 <#
@@ -51,11 +51,6 @@ Write-Host "Cleaning up processes..." -ForegroundColor Yellow
 # Force kill potential lingering processes
 Stop-Process -Name "lattice" -ErrorAction SilentlyContinue -Force
 Stop-Process -Name "node" -ErrorAction SilentlyContinue -Force
-
-# Force kill potential lingering processes using taskkill (more robust for GUI apps)
-taskkill /F /IM "lattice.exe" 2>$null
-taskkill /F /IM "node.exe" 2>$null
-# Note: output redirected to null to avoid noise if process not found
 
 if ($TestExitCode -ne 0) {
     Write-Error "Conflict Reproduction failed with code $TestExitCode"
