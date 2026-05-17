@@ -4,10 +4,13 @@ All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 ---
 
+---
 
-## v0.2.35
+
+## v0.2.36
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Update CHANGELOG for v0.2.35 release
 - Bump tauri dependencies to v2.11.2
 - Fix: Add blank line before Test-Conflict source
 - Fix: Ensure popd is called correctly
@@ -23,6 +26,14 @@ Edit the section for your next version **before** pushing the release tag like v
 - Add build provenance attestation
 - Fix: Remove trailing newline from notes header
 - Finalized v0.2.33, prep v.0.2.35
+
+---
+## v0.2.35
+### Changes
+- Improved documentation of tests
+- Tauri dependencies updated
+- Robustness of Collision-Detection tests
+- Fix: Remove trailing newline from notes header
 
 ---
 ## v0.2.33
