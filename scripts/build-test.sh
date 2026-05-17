@@ -63,14 +63,14 @@ fi
 # the child's profraw data is written to the same directory and merged
 # into the combined HTML report in step 4.
 echo "Running E2E Conflict Reproducer..."
-#pushd src-tauri || exit
-#    if [ "$(uname)" == "Linux" ] && command -v xvfb-run >/dev/null 2>&1; then
-#        RUSTFLAGS="--cfg integration_test" xvfb-run --auto-servernum cargo llvm-cov --no-report --example reproduce_conflict
-#    else
-#        RUSTFLAGS="--cfg integration_test" cargo llvm-cov --no-report --example reproduce_conflict
-#  fi
+pushd src-tauri || exit
+   if [ "$(uname)" == "Linux" ] && command -v xvfb-run >/dev/null 2>&1; then
+       RUSTFLAGS="--cfg integration_test" xvfb-run --auto-servernum cargo llvm-cov --no-report --example reproduce_conflict
+   else
+       RUSTFLAGS="--cfg integration_test" cargo llvm-cov --no-report --example reproduce_conflict
+fi
 
-source ./scripts/Test-Conflict.sh
+# source ./scripts/Test-Conflict.sh
 E2E_RESULT=$?
 
 if [ $E2E_RESULT -ne 0 ]; then
@@ -112,4 +112,3 @@ pushd src-tauri || exit
   # print out the llvm-cov version
   cargo llvm-cov --version
 popd || exit
-

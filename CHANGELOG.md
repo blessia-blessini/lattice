@@ -8,6 +8,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.35
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- WorkAround: E2E Conflict Reproducer test
 - Add irrelevant file to .gitignore
 - Fix E2E conflict reproducer script
 - Add conflict reproduction test documentation
