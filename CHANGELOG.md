@@ -8,6 +8,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.35
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Bump tauri dependencies to v2.11.2
 - Fix: Add blank line before Test-Conflict source
 - Fix: Ensure popd is called correctly
 - WorkAround: E2E Conflict Reproducer test
