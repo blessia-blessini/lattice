@@ -2349,7 +2349,7 @@ dependencies = [
 
 [[package]]
 name = "lattice"
-version = "0.2.33"
+version = "0.2.35"
 dependencies = [
  "base64 0.22.1",
  "chrono",
