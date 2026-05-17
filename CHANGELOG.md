@@ -8,6 +8,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.35
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Add conflict reproduction test documentation
 - Refactor build scripts and setup environment
 - Bump version to 0.2.35
 - docs: update architecture documentation and vault settings configuration file
