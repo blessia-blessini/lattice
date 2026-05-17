@@ -582,7 +582,7 @@ jobs:
     #         Verifiable by anyone with: gh attestation verify <file> --repo blessia-blessini/lattice
     ################################################################
     - name: 903.5. Attest build artifacts
-      uses: actions/attest-build-provenance@v1
+      uses: actions/attest@v4
       with:
         subject-path: staging/*
 
