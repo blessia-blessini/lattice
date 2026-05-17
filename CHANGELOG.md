@@ -4,11 +4,36 @@ All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 ---
 
+---
 
-## v0.2.35
+
+## v0.2.36
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Update CHANGELOG for v0.2.35 release
+- Bump tauri dependencies to v2.11.2
+- Fix: Add blank line before Test-Conflict source
+- Fix: Ensure popd is called correctly
+- WorkAround: E2E Conflict Reproducer test
+- Add irrelevant file to .gitignore
+- Fix E2E conflict reproducer script
+- Add conflict reproduction test documentation
+- Refactor build scripts and setup environment
+- Bump version to 0.2.35
+- docs: update architecture documentation and vault settings configuration file
+- Re-enabled Android test execution
+- Update attest-build-provenance to v4
+- Add build provenance attestation
+- Fix: Remove trailing newline from notes header
 - Finalized v0.2.33, prep v.0.2.35
+
+---
+## v0.2.35
+### Changes
+- Improved documentation of tests
+- Tauri dependencies updated
+- Robustness of Collision-Detection tests
+- Fix: Remove trailing newline from notes header
 
 ---
 ## v0.2.33

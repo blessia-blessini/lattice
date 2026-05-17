@@ -146,7 +146,7 @@ fn main() {
 
         // Optional: print progress
         use std::io::Write;
-        print!(".");
+        print!("./.\\");
         io::stdout().flush().unwrap();
     }
 
@@ -156,10 +156,13 @@ fn main() {
     }
 
     // 6. Cleanup
+    println!("**********************************************************");
     println!("[INFO] Killing App Process...");
+    println!("**********************************************************");
 
     #[cfg(target_os = "windows")]
     {
+        let _ = _app_child.kill();
         let _ = Command::new("taskkill")
             .args(&["/F", "/PID", &_app_child.id().to_string()])
             .output();

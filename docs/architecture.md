@@ -21,14 +21,21 @@ Lattice is a local-first Markdown editor built with **Tauri**, combining a **Rus
   - [Key CI Steps:](#key-ci-steps)
 - [Feature: Table of Contents (TOC)](#feature-table-of-contents-toc)
   - [Overview](#overview)
-  - [Rust Backend — `toc.rs`](#rust-backend--tocrs)
+  - [Rust Backend — `toc.rs`](#rust-backend-tocrs)
   - [Frontend Glue](#frontend-glue)
   - [TOC Flow Diagram](#toc-flow-diagram)
 - [Feature: Table Padding](#feature-table-padding)
   - [Overview](#overview-1)
-  - [Rust Backend — `table_format.rs`](#rust-backend--table_formatrs)
+  - [Rust Backend — `table_format.rs`](#rust-backend-table_formatrs)
   - [Frontend Glue](#frontend-glue-1)
   - [Table Padding Flow Diagram](#table-padding-flow-diagram)
+- [SPECIAL TEST / INSTRUMENTED BUILDs](#special-test-instrumented-builds)
+  - [Feature: Conflict Reproduction Test](#feature-conflict-reproduction-test)
+    - [Overview](#overview-2)
+    - [Actors](#actors)
+    - [How It Works](#how-it-works)
+    - [Activity Diagram](#activity-diagram)
+    - [Production Safety](#production-safety)
 <!-- /TOC -->
 
 ## Technology Stack
@@ -332,12 +339,12 @@ The Tauri command `update_toc` is a thin wrapper that calls `update_toc_in_docum
 
 ### Frontend Glue
 
-| Layer | File | Responsibility |
-|---|---|---|
-| Service | `src/services/Toc.ts` | Wraps `invoke('update_toc', { content })`. Also exports `TOC_OPEN_MARKER` / `TOC_CLOSE_MARKER` constants so other layers don't duplicate the literal strings. |
-| CodeMirror extension | `src/editor-extensions/toc-tooltip.ts` | A `StateField` + `showTooltip` that re-evaluates on every cursor move. If the cursor's line is between a TOC open marker and its matching close marker, a tooltip reading *"Press Ctrl/Cmd+Shift+T to refresh TOC"* is shown. Detection is intentionally done on the frontend (not via IPC) to keep the tooltip latency imperceptible. |
-| Editor handle | `src/components/Editor.tsx` | Exposes `updateToc()` and `insertTocBlock()` on the imperative `EditorHandle`. Both call `refreshTocFromBackend()`, which snapshots the document, calls `Toc.update`, then guards the dispatch: if the document changed during the IPC round-trip, the stale result is discarded instead of clobbering the user's edits. `Mod-Shift-T` is bound to the refresh command. |
-| Menu | `src/App.tsx` | "Insert TOC" triggers `insertTocBlock()` (inserts the marker pair then immediately refreshes). "Refresh TOC" triggers `updateToc()`. |
+| Layer                | File                                   | Responsibility                                                                                                                                                                                                                                                                                                                                                          |
+| -------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Service              | `src/services/Toc.ts`                  | Wraps `invoke('update_toc', { content })`. Also exports `TOC_OPEN_MARKER` / `TOC_CLOSE_MARKER` constants so other layers don't duplicate the literal strings.                                                                                                                                                                                                           |
+| CodeMirror extension | `src/editor-extensions/toc-tooltip.ts` | A `StateField` + `showTooltip` that re-evaluates on every cursor move. If the cursor's line is between a TOC open marker and its matching close marker, a tooltip reading *"Press Ctrl/Cmd+Shift+T to refresh TOC"* is shown. Detection is intentionally done on the frontend (not via IPC) to keep the tooltip latency imperceptible.                                  |
+| Editor handle        | `src/components/Editor.tsx`            | Exposes `updateToc()` and `insertTocBlock()` on the imperative `EditorHandle`. Both call `refreshTocFromBackend()`, which snapshots the document, calls `Toc.update`, then guards the dispatch: if the document changed during the IPC round-trip, the stale result is discarded instead of clobbering the user's edits. `Mod-Shift-T` is bound to the refresh command. |
+| Menu                 | `src/App.tsx`                          | "Insert TOC" triggers `insertTocBlock()` (inserts the marker pair then immediately refreshes). "Refresh TOC" triggers `updateToc()`.                                                                                                                                                                                                                                    |
 
 ### TOC Flow Diagram
 
@@ -395,11 +402,11 @@ The Tauri command `pad_tables` is a thin wrapper that calls `pad_tables_in_docum
 
 ### Frontend Glue
 
-| Layer | File | Responsibility |
-|---|---|---|
-| Service | `src/services/TableFormat.ts` | Wraps `invoke('pad_tables', { content })`. Mirrors the shape of `Toc.ts` so both document-rewriting operations are interchangeable at call sites. |
-| Editor handle | `src/components/Editor.tsx` | Exposes `padTables()` on `EditorHandle`. Internally `padTablesFromBackend()` uses the same snapshot → IPC → guarded-dispatch pattern as the TOC refresh: if the document changed during the round-trip the stale result is discarded. `Mod-Shift-L` is bound to the command. |
-| Menu | `src/components/Menu.tsx` + `src/App.tsx` | A "Pad Tables" menu item calls `padTables()` on the editor handle. |
+| Layer         | File                                      | Responsibility                                                                                                                                                                                                                                                               |
+| ------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Service       | `src/services/TableFormat.ts`             | Wraps `invoke('pad_tables', { content })`. Mirrors the shape of `Toc.ts` so both document-rewriting operations are interchangeable at call sites.                                                                                                                            |
+| Editor handle | `src/components/Editor.tsx`               | Exposes `padTables()` on `EditorHandle`. Internally `padTablesFromBackend()` uses the same snapshot → IPC → guarded-dispatch pattern as the TOC refresh: if the document changed during the round-trip the stale result is discarded. `Mod-Shift-L` is bound to the command. |
+| Menu          | `src/components/Menu.tsx` + `src/App.tsx` | A "Pad Tables" menu item calls `padTables()` on the editor handle.                                                                                                                                                                                                           |
 
 ### Table Padding Flow Diagram
 
@@ -427,3 +434,76 @@ sequenceDiagram
         Editor->>Editor: discard / no-op
     end
 ```
+---
+
+## SPECIAL TEST / INSTRUMENTED BUILDs
+
+### Feature: Conflict Reproduction Test
+
+#### Overview
+
+Lattice includes an end-to-end integration test that validates the **file-conflict detection pipeline** — i.e., it proves the app correctly detects and reacts when a file it has open is modified externally (by another process, a sync tool, etc.). The test is driven by a compile-time feature flag (`--cfg integration_test`) that activates an "internal bad actor" in the Rust backend while the full application is running.
+
+#### Actors
+
+The test involves three cooperating actors:
+
+| Actor                  | Source File                                                                  | Role                                                                                                     |
+| ---------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Test Harness**       | `src-tauri/examples/reproduce_conflict.rs`                                   | Orchestrator — creates a test file, launches the app with the feature flag, polls for a success marker   |
+| **Internal Bad Actor** | `src-tauri/src/lib.rs` → `test_utils::maybe_sabotage_file`                   | Simulates an external process modifying the file behind the app's back (30 writes, one every 2 s)        |
+| **Success Reporter**   | `src/services/StaticRuntime/StaticRuntime.dev.ts` → `setupTestModeListeners` | Frontend listener — detects the `file-changed` event and writes `conflict_success.txt` to signal success |
+
+#### How It Works
+
+1. **`reproduce_conflict.rs`** creates `conflict_test.md` with initial content, then launches `npm run tauri dev` with `RUSTFLAGS="--cfg integration_test"`. This compile-time flag enables the sabotage code path.
+2. During app startup, **`setup_handler`** in `lib.rs` calls `test_utils::maybe_sabotage_file(&fpath)`. With the `integration_test` cfg active, the real implementation runs: a background thread waits 2 seconds, then **mutates the file on disk every 2 seconds for 1 minute** (30 iterations), appending `[TEST MODE CONFLICT TRIGGER]` each time.
+3. The app's **`watch_file`** command (using the `notify` crate) is watching that file. When the sabotage thread writes to it, `notify` fires a `Modify` event → the Rust backend emits a `"file-changed"` Tauri event to the frontend.
+4. On the frontend, **`setupTestModeListeners`** (DEV-only) is listening for `"file-changed"`. When it fires, it writes `conflict_success.txt` via the `write_text_file` Tauri command.
+5. Back in `reproduce_conflict.rs`, the harness is **polling** for `conflict_success.txt` (up to 5 minutes to allow for a cold build). Once detected → **PASS**. Timeout → **FAIL**.
+
+#### Activity Diagram
+
+```mermaid
+flowchart TB
+    subgraph Harness ["Test Harness (reproduce_conflict.rs)"]
+        H1["Create conflict_test.md"] --> H2["Launch app with --cfg integration_test"]
+        H2 --> H3["Poll for conflict_success.txt (up to 5 min)"]
+        H3 --> H4{"File found?"}
+        H4 -- Yes --> H5["PASS — exit 0"]
+        H4 -- No / Timeout --> H6["FAIL — exit 1"]
+    end
+
+    subgraph Backend ["Rust Backend (lib.rs)"]
+        B1["setup_handler calls maybe_sabotage_file"] --> B2["Spawn background thread"]
+        B2 --> B3["Sleep 2 s"]
+        B3 --> B4["Append CONFLICT TRIGGER to file"]
+        B4 --> B5{"30 iterations done?"}
+        B5 -- No --> B3
+        B5 -- Yes --> B6["Thread exits"]
+        B4 -.-> W1
+    end
+
+    subgraph Watcher ["File Watcher (notify crate)"]
+        W1["Detect Modify event"] --> W2["Emit 'file-changed' Tauri event"]
+    end
+
+    subgraph Frontend ["Frontend (StaticRuntime.dev.ts)"]
+        F1["Receive 'file-changed' event"] --> F2["invoke write_text_file"]
+        F2 --> F3["Write conflict_success.txt"]
+    end
+
+    H2 -.-> B1
+    W2 -.-> F1
+    F3 -.-> H3
+```
+
+#### Production Safety
+
+The sabotage code is **completely compiled out** in production builds:
+
+- **Backend**: `#[cfg(not(integration_test))]` provides a no-op `maybe_sabotage_file` stub.
+- **Frontend**: The production `StaticRuntime` has `setupTestModeListeners` as a no-op.
+- The `integration_test` cfg is only activated when `RUSTFLAGS="--cfg integration_test"` is explicitly passed, which only happens inside the `reproduce_conflict` example or via `Test-Conflict.ps1` / `build-test.sh`.
+
+---

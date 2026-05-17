@@ -28,7 +28,7 @@ export SCRIPT_NAME="build-test.sh"
 source ./scripts/_pre-build.sh
 
 
-# 1. Run Backend Unit Tests (Rust)
+# 1a. Run Backend Unit Tests (Rust)
 # --no-report accumulates coverage data without generating a report yet,
 # so it can be merged with the integration-test run below into one table.
 echo "Running Backend Unit Tests..."
@@ -64,51 +64,51 @@ fi
 # into the combined HTML report in step 4.
 echo "Running E2E Conflict Reproducer..."
 pushd src-tauri || exit
-if [ "$(uname)" == "Linux" ] && command -v xvfb-run >/dev/null 2>&1; then
-    xvfb-run --auto-servernum cargo llvm-cov --no-report --example reproduce_conflict
-else
-    cargo llvm-cov --no-report --example reproduce_conflict
-fi
-E2E_RESULT=$?
-popd || exit
+   if [ "$(uname)" == "Linux" ] && command -v xvfb-run >/dev/null 2>&1; then
+       RUSTFLAGS="--cfg integration_test" xvfb-run --auto-servernum cargo llvm-cov --no-report --example reproduce_conflict
+   else
+       RUSTFLAGS="--cfg integration_test" cargo llvm-cov --no-report --example reproduce_conflict
+   fi
+   # source ./scripts/Test-Conflict.sh
+   E2E_RESULT=$?
+popd  || exit
 
 if [ $E2E_RESULT -ne 0 ]; then
-    echo "E2E Conflict Reproducer failed!"
-    exit $E2E_RESULT
+  echo "E2E Conflict Reproducer failed!"
+  exit $E2E_RESULT
 fi
 
-echo "Gather and print all data in an output table ..."
-cargo llvm-cov report
+pushd src-tauri || exit
+  echo "****************************************************"
+  echo "Gather and print all data in an output table ..."
+  echo "Print on console this is done later once again after"
+  echo " HTML report generation as a summary"
+  cargo llvm-cov report
+  echo "****************************************************"
+popd || exit
 
-# 2. Run Frontend Tests
+# 2. Run Frontend Tests Run Later with Coverage
 # echo "Running Frontend Tests..."
 # npm run test:run
 
 # 2b. Run Frontend Coverage
-echo "Running Frontend Coverage... --> in folder coverage"
-npm run test:coverage --html
+# runs in project root
+echo "Running Frontend Coverage..."
+npm run test:coverage
 
-# 3. Rust Analysis & Coverage
-echo "Running Rust Analysis & Coverage..."
+# 3. Linter
 pushd src-tauri || exit
+  echo "Running 2nd Linter..."
+  cargo clippy -- -D warnings
+popd || exit
 
-echo "Running 2nd Linter (Clippy)..."
-cargo clippy -- -D warnings
-
-cargo install cargo-llvm-cov
-rustup component add llvm-tools-preview
-
-if cargo llvm-cov --version >/dev/null 2>&1; then
-    echo "cargo-llvm-cov found. Generating combined html coverage report..."
-    cargo llvm-cov --version
-    # Neither call re-runs any tests — they only read the profraw files
-    # written by steps 1, 1b, and 1c.
-    cargo llvm-cov report --html        # HTML file in target/llvm-cov/html/
-    cargo llvm-cov report               # Text summary table printed to console
-else
-    echo "WARNING: cargo-llvm-cov not found. Skipping Rust coverage generation."
-    echo "To enable coverage on Linux, install: cargo install cargo-llvm-cov"
-    echo "                                    rustup component add llvm-tools-preview"
-fi
-
+# 4. Generate combined coverage report from the accumulated data.
+#    Neither call re-runs any tests — they only read the profraw files
+#    written by steps 1, 1b, and 1c.
+echo "Running combined html coverage report..."
+pushd src-tauri || exit
+  cargo llvm-cov report --html        # HTML file in target/llvm-cov/html/
+  cargo llvm-cov report               # Text summary table printed to console
+  # print out the llvm-cov version
+  cargo llvm-cov --version
 popd || exit
