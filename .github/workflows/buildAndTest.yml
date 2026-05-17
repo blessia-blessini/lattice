@@ -469,7 +469,9 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # required to create GitHub Releases
+      contents: write      # required to create GitHub Releases
+      id-token: write      # required for attestation (OIDC token)
+      attestations: write  # required to write the attestation
 
     steps:
     ################################################################
@@ -573,6 +575,16 @@ jobs:
           -exec cp {} staging/ \;
         echo "--- Collected files ---"
         ls -lh staging/
+
+    ################################################################
+    # 903.5 / Attest all release artifacts (build provenance)
+    #         Links each installer to this exact workflow run + commit.
+    #         Verifiable by anyone with: gh attestation verify <file> --repo blessia-blessini/lattice
+    ################################################################
+    - name: 903.5. Attest build artifacts
+      uses: actions/attest-build-provenance@v1
+      with:
+        subject-path: staging/*
 
     ################################################################
     # 904 / Create GitHub Release on blessia-blessini/lattice and
