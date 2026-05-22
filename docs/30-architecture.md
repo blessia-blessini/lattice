@@ -15,7 +15,7 @@ Lattice is a local-first Markdown editor built with **Tauri**, combining a **Rus
   - [Preview Theme](#preview-theme)
   - [Independence Guarantee](#independence-guarantee)
   - [Adding a New Theme Variant](#adding-a-new-theme-variant)
-- [Testing Architecture](#testing-architecture)
+- [Testing Architecture](#testing-architecture) *(see also [01-test-strategy.md](01-test-strategy.md))*
 - [Continuous Integration (CI) Architecture](#continuous-integration-ci-architecture)
   - [CI Pipeline Flow](#ci-pipeline-flow)
   - [Key CI Steps:](#key-ci-steps)
@@ -261,26 +261,14 @@ No changes to `App.tsx` rendering logic are needed beyond wiring `setPreviewThem
 
 ## Testing Architecture
 
-The project employs a dual strategy for testing, covering both the Rust backend and the React frontend.
+> Full details of the test strategy, pipeline commands, and rationale are in
+> **[01-test-strategy.md](01-test-strategy.md)**.
 
--   **Backend (Rust)**: Unit and integration tests are written within the Rust modules (e.g., `lib.rs`, `file_state.rs`) under a `#[cfg(test)]` configuration. They are executed with `cargo test`.
--   **Frontend (React)**: Component and hook tests are written using **Vitest**, a Vite-native test framework. It uses `jsdom` to simulate a browser environment, allowing tests to run in a standard Node.js environment.
-
-```mermaid
-graph TD
-    subgraph "Test Execution"
-        CargoTest[cargo test]
-        Vitest[npm run test]
-    end
-
-    subgraph "Codebases"
-        RustBackend[Rust Backend Modules]
-        ReactFrontend[React Frontend Components]
-    end
-
-    CargoTest --> RustBackend
-    Vitest --> ReactFrontend
-```
+The pipeline (`scripts/build-test.sh` / `build-test.ps1`) covers three Rust
+phases (unit, integration, E2E conflict reproducer) plus frontend Vitest
+coverage, a Clippy linter pass, and a combined `llvm-cov` HTML report.
+The E2E phase runs the full compiled application under coverage instrumentation
+to validate the file-conflict detection flow end-to-end.
 
 ## Continuous Integration (CI) Architecture
 
@@ -308,7 +296,7 @@ graph TD
 2.  **Build & Test Job**: This job runs in parallel for each configuration in the matrix.
     -   **Environment**: Sets up Node.js, Rust (including cross-compilation targets if needed), and caches dependencies.
     -   **Build**: Compiles the Rust backend and builds the frontend, finally bundling them into a native application (`.exe`, `.dmg`, `.AppImage`).
-    -   **Test**: Runs `cargo test` for the backend and `npm run test` (Vitest) for the frontend to ensure correctness.
+    -   **Test**: Executes `scripts/build-test.sh` (Linux/macOS) or `build-test.ps1` (Windows), which runs the full multi-phase test pipeline — see [01-test-strategy.md](01-test-strategy.md) for the complete pipeline description.
     -   **Artifacts**: The final compiled applications and documentation are uploaded as artifacts for download and deployment.
 
 ---
