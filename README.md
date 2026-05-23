@@ -1,12 +1,29 @@
-# Lattice &emsp;&emsp;&emsp; [![Build and Test Matrix](https://github.com/blessia-blessini/lattice/actions/workflows/buildAndTest.yml/badge.svg)](https://github.com/blessia-blessini/lattice/actions/workflows/buildAndTest.yml) [![License](https://img.shields.io/badge/License-AGPL--3.0-red.svg)](LICENSE) 
+# _Lattice_ &emsp;&emsp;&emsp; [![Build and Test Matrix](https://github.com/blessia-blessini/lattice/actions/workflows/buildAndTest.yml/badge.svg)](https://github.com/blessia-blessini/lattice/actions/workflows/buildAndTest.yml) [![License](https://img.shields.io/badge/License-AGPL--3.0-red.svg)](LICENSE) 
 
 **Lattice** is an open-source, local-first Markdown environment editor, designed to bridge the gap between Personal Knowledge Management (PKM) and Corporate Systems Engineering.
 
-### FEATURES
+## WHAT IS `Lattice` and WHY it exists
 
+Being Markdown based, enables users of _Lattice_ to have:  
+&ensp;&ensp;  ⇒ **DOCUMENTS AS CODE**  
+  &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;OR  
+&ensp;&ensp;  ⇒ **Documents in plain-text**.
+
+  Lattice strikes the right balance between _form_ and _content_. That is, one can still give **priority** of _content_ over _form_ when creating documents, while still keeping the expressiveness of the needed _form quality_ at very high aesthetic and comprehension level.   
+  Lattice enables the _de-facto default interface markdown format_ between HUMANS and AI be directly managed as a _simple (set of) file(s)_ on a _local_ desktop computer or mobile phone. 
+  
+The plain-text format is efficiently versioned and `diff`ed by all code-versioning systems, which makes it ideal for mid- to strong- **change-controlled environment**(s) like engineering.  
+
+The lack of native graphycal support is compensated by:
+   - picture copy/paste with clear storage placement
+   - mermaid for UML and other structured graphucs.
+
+   
 #### SHORT DESCRIPTION
- - Overall idea is:  **Documents as code** or **Documents in plain-text**.   
-Markdown (*.md) files created with lattice look very much like (are rendered in preview mode like) the md files on GitHub. Here is a screenshot of how the lattice architecture document looks like (in lattice the preview/print theame is always `light` by design (and cannot be changed intentionally)):
+
+ - Target Users are Data-Scientists, Developers and Tech-savvy people that want to make "documentation as code". The format suggested is Markdown as close as possible to GitGub.
+
+   Markdown (*.md) files created with lattice look very much like (are rendered in preview mode like) the md files on GitHub. Here is a screenshot of how the lattice architecture document looks like (in lattice the preview/print theame is always `light` by design (and cannot be changed intentionally)):
     ![Image](README_assets/img_1779475265828.png)
 , and here is how it looks on GitHub with a popular browser (with GitHub in `dark` theme mode):
     ![Image](README_assets/img_1779476271110.png)
@@ -15,7 +32,7 @@ Markdown (*.md) files created with lattice look very much like (are rendered in 
 
 #### IN TECHNICAL TERMS
 
- - **a recent CodeMirror default features** - see https://codemirror.net/ 
+ - **a recent set of CodeMirror features** - see https://codemirror.net/ 
  - **Split editor / preview** — CodeMirror 6 editor with live Markdown preview side-by-side
  - **Paste pictures** - paste directly pictures like screenshots in the document (stores the picture in a folder-name **derived from** the file name )
  - **Multi-window** — open multiple files in independent windows simultaneously
@@ -26,7 +43,7 @@ Markdown (*.md) files created with lattice look very much like (are rendered in 
  - **Daily notes** — configurable daily-note directory
  - **Mermaid diagrams** — fenced ` ```mermaid ``` ` blocks rendered inline
  - **Dark / light themes** — editor and preview themes are independent of each other and the OS
- - **Cross-platform** — Windows, macOS (universal), Linux, Android, iOS
+ - **Cross-platform** — Windows, macOS (universal), Linux, Android, iOS (the latter not delivered yet)
 
 ---
 
@@ -41,9 +58,8 @@ Markdown (*.md) files created with lattice look very much like (are rendered in 
 ## INSTALLATION
 
 ### FOR USERS
-Download the latest stable release for your platform from our **[Releases Page](https://github.com/blessia-blessini/lattice/releases)**.
 
-For bleeding-edge builds, check the artifacts from our latest [GitHub Actions](https://github.com/blessia-blessini/lattice/actions).
+Download the latest stable release for your platform from our **[Releases Page](https://github.com/blessia-blessini/lattice/releases)**.
 
 ### FOR DEVELOPERS
 Lattice is built with **Tauri v2**, **Rust**, and **React**.

@@ -10,6 +10,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.36
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Improve README documentation
 - Refactor and expand project documentation
 - dependencies: npm and cargo update
 - Update CHANGELOG for v0.2.35 release
