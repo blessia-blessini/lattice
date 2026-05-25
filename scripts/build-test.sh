@@ -94,7 +94,15 @@ popd || exit
 # 2b. Run Frontend Coverage
 # runs in project root
 echo "Running Frontend Coverage..."
-npm run test:coverage
+# param pool=forks prevents caching while keeping the 
+#   coverage results merged
+npm run test:coverage -- --pool=forks
+FRONTEND_RESULT=$?
+
+if [ $FRONTEND_RESULT -ne 0 ]; then
+    echo "Frontend tests failed!"
+    exit $FRONTEND_RESULT
+fi
 
 # 3. Linter
 pushd src-tauri || exit

@@ -101,10 +101,18 @@ try {
     # reverse push/pop Location
     Push-Location ..
     try {
-        npm run test:coverage
+        # param pool=forks prevents caching while keeping the 
+        #   coverage results merged
+        npm run test:coverage -- --pool=forks 
+        $frontendResult = $LASTEXITCODE
     }
     finally {
         Pop-Location
+    }
+
+    if ($frontendResult -ne 0) {
+        Write-Output "Frontend tests failed!"
+        exit $frontendResult
     }
 
     # 3. Linter
