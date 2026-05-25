@@ -22,6 +22,10 @@ export interface SettingsProps {
     highlightMark: boolean;
     /** Called when the user flips the highlight-mark toggle. */
     onHighlightMarkChange: (enabled: boolean) => void;
+    /** When true, the preview pane refuses to fetch `http://` / `https://` images and shows a blocked-link placeholder instead (privacy-by-default). */
+    blockExternalImages: boolean;
+    /** Called when the user flips the block-external-images toggle. */
+    onBlockExternalImagesChange: (enabled: boolean) => void;
     /** Optional override for the close button; falls back to `close_settings_window` Tauri command. */
     onClose?: () => void;
     /** Absolute path of the settings file; shown at the bottom of the panel. */
@@ -31,13 +35,14 @@ export interface SettingsProps {
 //******************************************************************************
 // Settings
 //******************************************************************************
-export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultThemeChange, wordWrap, onWordWrapChange, saveOnBlur, dailyNotesPath, onDailyNotesPathChange, highlightMark, onHighlightMarkChange, onClose, settingsPath }) => {
+export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultThemeChange, wordWrap, onWordWrapChange, saveOnBlur, dailyNotesPath, onDailyNotesPathChange, highlightMark, onHighlightMarkChange, blockExternalImages, onBlockExternalImagesChange, onClose, settingsPath }) => {
     const [status, setStatus] = useState<string>('');
 
     const saveSettings = async (newTheme: 'light' | 'dark',
         newWordWrap: boolean,
         newDailyNotesPath: string,
-        newHighlightMark: boolean) => {
+        newHighlightMark: boolean,
+        newBlockExternalImages: boolean) => {
         try {
             const settingsObject = {
                 defaultOpenTheme: newTheme,
@@ -45,6 +50,7 @@ export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultTheme
                 saveOnBlur: saveOnBlur,
                 dailyNotesPath: newDailyNotesPath,
                 highlightMark: newHighlightMark,
+                blockExternalImages: newBlockExternalImages,
             };
             await invoke('save_settings', { settingsPath, settings: settingsObject });
             setStatus('Saved!');
@@ -57,25 +63,31 @@ export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultTheme
 
     const handleThemeChange = (newTheme: 'light' | 'dark') => {
         onDefaultThemeChange(newTheme);
-        saveSettings(newTheme, wordWrap, dailyNotesPath, highlightMark);
+        saveSettings(newTheme, wordWrap, dailyNotesPath, highlightMark, blockExternalImages);
     };
 
     const handleWordWrapChange = () => {
         const newWrap = !wordWrap;
         onWordWrapChange(newWrap);
-        saveSettings(defaultTheme, newWrap, dailyNotesPath, highlightMark);
+        saveSettings(defaultTheme, newWrap, dailyNotesPath, highlightMark, blockExternalImages);
     };
 
     const handleDailyNotesPathChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newPath = e.target.value;
         onDailyNotesPathChange(newPath);
-        saveSettings(defaultTheme, wordWrap, newPath, highlightMark);
+        saveSettings(defaultTheme, wordWrap, newPath, highlightMark, blockExternalImages);
     };
 
     const handleHighlightMarkChange = () => {
         const newValue = !highlightMark;
         onHighlightMarkChange(newValue);
-        saveSettings(defaultTheme, wordWrap, dailyNotesPath, newValue);
+        saveSettings(defaultTheme, wordWrap, dailyNotesPath, newValue, blockExternalImages);
+    };
+
+    const handleBlockExternalImagesChange = () => {
+        const newValue = !blockExternalImages;
+        onBlockExternalImagesChange(newValue);
+        saveSettings(defaultTheme, wordWrap, dailyNotesPath, highlightMark, newValue);
     };
 
     return (
@@ -183,6 +195,37 @@ export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultTheme
                         }} />
                     </div>
                     <span>{highlightMark ? 'On' : 'Off'}</span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '1.5rem' }}>
+                    <span title="When ON, the preview will not fetch http(s):// images. Protects privacy by avoiding requests to third-party servers.">
+                        Block External Images (privacy):
+                    </span>
+                    <div
+                        onClick={handleBlockExternalImagesChange}
+                        style={{
+                            width: '50px',
+                            height: '24px',
+                            backgroundColor: blockExternalImages ? '#2ea44f' : '#ccc',
+                            borderRadius: '12px',
+                            position: 'relative',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.2s'
+                        }}
+                    >
+                        <div style={{
+                            width: '20px',
+                            height: '20px',
+                            backgroundColor: '#fff',
+                            borderRadius: '50%',
+                            position: 'absolute',
+                            top: '2px',
+                            left: blockExternalImages ? '28px' : '2px',
+                            transition: 'left 0.2s',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+                        }} />
+                    </div>
+                    <span>{blockExternalImages ? 'Blocked' : 'Allowed'}</span>
                 </div>
 
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '1.5rem', width: '100%' }}>

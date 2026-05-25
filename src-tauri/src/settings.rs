@@ -22,6 +22,9 @@ pub struct Settings {
 
     #[serde(default = "default_highlight_mark")]
     pub highlight_mark: bool,
+
+    #[serde(default = "default_block_external_images")]
+    pub block_external_images: bool,
 }
 
 fn default_theme() -> String {
@@ -36,6 +39,9 @@ fn default_save_on_blur() -> bool {
 fn default_highlight_mark() -> bool {
     true
 }
+fn default_block_external_images() -> bool {
+    true
+}
 
 impl Default for Settings {
     fn default() -> Self {
@@ -45,6 +51,7 @@ impl Default for Settings {
             save_on_blur: default_save_on_blur(),
             daily_notes_path: "".to_string(),
             highlight_mark: default_highlight_mark(),
+            block_external_images: default_block_external_images(),
         }
     }
 }

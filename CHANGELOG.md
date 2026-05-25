@@ -10,6 +10,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.36
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Block external image fetches by default
 - Rename docs/README.md to docs/00-Docs-ReadMe.md
 - Improve README documentation
 - Refactor and expand project documentation
