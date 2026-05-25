@@ -10,6 +10,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.36
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- fix: prevent double-initialization in React StrictMode and update build scripts to support argument forwarding
 - chore: remove obsolete test samples and add gitignore for the test samples directory
 - refactor: update build scripts to use fork pool for coverage testing and enforce explicit exit codes on failure
 - fix: propagate frontend test failures in build scripts and replace JSDOM storage mocks to support Node.js 25+

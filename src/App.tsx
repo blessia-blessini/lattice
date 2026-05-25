@@ -67,20 +67,20 @@ const rehypeAddSourceLines = () => (tree: any) => {
 
 const PREVIEW_THEME_COLORS = {
   light: { backgroundColor: '#ffffff', color: '#24292e', colorScheme: 'light' as const },
-  dark:  { backgroundColor: '#0d1117', color: '#c9d1d9', colorScheme: 'dark'  as const },
+  dark: { backgroundColor: '#0d1117', color: '#c9d1d9', colorScheme: 'dark' as const },
 };
 
-const VIEW_EDIT        = 'edit'         as const;
-const VIEW_PREVIEW     = 'preview'      as const;
-const VIEW_DUAL        = 'dual'         as const;
-const VIEW_DUAL_SWAP   = 'dual-swap'    as const;
-const VIEW_DUAL_TOP    = 'dual-top'     as const;
-const VIEW_DUAL_BOTTOM = 'dual-bottom'  as const;
+const VIEW_EDIT = 'edit' as const;
+const VIEW_PREVIEW = 'preview' as const;
+const VIEW_DUAL = 'dual' as const;
+const VIEW_DUAL_SWAP = 'dual-swap' as const;
+const VIEW_DUAL_TOP = 'dual-top' as const;
+const VIEW_DUAL_BOTTOM = 'dual-bottom' as const;
 type ViewMode = typeof VIEW_EDIT | typeof VIEW_PREVIEW | typeof VIEW_DUAL | typeof VIEW_DUAL_SWAP
-              | typeof VIEW_DUAL_TOP | typeof VIEW_DUAL_BOTTOM;
+  | typeof VIEW_DUAL_TOP | typeof VIEW_DUAL_BOTTOM;
 const DUAL_MODES = [VIEW_DUAL, VIEW_DUAL_SWAP, VIEW_DUAL_TOP, VIEW_DUAL_BOTTOM] as const;
-const isDual       = (m: ViewMode) => (DUAL_MODES as readonly string[]).includes(m);
-const isVertical   = (m: ViewMode) => m === VIEW_DUAL_TOP || m === VIEW_DUAL_BOTTOM;
+const isDual = (m: ViewMode) => (DUAL_MODES as readonly string[]).includes(m);
+const isVertical = (m: ViewMode) => m === VIEW_DUAL_TOP || m === VIEW_DUAL_BOTTOM;
 
 //******************************************************************************
 // App
@@ -186,6 +186,11 @@ function App() {
   // Used to skip the initial run of the m_currentFilePath effect so that the
   // sessionStorage session-restore item isn't wiped before checkLaunch reads it.
   const isInitialMount = useRef(true);
+
+  // Guard: ensures checkLaunch runs only once, even under React StrictMode
+  // double-mount.  Without this, the first mount deletes __LATTICE_INIT_DATA__
+  // and the second mount falls to the "no file" branch, clearing the editor.
+  const launchDone = useRef(false);
 
   const handleDividerMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -760,6 +765,13 @@ function App() {
     const checkLaunch = async () => {
       console.log("DEBUG: Entering checkLaunch");
 
+      // StrictMode guard: skip second mount (init data was consumed on first)
+      if (launchDone.current) {
+        // DO nothing more
+        return;
+      }
+      launchDone.current = true;
+
       await invoke('calc_base_path');
 
       // 1. Check Direct Push (Option B) - Priority High
@@ -913,7 +925,7 @@ function App() {
 
       // Check for Redo: Ctrl+Y (Win) or Cmd+Shift+Z / Cmd+Y (Mac)
       const isRedo = ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) ||
-                     ((e.metaKey) && e.shiftKey && (e.key === 'z' || e.key === 'Z'));
+        ((e.metaKey) && e.shiftKey && (e.key === 'z' || e.key === 'Z'));
       if (isRedo) {
         if (editorRef.current) {
           e.preventDefault();
@@ -961,7 +973,7 @@ function App() {
       style.id = 'lattice-print-dynamic';
       const pageCss = '@page {\n  @top-center {\n    content: "' + esc + '";\n    font-size: 9pt;\n    font-family: Arial, Helvetica, sans-serif;\n    color: #555;\n  }\n}\n';
       const zoomCss = '.preview-pane, .preview-pane__body, .markdown-body { font-size: ' + printPt + 'pt !important; }\n'
-                    + '.cm-content, .cm-line { font-size: ' + printPt + 'pt !important; }';
+        + '.cm-content, .cm-line { font-size: ' + printPt + 'pt !important; }';
       style.textContent = pageCss + zoomCss;
       document.head.appendChild(style);
     };
@@ -1401,11 +1413,12 @@ function App() {
           />
         </div>
 
-        <div ref={mainContentRef} className="main-content" style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative',
+        <div ref={mainContentRef} className="main-content" style={{
+          display: 'flex', flex: 1, overflow: 'hidden', position: 'relative',
           flexDirection: viewMode === VIEW_DUAL_SWAP ? 'row-reverse'
-                       : viewMode === VIEW_DUAL_TOP    ? 'column'
-                       : viewMode === VIEW_DUAL_BOTTOM ? 'column-reverse'
-                       : 'row'
+            : viewMode === VIEW_DUAL_TOP ? 'column'
+              : viewMode === VIEW_DUAL_BOTTOM ? 'column-reverse'
+                : 'row'
         }}>
           <div className="editor-pane" style={{
             flex: isDual(viewMode) ? `0 0 ${splitPct}%` : 1,
@@ -1431,7 +1444,7 @@ function App() {
               onMouseDown={handleDividerMouseDown}
               style={isVertical(viewMode)
                 ? { width: '100%', height: '5px', cursor: 'row-resize' }
-                : { width: '5px',  height: '100%', cursor: 'col-resize' }
+                : { width: '5px', height: '100%', cursor: 'col-resize' }
               }
             />
           )}
@@ -1442,9 +1455,11 @@ function App() {
             ...PREVIEW_THEME_COLORS[m_previewTheme],
           }}>
             <div className="markdown-body preview-pane__body" data-theme={m_previewTheme}
-              style={{ backgroundColor: PREVIEW_THEME_COLORS[m_previewTheme].backgroundColor,
-                       color: PREVIEW_THEME_COLORS[m_previewTheme].color,
-                       fontSize: `${m_fontSize}%` }}>
+              style={{
+                backgroundColor: PREVIEW_THEME_COLORS[m_previewTheme].backgroundColor,
+                color: PREVIEW_THEME_COLORS[m_previewTheme].color,
+                fontSize: `${m_fontSize}%`
+              }}>
               {/* Rendered via useMemo above — see `previewMarkdown`. Using
                   the cached element here means unrelated App re-renders do
                   not re-invoke ReactMarkdown, and a checkbox click (which

@@ -950,3 +950,78 @@ describe('App — font size controls', () => {
         expect(display()).toBe('95%');
     });
 });
+
+// ---------------------------------------------------------------------------
+// StrictMode double-mount resilience (regression for launchDone guard)
+// ---------------------------------------------------------------------------
+// React.StrictMode (used in main.tsx) mounts components twice in dev mode.
+// Before the launchDone ref guard, the first mount consumed and deleted
+// window.__LATTICE_INIT_DATA__, causing the second mount to fall into the
+// "no file" branch and reset the editor to empty.
+// ---------------------------------------------------------------------------
+describe('App — StrictMode double-mount resilience', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        sessionStorage.clear();
+        localStorage.clear();
+        delete (window as any).__LATTICE_INIT_DATA__;
+        vi.mocked(TauriCore.invoke).mockImplementation(makeInvokeMock());
+        document.title = '';
+    });
+
+    it('init data survives React.StrictMode double-mount (file opens on launch)', async () => {
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: 'documents/strict-mode-test.md',
+            content: '# StrictMode Test',
+            hash: 'abc123',
+        };
+
+        // Wrap in StrictMode exactly like main.tsx does.
+        // This causes useEffect callbacks to run twice (mount, unmount, re-mount).
+        const { container } = render(
+            <React.StrictMode>
+                <App />
+            </React.StrictMode>
+        );
+
+        // The document title must contain the filename, proving checkLaunch
+        // set m_currentFilePath from the init data.
+        await waitFor(() => {
+            expect(document.title).toContain('strict-mode-test');
+        });
+
+        // The preview pane must contain the rendered markdown content,
+        // proving setLoadedContent was called with the init data.
+        const select = container.querySelector('[data-testid="view-mode-select"]') as HTMLSelectElement;
+        await act(async () => { fireEvent.change(select, { target: { value: 'dual' } }); });
+
+        await waitFor(() => {
+            const previewBody = container.querySelector('.preview-pane__body');
+            expect(previewBody).not.toBeNull();
+            expect(previewBody!.textContent).toContain('StrictMode Test');
+        });
+    });
+
+    it('init data is consumed only once (no duplicate side effects)', async () => {
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: 'documents/once-only.md',
+            content: '# Once',
+            hash: 'def456',
+        };
+
+        render(
+            <React.StrictMode>
+                <App />
+            </React.StrictMode>
+        );
+
+        await waitFor(() => expect(document.title).toContain('once-only'));
+
+        // watch_file is called inside checkLaunch only when init data has a path.
+        // With the launchDone guard it should be called exactly once,
+        // not twice (one per StrictMode mount).
+        const watchCalls = vi.mocked(TauriCore.invoke).mock.calls
+            .filter(([cmd]) => cmd === 'watch_file');
+        expect(watchCalls.length).toBe(1);
+    });
+});
