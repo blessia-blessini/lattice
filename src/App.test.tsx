@@ -591,13 +591,38 @@ describe('App — previewComponents', () => {
         });
     });
 
-    it('renders an https image as a plain <img> in the preview', async () => {
+    it('blocks an https image by default (shows placeholder link, not <img>)', async () => {
+        // m_blockExternalImages defaults to true — no <img> should appear,
+        // only the 🚫 span containing a clickable link to the original URL.
         const { container } = await renderInDualMode('![alt](https://example.com/pic.png)');
+        await waitFor(() => {
+            expect(container.querySelector('.preview-pane img')).toBeNull();
+            const link = container.querySelector(
+                '.preview-pane a[href="https://example.com/pic.png"]'
+            ) as HTMLAnchorElement;
+            expect(link).not.toBeNull();
+        });
+    });
+
+    it('renders an https image as a plain <img> when blockExternalImages is disabled', async () => {
+        // Override the invoke mock so load_settings returns blockExternalImages: false.
+        // (Settings are loaded via invoke('load_settings'), not read_text_file.)
+        vi.mocked(TauriCore.invoke).mockImplementation((cmd: string, args: any) => {
+            if (cmd === 'load_settings') {
+                return Promise.resolve({ blockExternalImages: false });
+            }
+            return makeInvokeMock()(cmd, args);
+        });
+
+        const { container } = await renderInDualMode('![alt](https://example.com/pic.png)');
+        // Extended timeout: the settings chain has multiple async hops
+        // (find_vault_settings_file → setVaultSettingsPath → loadSettings →
+        //  setBlockExternalImages → previewComponents memo re-evaluation).
         await waitFor(() => {
             const img = container.querySelector('.preview-pane img') as HTMLImageElement;
             expect(img).not.toBeNull();
             expect(img.src).toContain('example.com/pic.png');
-        });
+        }, { timeout: 3000 });
     });
 
     it('loads a local image via read_file_base64 and sets img src to the base64 result', async () => {

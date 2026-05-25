@@ -141,6 +141,7 @@ function App() {
   const [m_previewTheme, setPreviewTheme] = useState<'dark' | 'light'>('light'); // Preview pane theme (independent)
   const [m_wordWrap, setWordWrap] = useState(false);
   const [m_highlightMark, setHighlightMark] = useState(true);
+  const [m_blockExternalImages, setBlockExternalImages] = useState(true);
   const [m_dailyNotesPath, setDailyNotesPath] = useState<string>('');
   const [viewMode, setViewMode] = useState<ViewMode>(VIEW_EDIT);
   const [splitPct, setSplitPct] = useState(57); // editor share in %, preview gets remainder
@@ -326,6 +327,7 @@ function App() {
       setSaveOnBlur(settings.saveOnBlur !== false); // default true
       setDailyNotesPath(settings.dailyNotesPath || '');
       setHighlightMark(settings.highlightMark !== false); // default true
+      setBlockExternalImages(settings.blockExternalImages !== false); // default true — privacy-by-default
 
     } catch (error) {
       console.log("Settings file not found or invalid, using default.", error);
@@ -1186,6 +1188,24 @@ function App() {
       const { alt, src } = props;
       if (!src) return <img alt={alt} />;
       if (src.startsWith('http://') || src.startsWith('https://')) {
+        // Privacy/security gate: when blockExternalImages is enabled (default),
+        // we do NOT render the <img> — that would trigger an immediate browser
+        // fetch and leak the user's IP/User-Agent to the external host. Instead
+        // we render a visible link the user can choose to open in a browser.
+        if (m_blockExternalImages) {
+          return (
+            <span style={{
+              display: 'inline-block',
+              padding: '2px 6px',
+              border: '1px dashed #999',
+              borderRadius: '4px',
+              fontSize: '0.85em',
+              color: m_previewTheme === 'dark' ? '#c9d1d9' : '#57606a',
+            }}>
+              🚫 External image blocked — <a href={src} target="_blank" rel="noopener noreferrer">{alt || src}</a>
+            </span>
+          );
+        }
         return <img src={src} alt={alt} style={{ maxWidth: '100%' }} />;
       }
       if (m_currentFilePath) {
@@ -1219,7 +1239,7 @@ function App() {
       }
       return <img src={src} alt={alt} />;
     },
-  }), [m_theme, m_currentFilePath]);
+  }), [m_theme, m_currentFilePath, m_blockExternalImages, m_previewTheme]);
 
   const previewMarkdown = useMemo(() => (
     <ReactMarkdown
@@ -1249,6 +1269,8 @@ function App() {
       onDailyNotesPathChange={setDailyNotesPath}
       highlightMark={m_highlightMark}
       onHighlightMarkChange={setHighlightMark}
+      blockExternalImages={m_blockExternalImages}
+      onBlockExternalImagesChange={setBlockExternalImages}
       settingsPath={m_vaultSettingsPath || ""}
     />;
 
@@ -1278,6 +1300,8 @@ function App() {
             onDailyNotesPathChange={setDailyNotesPath}
             highlightMark={m_highlightMark}
             onHighlightMarkChange={setHighlightMark}
+            blockExternalImages={m_blockExternalImages}
+            onBlockExternalImagesChange={setBlockExternalImages}
             onClose={() => setShowSettingsModal(false)}
             settingsPath={m_vaultSettingsPath || ""}
           />

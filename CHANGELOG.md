@@ -7,13 +7,28 @@ Edit the section for your next version **before** pushing the release tag like v
 ---
 
 
-## v0.2.36
+## v0.2.37
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- merged remote 0.2.36 | Block external image fetches by default
+
+---
+
+## v0.2.36
+### Changes
+  
+- Dependencies update (cargo and npm update)
+- Documentaion improved
+- Attestation 
+
+---
 - fix: prevent double-initialization in React StrictMode and update build scripts to support argument forwarding
 - chore: remove obsolete test samples and add gitignore for the test samples directory
 - refactor: update build scripts to use fork pool for coverage testing and enforce explicit exit codes on failure
 - fix: propagate frontend test failures in build scripts and replace JSDOM storage mocks to support Node.js 25+
+- Block external image fetches by default
+- Rename docs/README.md to docs/00-Docs-ReadMe.md
+- Improve README documentation
 - Refactor and expand project documentation
 - dependencies: npm and cargo update
 - Update CHANGELOG for v0.2.35 release
