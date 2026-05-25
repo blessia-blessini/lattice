@@ -27,7 +27,11 @@ try {
     . "$PSScriptRoot\_pre-build.ps1" -DefaultBuildNo "LocalDev" -ScriptName "build-dev.ps1"
 
     # Run Cargo Dev
-    npm run tauri dev
+    if ($args.Count -gt 0) {
+        npm run tauri dev -- $args
+    } else {
+        npm run tauri dev
+    }
 }
 finally {
     # restore the old environment variable -- it will work even for "no vallue"

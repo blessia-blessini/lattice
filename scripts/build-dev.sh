@@ -28,4 +28,9 @@ export SCRIPT_NAME="build-dev.sh"
 source ./scripts/_pre-build.sh
 
 # Run Cargo Dev
-npm run tauri dev
+echo "**************************************************"
+echo "executing 'npm run tauri dev' in folder $PWD"
+echo "**************************************************"
+
+npm run tauri dev -- "$@"
+

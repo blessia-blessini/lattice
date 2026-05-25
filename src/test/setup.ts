@@ -25,6 +25,47 @@ import '@testing-library/react';
 import { vi } from 'vitest';
 import { StaticRuntime } from "@services/StaticRuntime";
 
+// Spec-compliant mock storage implementation to bypass Node.js 25+ native Web Storage shadowing JSDOM
+const createStorageMock = () => {
+    let store: Record<string, string> = {};
+    return {
+        getItem: vi.fn((key: string) => store[key] ?? null),
+        setItem: vi.fn((key: string, value: string) => { store[key] = String(value); }),
+        removeItem: vi.fn((key: string) => { delete store[key]; }),
+        clear: vi.fn(() => { store = {}; }),
+        key: vi.fn((index: number) => Object.keys(store)[index] || null),
+        get length() { return Object.keys(store).length; }
+    };
+};
+
+const localStorageMock = createStorageMock();
+const sessionStorageMock = createStorageMock();
+
+Object.defineProperty(window, 'localStorage', {
+    value: localStorageMock,
+    writable: true,
+    configurable: true
+});
+
+Object.defineProperty(window, 'sessionStorage', {
+    value: sessionStorageMock,
+    writable: true,
+    configurable: true
+});
+
+// Ensure global variables also point to our mocks
+Object.defineProperty(global, 'localStorage', {
+    value: localStorageMock,
+    writable: true,
+    configurable: true
+});
+
+Object.defineProperty(global, 'sessionStorage', {
+    value: sessionStorageMock,
+    writable: true,
+    configurable: true
+});
+
 // Mock Tauri API
 vi.mock('@tauri-apps/api/core', () => ({
     invoke: vi.fn((cmd, args) => {

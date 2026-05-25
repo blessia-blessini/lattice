@@ -36,6 +36,8 @@ Lattice is a local-first Markdown editor built with **Tauri**, combining a **Rus
     - [How It Works](#how-it-works)
     - [Activity Diagram](#activity-diagram)
     - [Production Safety](#production-safety)
+- [Architectural Decisions](#architectural-decisions)
+  - [ADR-01: External Image Fetches Blocked by Default](#adr-01-external-image-fetches-blocked-by-default)
 <!-- /TOC -->
 
 ## Technology Stack
@@ -261,26 +263,14 @@ No changes to `App.tsx` rendering logic are needed beyond wiring `setPreviewThem
 
 ## Testing Architecture
 
-The project employs a dual strategy for testing, covering both the Rust backend and the React frontend.
+> Full details of the test strategy, pipeline commands, and rationale are in
+> **[01-test-strategy.md](01-test-strategy.md)**.
 
--   **Backend (Rust)**: Unit and integration tests are written within the Rust modules (e.g., `lib.rs`, `file_state.rs`) under a `#[cfg(test)]` configuration. They are executed with `cargo test`.
--   **Frontend (React)**: Component and hook tests are written using **Vitest**, a Vite-native test framework. It uses `jsdom` to simulate a browser environment, allowing tests to run in a standard Node.js environment.
-
-```mermaid
-graph TD
-    subgraph "Test Execution"
-        CargoTest[cargo test]
-        Vitest[npm run test]
-    end
-
-    subgraph "Codebases"
-        RustBackend[Rust Backend Modules]
-        ReactFrontend[React Frontend Components]
-    end
-
-    CargoTest --> RustBackend
-    Vitest --> ReactFrontend
-```
+The pipeline (`scripts/build-test.sh` / `build-test.ps1`) covers three Rust
+phases (unit, integration, E2E conflict reproducer) plus frontend Vitest
+coverage, a Clippy linter pass, and a combined `llvm-cov` HTML report.
+The E2E phase runs the full compiled application under coverage instrumentation
+to validate the file-conflict detection flow end-to-end.
 
 ## Continuous Integration (CI) Architecture
 
@@ -308,7 +298,7 @@ graph TD
 2.  **Build & Test Job**: This job runs in parallel for each configuration in the matrix.
     -   **Environment**: Sets up Node.js, Rust (including cross-compilation targets if needed), and caches dependencies.
     -   **Build**: Compiles the Rust backend and builds the frontend, finally bundling them into a native application (`.exe`, `.dmg`, `.AppImage`).
-    -   **Test**: Runs `cargo test` for the backend and `npm run test` (Vitest) for the frontend to ensure correctness.
+    -   **Test**: Executes `scripts/build-test.sh` (Linux/macOS) or `build-test.ps1` (Windows), which runs the full multi-phase test pipeline — see [01-test-strategy.md](01-test-strategy.md) for the complete pipeline description.
     -   **Artifacts**: The final compiled applications and documentation are uploaded as artifacts for download and deployment.
 
 ---
@@ -507,3 +497,46 @@ The sabotage code is **completely compiled out** in production builds:
 - The `integration_test` cfg is only activated when `RUSTFLAGS="--cfg integration_test"` is explicitly passed, which only happens inside the `reproduce_conflict` example or via `Test-Conflict.ps1` / `build-test.sh`.
 
 ---
+
+## Architectural Decisions
+
+### ADR-01: External Image Fetches Blocked by Default
+
+**Context.** The preview pane renders Markdown via `ReactMarkdown`, which converts
+`![alt](url)` into an `<img src="url">`. When `url` is `http://` or `https://`,
+the WebView fetches the image automatically — leaking the user's IP address,
+User-Agent, and the fact that they are viewing a specific document to the
+third-party host. For a local-first editor that targets engineering and PKM
+workflows, this is a non-trivial privacy and supply-chain concern (a compromised
+image host could also be used as a side-channel beacon).
+
+**Decision.** Block external image fetches by default. The setting
+`blockExternalImages` (persisted in `settings.json`, defaults to `true`) controls
+the behaviour. When enabled, any `<img>` whose `src` starts with `http://` or
+`https://` is replaced in the preview by a visible *"🚫 External image blocked"*
+placeholder containing a click-through `<a href>` link to the same URL — the
+user can choose to follow the link in a real browser without the editor itself
+making the request.
+
+**Alternatives considered.**
+- *Tauri CSP `img-src` restriction* — enforced at WebView level, zero custom code.
+  Rejected because CSP is static at build time and cannot be toggled per user
+  preference. Reserved as a potential future hardening layer (defence in depth).
+- *Proxy all external images through the Rust backend* — would allow caching and
+  stripping of tracking parameters. Rejected for v1 as added complexity without
+  clearly better privacy than simply refusing to fetch.
+
+**Trade-offs.** README files and other documents that legitimately depend on
+external badges/screenshots will render with placeholders by default; the user
+must explicitly opt in to allow external fetches. This is the intended
+privacy-by-default posture.
+
+**Scope.** Applies only to the preview pane. The editor (CodeMirror) renders
+the markdown source as text and never fetches images. Local relative-path
+images continue to work normally — they are loaded via the
+`read_file_base64` Tauri command, not via HTTP.
+
+**Files involved.**
+- `src-tauri/src/settings.rs` — `block_external_images` field, default `true`
+- `src/components/Settings.tsx` — toggle UI
+- `src/App.tsx` — `img` renderer in `previewComponents` enforces the gate

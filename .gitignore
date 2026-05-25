@@ -78,3 +78,5 @@ src-tauri/conflict_success.txt
 utils/changelog-update/changelog-update
 .githooks/changelog-update
 src-tauri/irrelevant_path.md
+_test_samples/temp/crlf_1line.md.bin
+_test_samples/temp/crlf_multi.md.bin

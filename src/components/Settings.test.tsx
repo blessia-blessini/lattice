@@ -40,6 +40,8 @@ const DEFAULT_PROPS = {
     onDailyNotesPathChange: vi.fn(),
     highlightMark: true,
     onHighlightMarkChange: vi.fn(),
+    blockExternalImages: true,
+    onBlockExternalImagesChange: vi.fn(),
     onClose: vi.fn(),
     settingsPath: '/vault/.lattice/settings.json',
 };
