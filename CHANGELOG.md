@@ -4,12 +4,28 @@ All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 ---
 
+
+## v0.2.38
+### Changes
+  <!-- INSERT BULLETS UNDER THIS LINE -->
+- Finalize ChangeLog for v0.2.37 and opening v0.2.38 placeholder
+
+
 ---
 
 
 ## v0.2.37
 ### Changes
-  <!-- INSERT BULLETS UNDER THIS LINE -->
+  
+ - Bump to 0.2.37 and add platform implementations and tests
+   "platform" is: Windows, macOS, Linux, iOS and Android
+ - Add Privacy statement
+ - file registration on macOS and Linux improvemen
+ - made visible file path use `~` on Posix and `%USERPROFILE$` on Eindows  
+ - bug fixes
+
+---
+  
 - squash in the prep v0.2.37 branch
 - Add privacy statement for Lattice
 - show ~/home directory in caption
