@@ -41,12 +41,14 @@ on:
         type: choice
         options:
         - all
-        - desktops                # macOS-Universal, Linux, Windows (x64+ARM)
+        - desktops                # macOS (Apple + Intel silicon), Linux, Windows (x64+ARM)
         - non-apple-os-desktops   # Windows (x64+ARM), Linux
         - windows-desktop
         - windows-arm-desktop
         - linux-desktop
         - macos-universal
+        - macos-arm64
+        - macos-intel
         - android
         - ios
 
@@ -101,13 +103,23 @@ jobs:
           },
           {
             "os": "macos-latest",
-            "platform": "macos-universal",
+            "platform": "macos-arm64",
             "bldprefix": "",
             "mobile_build": "",
-            "args": "--target universal-apple-darwin",
-            "download_name": "MacOS-Universal-Intel-and-AppleSilicon-Desktop-App",
-            "upload_path1": "src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg",
-            "upload_path2": "src-tauri/target/release/release/bundle/dmg/*.dmg"
+            "args": "--target aarch64-apple-darwin",
+            "download_name": "MacOS-ARM64-AppleSilicon-Desktop-App",
+            "upload_path1": "src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg",
+            "upload_path2": ""
+          },
+          {
+            "os": "macos-latest",
+            "platform": "macos-intel",
+            "bldprefix": "",
+            "mobile_build": "",
+            "args": "--target x86_64-apple-darwin",
+            "download_name": "MacOS-Intel-x86_64-Desktop-App",
+            "upload_path1": "src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg",
+            "upload_path2": ""
           },
           {
             "os": "ubuntu-latest",
@@ -161,8 +173,12 @@ jobs:
             TARGET="windows-desktop"
           elif [[ "$BRANCH" == *"buildLinux"* ]]; then
             TARGET="linux-desktop"
+          elif [[ "$BRANCH" == *"buildMacosArm"* ]]; then
+            TARGET="macos-arm64"
+          elif [[ "$BRANCH" == *"buildMacosIntel"* ]]; then
+            TARGET="macos-intel"
           elif [[ "$BRANCH" == *"buildMacos"* ]]; then
-            TARGET="macos-universal"
+            TARGET="desktops-macos"  # both macOS arches
           else
             echo "Branch name setup requires explicit target. Stopping."
             echo "matrix=[]" >> "$GITHUB_OUTPUT"
@@ -182,7 +198,9 @@ jobs:
         if [ "$TARGET" == "all" ]; then
           FINAL_JSON=$(echo "$CONST_JSON")
         elif [ "$TARGET" == "desktops" ]; then
-          FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "windows-desktop" or .platform == "windows-arm-desktop" or .platform == "linux-desktop" or .platform == "macos-universal")]')
+          FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "windows-desktop" or .platform == "windows-arm-desktop" or .platform == "linux-desktop" or .platform == "macos-arm64" or .platform == "macos-intel")]')
+        elif [ "$TARGET" == "desktops-macos" ]; then
+          FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "macos-arm64" or .platform == "macos-intel")]')
         elif [ "$TARGET" == "non-apple-os-desktops" ]; then
           FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "windows-desktop" or .platform == "windows-arm-desktop" or .platform == "linux-desktop")]')
         elif [ "$TARGET" == "windows-desktop" ]; then
@@ -191,8 +209,10 @@ jobs:
           FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "windows-arm-desktop")]')
         elif [ "$TARGET" == "linux-desktop" ]; then
           FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "linux-desktop")]')
-        elif [ "$TARGET" == "macos-universal" ]; then
-          FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "macos-universal")]')
+        elif [ "$TARGET" == "macos-arm64" ]; then
+          FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "macos-arm64")]')
+        elif [ "$TARGET" == "macos-intel" ]; then
+          FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "macos-intel")]')
         elif [ "$TARGET" == "android" ]; then
           FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "android")]')
         elif [ "$TARGET" == "ios" ]; then
@@ -307,13 +327,22 @@ jobs:
         fi
         echo "BUILD_NO=$BUILD_NO" >> $GITHUB_OUTPUT
 
+    # Cross compilation
     - name: 153. Setup Rust Targets (Windows ARM64)
       if: matrix.config.platform == 'windows-arm-desktop'
       run: rustup target add aarch64-pc-windows-msvc
+    - name: 154. Setup Rust Targets (macOS ARM64)
+      if: matrix.config.platform == 'macos-arm64'
+      run: rustup target add aarch64-apple-darwin
+    - name: 155. Setup Rust Targets (macOS Intel)
+      if: matrix.config.platform == 'macos-intel'
+      run: rustup target add x86_64-apple-darwin
 
-    - name: 154. Setup Rust Targets (macOS Universal)
-      if: matrix.config.platform == 'macos-universal'
-      run: rustup target add x86_64-apple-darwin aarch64-apple-darwin
+    - name: 190. Install create-dmg (macOS)
+      # Required by Tauri's bundle_dmg.sh to create DMG installers.
+      # Not pre-installed on GitHub Actions macOS runners.
+      if: runner.os == 'macOS'
+      run: brew install create-dmg
 
     ################################################################
     # 200 / Setup JDK 17 (Android)
@@ -375,7 +404,7 @@ jobs:
     ################################################################
     # 380 / Generate Documentation (Linux Only)
     ################################################################
-    - name: 380. Generate Documentation
+    - name: 380. CURRENLY ONLY LINUX - Generate Documentation
       # This runs on all platforms (and generates the same content for docs)
       #    but we only upload docs generated from linux (most cost effective on GitHub Actions)
       if: matrix.config.platform == 'linux-desktop'
@@ -409,7 +438,7 @@ jobs:
     ################################################################
     # 410 / Upload Documentation
     ################################################################
-    - name: 410. Upload Documentation
+    - name: 410. CURRENLY ONLY LINUX - Upload Documentation
       if: matrix.config.platform == 'linux-desktop'
       uses: actions/upload-artifact@v7
       id: a-docs-gen
@@ -421,9 +450,10 @@ jobs:
     ################################################################
     # 415 / Upload Coverage HTML report (Linux only)
     ################################################################
-    - name: 415. Upload Coverage Report
+    - name: 415. CURRENLY ONLY LINUX - Upload Coverage Report
       if: matrix.config.platform == 'linux-desktop'
       uses: actions/upload-artifact@v7
+      id: TestsRun
       with:
         name: COVERAGE
         path: |
@@ -449,8 +479,11 @@ jobs:
       continue-on-error: true
       run: |
         echo "### ${{ matrix.config.download_name }} BUILD" >> $GITHUB_STEP_SUMMARY
-        echo " - Download built executable file(s) from: ${{ steps.a-download-exec.outputs.artifact-url }}" >>  $GITHUB_STEP_SUMMARY
-        echo " - Download DOC(s) from: ${{ steps.a-docs-gen.outputs.artifact-url }}" >>  $GITHUB_STEP_SUMMARY
+        echo " - Download built executable file(s) from: ${{ steps.a-download-exec.outputs.artifact-url }}"  >>  $GITHUB_STEP_SUMMARY
+        echo " - Additional downloads"                                    >>  $GITHUB_STEP_SUMMARY
+        echo "     - link DOCs    : ${{ steps.a-docs-gen.outputs.artifact-url }}" >>  $GITHUB_STEP_SUMMARY
+        echo "     - link Coverage: ${{ steps.TestsRun.outputs.artifact-url }}"   >>  $GITHUB_STEP_SUMMARY
+        echo "     - if a link above is empty then this artefact **is intentionally __not__** generated for ${{ matrix.config.platform }}" >>  $GITHUB_STEP_SUMMARY
 
 
       # - `\u26A0` is the warning emoji  ⚠️.

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Merged into the generated Info.plist by Tauri during macOS bundling.
+  Declares Lattice as the Owner-rank handler for .md / .markdown files,
+  and imports the net.daringfireball.markdown UTI so the association works
+  even when no other app has previously registered that UTI on the machine.
+-->
+<plist version="1.0">
+<dict>
+
+  <!-- Override the CFBundleDocumentTypes entry Tauri generates from
+       fileAssociations so we can add LSHandlerRank = Owner.
+       Without Owner rank macOS picks whichever app was installed last. -->
+  <key>CFBundleDocumentTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleTypeName</key>
+      <string>Markdown Document</string>
+      <key>CFBundleTypeRole</key>
+      <string>Editor</string>
+      <key>LSHandlerRank</key>
+      <string>Owner</string>
+      <key>LSItemContentTypes</key>
+      <array>
+        <string>net.daringfireball.markdown</string>
+        <string>public.plain-text</string>
+      </array>
+    </dict>
+  </array>
+
+  <!-- Import the Markdown UTI so Launch Services knows about it
+       even on a machine where Xcode / VS Code hasn't registered it yet. -->
+  <key>UTImportedTypeDeclarations</key>
+  <array>
+    <dict>
+      <key>UTTypeIdentifier</key>
+      <string>net.daringfireball.markdown</string>
+      <key>UTTypeDescription</key>
+      <string>Markdown Document</string>
+      <key>UTTypeConformsTo</key>
+      <array>
+        <string>public.plain-text</string>
+      </array>
+      <key>UTTypeTagSpecification</key>
+      <dict>
+        <key>public.filename-extension</key>
+        <array>
+          <string>md</string>
+          <string>markdown</string>
+        </array>
+        <key>public.mime-type</key>
+        <string>text/markdown</string>
+      </dict>
+    </dict>
+  </array>
+
+</dict>
+</plist>

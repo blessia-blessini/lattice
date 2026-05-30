@@ -38,11 +38,15 @@ const DEFAULT_SETTINGS: &str = r#"{}"#;
 // Private Path variable of this module
 static M_PATH: Mutex<String> = Mutex::new(String::new());
 
-mod file_state;
-mod textcontent_hashing;
+pub mod file_state;
 pub mod settings;
-mod toc;
 mod table_format;
+mod textcontent_hashing;
+mod toc;
+
+// Platform module — lib.rs has zero OS knowledge.
+// Platform selection is handled by build.rs; see platform/mod.rs.
+mod platform;
 
 #[cfg(test)]
 #[path = "test_fs_helpers.rs"]
@@ -141,6 +145,11 @@ async fn open_new_window(app: tauri::AppHandle, path: Option<String>) -> Result<
     let mut builder =
         tauri::WebviewWindowBuilder::new(&app, &label, tauri::WebviewUrl::App("index.html".into()));
 
+    #[cfg(desktop)]
+    {
+        builder = configure_desktop_window(builder);
+    }
+
     if let Some(p) = path {
         debug!("Processing Direct Push for: {}", p);
 
@@ -203,6 +212,113 @@ fn generate_new_window_label() -> String {
     format!("lattice-{}-window", count)
 }
 // generate_new_window_label END *******************************************
+
+//******************************************************************************
+// calculate_cascade_coordinates
+//******************************************************************************
+/// Pure calculation logic for window cascading tiling coordinates.
+/// Given the count index, returns (x, y) coordinates representing logical pixels.
+#[cfg(desktop)]
+fn calculate_cascade_coordinates(count: usize) -> (f64, f64) {
+    let index = count % 10;
+    let x = 100.0 + 6.0 * (index as f64);
+    let y = 100.0 + 3.0 * (index as f64);
+    (x, y)
+}
+
+//******************************************************************************
+// configure_desktop_window
+//******************************************************************************
+/// Configures title, size, and cascaded positioning for desktop windows.
+/// Tiles each subsequent window 3 pixels lower and 6 pixels righter, wrapping
+/// around back to the starting position after 10 windows have been created.
+#[cfg(desktop)]
+fn configure_desktop_window<R: tauri::Runtime, M: tauri::Manager<R>>(
+    builder: tauri::WebviewWindowBuilder<'_, R, M>,
+) -> tauri::WebviewWindowBuilder<'_, R, M> {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    static DESKTOP_WINDOW_COUNTER: AtomicUsize = AtomicUsize::new(0);
+
+    let count = DESKTOP_WINDOW_COUNTER.fetch_add(1, Ordering::Relaxed);
+    let (x, y) = calculate_cascade_coordinates(count);
+
+    builder
+        .title(format!("lattice ({})", get_version_string()))
+        .inner_size(800.0, 600.0)
+        .position(x, y)
+}
+
+//******************************************************************************
+// build_window_with_file
+//******************************************************************************
+/// Creates a new editor window and injects `path`'s content via Direct Push.
+///
+/// Shared by `setup_handler` (Windows/Linux startup via CLI args) and the
+/// `RunEvent::Opened` callback (macOS file-association Apple Events). Also used
+/// by `RunEvent::Ready` to create the initial empty window on macOS when no
+/// file was opened. Attaches a `Destroyed` listener so `FileTrackerState` is
+/// cleaned up when the window closes.
+fn build_window_with_file(app: &tauri::AppHandle, path: Option<String>) -> Result<(), String> {
+    let label = generate_new_window_label();
+
+    let mut builder =
+        tauri::WebviewWindowBuilder::new(app, &label, tauri::WebviewUrl::App("index.html".into()));
+
+    #[cfg(desktop)]
+    {
+        builder = configure_desktop_window(builder);
+    }
+
+    let path_str = path.clone().unwrap_or_default();
+    let mut content = String::new();
+    let mut hash = textcontent_hashing::compute_hash(&content);
+
+    if !path_str.is_empty() {
+        let state: tauri::State<file_state::FileTrackerState> = app.state();
+        match file_state::read_text_file(path_str.clone(), state, Some(label.clone())) {
+            Ok(response) => {
+                content = response.content;
+                hash = response.hash;
+                info!(
+                    "build_window_with_file: Direct Push injected for '{}'",
+                    path_str
+                );
+            }
+            Err(e) => {
+                // Log but do not abort — a window with empty content is better
+                // than no window at all when, e.g., a file was deleted after
+                // the OS sent the open event.
+                error!("build_window_with_file: cannot read '{}': {}", path_str, e);
+            }
+        }
+    }
+
+    let payload = json!({
+        "content": content,
+        "hash": hash,
+        "path": path_str,
+    });
+    let script = format!("window.__LATTICE_INIT_DATA__ = {};", payload);
+    builder = builder.initialization_script(&script);
+
+    let window = builder.build().map_err(|e| {
+        error!("build_window_with_file: window build failed: {}", e);
+        e.to_string()
+    })?;
+
+    let app_clone = app.clone();
+    let label_clone = label.clone();
+    window.on_window_event(move |event| {
+        if let tauri::WindowEvent::Destroyed = event {
+            let state: tauri::State<file_state::FileTrackerState> = app_clone.state();
+            file_state::cleanup_window_state(&label_clone, &state);
+        }
+    });
+
+    info!("build_window_with_file: window '{}' created.", label);
+    Ok(())
+}
+// build_window_with_file END **********************************************
 
 //******************************************************************************
 // open_settings_window
@@ -934,8 +1050,11 @@ pub fn run() {
             toc::update_toc,
             table_format::pad_tables
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            platform::handle_run_event(app_handle, event);
+        });
 } // run END *******************************************************************
 
 //******************************************************************************
@@ -962,124 +1081,8 @@ pub fn run() {
 /// A `Result` containing `()` on success, or a boxed `Error` if a window
 /// cannot be built, causing Tauri to abort startup.
 fn setup_handler(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
-    // 1. Logic for File Association (Desktop)
-    // Collect all non-flag arguments as file paths
-    #[cfg(desktop)]
-    let mut file_paths: Vec<String> = Vec::new();
-    #[cfg(not(desktop))]
-    let file_paths: Vec<String> = Vec::new();
-
-    #[cfg(desktop)]
-    {
-        use std::env;
-        let args: Vec<String> = env::args().collect();
-        let mut i = 1;
-        while i < args.len() {
-            let arg = &args[i];
-            if arg == "--color" {
-                i += 2; // Skip flag and value (e.g. "always")
-                continue;
-            }
-            if !arg.starts_with('-') {
-                file_paths.push(arg.clone());
-            }
-            i += 1;
-        }
-    }
-
-    // Determine what to open: list of Some(path) or just [None] if empty
-    let windows_to_open: Vec<String> = if file_paths.is_empty() {
-        vec!["".to_string()]
-    } else {
-        file_paths
-    };
-
-    for fpath in windows_to_open {
-        // 2. Prepare Window Config
-        let label = generate_new_window_label();
-        let mut builder = tauri::WebviewWindowBuilder::new(
-            app,
-            &label,
-            tauri::WebviewUrl::App("index.html".into()),
-        );
-
-        #[cfg(desktop)]
-        {
-            builder = builder.title(format!("lattice ({})", get_version_string()));
-            builder = builder.inner_size(800.0, 600.0);
-        }
-
-        // 3. Direct Push Injection
-        let filepath_found_oncli = !fpath.is_empty();
-        info!(
-            "setup: Found CLI file path: {}",
-            if filepath_found_oncli {
-                fpath.as_str()
-            } else {
-                "NONE"
-            }
-        );
-
-        // DEBUG: Print all args to debug CLI passing
-        #[cfg(debug_assertions)]
-        for (i, arg) in std::env::args().enumerate() {
-            info!("ARG[{}]: {}", i, arg);
-        }
-
-        // Error injection for testing
-        //   it is empty in production
-        test_utils::maybe_sabotage_file(&fpath);
-
-        let mut content = "".to_string();
-        // This will work even for an empty file
-        let mut hash = textcontent_hashing::compute_hash(&content);
-
-        if !filepath_found_oncli {
-            info!("setup: No CLI file path found, content will be empty as expected");
-        } else {
-            let fp = fpath.clone();
-            let state: tauri::State<file_state::FileTrackerState> = app.state();
-
-            match file_state::read_text_file(fp, state, Some(label.clone())) {
-                Ok(response) => {
-                    content = response.content;
-                    hash = response.hash;
-
-                    info!("setup: Injected Direct Push content for window {}", label);
-                }
-                Err(e) => {
-                    error!("setup: Failed to read file at {}: {}", fpath, e);
-                }
-            }
-        }
-
-        let payload: serde_json::Value = json!({
-           "content": content,
-           "hash": hash,
-           "path": fpath
-        });
-
-        let script = format!("window.__LATTICE_INIT_DATA__ = {};", payload);
-        builder = builder.initialization_script(&script);
-        // 4. Create the Window
-        let window = builder.build().map_err(|e| e.to_string())?;
-        info!("setup: Window '{}' created .", label);
-
-        // 5. Attach Close Listener for File State Cleanup
-        let app_handle = app.handle().clone();
-        let label_clone = label.clone();
-        window.on_window_event(move |event| {
-            if let tauri::WindowEvent::Destroyed = event {
-                let state: tauri::State<file_state::FileTrackerState> = app_handle.state();
-                // Call cleanup
-                file_state::cleanup_window_state(&label_clone, &state);
-            }
-        });
-    } //for fpath END
-
-    Ok(())
+    platform::open_windows_on_startup(app)
 } // setup_handler END *****************************************************
-
 
 #[cfg(test)]
 #[path = "lib_tests.rs"]
@@ -1088,6 +1091,7 @@ mod tests;
 //******************************************************************************
 // test_utils module (Hidden in Production)
 //******************************************************************************
+#[cfg(any(test, integration_test))]
 mod test_utils {
     #[allow(unused_imports)]
     use super::*;
@@ -1097,7 +1101,7 @@ mod test_utils {
         let target_file = fpath.to_string();
         std::thread::spawn(move || {
             std::thread::sleep(std::time::Duration::from_secs(2));
-            info!("[TEST] Sabotage Initiated");
+            info!("[TEST] Sabotage Initiated ******************");
             // make this a cycle that repeats 30 times
             for _ in 0..30 {
                 // trying each 2 seconds

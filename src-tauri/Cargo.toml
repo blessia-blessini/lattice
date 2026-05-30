@@ -23,7 +23,7 @@
 
 [package]
 name = "lattice"
-version = "0.2.36"
+version = "0.2.37"
 description = "A Markdown Editor that respects standards"
 authors = ["Blessia Blessini"]
 edition = "2024"
@@ -62,6 +62,11 @@ chrono = "0.4.44"
 [dev-dependencies]
 tempfile = "3.24.0"
 tauri = { version = "2", features = ["test"] }
+url = "2"
+
+[[test]]
+name = "file_open_tests"
+path = "tests/file_open_tests.rs"
 
 [profile.dev]
 opt-level = 0

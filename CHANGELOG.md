@@ -10,6 +10,34 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.37
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- squash in the prep v0.2.37 branch
+- Add privacy statement for Lattice
+- show ~/home directory in caption
+- Short Path visibility
+- Update build-test.ps1
+- Refactor file test helpers into shared module
+- Refactor platform-specific tests into separate files
+- Hide horizontal scrollbars in preview pane + test sample doc
+- Hide horizontal scrollbars in preview pane
+- Add file opening tests and fix mimeType config
+- Add MIME types to Markdown file association
+- Refactor CLI desktop to use shared per-path opener
+- Update dependencies in Cargo.lock
+- Add Info.plist for macOS file associations
+- Update project dependencies
+- macOS build split into ARM64 and x64, file assicition at install time
+- Fix upload paths syntax in workflowgit Enable macOS DMG packaging
+- Swap DMG upload paths in workflow
+- Refactor macOS release packaging
+- Add desktop window cascade positioning and tests
+- Clean Rust coverage data before running tests
+- Chore: Update project dependencies
+- Clean up build scripts and source code
+- Bump version to 0.2.37
+- Refactor platform CLI handling to shared helpers
+- Refactor platform selection to build.rs
+- Refactor platform integration modules
+- Implement platform-specific file association to fix open on macOS
 - Update CHANGELOG for v0.2.37
 
 ---

@@ -1,23 +1,23 @@
 // LEGAL NOTE:
-// LATTICE (tm) - The Portable and standard Markdown Editor 
+// LATTICE (tm) - The Portable and standard Markdown Editor
 // Copyright (C) 2026 Owner of blessini.com (a.k.a Blessia)
 // email: blessia AT blessini.com
-// 
+//
 // GNU AFFERO GENERAL PUBLIC LICENSE V3 NOTICE:
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as
 // published by the Free Software Foundation, either version 3 of the
 // License, or (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Affero General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//   
+//
 // See LICENCE file in GitHUB root folder of the repository.
 // END OF NOTE
 
@@ -72,7 +72,96 @@ fn main() {
         println!("cargo:warning=Failed to write build number to file: {}", e);
     }
 
-    // 3. Emit cargo instructions
+    // 3. Copy platform-specific implementation to OUT_DIR/platform_impl.rs.
+    //
+    // This is the ONLY place in the repository that knows which OS maps to
+    // which implementation file.  Source files carry zero #[cfg(target_os)]
+    // attributes; the compiler only ever sees the one file copied here.
+    //
+    // To add a new platform:
+    //   1. Create src/platform/impls/<os>.rs
+    //   2. Add a match arm below.
+    //   3. No other file needs to change.
+    {
+        let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+        let impls_dir = std::path::Path::new(&manifest_dir)
+            .join("src")
+            .join("platform")
+            .join("impls");
+
+        let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+        let impl_src = match target_os.as_str() {
+            "macos"   => impls_dir.join("macos.rs"),
+            "windows" => impls_dir.join("windows.rs"),
+            "linux"   => impls_dir.join("linux.rs"),
+            "android" => impls_dir.join("android.rs"),
+            "ios"     => impls_dir.join("ios.rs"),
+            other => panic!(
+                "Unsupported target OS '{}' — add src/platform/impls/{}.rs and \
+                 a match arm in build.rs step 3.",
+                other, other
+            ),
+        };
+
+        // Re-run whenever any impl file changes.
+        println!("cargo:rerun-if-changed={}", impls_dir.display());
+
+        let impl_dest = std::path::Path::new(&out_dir).join("platform_impl.rs");
+        fs::copy(&impl_src, &impl_dest).unwrap_or_else(|e| {
+            panic!(
+                "build.rs: failed to copy {} to {}: {}",
+                impl_src.display(),
+                impl_dest.display(),
+                e
+            );
+        });
+    }
+
+    // 4. Copy platform-specific test file to OUT_DIR/platform_tests.rs.
+    //
+    // Same selection logic as step 3.  test/file_open_tests.rs includes this
+    // file via include!() so platform-specific test code carries zero
+    // #[cfg(target_os)] attributes — the compiler only ever sees the one file
+    // copied here.
+    //
+    // To add tests for a new platform:
+    //   1. Create tests/platform/<os>.rs
+    //   2. Add a match arm below.
+    //   3. No other file needs to change.
+    {
+        let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+        let tests_platform_dir = std::path::Path::new(&manifest_dir)
+            .join("tests")
+            .join("platform");
+
+        let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+        let tests_src = match target_os.as_str() {
+            "macos"   => tests_platform_dir.join("test-macos.rs"),
+            "windows" => tests_platform_dir.join("test-windows.rs"),
+            "linux"   => tests_platform_dir.join("test-linux.rs"),
+            "android" => tests_platform_dir.join("test-android.rs"),
+            "ios"     => tests_platform_dir.join("test-ios.rs"),
+            other => panic!(
+                "Unsupported target OS '{}' — add tests/platform/{}.rs and \
+                 a match arm in build.rs step 4.",
+                other, other
+            ),
+        };
+
+        println!("cargo:rerun-if-changed={}", tests_platform_dir.display());
+
+        let tests_dest = std::path::Path::new(&out_dir).join("platform_tests.rs");
+        fs::copy(&tests_src, &tests_dest).unwrap_or_else(|e| {
+            panic!(
+                "build.rs: failed to copy {} to {}: {}",
+                tests_src.display(),
+                tests_dest.display(),
+                e
+            );
+        });
+    }
+
+    // 5. Emit cargo instructions
     println!("cargo:rustc-env=BUILD_NUMBER={}", build_number); // check time of showing
 
     // Hack: Write directly to console to bypass Cargo's output capturing

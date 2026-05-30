@@ -22,11 +22,19 @@
 # END OF NOTE
 # Pre-build checks and setup
 $oldEnv = $env:LATTICEBUILD_NO
-try {
 
+Push-Location src-tauri
+try {
+  cargo llvm-cov clean
+} finally {
+    Pop-Location
+}
+
+try {
 
     # call the preambule script
     . "$PSScriptRoot\_pre-build.ps1" -DefaultBuildNo "TESTVERSION" -ScriptName "build-test.ps1"
+
     # 1a. Run Backend Unit Tests (Rust)
     # --no-report accumulates coverage data without generating a report yet,
     # so it can be merged with the integration-test run below into one table.
@@ -40,13 +48,23 @@ try {
         exit $cargoResult
     }
 
-    # 1b. Run Integration Tests (Rust)
+    # 1b. Run Integration Tests (Rust) — settings wiring
     # --no-report keeps accumulating into the same coverage data set.
     # Tests run exactly once; no duplication with the unit-test run above.
-    Write-Output "Running Integration Tests..."
+    Write-Output "Running Integration Tests (wiring)..."
     cargo llvm-cov --no-report --test wiring
     if ($LASTEXITCODE -ne 0) {
-        Write-Output "Integration tests failed!"
+        Write-Output "Integration tests (wiring) failed!"
+        exit $LASTEXITCODE
+    }
+
+    # 1b2. Run Integration Tests (Rust) — file-open / file-association
+    # Verifies Direct Push content loading works on all 3 desktop platforms.
+    # macOS-specific URL conversion tests are gated by #[cfg(target_os = "macos")].
+    Write-Output "Running Integration Tests (file_open_tests)..."
+    cargo llvm-cov --no-report --test file_open_tests
+    if ($LASTEXITCODE -ne 0) {
+        Write-Output "Integration tests (file_open_tests) failed!"
         exit $LASTEXITCODE
     }
 
@@ -62,7 +80,7 @@ try {
     Push-Location ..
     try {
         # if rustflags do not contain "--cfg integration_test" then add it
-        if ($env:RUSTFLAGS -notlike "*integration_test*" ) { 
+        if ($env:RUSTFLAGS -notlike "*integration_test*" ) {
             $env:RUSTFLAGS += " --cfg integration_test"
         }
         #cargo llvm-cov --no-report --example reproduce_conflict
@@ -101,9 +119,9 @@ try {
     # reverse push/pop Location
     Push-Location ..
     try {
-        # param pool=forks prevents caching while keeping the 
+        # param pool=forks prevents caching while keeping the
         #   coverage results merged
-        npm run test:coverage -- --pool=forks 
+        npm run test:coverage -- --pool=forks
         $frontendResult = $LASTEXITCODE
     }
     finally {

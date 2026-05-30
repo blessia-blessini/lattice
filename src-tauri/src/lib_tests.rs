@@ -172,6 +172,34 @@ fn test_generate_new_window_label() {
 } // test_generate_new_window_label END ************************************
 
 //**************************************************************************
+// test_calculate_cascade_coordinates
+//**************************************************************************
+#[test]
+#[cfg(desktop)]
+fn test_calculate_cascade_coordinates() {
+    // First window (count = 0)
+    let (x0, y0) = calculate_cascade_coordinates(0);
+    assert_eq!(x0, 100.0);
+    assert_eq!(y0, 100.0);
+
+    // Second window (count = 1)
+    let (x1, y1) = calculate_cascade_coordinates(1);
+    assert_eq!(x1, 106.0);
+    assert_eq!(y1, 103.0);
+
+    // Tenth window (count = 9)
+    let (x9, y9) = calculate_cascade_coordinates(9);
+    assert_eq!(x9, 154.0);
+    assert_eq!(y9, 127.0);
+
+    // Eleventh window (count = 10 -> wraps around)
+    let (x10, y10) = calculate_cascade_coordinates(10);
+    assert_eq!(x10, 100.0);
+    assert_eq!(y10, 100.0);
+}
+// test_calculate_cascade_coordinates END **********************************
+
+//**************************************************************************
 // test_parse_launch_args
 //**************************************************************************
 #[test]

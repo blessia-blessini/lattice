@@ -27,6 +27,7 @@ export DEFAULT_BUILD_NO="TESTVERSION"
 export SCRIPT_NAME="build-test.sh"
 source ./scripts/_pre-build.sh
 
+cargo llvm-cov clean
 
 # 1a. Run Backend Unit Tests (Rust)
 # --no-report accumulates coverage data without generating a report yet,
@@ -42,18 +43,32 @@ if [ $CARGO_RESULT -ne 0 ]; then
     exit $CARGO_RESULT
 fi
 
-# 1b. Run Integration Tests (Rust)
+# 1b. Run Integration Tests (Rust) — settings wiring
 # --no-report keeps accumulating into the same coverage data set.
 # Tests run exactly once; no duplication with the unit-test run above.
-echo "Running Integration Tests..."
+echo "Running Integration Tests (wiring)..."
 pushd src-tauri || exit
 cargo llvm-cov --no-report --test wiring
 INTEGRATION_RESULT=$?
 popd || exit
 
 if [ $INTEGRATION_RESULT -ne 0 ]; then
-    echo "Integration tests failed!"
+    echo "Integration tests (wiring) failed!"
     exit $INTEGRATION_RESULT
+fi
+
+# 1b2. Run Integration Tests (Rust) — file-open / file-association
+# Verifies Direct Push content loading works on all 3 desktop platforms.
+# macOS-specific URL conversion tests are gated by #[cfg(target_os = "macos")].
+echo "Running Integration Tests (file_open_tests)..."
+pushd src-tauri || exit
+cargo llvm-cov --no-report --test file_open_tests
+FILE_OPEN_RESULT=$?
+popd || exit
+
+if [ $FILE_OPEN_RESULT -ne 0 ]; then
+    echo "Integration tests (file_open_tests) failed!"
+    exit $FILE_OPEN_RESULT
 fi
 
 # 1c. Run E2E / Conflict Reproducer (Rust example)
@@ -94,7 +109,7 @@ popd || exit
 # 2b. Run Frontend Coverage
 # runs in project root
 echo "Running Frontend Coverage..."
-# param pool=forks prevents caching while keeping the 
+# param pool=forks prevents caching while keeping the
 #   coverage results merged
 npm run test:coverage -- --pool=forks
 FRONTEND_RESULT=$?

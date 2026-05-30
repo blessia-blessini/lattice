@@ -116,6 +116,7 @@ body {
 .preview-pane {
   padding: 2rem 1rem;
   overflow-y: auto;
+  overflow-x: hidden;
   min-width: 0;
   /* height is set via inline style — vertical splits need auto, horizontal need 100% */
   /* background-color, color, color-scheme are set via inline style from PREVIEW_THEME_COLORS */
@@ -125,6 +126,42 @@ body {
   background-color: transparent;
   max-width: 100%;
   margin: 0;
+}
+
+/* Prevent ghost horizontal scrollbar tracks on code blocks and tables.
+   WebView2 (Win32 native scrollbars) paints the track even at rest, which
+   bleeds through as a gray bar over adjacent content. Track is always
+   transparent; thumb appears only on hover so scroll is still discoverable. */
+.preview-pane pre,
+.preview-pane table {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.preview-pane pre:hover,
+.preview-pane table:hover {
+  scrollbar-color: rgba(100, 100, 100, 0.4) transparent;
+}
+
+.preview-pane pre::-webkit-scrollbar,
+.preview-pane table::-webkit-scrollbar {
+  height: 6px;
+}
+
+.preview-pane pre::-webkit-scrollbar-track,
+.preview-pane table::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.preview-pane pre::-webkit-scrollbar-thumb,
+.preview-pane table::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.preview-pane pre:hover::-webkit-scrollbar-thumb,
+.preview-pane table:hover::-webkit-scrollbar-thumb {
+  background: rgba(100, 100, 100, 0.4);
 }
 
 /* ============================================================

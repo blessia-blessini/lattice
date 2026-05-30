@@ -25,6 +25,8 @@ import { useRef, useState, useEffect, useMemo, useCallback } from "react";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { homeDir } from "@tauri-apps/api/path";
+import { shortenHomePath } from "./lib/path-utils";
 import "./App.css";
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -93,6 +95,11 @@ function App() {
   useEffect(() => {
     StaticRuntime.init();
     StaticRuntime.log("App mounted via StaticRuntime Shim");
+  }, []);
+
+  // Fetch home directory once on mount for path display shortening.
+  useEffect(() => {
+    homeDir().then(dir => setHomeDir(dir)).catch(() => {});
   }, []);
 
   // Prevent browser-level WebView refresh via keyboard (F5 / Ctrl+R / Cmd+R)
@@ -192,6 +199,10 @@ function App() {
   // double-mount.  Without this, the first mount deletes __LATTICE_INIT_DATA__
   // and the second mount falls to the "no file" branch, clearing the editor.
   const launchDone = useRef(false);
+
+  // Home directory for path display shortening (fetched once on mount).
+  // Kept in state so the display re-renders once the async fetch resolves.
+  const [m_homeDir, setHomeDir] = useState<string>("");
 
   const handleDividerMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -1320,7 +1331,9 @@ function App() {
           textOverflow: 'ellipsis',
           textAlign: 'left'
         }}>
-          {m_currentFilePath || "No file is associated with this editor"}
+          {m_currentFilePath
+            ? shortenHomePath(m_currentFilePath, m_homeDir)
+            : "No file is associated with this editor"}
         </div>
         <div className="toolbar" style={{
           position: 'absolute',
