@@ -11,25 +11,31 @@
 
 Lattice does not collect, transmit, or share any personal data.
 Everything the app knows about you stays on your own machine.
+Versions are built and published online by [GitHub Actions](https://github.com/features/actions).
+These versions are [attested](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds) and scanned for viruses already.
+
+Thus, anyone can check the source and a release origins.
 
 ---
 
 ## What Lattice stores — locally, on your machine only
 
-| What                           | Where                                                                | Why                                   |
-| ------------------------------ | -------------------------------------------------------------------- | ------------------------------------- |
-| Vault settings                 | `.lattice-settings.json` next to your files                          | Per-folder editor preferences         |
-| Recent files list (MRU)        | App data folder                                                      | So you can reopen recent files        |
-| Window size and UI preferences | App data folder                                                      | To restore your layout on next launch |
-| Diagnostic log file            | App data folder (`%APPDATA%`, `~/Library/Logs`, or `~/.local/share`) | Troubleshooting crashes and errors    |
+> **None of these files leave your device.**
+> Lattice has no server, no account system, and no cloud sync.
 
-None of these files leave your device. Lattice has no server, no account system, and no cloud sync.
+| What                           | Where                                                                | Why                                    |
+|:------------------------------ |:-------------------------------------------------------------------- |:-------------------------------------- |
+| Vault settings                 | `.lattice-settings.json` next to your files                          | Per-folder hierarchy editor preferences|
+| Recent files list (MRU)        | App data folder                                                      | So you can reopen recent files         |
+| Window size and UI preferences | App data folder                                                      | To restore your layout on next launch  |
+| Diagnostic log file            | App data folder (`%APPDATA%`, `~/Library/Logs`, or `~/.local/share`) | Troubleshooting crashes and errors     |
+
 
 ---
 
 ## The auto-updater
 
-Lattice checks for updates by requesting a small JSON file from GitHub:
+In the future, Lattice checks for updates by requesting a small JSON file from GitHub:
 
 ```
 https://github.com/blessia-blessini/lattice/releases/latest/download/latest.json
@@ -42,6 +48,9 @@ GitHub may process your IP address and request metadata under their own
 
 The update check sends no personally identifiable information beyond what any
 standard HTTPS request contains (IP address, user-agent string, current app version).
+
+> At the time of writing this Privacy Statement, the auto-updater is configured in the app
+> but the update manifest has not yet been published, so no update checks occur at this time.
 
 ---
 
@@ -62,6 +71,15 @@ Lattice is built on [Tauri](https://tauri.app) and renders its UI inside a syste
 (Microsoft Edge WebView2 on Windows, WebKit on macOS and Linux).
 These components are provided by the OS vendor and are governed by their respective privacy policies.
 Lattice does not add any additional tracking on top of them.
+
+In other Open Source Software Products **(NOT IN LATTICE)**, there were reports of malicious 
+Software components that got integrated into consumer releases because of malicious behavior
+by community members part of the integration chain of the attached Software. 
+
+To avoid similar failures, Lattice gets the following methods:
+ - the Software Releases are Automatically scanned for viruses
+ - all the Software release and publish sequence is completely performed online 
+   by [GitHub Actions](https://github.com/features/actions) and [**attested**](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds) (GitHub-provided signing method that proves the origin of releases and packages)
 
 ---
 

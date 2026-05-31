@@ -8,6 +8,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.38
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Update PRIVACY.md with release attestation
 - Finalize ChangeLog for v0.2.37 and opening v0.2.38 placeholder
 
 
