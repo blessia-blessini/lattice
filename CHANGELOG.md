@@ -8,6 +8,15 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.38
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- merge wip: enhance scroll-sync on UI, release table improved
+- Skip E2E conflict repro and extend timeout
+- Add platform column and derive platform labels
+- Capture Rust test results for GitHub Actions
+- Add tests for scroll-sync fixes triggered by macOS platform
+- Bump version to 0.2.38 across the repo
+- Run cargo llvm-cov clean in src-tauri
+- Add scroll-sync pause mechanism and docs
+- Prevent macOS elastic bounce from affecting scroll
 - Update PRIVACY.md with release attestation
 - Finalize ChangeLog for v0.2.37 and opening v0.2.38 placeholder
 

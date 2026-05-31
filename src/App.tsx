@@ -185,6 +185,22 @@ function App() {
   const editorRef = useRef<import("./components/Editor").EditorHandle>(null);
   const previewPaneRef = useRef<HTMLDivElement>(null);
 
+  // When the editor reconfigures (font size, theme, word-wrap), CodeMirror fires
+  // a scroll event before it has remeasured block heights. getTopVisibleLine()
+  // returns stale data at that moment, driving a bad preview sync that then
+  // bounces back and snaps the editor to line 1. We pause the scroll sync for a
+  // short window after any reconfiguration to let CodeMirror finish measuring.
+  const scrollSyncPaused = useRef(false);
+  const scrollSyncPauseTimer = useRef<number | null>(null);
+  const pauseScrollSync = useCallback(() => {
+    scrollSyncPaused.current = true;
+    if (scrollSyncPauseTimer.current !== null) clearTimeout(scrollSyncPauseTimer.current);
+    scrollSyncPauseTimer.current = window.setTimeout(() => {
+      scrollSyncPaused.current = false;
+      scrollSyncPauseTimer.current = null;
+    }, 350);
+  }, []);
+
   const handleEditorChange = useCallback((content: string) => {
     setPreviewContent(content);
   }, []);
@@ -206,6 +222,7 @@ function App() {
 
   const handleDividerMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
+    pauseScrollSync(); // pane resize → stale block heights until CodeMirror remeasures
     const container = mainContentRef.current;
     if (!container) return;
     const rect = container.getBoundingClientRect();
@@ -218,6 +235,7 @@ function App() {
     const onMouseMove = (mv: MouseEvent) => {
       if (rafId !== null) return; // already a frame pending
       rafId = requestAnimationFrame(() => {
+        pauseScrollSync(); // extend pause on every drag frame
         const delta = (vertical ? mv.clientY : mv.clientX) - startPos;
         const newPct = Math.min(90, Math.max(10, startPct + (delta / containerSize) * 100));
         setSplitPct(newPct);
@@ -251,20 +269,22 @@ function App() {
   });
 
   const handleFontSizeIncrease = useCallback(() => {
+    pauseScrollSync();
     setFontSize(prev => {
       const next = Math.min(FONT_SIZE_MAX, prev + FONT_SIZE_STEP);
       localStorage.setItem(FONT_SIZE_KEY, String(next));
       return next;
     });
-  }, []);
+  }, [pauseScrollSync]);
 
   const handleFontSizeDecrease = useCallback(() => {
+    pauseScrollSync();
     setFontSize(prev => {
       const next = Math.max(FONT_SIZE_MIN, prev - FONT_SIZE_STEP);
       localStorage.setItem(FONT_SIZE_KEY, String(next));
       return next;
     });
-  }, []);
+  }, [pauseScrollSync]);
 
   // Load MRU from localStorage on mount
   useEffect(() => {
@@ -445,12 +465,39 @@ function App() {
   }, [m_vaultSettingsPath]);
   // Vault Settings Path Management END ****************************************
 
+  //****************************************************************************
+  // Scroll-sync pause triggers
+  // Any operation that changes the editor's CSS layout causes CodeMirror to
+  // remeasure block heights asynchronously.  During that window, scroll events
+  // carry stale getTopVisibleLine() data and trigger the snap-to-top domino.
+  // We pause the scroll sync for 350 ms after each such operation.
+  //****************************************************************************
+
+  // Window resize: fires continuously while the user drags the OS window edge.
+  // Each call resets the 350 ms timer, so the pause extends for the full drag.
+  useEffect(() => {
+    window.addEventListener('resize', pauseScrollSync);
+    return () => window.removeEventListener('resize', pauseScrollSync);
+  }, [pauseScrollSync]);
+
+  // View mode switch: switching into any dual mode resizes the editor pane.
+  useEffect(() => {
+    if (isDual(viewMode)) pauseScrollSync();
+  }, [viewMode, pauseScrollSync]);
+
+  // Word-wrap / highlight-mark toggles: both trigger a compartment reconfigure
+  // that changes line heights (wrap) or adds inline decorations (highlight).
+  useEffect(() => { pauseScrollSync(); }, [m_wordWrap, pauseScrollSync]);
+  useEffect(() => { pauseScrollSync(); }, [m_highlightMark, pauseScrollSync]);
+
+  // Scroll-sync pause triggers END ********************************************
 
   //****************************************************************************
   // Theme Management
   //****************************************************************************
   const toggleTheme = () => {
     console.log("DEBUG: Entering toggleTheme");
+    pauseScrollSync();
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };// Theme Management END ****************************************************
 
@@ -946,6 +993,17 @@ function App() {
           editorRef.current.redo();
         }
       }
+
+      // TOC refresh / table pad — both replace the full document, causing
+      // CodeMirror to remeasure.  Pause sync so stale measurements don't
+      // trigger a snap-to-top.  (CodeMirror's keymap also handles these keys;
+      // we just need the pause to fire before the dispatch lands.)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 't' || e.key === 'T')) {
+        pauseScrollSync();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'l' || e.key === 'L')) {
+        pauseScrollSync();
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -958,6 +1016,7 @@ function App() {
     const handleWheel = (e: WheelEvent) => {
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
+        // pauseScrollSync is called inside handleFontSizeIncrease/Decrease
         if (e.deltaY < 0) {
           handleFontSizeIncrease();
         } else if (e.deltaY > 0) {
@@ -1065,11 +1124,23 @@ function App() {
           return l1 + r * (l2 - l1);
         }
       }
-      return 1;
+      // Fallthrough: 'top' didn't land inside any interval.
+      // This happens on macOS when sub-pixel getBoundingClientRect() values
+      // create floating-point gaps between adjacent entries that share the
+      // same source line (nested list items, table cells, etc.).
+      // Defaulting to line 1 caused the editor to snap to the top — instead,
+      // find the map entry whose content-Y is closest to 'top'.
+      let closest = map[0];
+      let minDist = Math.abs(top - map[0][1]);
+      for (let i = 1; i < map.length; i++) {
+        const dist = Math.abs(top - map[i][1]);
+        if (dist < minDist) { minDist = dist; closest = map[i]; }
+      }
+      return closest[0];
     };
 
     const onEditorScroll = () => {
-      if (isSyncing) return;
+      if (isSyncing || scrollSyncPaused.current) return;
       const handle = editorRef.current;
       if (!handle) return;
       const line = handle.getTopVisibleLine();
@@ -1081,7 +1152,7 @@ function App() {
     };
 
     const onPreviewScroll = () => {
-      if (isSyncing) return;
+      if (isSyncing || scrollSyncPaused.current) return;
       const handle = editorRef.current;
       if (!handle) return;
       const line = lineForOffset(buildLineMap(), preview.scrollTop);
@@ -1097,7 +1168,15 @@ function App() {
       editorScroll.removeEventListener('scroll', onEditorScroll);
       preview.removeEventListener('scroll', onPreviewScroll);
     };
-  }, [viewMode, previewContent]);
+    // NOTE: previewContent is intentionally excluded from deps.
+    // buildLineMap() reads live DOM on every scroll event, so it never goes
+    // stale. Including previewContent was causing the effect to re-register
+    // on every keystroke, which reset isSyncing and let macOS WKWebView's
+    // spurious scroll events (fired during ReactMarkdown re-renders) drive
+    // the editor back to line 1 without any user input.
+    // m_currentFilePath is included so we re-capture editorScroll when the
+    // user switches to a different file (editor may remount).
+  }, [viewMode, m_currentFilePath]); // eslint-disable-line react-hooks/exhaustive-deps
 
   //****************************************************************************
   // Memoized preview pipeline
@@ -1429,19 +1508,16 @@ function App() {
               { label: "---" },
               {
                 label: "Insert TOC",
-                onClick: () => { void editorRef.current?.insertTocBlock(); }
+                onClick: () => { pauseScrollSync(); void editorRef.current?.insertTocBlock(); }
               },
               {
                 label: "Refresh TOC (Ctrl+Shift+T)",
-                onClick: () => { void editorRef.current?.updateToc(); },
+                onClick: () => { pauseScrollSync(); void editorRef.current?.updateToc(); },
                 title: "Regenerate every <!-- TOC --> block in the document. Shortcut: Ctrl/Cmd+Shift+T"
               },
               {
-                // Pad / format markdown tables. The shortcut is shown both in
-                // the label (for at-a-glance discovery) and as a hover
-                // tooltip (for users who only see the menu briefly).
                 label: "Pad Tables (Ctrl+Shift+L)",
-                onClick: () => { void editorRef.current?.padTables(); },
+                onClick: () => { pauseScrollSync(); void editorRef.current?.padTables(); },
                 title: "Space-pad every GFM pipe table so columns line up vertically. Shortcut: Ctrl/Cmd+Shift+L"
               },
               { label: "---" },

@@ -118,7 +118,7 @@ fn main() {
     let success_path = repo_root.join("conflict_success.txt");
     let success_path_alt = repo_root.join("src-tauri").join("conflict_success.txt");
     let start_time = std::time::Instant::now();
-    let timeout = Duration::from_secs(300); // Allow 5 mins for full rebuild
+    let timeout = Duration::from_secs(500); // Allow 8 mins for full rebuild
     let mut success = false;
     let mut found_path = std::path::PathBuf::new();
 

@@ -246,8 +246,13 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
             const total = view.state.doc.lines;
             const safe = Math.max(1, Math.min(total, Math.round(line)));
             const pos = view.state.doc.line(safe).from;
-            const block = view.lineBlockAt(pos);
-            view.scrollDOM.scrollTop = block.top;
+            // Use CodeMirror's scrollIntoView effect instead of directly setting
+            // scrollDOM.scrollTop. The direct approach used lineBlockAt().top which
+            // returns estimated/stale values when CodeMirror hasn't fully measured
+            // the layout (e.g., immediately after switching to dual mode on macOS),
+            // causing it to report top=0 for all lines and snap the editor to the top.
+            // scrollIntoView handles measurement internally and is always accurate.
+            view.dispatch({ effects: EditorView.scrollIntoView(pos, { y: 'start' }) });
         },
         undo: () => {
             if (viewRef.current) undo(viewRef.current);

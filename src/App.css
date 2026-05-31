@@ -118,6 +118,9 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   min-width: 0;
+  /* Prevent macOS elastic/rubber-band bounce from briefly pushing scrollTop
+     to 0 and triggering the preview→editor scroll sync at line 1. */
+  overscroll-behavior: contain;
   /* height is set via inline style — vertical splits need auto, horizontal need 100% */
   /* background-color, color, color-scheme are set via inline style from PREVIEW_THEME_COLORS */
 }
@@ -225,6 +228,8 @@ body {
 /* Explicitly allow scrolling in CodeMirror's scroller */
 .cm-scroller {
   overflow: auto;
+  /* Same elastic-bounce guard as .preview-pane */
+  overscroll-behavior: contain;
 }
 
 @media print {

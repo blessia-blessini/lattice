@@ -669,14 +669,29 @@ jobs:
         printf '%s\n' "# Lattice ${VERSION}"  > "$OUT"
         printf '%s\n' "**Released:** ${DATE}" >> "$OUT"
         printf '%s\n' "$( [ -f release-notes.md ] && cat release-notes.md )" >> "$OUT"
-        printf '%s\n' "## Downloads"          >> "$OUT"
-        printf '%s\n' "| File | Size |"       >> "$OUT"
-        printf '%s\n' "|:-----|-----:|"       >> "$OUT"
+        printf '%s\n' "## Downloads"                        >> "$OUT"
+        printf '%s\n' "| File | Install on | Size |"         >> "$OUT"
+        printf '%s\n' "|:-----|:-----------|-----:|"         >> "$OUT"
 
         # One row per asset, size in MB
         while IFS=$'\t' read -r name url size_bytes; do
           size_mb=$(awk "BEGIN {printf \"%.1f MB\", $size_bytes/1048576}")
-          printf '| [%s](%s) | %s |\n' "$name" "$url" "$size_mb" >> "$OUT"
+
+          # Derive a human-readable platform label from the filename
+          case "$name" in
+            *_aarch64.dmg)         platform="🍎 macOS — Apple Silicon (ARM64)" ;;
+            *_x64.dmg)             platform="🍎 macOS — Intel (x86-64)" ;;
+            *_x64-setup.exe)       platform="🪟 Windows — Intel / AMD (x86-64)" ;;
+            *_aarch64-setup.exe)   platform="🪟 Windows — ARM64" ;;
+            *_amd64.AppImage)      platform="🐧 Linux — x86-64 (AppImage)" ;;
+            *_amd64.deb)           platform="🐧 Linux — x86-64 (Debian / Ubuntu)" ;;
+            *.apk)                 platform="🤖 Android — Universal" ;;
+            *.aab)                 platform="🤖 Android — Universal (Play Store)" ;;
+            *.ipa)                 platform="📱 iOS" ;;
+            *)                     platform=" ? " ;;
+          esac
+
+          printf '| [%s](%s) | %s | %s |\n' "$name" "$url" "$platform" "$size_mb" >> "$OUT"
 
           # Antivisrus scan #########################################
           PAYLOAD=$(jq -nc \
