@@ -5,9 +5,24 @@ Edit the section for your next version **before** pushing the release tag like v
 ---
 
 
-## v0.2.38
+
+## v0.2.39
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- open v0.2.39 changelog entries; finalized v0.2.38
+
+---
+
+## v0.2.38
+### Changes
+
+ - enhance scroll-sync on UI:
+   - Add scroll-sync pause mechanism and docs
+   - Prevent macOS elastic bounce from affecting scroll
+ - improved release table (add platform column for user's clarity)
+ - Update PRIVACY.md with release attestation
+
+---
 - merge wip: enhance scroll-sync on UI, release table improved
 - Skip E2E conflict repro and extend timeout
 - Add platform column and derive platform labels
