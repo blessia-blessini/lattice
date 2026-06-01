@@ -85,6 +85,14 @@ graph TD
 The concurrency model remains optimistic-locking but is now encapsulated within the `file_state.rs` module on the backend. The `FileTrackerState` holds a map of all known files, their last-seen hashes, and which windows are viewing them.
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {
+  'signalColor':     '#1a1a1a',
+  'signalTextColor': '#1a1a1a',
+  'lineColor':       '#1a1a1a',
+  'actorLineColor':  '#1a1a1a',
+  'fontSize':        '16px'
+}}}%%
+
 sequenceDiagram
     participant FE as Frontend (Editor)
     participant BE as Backend (Rust Commands)
@@ -279,6 +287,14 @@ The CI pipeline is defined in `.github/workflows/buildAndTest.yml` and is trigge
 ### CI Pipeline Flow
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {
+  'signalColor':     '#1a1a1a',
+  'signalTextColor': '#1a1a1a',
+  'lineColor':       '#1a1a1a',
+  'actorLineColor':  '#1a1a1a',
+  'fontSize':        '16px'
+}}}%%
+
 graph TD
     A[Push to 'build' branch or Manual Dispatch] --> B{Setup Job};
     B --> C{Define Build Matrix};
@@ -339,6 +355,14 @@ The Tauri command `update_toc` is a thin wrapper that calls `update_toc_in_docum
 ### TOC Flow Diagram
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {
+  'signalColor':     '#1a1a1a',
+  'signalTextColor': '#1a1a1a',
+  'lineColor':       '#1a1a1a',
+  'actorLineColor':  '#1a1a1a',
+  'fontSize':        '16px'
+}}}%%
+
 sequenceDiagram
     participant User
     participant Menu as Menu / Keyboard (Mod-Shift-T)
@@ -401,6 +425,15 @@ The Tauri command `pad_tables` is a thin wrapper that calls `pad_tables_in_docum
 ### Table Padding Flow Diagram
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {
+  'signalColor':     '#1a1a1a',
+  'signalTextColor': '#1a1a1a',
+  'lineColor':       '#1a1a1a',
+  'actorLineColor':  '#1a1a1a',
+  'fontSize':        '16px'
+}}}%%
+
+
 sequenceDiagram
     participant User
     participant Menu as Menu / Keyboard (Mod-Shift-L)
@@ -455,6 +488,14 @@ The test involves three cooperating actors:
 #### Activity Diagram
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {
+  'signalColor':     '#1a1a1a',
+  'signalTextColor': '#1a1a1a',
+  'lineColor':       '#1a1a1a',
+  'actorLineColor':  '#1a1a1a',
+  'fontSize':        '16px'
+}}}%%
+
 flowchart TB
     subgraph Harness ["Test Harness (reproduce_conflict.rs)"]
         H1["Create conflict_test.md"] --> H2["Launch app with --cfg integration_test"]
