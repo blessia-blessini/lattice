@@ -25,6 +25,9 @@ pub struct Settings {
 
     #[serde(default = "default_block_external_images")]
     pub block_external_images: bool,
+
+    #[serde(default = "default_mermaid_init")]
+    pub default_mermaid_init: String,
 }
 
 fn default_theme() -> String {
@@ -42,6 +45,9 @@ fn default_highlight_mark() -> bool {
 fn default_block_external_images() -> bool {
     true
 }
+fn default_mermaid_init() -> String {
+    " {'theme': 'base', 'themeVariables': {\n  'signalColor':     '#1a1a1a',\n  'signalTextColor': '#1a1a1a',\n  'lineColor':       '#1a1a1a',\n  'actorLineColor':  '#1a1a1a',\n  'fontSize':        '16px'\n}}".to_string()
+}
 
 impl Default for Settings {
     fn default() -> Self {
@@ -52,6 +58,7 @@ impl Default for Settings {
             daily_notes_path: "".to_string(),
             highlight_mark: default_highlight_mark(),
             block_external_images: default_block_external_images(),
+            default_mermaid_init: default_mermaid_init(),
         }
     }
 }

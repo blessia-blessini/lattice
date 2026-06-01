@@ -109,6 +109,7 @@ fn test_default_factory_fns() {
     assert_eq!(default_word_wrap(), false);
     assert_eq!(default_save_on_blur(), true);
     assert_eq!(default_highlight_mark(), true);
+    assert!(default_mermaid_init().contains("'theme': 'base'"));
 }
 
 // -----------------------------------------------------------------------
@@ -122,6 +123,7 @@ fn test_settings_default_trait() {
     assert_eq!(s.save_on_blur, true);
     assert_eq!(s.daily_notes_path, "");
     assert_eq!(s.highlight_mark, true);
+    assert!(s.default_mermaid_init.contains("'theme': 'base'"));
 }
 
 // -----------------------------------------------------------------------
@@ -136,6 +138,7 @@ fn test_settings_serde_defaults_on_empty_json() {
     assert!(s.save_on_blur);
     assert_eq!(s.daily_notes_path, "");
     assert!(s.highlight_mark);
+    assert!(s.default_mermaid_init.contains("'theme': 'base'"), "defaultMermaidInit must default to the base-theme init string");
 }
 
 // -----------------------------------------------------------------------

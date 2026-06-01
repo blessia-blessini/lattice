@@ -52,6 +52,14 @@ Lattice is a local-first Markdown editor built with **Tauri**, combining a **Rus
 The application remains split into the Rust Core process and the Frontend WebView process. Communication is handled via Tauri's IPC bridge. The backend now contains a dedicated `FileState` manager to handle concurrency and file tracking.
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {
+  'signalColor':     '#1a1a1a',
+  'signalTextColor': '#1a1a1a',
+  'lineColor':       '#1a1a1a',
+  'actorLineColor':  '#1a1a1a',
+  'fontSize':        '16px'
+}}}%%
+
 graph TD
     subgraph "Frontend (WebView)"
         UI[React UI]
@@ -85,13 +93,7 @@ graph TD
 The concurrency model remains optimistic-locking but is now encapsulated within the `file_state.rs` module on the backend. The `FileTrackerState` holds a map of all known files, their last-seen hashes, and which windows are viewing them.
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {
-  'signalColor':     '#1a1a1a',
-  'signalTextColor': '#1a1a1a',
-  'lineColor':       '#1a1a1a',
-  'actorLineColor':  '#1a1a1a',
-  'fontSize':        '16px'
-}}}%%
+
 
 sequenceDiagram
     participant FE as Frontend (Editor)
@@ -287,14 +289,6 @@ The CI pipeline is defined in `.github/workflows/buildAndTest.yml` and is trigge
 ### CI Pipeline Flow
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {
-  'signalColor':     '#1a1a1a',
-  'signalTextColor': '#1a1a1a',
-  'lineColor':       '#1a1a1a',
-  'actorLineColor':  '#1a1a1a',
-  'fontSize':        '16px'
-}}}%%
-
 graph TD
     A[Push to 'build' branch or Manual Dispatch] --> B{Setup Job};
     B --> C{Define Build Matrix};

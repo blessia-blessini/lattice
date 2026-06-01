@@ -149,6 +149,7 @@ function App() {
   const [m_wordWrap, setWordWrap] = useState(false);
   const [m_highlightMark, setHighlightMark] = useState(true);
   const [m_blockExternalImages, setBlockExternalImages] = useState(true);
+  const [m_defaultMermaidInit, setDefaultMermaidInit] = useState<string>('');
   const [m_dailyNotesPath, setDailyNotesPath] = useState<string>('');
   const [viewMode, setViewMode] = useState<ViewMode>(VIEW_EDIT);
   const [splitPct, setSplitPct] = useState(57); // editor share in %, preview gets remainder
@@ -359,6 +360,7 @@ function App() {
       setDailyNotesPath(settings.dailyNotesPath || '');
       setHighlightMark(settings.highlightMark !== false); // default true
       setBlockExternalImages(settings.blockExternalImages !== false); // default true — privacy-by-default
+      setDefaultMermaidInit(settings.defaultMermaidInit || '');
 
     } catch (error) {
       console.log("Settings file not found or invalid, using default.", error);
@@ -1225,7 +1227,7 @@ function App() {
       const { children, className, node, ...rest } = props;
       const match = /language-(\w+)/.exec(className || '');
       if (match && match[1] === 'mermaid') {
-        return <Mermaid chart={String(children).replace(/\n$/, '')} theme={m_theme} />;
+        return <Mermaid chart={String(children).replace(/\n$/, '')} theme={m_theme} mermaidInit={m_defaultMermaidInit} />;
       }
       return (
         <code className={className} {...rest}>
@@ -1329,7 +1331,7 @@ function App() {
       }
       return <img src={src} alt={alt} />;
     },
-  }), [m_theme, m_currentFilePath, m_blockExternalImages, m_previewTheme]);
+  }), [m_theme, m_currentFilePath, m_blockExternalImages, m_previewTheme, m_defaultMermaidInit]);
 
   const previewMarkdown = useMemo(() => (
     <ReactMarkdown
@@ -1361,6 +1363,8 @@ function App() {
       onHighlightMarkChange={setHighlightMark}
       blockExternalImages={m_blockExternalImages}
       onBlockExternalImagesChange={setBlockExternalImages}
+      defaultMermaidInit={m_defaultMermaidInit}
+      onDefaultMermaidInitChange={setDefaultMermaidInit}
       settingsPath={m_vaultSettingsPath || ""}
     />;
 
@@ -1392,6 +1396,8 @@ function App() {
             onHighlightMarkChange={setHighlightMark}
             blockExternalImages={m_blockExternalImages}
             onBlockExternalImagesChange={setBlockExternalImages}
+            defaultMermaidInit={m_defaultMermaidInit}
+            onDefaultMermaidInitChange={setDefaultMermaidInit}
             onClose={() => setShowSettingsModal(false)}
             settingsPath={m_vaultSettingsPath || ""}
           />

@@ -42,6 +42,8 @@ const DEFAULT_PROPS = {
     onHighlightMarkChange: vi.fn(),
     blockExternalImages: true,
     onBlockExternalImagesChange: vi.fn(),
+    defaultMermaidInit: "{'theme': 'base'}",
+    onDefaultMermaidInitChange: vi.fn(),
     onClose: vi.fn(),
     settingsPath: '/vault/.lattice/settings.json',
 };
@@ -287,6 +289,42 @@ describe('Settings', () => {
             'save_settings',
             expect.objectContaining({
                 settings: expect.objectContaining({ highlightMark: false }),
+            })
+        );
+    });
+
+    // -----------------------------------------------------------------------
+    // Default-Mermaid-Init textarea
+    // -----------------------------------------------------------------------
+    it('renders the Default-Mermaid-Init textarea with the provided value', () => {
+        const { getByDisplayValue } = render(
+            <Settings {...DEFAULT_PROPS} defaultMermaidInit="{'theme': 'base'}" />
+        );
+        expect(getByDisplayValue("{'theme': 'base'}")).toBeTruthy();
+    });
+
+    it('calls onDefaultMermaidInitChange when the textarea changes', async () => {
+        const onChange = vi.fn();
+        const { getByDisplayValue } = render(
+            <Settings {...DEFAULT_PROPS} defaultMermaidInit="old" onDefaultMermaidInitChange={onChange} />
+        );
+        await act(async () => {
+            fireEvent.change(getByDisplayValue('old'), { target: { value: "{'theme':'dark'}" } });
+        });
+        expect(onChange).toHaveBeenCalledWith("{'theme':'dark'}");
+    });
+
+    it('invokes save_settings with the new defaultMermaidInit after textarea change', async () => {
+        const { getByDisplayValue } = render(
+            <Settings {...DEFAULT_PROPS} defaultMermaidInit="old" />
+        );
+        await act(async () => {
+            fireEvent.change(getByDisplayValue('old'), { target: { value: "{'theme':'base'}" } });
+        });
+        expect(TauriCore.invoke).toHaveBeenCalledWith(
+            'save_settings',
+            expect.objectContaining({
+                settings: expect.objectContaining({ defaultMermaidInit: "{'theme':'base'}" }),
             })
         );
     });

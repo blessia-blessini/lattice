@@ -174,4 +174,42 @@ describe('Mermaid', () => {
         rerender(<Mermaid chart="graph LR; X-->Y" theme="dark" />);
         await waitFor(() => expect(mermaid.render).toHaveBeenCalledTimes(2));
     });
+
+    // -----------------------------------------------------------------------
+    // mermaidInit prop (Default-Mermaid-Init setting)
+    // -----------------------------------------------------------------------
+    it('spreads mermaidInit overrides into mermaid.initialize', async () => {
+        const init = "{'theme': 'base', 'themeVariables': {'fontSize': '16px'}}";
+        render(<Mermaid chart={CHART} theme="dark" mermaidInit={init} />);
+        await act(async () => {});
+        expect(mermaid.initialize).toHaveBeenCalledWith(
+            expect.objectContaining({ theme: 'base' })
+        );
+    });
+
+    it('falls back to theme-prop value when mermaidInit is empty', async () => {
+        render(<Mermaid chart={CHART} theme="light" mermaidInit="" />);
+        await act(async () => {});
+        expect(mermaid.initialize).toHaveBeenCalledWith(
+            expect.objectContaining({ theme: 'default' })
+        );
+    });
+
+    it('falls back gracefully when mermaidInit is invalid syntax', async () => {
+        render(<Mermaid chart={CHART} theme="dark" mermaidInit="{ not valid @@@ }" />);
+        await act(async () => {});
+        // parseMermaidInit returns {} on failure → base theme is used unchanged
+        expect(mermaid.initialize).toHaveBeenCalledWith(
+            expect.objectContaining({ theme: 'dark' })
+        );
+    });
+
+    it('re-initialises when the mermaidInit prop changes', async () => {
+        const { rerender } = render(<Mermaid chart={CHART} theme="dark" />);
+        await waitFor(() => expect(mermaid.initialize).toHaveBeenCalledTimes(1));
+
+        rerender(<Mermaid chart={CHART} theme="dark" mermaidInit="{'theme':'base'}" />);
+        await waitFor(() => expect(mermaid.initialize).toHaveBeenCalledTimes(2));
+        expect(vi.mocked(mermaid.initialize).mock.calls[1][0]).toMatchObject({ theme: 'base' });
+    });
 });
