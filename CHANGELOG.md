@@ -8,6 +8,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.0
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- fix: sparce checkout gets also the icon
 - Update CI release logo copy and fix changelog
 ---
 
