@@ -9,6 +9,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.39
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Bump lattice version to 0.2.39
 - Set Mermaid securityLevel to strict
 - Hard-coded Mermaid default theme,which an be overwritten inside the code
 - Add Mermaid theme blocks to architecture docs
