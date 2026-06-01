@@ -719,8 +719,10 @@ jobs:
         printf '%s\n' " - DUAL LICENCE - FOR TERMS DETAILS SEE [README.md section Licencing](https://github.com/${{ github.repository }}#licensing)." \
          "" >> "$OUT"
 
-        # Copy the app logo into the release folder so the release page can use it
+        # Copy the app logo into the release folder so the release page can use it,
+        # and into the Lattice-Releases root so the favicon reference stays static.
         cp public/lattice.svg "$OUT_DIR/lattice.svg"
+        cp public/lattice.svg "release-site/Lattice-Releases/lattice.svg"
 
         # Copy coverage HTML into the release folder so it is browseable
         COVERAGE_DIR="$OUT_DIR/coverage"

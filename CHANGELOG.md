@@ -5,16 +5,26 @@ Edit the section for your next version **before** pushing the release tag like v
 ---
 
 
+## v0.3.0
+### Changes
+  <!-- INSERT BULLETS UNDER THIS LINE -->
+- Update CI release logo copy and fix changelog
+---
 
 ## v0.2.39
 ### Changes
-  <!-- INSERT BULLETS UNDER THIS LINE -->
+
+ - Beautification of release site
+ - Mermaid theme, hardcoded to be lighter and look more modern, it still can be overridden on per picture bases
+ - Set Mermaid `securityLevel` to `strict` 
+---
+
 - Copy app logo to release folder
 - Update platform icons in CI workflow
 - Route release-site updates to alpha or main Route release-site updates to alpha or main
 - Bump lattice version to 0.2.39
 - Set Mermaid securityLevel to strict
-- Hard-coded Mermaid default theme,which an be overwritten inside the code
+- Hard-coded Mermaid default theme, which can be overwritten inside the code
 - Add Mermaid theme blocks to architecture docs
 - open v0.2.39 changelog entries; finalized v0.2.38
 
@@ -52,8 +62,8 @@ Edit the section for your next version **before** pushing the release tag like v
  - Bump to 0.2.37 and add platform implementations and tests
    "platform" is: Windows, macOS, Linux, iOS and Android
  - Add Privacy statement
- - file registration on macOS and Linux improvemen
- - made visible file path use `~` on Posix and `%USERPROFILE$` on Eindows  
+ - file registration on macOS and Linux improvement
+ - made visible file path use `~` on Posix and `%USERPROFILE$` on Windows  
  - bug fixes
 
 ---
