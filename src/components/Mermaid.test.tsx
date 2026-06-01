@@ -92,7 +92,7 @@ describe('Mermaid', () => {
         render(<Mermaid chart={CHART} theme="dark" />);
         await act(async () => {});
         expect(mermaid.initialize).toHaveBeenCalledWith(
-            expect.objectContaining({ securityLevel: 'loose' })
+            expect.objectContaining({ securityLevel: 'strict' })
         );
     });
 

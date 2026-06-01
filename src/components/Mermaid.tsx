@@ -53,7 +53,7 @@ export const Mermaid: React.FC<MermaidProps> = ({ chart, theme, mermaidInit }) =
     mermaid.initialize({
       startOnLoad: false,
       theme: theme === 'dark' ? 'dark' : 'default',
-      securityLevel: 'loose',
+      securityLevel: 'strict',
       ...userInit,
     });
 
