@@ -592,6 +592,7 @@ jobs:
         repository: blessia-blessini/lattice-docs-releases
         token: ${{ secrets.RELEASE_SITE_TOKEN }}
         path: release-site
+        fetch-depth: 0
 
     ################################################################
     # 903 / Collect all installer files into a flat staging directory
@@ -679,16 +680,16 @@ jobs:
 
           # Derive a human-readable platform label from the filename
           case "$name" in
-            *_aarch64.dmg)         platform="🍎 macOS — Apple Silicon (ARM64)" ;;
-            *_x64.dmg)             platform="🍎 macOS — Intel (x86-64)" ;;
-            *_x64-setup.exe)       platform="🪟 Windows — Intel / AMD (x86-64)" ;;
-            *_aarch64-setup.exe)   platform="🪟 Windows — ARM64" ;;
-            *_amd64.AppImage)      platform="🐧 Linux — x86-64 (AppImage)" ;;
-            *_amd64.deb)           platform="🐧 Linux — x86-64 (Debian / Ubuntu)" ;;
-            *.apk)                 platform="🤖 Android — Universal" ;;
-            *.aab)                 platform="🤖 Android — Universal (Play Store)" ;;
-            *.ipa)                 platform="📱 iOS" ;;
-            *)                     platform=" ? " ;;
+            *_aarch64.dmg)         platform='<span class="material-icons">laptop_mac</span> macOS — Apple Silicon (ARM64)' ;;
+            *_x64.dmg)             platform='<span class="material-icons">laptop_mac</span> macOS — Intel (x86-64)' ;;
+            *_x64-setup.exe)       platform='<span class="material-icons">laptop_windows</span> Windows — Intel / AMD (x86-64)' ;;
+            *_aarch64-setup.exe)   platform='<span class="material-icons">laptop_windows</span> Windows — ARM64' ;;
+            *_amd64.AppImage)      platform='<span class="material-icons">computer</span> Linux — x86-64 (AppImage)' ;;
+            *_amd64.deb)           platform='<span class="material-icons">computer</span> Linux — x86-64 (Debian / Ubuntu)' ;;
+            *.apk)                 platform='<span class="material-icons">android</span> Android — Universal' ;;
+            *.aab)                 platform='<span class="material-icons">android</span> Android — Universal (Play Store)' ;;
+            *.ipa)                 platform='<span class="material-icons">phone_iphone</span> iOS' ;;
+            *)                     platform='?' ;;
           esac
 
           printf '| [%s](%s) | %s | %s |\n' "$name" "$url" "$platform" "$size_mb" >> "$OUT"
@@ -733,14 +734,29 @@ jobs:
           " - [FRONTEND](${COVERAGE_URL}coverage/)" \
           "" >> "$OUT"
 
-        # Commit index.md + coverage HTML to the release site
+        # Commit index.md + coverage HTML to the release site.
+        # Tags ending in a non-digit (e.g. v1.2.3a, v1.2.3-beta) go to
+        # the alpha-releases branch; stable tags go to main.
         cd release-site
         git config user.name  "GitHub Actions"
         git config user.email "actions@github.com"
+
+        if [[ "$VERSION" =~ [^0-9]$ ]]; then
+          TARGET_BRANCH="alpha-releases"
+          if git ls-remote --exit-code --heads origin "$TARGET_BRANCH" > /dev/null 2>&1; then
+            git checkout "$TARGET_BRANCH"
+            git pull --ff-only origin "$TARGET_BRANCH"
+          else
+            git checkout -b "$TARGET_BRANCH" origin/main
+          fi
+        else
+          TARGET_BRANCH="main"
+        fi
+
         git add Lattice-Releases/
         git commit -m "Release ${VERSION}: add index.md and coverage reports" \
           -m "Co-authored-by: Blessia-Blessini <273819958+blessia-blessini@users.noreply.github.com>"
-        git push
+        git push origin "$TARGET_BRANCH"
 
     ################################################################
     # 906 / Write job summary
