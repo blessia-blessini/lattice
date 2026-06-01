@@ -682,10 +682,10 @@ jobs:
           case "$name" in
             *_aarch64.dmg)         platform='<span class="material-icons">laptop_mac</span> macOS — Apple Silicon (ARM64)' ;;
             *_x64.dmg)             platform='<span class="material-icons">laptop_mac</span> macOS — Intel (x86-64)' ;;
-            *_x64-setup.exe)       platform='<span class="material-icons">laptop_windows</span> Windows — Intel / AMD (x86-64)' ;;
-            *_aarch64-setup.exe)   platform='<span class="material-icons">laptop_windows</span> Windows — ARM64' ;;
-            *_amd64.AppImage)      platform='<span class="material-icons">computer</span> Linux — x86-64 (AppImage)' ;;
-            *_amd64.deb)           platform='<span class="material-icons">computer</span> Linux — x86-64 (Debian / Ubuntu)' ;;
+            *_x64-setup.exe)       platform='<span class="material-icons">window</span> Windows — Intel / AMD (x86-64)' ;;
+            *_aarch64-setup.exe)   platform='<span class="material-icons">window</span> Windows — ARM64' ;;
+            *_amd64.AppImage)      platform='<span class="material-icons">terminal</span> Linux — x86-64 (AppImage)' ;;
+            *_amd64.deb)           platform='<span class="material-icons">terminal</span> Linux — x86-64 (Debian / Ubuntu)' ;;
             *.apk)                 platform='<span class="material-icons">android</span> Android — Universal' ;;
             *.aab)                 platform='<span class="material-icons">android</span> Android — Universal (Play Store)' ;;
             *.ipa)                 platform='<span class="material-icons">phone_iphone</span> iOS' ;;

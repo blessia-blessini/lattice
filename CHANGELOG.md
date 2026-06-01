@@ -9,6 +9,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.2.39
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Update platform icons in CI workflow
 - Route release-site updates to alpha or main Route release-site updates to alpha or main
 - Bump lattice version to 0.2.39
 - Set Mermaid securityLevel to strict
