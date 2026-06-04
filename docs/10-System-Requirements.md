@@ -11,6 +11,7 @@ implementation artefacts. For the ID schema definition see `11-Traceability-Requ
 - [Lattice — System Requirements](#lattice-system-requirements)
   - [Table of Contents](#table-of-contents)
   - [Chapter LNT — GFM Linter](#chapter-lnt-gfm-linter)
+  - [Chapter LNK — Preview Link Routing](#chapter-lnk-preview-link-routing)
     - [General](#general)
     - [Severity Visualisation](#severity-visualisation)
     - [Rule: Setext Headings](#rule-setext-headings)
@@ -169,6 +170,61 @@ fenced code block that has no matching closing fence before the end of the docum
 warn that all content after the fence renders as code.
 *Rationale*: an unclosed fence silently swallows the rest of the document into a code block, which is
 always unintentional.
+
+---
+
+## Chapter LNK — Preview Link Routing
+
+The preview pane renders Markdown as HTML[^html] via ReactMarkdown. Clicking a link in the preview must be
+intercepted and routed correctly — different link types require different handling to protect user privacy,
+prevent WebView[^webview] navigation (which would discard editor state), and provide a consistent UX.
+
+<!--REQ-LTTCE-LNK-00001-->
+**REQ-LTTCE-LNK-00001** — The preview pane SHALL intercept all link clicks. No link click SHALL cause the
+Tauri[^tauri] WebView[^webview] to navigate away from the application. This applies to all link types: external
+URLs, local file paths, and in-page anchors.
+
+<!--REQ-LTTCE-LNK-00002-->
+**REQ-LTTCE-LNK-00002** — Links with an `https://` or `mailto:` scheme SHALL be opened in the user's default
+system browser via the Tauri opener plugin. They SHALL NOT be opened inside the Lattice WebView[^webview].
+
+<!--REQ-LTTCE-LNK-00003-->
+**REQ-LTTCE-LNK-00003** — Links with a plain `http://` scheme (no TLS[^tls]) SHALL be visually rendered as
+blocked: struck-through text with reduced opacity and a `not-allowed` cursor. A native hover tooltip SHALL
+state that the link is intentionally blocked and recommend using HTTPS[^tls] instead. No navigation or
+external request SHALL occur when such a link is clicked.
+
+<!--REQ-LTTCE-LNK-00004-->
+**REQ-LTTCE-LNK-00004** — In-page anchor links (hrefs beginning with `#`) SHALL scroll the preview pane
+smoothly to the element with the matching heading ID. No new window SHALL be opened.
+
+<!--REQ-LTTCE-LNK-00005-->
+**REQ-LTTCE-LNK-00005** — Local relative file links whose target has a `.md`, `.markdown`, or `.txt`
+extension SHALL open the resolved absolute path in a **new** Lattice window via `open_new_window`, leaving
+the current window and its editor state untouched.
+
+<!--REQ-LTTCE-LNK-00006-->
+**REQ-LTTCE-LNK-00006** — The path resolution for local file links SHALL correctly handle relative segments
+`./`, `../`, and nested subdirectories, and SHALL strip any `#fragment` suffix before resolving.
+*Rationale*: markdown links always use forward slashes regardless of host platform; the resolver must
+normalise separators to the platform convention detected from the current file path.
+
+<!--REQ-LTTCE-LNK-00007-->
+**REQ-LTTCE-LNK-00007** — Local file links whose target does NOT match the document extensions in
+REQ-LTTCE-LNK-00005 (e.g. `.pdf`, `.png`) SHALL be silently ignored — no navigation, no new window.
+
+---
+
+[^html]: HTML — HyperText Markup Language.
+
+[^webview]: WebView — the embedded browser rendering engine used by Tauri to display the application UI
+    (WebView2 on Windows, WKWebView on macOS).
+
+[^tauri]: Tauri — the Rust-based framework used to build Lattice as a native desktop and mobile application.
+    <https://tauri.app>
+
+[^tls]: TLS — Transport Layer Security. `https://` uses TLS to encrypt traffic; `http://` does not.
+    Plain HTTP leaks request content and headers to any network observer.
 
 ---
 

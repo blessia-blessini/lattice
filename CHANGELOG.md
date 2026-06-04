@@ -5,9 +5,36 @@ Edit the section for your next version **before** pushing the release tag like v
 ---
 
 
-## v0.3.0
+## v0.3.1
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Add link-utils path resolver and tests
+- feat: add multi-platform build and test GitHub Actions workflow with dynamic matrix configuration
+- Update buildAndTest.yml
+- Embed PDF via iframe viewer and add licenses file
+- Update demo docs to inline assets and PDF support
+- Route docs URLs to alpha or main branches
+- Use _src/docs/demo for demos after sparse checkout
+- Fix divider drag in reversed dual layouts
+  
+---
+
+## v0.3.0
+### Changes
+- Update Print related experience
+  - Fix Marked Highlight in Print View
+  - Plain text printed when using edit only mode, in all other modes only the preview pane prints
+- added GFM (GitHub Flavoured Markdown) linter visuals
+- improved link handling (before some links would still be opened in the current window, now it is only for document internal links, other links are redirected to system browser or blocked (e.g. `http:` (with no `s` links are blocked)) )
+- Included demo-docs (documents that show how to use md-files and System and Science Engineering) in release artifacts
+- Improve release workflow and UI styling
+
+---
+- npm and cargo update
+- Exclude shim files from coverage and add test
+- Add tests for App shortcuts, auto-save and Mermaid
+- Add Preview Link Routing feature+tests
+- Improve link handling in App.tsx
 - Add GFM linter and (demo) docs
 - Add GFM linter and demo docs
 - enable GFM (GitHub Flavoured Markdown) lint visuals

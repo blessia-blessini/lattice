@@ -107,7 +107,12 @@ try {
     Write-Output "Gather and print all data in an output table ..."
     Write-Output "Print on console this is done later once again after"
     Write-Output " HTML report generation as a summary"
-    cargo llvm-cov report
+    # main.rs is a 3-line entry-point shim that calls lattice_lib::run() — it can
+    # only be exercised by running the full binary, never by unit/integration tests.
+    # platform/mod.rs is a Tauri forwarding shim (PlatformImpl calls require a
+    # live Tauri App instance). Both are excluded so they don't drag down the total.
+    $IGNORE = "main\.rs|platform.mod\.rs"
+    cargo llvm-cov report --ignore-filename-regex $IGNORE
     Write-Output "****************************************************"
 
     # 2. Run Frontend Tests Run Later with Coverage
@@ -141,8 +146,8 @@ try {
     #    Neither call re-runs any tests — they only read the profraw files
     #    written by steps 1, 1b, and 1c.
     Write-Output "Running combined html coverage report..."
-    cargo llvm-cov report --html        # HTML file in target/llvm-cov/html/
-    cargo llvm-cov report               # Text summary table printed to console
+    cargo llvm-cov report --html --ignore-filename-regex $IGNORE
+    cargo llvm-cov report --ignore-filename-regex $IGNORE
     # print out the llvm-cov version
     cargo llvm-cov --version
 

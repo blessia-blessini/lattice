@@ -800,6 +800,37 @@ fn test_find_vault_settings_file_missing_settings() {
 }
 
 
+//**************************************************************************
+// test_debug_file_probe_large_file_security_block
+//**************************************************************************
+/// Covers the `> MAX_MB` (60 MB) early-return branch in `debug_file_probe`.
+/// A file larger than the security threshold must produce the "Security Block"
+/// message and skip the image-decode step entirely.
+#[test]
+fn test_debug_file_probe_large_file_security_block() {
+    use std::io::Write;
+    let temp = tempfile::tempdir().unwrap();
+    let large_file = temp.path().join("large.dat");
+
+    // Write 61 MB in 1 MB chunks to avoid a single 61 MB allocation.
+    let mut f = fs::File::create(&large_file).unwrap();
+    let chunk = vec![0u8; 1024 * 1024]; // 1 MB
+    for _ in 0..61 {
+        f.write_all(&chunk).unwrap();
+    }
+    drop(f);
+
+    let log = debug_file_probe(large_file.to_string_lossy().to_string());
+    assert!(
+        log.contains("Security Block"),
+        "Expected security-block message for 61 MB file, got:\n{}",
+        log
+    );
+    // The decode step must be skipped — no integrity or header lines
+    assert!(!log.contains("Integrity:"), "Decode must be skipped for large files");
+}
+// test_debug_file_probe_large_file_security_block END *********************
+
 #[test]
 fn test_initialize_vault_settings_readonly() {
     let temp = tempfile::tempdir().unwrap();

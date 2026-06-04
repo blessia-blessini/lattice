@@ -66,6 +66,7 @@ related items. Example convention for `LNT`:
 | Code    | Type    | Meaning                        |
 | ------- | ------- | ------------------------------ |
 | `LTTCE` | PPPPP   | Lattice — the main repository  |
+| `LNK`   | SSS     | Preview link routing            |
 | `LNT`   | SSS     | GFM[^gfm] Linter subsystem     |
 | `TRC`   | SSS     | Traceability system            |
 

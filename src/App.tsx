@@ -47,6 +47,7 @@ import { FileSystem } from "./services/FileSystem";
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import tauriConfig from '../src-tauri/tauri.conf.json';
+import { resolveRelativePath, isDocumentLink } from './lib/link-utils';
 
 import { StaticRuntime } from "@services/StaticRuntime";
 
@@ -238,7 +239,11 @@ function App() {
       rafId = requestAnimationFrame(() => {
         pauseScrollSync(); // extend pause on every drag frame
         const delta = (vertical ? mv.clientY : mv.clientX) - startPos;
-        const newPct = Math.min(90, Math.max(10, startPct + (delta / containerSize) * 100));
+        // row-reverse (dual-swap) and column-reverse (dual-bottom) place the
+        // editor pane on the trailing side, so the divider moves opposite to
+        // how splitPct grows — negate the delta to restore natural drag feel.
+        const isReversed = viewMode === VIEW_DUAL_SWAP || viewMode === VIEW_DUAL_BOTTOM;
+        const newPct = Math.min(90, Math.max(10, startPct + ((isReversed ? -delta : delta) / containerSize) * 100));
         setSplitPct(newPct);
         rafId = null;
       });
@@ -1206,19 +1211,57 @@ function App() {
   // those invalidate the memo.
   //****************************************************************************
   const previewComponents = useMemo<Components>(() => ({
+    // IMPL-LTTCE-LNK-00001 — preview link router
     a(props) {
       const { href, children } = props;
+
+      // ── Plain HTTP → render as blocked span, no click handler ────────────
+      // IMPL-LTTCE-LNK-00003
+      if (href?.startsWith('http://')) {
+        return (
+          <span
+            title="Insecure HTTP link — intentionally blocked. Use HTTPS instead."
+            style={{ cursor: 'not-allowed', textDecoration: 'line-through', opacity: 0.5 }}
+          >
+            {children}
+          </span>
+        );
+      }
+
+      const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        if (!href) return;
+
+        // ── HTTPS / mailto → system browser ────────────────────────────────
+        if (href.startsWith('https://') || href.startsWith('mailto:')) {
+          e.preventDefault();
+          openUrl(href).catch(err => console.error('Failed to open URL externally:', err));
+          return;
+        }
+
+        // ── In-page anchor → scroll within preview pane ────────────────────
+        if (href.startsWith('#')) {
+          e.preventDefault();
+          const id = decodeURIComponent(href.slice(1));
+          document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+          return;
+        }
+
+        // ── All local file links → prevent WebView navigation ───────────────
+        e.preventDefault();
+
+        // Only open recognised document types in a new Lattice window
+        const [filePart] = href.split('#');
+        if (!filePart || !isDocumentLink(filePart) || !m_currentFilePath) return;
+
+        const resolvedPath = resolveRelativePath(href, m_currentFilePath);
+        if (!resolvedPath) return;
+
+        invoke('open_new_window', { path: resolvedPath })
+          .catch(err => console.error('Failed to open local file in new window:', err));
+      };
+
       return (
-        <a
-          href={href}
-          onClick={(e) => {
-            if (href && (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:'))) {
-              e.preventDefault();
-              openUrl(href).catch(err => console.error('Failed to open URL externally:', err));
-            }
-          }}
-          style={{ cursor: 'pointer' }}
-        >
+        <a href={href} onClick={handleClick} style={{ cursor: 'pointer' }}>
           {children}
         </a>
       );

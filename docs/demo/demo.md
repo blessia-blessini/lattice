@@ -9,19 +9,34 @@
 ## Table of Contents
 
 <!-- TOC -->
+- [Table of Contents](#table-of-contents)
 - [Text Formatting](#text-formatting)
 - [Highlight Marks](#highlight-marks)
 - [Lists](#lists)
+  - [Unordered](#unordered)
+  - [Ordered](#ordered)
+  - [Definition-style (using bold + indent)](#definition-style-using-bold-indent)
 - [Task Lists (GFM)](#task-lists-gfm)
 - [Tables](#tables)
 - [Code](#code)
+  - [Inline code](#inline-code)
+  - [Fenced code blocks](#fenced-code-blocks)
 - [Blockquotes](#blockquotes)
-- [Mathematics — KaTeX](#mathematics--katex)
+  - [GitHub-style Alerts (rendered by GitHub and Lattice)](#github-style-alerts-rendered-by-github-and-lattice)
+- [Mathematics — KaTeX](#mathematics-katex)
+  - [Inline math](#inline-math)
+  - [Display math — Calculus](#display-math-calculus)
+  - [Display math — Linear Algebra](#display-math-linear-algebra)
+  - [Display math — Series & Limits](#display-math-series-limits)
 - [Mermaid Diagrams](#mermaid-diagrams)
+  - [Flowchart — Lattice Edit Cycle](#flowchart-lattice-edit-cycle)
+  - [Sequence Diagram — File Open Flow](#sequence-diagram-file-open-flow)
+  - [Class Diagram — Core Data Model](#class-diagram-core-data-model)
+  - [Pie Chart — Supported Platforms](#pie-chart-supported-platforms)
 - [Images](#images)
 - [Links](#links)
-- [Horizontal Rules](#horizontal-rules)
 - [HTML in Markdown](#html-in-markdown)
+- [Keyboard Shortcuts Reference](#keyboard-shortcuts-reference)
 <!-- /TOC -->
 
 ---
@@ -31,15 +46,15 @@
 Normal paragraph text flows here. Lattice renders Markdown as **close to GitHub** as possible,
 so files look identical whether viewed in the editor preview, on GitHub, or printed.
 
-| Style            | Syntax               | Result                      |
-|:-----------------|:---------------------|:----------------------------|
-| Bold             | `**bold**`           | **bold**                    |
-| Italic           | `*italic*`           | *italic*                    |
-| Bold + italic    | `***both***`         | ***both***                  |
-| Strikethrough    | `~~strikethrough~~`  | ~~strikethrough~~           |
-| Inline code      | `` `code` ``         | `code`                      |
-| Superscript HTML | `X<sup>2</sup>`      | X<sup>2</sup>               |
-| Subscript HTML   | `H<sub>2</sub>O`     | H<sub>2</sub>O              |
+| Style            | Syntax              | Result            |
+| :--------------- | :------------------ | :---------------- |
+| Bold             | `**bold**`          | **bold**          |
+| Italic           | `*italic*`          | *italic*          |
+| Bold + italic    | `***both***`        | ***both***        |
+| Strikethrough    | `~~strikethrough~~` | ~~strikethrough~~ |
+| Inline code      | `` `code` ``        | `code`            |
+| Superscript HTML | `X<sup>2</sup>`     | X<sup>2</sup>     |
+| Subscript HTML   | `H<sub>2</sub>O`    | H<sub>2</sub>O    |
 
 ---
 
@@ -99,7 +114,7 @@ GitHub Flavored Markdown task lists render as interactive checkboxes in Lattice.
 - [ ] Try `Ctrl/Cmd+Shift+T` to regenerate the Table of Contents
 - [ ] Try `Ctrl/Cmd+Shift+L` to auto-align a pipe table
 - [ ] Paste a screenshot with `Ctrl/Cmd+V` — it auto-saves to a sibling folder
-- [ ] Open a second file in a new window (multi-window support)
+- [x] Open a second file in a new window (multi-window support)
 - [ ] Try printing to PDF with `Ctrl/Cmd+P`
 
 ---
@@ -109,15 +124,15 @@ GitHub Flavored Markdown task lists render as interactive checkboxes in Lattice.
 Lattice supports **GFM pipe tables** with left, center, and right alignment.
 Press `Ctrl/Cmd+Shift+L` with the cursor anywhere in the table to auto-format it.
 
-| Feature                  | Edit View | Preview View | Dual View |
-|:-------------------------|:---------:|:------------:|:---------:|
-| CodeMirror editor        |     ✅     |      —       |     ✅     |
-| Live rendered preview    |     —      |      ✅       |     ✅     |
-| Scroll sync              |     —      |      —       |     ✅     |
-| Print (Ctrl+P)           |     ✅     |      ✅       |     ✅     |
-| ==Highlight marks==      |     ✅     |      ✅       |     ✅     |
-| Mermaid diagrams         |     —      |      ✅       |     ✅     |
-| KaTeX mathematics        |     —      |      ✅       |     ✅     |
+| Feature               | Edit View | Preview View | Dual View |
+| :-------------------- | :-------: | :----------: | :-------: |
+| CodeMirror editor     |     ✓     |      —       |     ✓     |
+| Live rendered preview |     —     |      ✓       |     ✓     |
+| Scroll sync           |     —     |      —       |     ✓     |
+| Print (Ctrl+P)        |     ✓     |      ✓       |     ✓     |
+| ==Highlight marks==   |     ✓     |      ✓       |     ✓     |
+| Mermaid diagrams      |     —     |      ✓       |     ✓     |
+| KaTeX mathematics     |     —     |      ✓       |     ✓     |
 
 ---
 
@@ -347,11 +362,25 @@ The image file is automatically saved to a sibling folder named after the curren
 and a Markdown reference is inserted at the cursor position:
 
 ```markdown
-![Image](my-document_assets/img_1234567890.png)
+
+  ![Image](demo_assets/img_1780574419628.png)
+  
+  ![Image](demo_assets/img_1780575215039.png)
+  
 ```
+
+  **Here is how it renders in `Dual (edit on the left)` mode**:
+
+  ![Image](demo_assets/img_1780574419628.png)
+
+  **Here is how it renders in `Dual (edit on the bottom)` mode**: 
+
+  ![Image](demo_assets/img_1780575215039.png)
 
 > **Tip:** The assets folder name is derived from the document filename, keeping related
 > files grouped together and easy to version-control.
+
+
 
 ---
 
@@ -364,18 +393,6 @@ and a Markdown reference is inserted at the cursor position:
 - Relative link: [Physics Equations Demo](physics-equations.md)
 
 Auto-link: https://github.com/blessia-blessini/lattice
-
----
-
-## Horizontal Rules
-
-Three or more dashes, asterisks, or underscores on their own line:
-
----
-
-***
-
-___
 
 ---
 
@@ -395,38 +412,34 @@ Hidden content revealed on click. Great for long appendices or spoilers.
   "version": "0.3.0",
   "license": "AGPL-3.0"
 }
+
 ```
 
 </details>
 
 <br>
 
-| HTML element | Use case |
-|:-------------|:---------|
-| `<mark>`     | Rendered by `==highlight==` syntax |
-| `<details>`  | Collapsible sections |
-| `<sup>`      | Superscripts: X<sup>2</sup> |
-| `<sub>`      | Subscripts: CO<sub>2</sub>  |
-| `<br>`       | Explicit line break |
+| HTML element | Use case                                    |
+| :----------- | :------------------------------------------ |
+| `<mark>`     | Rendered by `==highlight==` syntax          |
+| `<details>`  | Collapsible sections                        |
+| `<sup>`      | Superscripts: X<sup>2</sup>                 |
+| `<sub>`      | Subscripts: CO<sub>2</sub>                  |
+| `<br>`       | Explicit line break                         |
 | `<kbd>`      | Keyboard keys: <kbd>Ctrl</kbd>+<kbd>S</kbd> |
 
 ---
 
 ## Keyboard Shortcuts Reference
 
-| Action                        | Windows / Linux            | macOS                      |
-|:------------------------------|:---------------------------|:---------------------------|
-| Save                          | <kbd>Ctrl+S</kbd>          | <kbd>Cmd+S</kbd>           |
-| Open file                     | <kbd>Ctrl+O</kbd>          | <kbd>Cmd+O</kbd>           |
-| New window                    | <kbd>Ctrl+N</kbd>          | <kbd>Cmd+N</kbd>           |
-| Generate / refresh TOC        | <kbd>Ctrl+Shift+T</kbd>    | <kbd>Cmd+Shift+T</kbd>     |
-| Auto-align table              | <kbd>Ctrl+Shift+L</kbd>    | <kbd>Cmd+Shift+L</kbd>     |
-| Paste image from clipboard    | <kbd>Ctrl+V</kbd>          | <kbd>Cmd+V</kbd>           |
-| Print / Save as PDF           | <kbd>Ctrl+P</kbd>          | <kbd>Cmd+P</kbd>           |
-| Increase font size            | <kbd>Ctrl++</kbd>          | <kbd>Cmd++</kbd>           |
-| Decrease font size            | <kbd>Ctrl+-</kbd>          | <kbd>Cmd+-</kbd>           |
-
----
-
-*This document is part of the Lattice demo suite.  
-See also: [System Architecture](system-architecture.md) · [Physics Equations](physics-equations.md)*
+| Action                     | Windows / Linux         | macOS                  |
+| :------------------------- | :---------------------- | :--------------------- |
+| Save                       | <kbd>Ctrl+S</kbd>       | <kbd>Cmd+S</kbd>       |
+| Open file                  | <kbd>Ctrl+O</kbd>       | <kbd>Cmd+O</kbd>       |
+| New window                 | <kbd>Ctrl+N</kbd>       | <kbd>Cmd+N</kbd>       |
+| Generate / refresh TOC     | <kbd>Ctrl+Shift+T</kbd> | <kbd>Cmd+Shift+T</kbd> |
+| Auto-align table           | <kbd>Ctrl+Shift+L</kbd> | <kbd>Cmd+Shift+L</kbd> |
+| Paste image from clipboard | <kbd>Ctrl+V</kbd>       | <kbd>Cmd+V</kbd>       |
+| Print / Save as PDF        | <kbd>Ctrl+P</kbd>       | <kbd>Cmd+P</kbd>       |
+| Increase font size         | <kbd>Ctrl++</kbd>       | <kbd>Cmd++</kbd>       |
+| Decrease font size         | <kbd>Ctrl+-</kbd>       | <kbd>Cmd+-</kbd>       |

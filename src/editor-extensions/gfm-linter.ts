@@ -59,6 +59,9 @@ function validateTable(
 // CodeMirror linter that surfaces GFM-specific ambiguities and errors.
 // Integrates with @codemirror/lint — no new runtime dependencies.
 //
+// `lintGfm` is the raw diagnostic function, exported for direct unit testing.
+// `gfmLinter` wraps it with the CM6 linter() factory (debounce, scheduling).
+//
 // Severity levels:
 //  error   → things that will definitely render broken
 //  warning → things commonly stripped/sanitized by renderers
@@ -68,7 +71,7 @@ function validateTable(
 // wavy underlines (App.css). HTML blocks additionally get
 // 'cm-gfm-lint-warning' for an orange tint.
 //******************************************************************************
-export const gfmLinter = linter((view: EditorView): Diagnostic[] => {
+function lintGfm(view: EditorView): Diagnostic[] {
     const diagnostics: Diagnostic[] = [];
     const tree = syntaxTree(view.state);
     const doc = view.state.doc;
@@ -331,4 +334,7 @@ export const gfmLinter = linter((view: EditorView): Diagnostic[] => {
     }
 
     return diagnostics;
-});
+}
+
+/** CM6 extension: wraps `lintGfm` with the standard debounce/scheduling. */
+export const gfmLinter = linter(lintGfm);

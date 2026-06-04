@@ -533,6 +533,46 @@ The sabotage code is **completely compiled out** in production builds:
 
 ---
 
+## Feature: Preview Link Routing
+
+<!--ARCH-LTTCE-LNK-00001-->
+### Overview
+
+Every link click in the preview pane is intercepted by a custom `a` renderer inside `previewComponents`
+(defined in `src/App.tsx`). The renderer classifies the href and applies one of four routing strategies,
+ensuring the Tauri WebView never navigates away from the application.
+
+| href pattern | Strategy | Outcome |
+| --- | --- | --- |
+| `http://…` | Blocked — rendered as `<span>` | Struck-through, dimmed, tooltip, no action |
+| `https://…`, `mailto:…` | External | Opens in system browser via `openUrl` |
+| `#id` | In-page anchor | Scrolls preview to matching heading element |
+| `./file.md`, `../x.txt` | Local document | Opens resolved path in a new Lattice window |
+| `./file.pdf`, `./img.png` | Local non-document | Silently ignored |
+
+<!--ARCH-LTTCE-LNK-00002-->
+### Path Resolution
+
+The pure helper `resolveRelativePath(href, currentFilePath)` in `src/lib/link-utils.ts` handles
+relative path resolution:
+
+- Strips any `#fragment` suffix before resolving.
+- Detects the platform path separator (`\` vs `/`) from `currentFilePath`.
+- Normalises forward-slash hrefs (the Markdown convention) to the platform separator.
+- Walks the combined `dir + sep + href` string segment-by-segment, handling `..` and `.` correctly.
+- Returns `null` for pure fragment hrefs or when `currentFilePath` is empty.
+
+The companion predicate `isDocumentLink(filePart)` checks whether the extension is `.md`, `.markdown`,
+or `.txt` (case-insensitive). Both functions are pure and independently unit-tested.
+
+### Integration Point
+
+`previewComponents` is a `useMemo`-stabilised object in `App.tsx`, keyed on `m_currentFilePath` (among
+other deps). The `a` renderer closes over `m_currentFilePath` so path resolution always uses the path of
+the currently open file. `resolveRelativePath` and `isDocumentLink` are imported from `src/lib/link-utils.ts`.
+
+---
+
 ## Feature: GFM[^gfm] Linter
 
 <!--ARCH-LTTCE-LNT-00001-->

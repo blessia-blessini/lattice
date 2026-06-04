@@ -113,7 +113,10 @@ pushd src-tauri || exit
   echo "Gather and print all data in an output table ..."
   echo "Print on console this is done later once again after"
   echo " HTML report generation as a summary"
-  cargo llvm-cov report 2>&1 | tee "$RUST_OUT_COV"
+  # main.rs is a 3-line entry-point shim; platform/mod.rs is a Tauri forwarding
+  # shim — both require a live Tauri runtime and cannot be unit-tested.
+  IGNORE="main\.rs|platform.mod\.rs"
+  cargo llvm-cov report --ignore-filename-regex "$IGNORE" 2>&1 | tee "$RUST_OUT_COV"
   echo "****************************************************"
 popd || exit
 
@@ -177,8 +180,8 @@ popd || exit
 #    written by steps 1, 1b, and 1c.
 echo "Running combined html coverage report..."
 pushd src-tauri || exit
-  cargo llvm-cov report --html        # HTML file in target/llvm-cov/html/
-  cargo llvm-cov report               # Text summary table printed to console
+  cargo llvm-cov report --html --ignore-filename-regex "$IGNORE"
+  cargo llvm-cov report --ignore-filename-regex "$IGNORE"
   # print out the llvm-cov version
   cargo llvm-cov --version
 popd || exit
