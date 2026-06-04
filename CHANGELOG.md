@@ -8,6 +8,17 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.0
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Add GFM linter and (demo) docs
+- Add GFM linter and demo docs
+- enable GFM (GitHub Flavoured Markdown) lint visuals
+- Add data-view-mode attribute and print-safe styles
+- Include demo docs in release artifacts
+- Improve release workflow and UI styling
+- Add data-view-mode to main content
+- Fix Marked Highlight in Print View
+- fix marked highlight in print view.
+- Bump version to 0.3.0
+- fix: sparce checkout gets also the icon
 - Update CI release logo copy and fix changelog
 ---
 

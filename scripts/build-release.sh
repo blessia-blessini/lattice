@@ -114,3 +114,17 @@ else
     # Non-macOS release build
     npm run tauri build
 fi
+
+# ── Copy demo documents alongside the build output ──────────────────────────
+# Mirrors the step in the GitHub Actions workflow (step 905).
+# Destination: docs/gen/demo  (staged with the rest of the generated docs).
+DEMO_SRC="docs/demo"
+DEMO_DEST="docs/gen/demo"
+if [ -d "$DEMO_SRC" ]; then
+    mkdir -p "$DEMO_DEST"
+    cp -r "$DEMO_SRC"/. "$DEMO_DEST/"
+    echo "Demo docs copied to $DEMO_DEST"
+else
+    echo "Warning: $DEMO_SRC not found — skipping demo docs copy."
+fi
+# ─────────────────────────────────────────────────────────────────────────────

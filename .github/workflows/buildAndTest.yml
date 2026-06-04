@@ -530,6 +530,7 @@ jobs:
       with:
         sparse-checkout: |
           CHANGELOG.md
+          public
         sparse-checkout-cone-mode: true
         fetch-depth: 1
         path: _src
@@ -721,8 +722,8 @@ jobs:
 
         # Copy the app logo into the release folder so the release page can use it,
         # and into the Lattice-Releases root so the favicon reference stays static.
-        cp public/lattice.svg "$OUT_DIR/lattice.svg"
-        cp public/lattice.svg "release-site/Lattice-Releases/lattice.svg"
+        cp _src/public/lattice.svg "$OUT_DIR/lattice.svg"
+        cp _src/public/lattice.svg "release-site/Lattice-Releases/lattice.svg"
 
         # Copy coverage HTML into the release folder so it is browseable
         COVERAGE_DIR="$OUT_DIR/coverage"
@@ -738,6 +739,49 @@ jobs:
           " - [BACKEND](${COVERAGE_URL}src-tauri/target/llvm-cov/html/)" \
           " - [FRONTEND](${COVERAGE_URL}coverage/)" \
           "" >> "$OUT"
+
+        # ── Demo documents ──────────────────────────────────────────────────
+        # Copy docs/demo/ from the lattice source tree into the release folder
+        # so the docs are permanently versioned alongside each release.
+        DEMO_SRC="docs/demo"
+        DEMO_DEST="$OUT_DIR/docs/demo"
+        if [ -d "$DEMO_SRC" ]; then
+          mkdir -p "$DEMO_DEST"
+          cp -r "$DEMO_SRC"/. "$DEMO_DEST/"
+          echo "Demo docs copied to $DEMO_DEST"
+
+          # Base URL for this release on GitHub Pages
+          PAGES_BASE="https://lattice-technologies.com/Lattice-Releases/assets-${VERSION}"
+          # Raw GitHub URL base (for "open as raw" links)
+          RAW_BASE="https://raw.githubusercontent.com/blessia-blessini/lattice-docs-releases/main/Lattice-Releases/assets-${VERSION}"
+          # GitHub blob URL base (GitHub renders .md nicely)
+          BLOB_BASE="https://github.com/blessia-blessini/lattice-docs-releases/blob/main/Lattice-Releases/assets-${VERSION}"
+
+          printf '%s\n' "## Demo Documents" >> "$OUT"
+          printf '%s\n' "Interactive Markdown files — open directly in Lattice, read on GitHub, or view as HTML on the release portal." \
+            "" >> "$OUT"
+          printf '%s\n' "| Document | Open in Lattice | GitHub Pages (HTML) | GitHub (rendered) | Raw |" >> "$OUT"
+          printf '%s\n' "|:---------|:---------------:|:-------------------:|:-----------------:|:---:|" >> "$OUT"
+
+          for doc in "demo.md:Feature Showcase" \
+                     "system-architecture.md:System Architecture (Syseng)" \
+                     "physics-equations.md:Physics Equations (Student)"; do
+            FILE="${doc%%:*}"
+            LABEL="${doc##*:}"
+            LATTICE_LINK="https://github.com/blessia-blessini/lattice/releases/latest"
+            printf '| %s | [⬇ Download & open](%s) | [HTML](%s/docs/demo/%s) | [GitHub](%s/docs/demo/%s) | [Raw](%s/docs/demo/%s) |\n' \
+              "$LABEL" \
+              "$LATTICE_LINK" \
+              "$PAGES_BASE" "$FILE" \
+              "$BLOB_BASE"  "$FILE" \
+              "$RAW_BASE"   "$FILE" \
+              >> "$OUT"
+          done
+          printf '\n' >> "$OUT"
+        else
+          echo "Warning: $DEMO_SRC not found — skipping demo docs copy."
+        fi
+        # ────────────────────────────────────────────────────────────────────
 
         # Commit index.md + coverage HTML to the release site.
         # Tags ending in a non-digit (e.g. v1.2.3a, v1.2.3-beta) go to

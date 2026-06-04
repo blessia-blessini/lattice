@@ -11,6 +11,7 @@ import { closeBrackets, closeBracketsKeymap, completionKeymap } from '@codemirro
 import { searchKeymap, highlightSelectionMatches } from '@codemirror/search';
 import { foldKeymap } from '@codemirror/language';
 import { lintKeymap } from '@codemirror/lint';
+import { gfmLinter } from '../editor-extensions/gfm-linter';
 import { FileSystem } from '../services/FileSystem';
 import { Toc, TOC_OPEN_MARKER, TOC_CLOSE_MARKER } from '../services/Toc';
 import { TableFormat } from '../services/TableFormat';
@@ -363,6 +364,7 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
                 },
             },
         ]),
+        gfmLinter,    // <-- GFM ambiguity + error linter (green/orange/red underlines)
         symbolPicker, // <-- Add our custom extension here
         tocTooltip,   // <-- Hint when cursor is between TOC markers
         syntaxHighlighting(monoHighlightStyle),

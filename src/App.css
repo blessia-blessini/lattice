@@ -268,6 +268,58 @@ body {
     position: static !important;
   }
 
+  /* In preview or any dual view: hide the editor so only the rendered HTML
+     reaches the printer (raw ==mark== source must not appear on paper).
+     In edit-only mode the editor IS the desired output, so we leave it. */
+  .main-content:not([data-view-mode="edit"]) .editor-pane,
+  .main-content:not([data-view-mode="edit"]) .editor-container,
+  .main-content:not([data-view-mode="edit"]) .pane-divider {
+    display: none !important;
+  }
+
+  /* When printing from edit view, hide the preview pane (already display:none
+     via inline style, but be explicit so it never bleeds through). */
+  .main-content[data-view-mode="edit"] .preview-pane {
+    display: none !important;
+  }
+
+  /* Expand whichever pane remains visible to fill the full paper width. */
+  .main-content:not([data-view-mode="edit"]) .preview-pane,
+  .main-content[data-view-mode="edit"] .editor-pane {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    display: block !important;
+  }
+
+  /* Force background colours to print (browsers suppress them by default).
+     Without this the yellow <mark> highlight disappears on paper. */
+  .markdown-body mark {
+    background-color: #ffe000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* When printing the edit view, force white background / black text
+     regardless of the active dark/light theme — ink on paper is always
+     light-on-white. */
+  .main-content[data-view-mode="edit"] .cm-editor,
+  .main-content[data-view-mode="edit"] .cm-scroller,
+  .main-content[data-view-mode="edit"] .cm-content,
+  .main-content[data-view-mode="edit"] .cm-gutters,
+  .main-content[data-view-mode="edit"] .cm-gutter {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Highlight marks in the editor (CodeMirror decorations) also need exact
+     colour printing and a print-safe foreground. */
+  .main-content[data-view-mode="edit"] .cm-marker-highlight {
+    background-color: #ffe000 !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
   /* CodeMirror specific print overrides */
   .cm-editor {
     height: auto !important;
@@ -325,6 +377,28 @@ body {
     color: #555;
   }
   @bottom-right { content: none; }
+}
+
+/* ============================================================
+   GFM soft-lint underlines  (.cm-gfm-lint / .cm-gfm-lint-warning)
+   IMPL-LTTCE-LNT-00002  (hint — green)
+   IMPL-LTTCE-LNT-00003  (warning — orange)
+   ------------------------------------------------------------
+   CM6 uses background-image SVG wavy underlines for diagnostics.
+   We override that image for our custom markClass so the colours
+   are distinct from the built-in red (error) and yellow (warning):
+     • hint    → green  (#3fb950)  — setext headings, indented code, inline HTML
+     • warning → orange (#f0883e)  — raw HTML blocks
+   The background-position/repeat are inherited from .cm-lintRange.
+   ============================================================ */
+.cm-gfm-lint {
+    /* green wavy underline */
+    background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='6' height='3'><path d='m0 3 l2 -2 l1 0 l2 2 l1 0' stroke='%233fb950' fill='none' stroke-width='.7'/></svg>") !important;
+}
+
+.cm-gfm-lint-warning {
+    /* orange wavy underline — overrides green when both classes present */
+    background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='6' height='3'><path d='m0 3 l2 -2 l1 0 l2 2 l1 0' stroke='%23f0883e' fill='none' stroke-width='.7'/></svg>") !important;
 }
 
 /* Force CodeMirror Tooltip Visibility - High Specificity & Theming */

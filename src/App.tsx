@@ -1532,7 +1532,7 @@ function App() {
           />
         </div>
 
-        <div ref={mainContentRef} className="main-content" style={{
+        <div ref={mainContentRef} className="main-content" data-view-mode={viewMode} style={{
           display: 'flex', flex: 1, overflow: 'hidden', position: 'relative',
           flexDirection: viewMode === VIEW_DUAL_SWAP ? 'row-reverse'
             : viewMode === VIEW_DUAL_TOP ? 'column'

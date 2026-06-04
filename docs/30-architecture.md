@@ -533,6 +533,66 @@ The sabotage code is **completely compiled out** in production builds:
 
 ---
 
+## Feature: GFM[^gfm] Linter
+
+<!--ARCH-LTTCE-LNT-00001-->
+### Overview
+
+The GFM Linter is a live, in-editor diagnostic system that surfaces GitHub Flavored Markdown ambiguities and errors directly in the CodeMirror 6 editing surface. It follows the same design principle as all frontend-only features in Lattice: pure logic stays in TypeScript, no new runtime dependencies are introduced, and the feature is wired into the existing extension system.
+
+**Key design decisions:**
+
+- `@codemirror/lint` was already a transitive dependency (via `lintKeymap`). The linter activates it fully with zero new packages.
+- The linter runs as a CM6 `ViewPlugin` via the `linter()` factory, debounced automatically by the framework after each document change.
+- All 12 rules are contained in a single file (`src/editor-extensions/gfm-linter.ts`) to keep the extension self-contained and independently testable.
+
+<!--ARCH-LTTCE-LNT-00002-->
+### Severity Visualisation
+
+Three severity levels map to distinct wavy underline colours via CSS `background-image` overrides on the CM6 lint mark classes:
+
+| Severity  | Colour             | CSS class                         | Meaning                                                |
+| --------- | ------------------ | --------------------------------- | ------------------------------------------------------ |
+| `hint`    | Green (`#3fb950`)  | `cm-gfm-lint`                     | Low-risk ambiguity; renders differently across parsers |
+| `warning` | Orange (`#f0883e`) | `cm-gfm-lint cm-gfm-lint-warning` | Commonly stripped or mishandled by renderers           |
+| `error`   | Red (CM6 default)  | —                                 | Will render broken in all GFM-compliant renderers      |
+
+The SVG wavy underlines are inline `data:` URIs in `App.css` — no server requests, no external resources.
+
+<!--ARCH-LTTCE-LNT-00003-->
+### Tree-Walk Rules
+
+The following rules are implemented by traversing the Lezer syntax tree produced by `@codemirror/lang-markdown`. Each fires on a specific Lezer node type:
+
+| Lezer node                           | Rule                              | Severity | REQ               |
+| ------------------------------------ | --------------------------------- | -------- | ----------------- |
+| `SetextHeading1`, `SetextHeading2`   | Setext heading ambiguity          | hint     | REQ-LTTCE-LNT-0000A |
+| `CodeBlock`                          | Indented code block               | hint     | REQ-LTTCE-LNT-0000B |
+| `HTMLBlock`                          | Raw HTML block                    | warning  | REQ-LTTCE-LNT-0000C |
+| `HTMLTag`                            | Inline HTML tag                   | hint     | REQ-LTTCE-LNT-0000D |
+| `Table` → `TableHeader` / `TableRow` | Column count mismatch             | error    | REQ-LTTCE-LNT-0000E |
+| `BulletList`, `OrderedList`          | Loose list (blank line in list)   | hint     | REQ-LTTCE-LNT-00011 |
+| `FencedCode` (no `CodeInfo` child)   | Missing language tag              | warning  | REQ-LTTCE-LNT-00012 |
+| `Image` (empty `![](…)`)             | Empty alt text                    | warning  | REQ-LTTCE-LNT-00013 |
+| `ATXHeading*`[^atx], `SetextHeading*` | Duplicate heading (two-pass)     | warning  | REQ-LTTCE-LNT-00014 |
+
+<!--ARCH-LTTCE-LNT-00004-->
+### Text-Scan Rules
+
+Three rules operate on the raw document string rather than the Lezer tree, because the patterns they detect appear as plain text and produce no dedicated syntax node. To avoid false positives, positions inside `Link`, `Image`, `Autolink`, `InlineCode`, `FencedCode`, and `CodeBlock` nodes are collected as exclusion ranges before scanning.
+
+| Pattern                              | Rule                       | Severity | REQ                 |
+| ------------------------------------ | -------------------------- | -------- | ------------------- |
+| `https?://…` in plain prose          | Bare URL                   | hint     | REQ-LTTCE-LNT-0000F |
+| `~text~` (single tilde, not `~~`)    | Single-tilde strikethrough | hint     | REQ-LTTCE-LNT-00010 |
+| Opening fence with no matching close | Unclosed fenced code block | error    | REQ-LTTCE-LNT-00015 |
+
+### Integration Point
+
+`gfmLinter` is registered as a CM6 extension in `src/components/Editor.tsx` `getExtensions()`. The existing `lintKeymap` (already present) provides keyboard access (`Mod-Shift-m`) to the lint panel without any additional wiring.
+
+---
+
 ## Architectural Decisions
 
 ### ADR-01: External Image Fetches Blocked by Default
@@ -575,3 +635,16 @@ images continue to work normally — they are loaded via the
 - `src-tauri/src/settings.rs` — `block_external_images` field, default `true`
 - `src/components/Settings.tsx` — toggle UI
 - `src/App.tsx` — `img` renderer in `previewComponents` enforces the gate
+
+---
+
+[^gfm]: GFM — GitHub Flavored Markdown. The Markdown dialect specified by GitHub, extending CommonMark
+    with tables, task lists, strikethrough, and autolinks. <https://github.github.com/gfm/>
+
+[^cm6]: CM6 — CodeMirror 6. The sixth major version of the CodeMirror browser-based code-editor library.
+    <https://codemirror.net>
+
+[^atx]: ATX heading style — headings prefixed with `#` characters (e.g. `## Heading`). Named after
+    Aaron Swartz's *atx* plain-text formatting tool (2002).
+
+[^svg]: SVG — Scalable Vector Graphics. An XML-based vector image format supported natively by browsers. It is a very common file extension.

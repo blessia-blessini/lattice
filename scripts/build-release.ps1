@@ -29,6 +29,20 @@ try {
     # Run Cargo Build
     npm run tauri build
 
+    # ── Copy demo documents alongside the build output ──────────────────────
+    # Mirrors the step in the GitHub Actions workflow (step 905).
+    # Destination: docs/gen/demo  (staged with the rest of the generated docs).
+    $demoSrc  = "docs/demo"
+    $demoDest = "docs/gen/demo"
+    if (Test-Path $demoSrc) {
+        New-Item -ItemType Directory -Force -Path $demoDest | Out-Null
+        Copy-Item -Path "$demoSrc/*" -Destination $demoDest -Recurse -Force
+        Write-Output "Demo docs copied to $demoDest"
+    } else {
+        Write-Warning "docs/demo not found — skipping demo docs copy."
+    }
+    # ─────────────────────────────────────────────────────────────────────────
+
 }
 finally {
     # restore the old environment variable -- it will work even for "no vallue"

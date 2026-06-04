@@ -2,7 +2,7 @@
   "blockExternalImages": true,
   "dailyNotesPath": "{notesRoot}\\daily",
   "defaultMermaidInit": " {'theme': 'base', 'themeVariables': {\n  'signalColor':     '#1a1a1a',\n  'signalTextColor': '#1a1a1a',\n  'lineColor':       '#1a1a1a',\n  'actorLineColor':  '#1a1a1a',\n  'fontSize':        '16px'\n}}",
-  "defaultOpenTheme": "light",
+  "defaultOpenTheme": "dark",
   "highlightMark": true,
   "saveOnBlur": true,
   "wordWrap": true
