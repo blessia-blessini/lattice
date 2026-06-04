@@ -8,14 +8,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.1
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
-- Add link-utils path resolver and tests
-- feat: add multi-platform build and test GitHub Actions workflow with dynamic matrix configuration
-- Update buildAndTest.yml
-- Embed PDF via iframe viewer and add licenses file
-- Update demo docs to inline assets and PDF support
-- Route docs URLs to alpha or main branches
-- Use _src/docs/demo for demos after sparse checkout
-- Fix divider drag in reversed dual layouts
+- Prep Update CHANGELOG for v0.3.1 entries
   
 ---
 
@@ -30,6 +23,14 @@ Edit the section for your next version **before** pushing the release tag like v
 - Improve release workflow and UI styling
 
 ---
+- Add link-utils path resolver and tests
+- feat: add multi-platform build and test GitHub Actions workflow with dynamic matrix configuration
+- Update buildAndTest.yml
+- Embed PDF via iframe viewer and add licenses file
+- Update demo docs to inline assets and PDF support
+- Route docs URLs to alpha or main branches
+- Use _src/docs/demo for demos after sparse checkout
+- Fix divider drag in reversed dual layouts
 - npm and cargo update
 - Exclude shim files from coverage and add test
 - Add tests for App shortcuts, auto-save and Mermaid
