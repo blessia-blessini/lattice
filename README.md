@@ -49,9 +49,9 @@ The lack of native graphycal support is compensated by:
 
 ## DOCUMENTATION
 
+- [Requirements](docs/10-System-Requirements.md) — in progress not all formally extracted yet
 - [Architecture](docs/30-architecture.md) — technology stack, data flow, CI pipeline, feature design
-- [Test Strategy](docs/01-test-strategy.md) — test pipeline, coverage, linting
-- [API Reference](docs/README.md) — generated frontend and backend API docs
+- [Test Strategy](docs/60-test-strategy.md) — test pipeline, coverage, linting
 
 ---
 

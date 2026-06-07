@@ -8,6 +8,9 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.2
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Update docs links, changelog, and workflow
+- Add blank line between demo links
+- Update documentation links in README
 - Demo Docs, fast test mode, init traceability
 - Bump version to 0.3.1
 - CHANGELOG: END v0.3.1 entry Prep v0.3.2 entry

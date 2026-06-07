@@ -786,8 +786,8 @@ jobs:
 
           printf ' - FOR REFERENCE AS [RENDERED BY GitHub](%s/docs/demo/demo.md)\n' "$BLOB_BASE" >> "$OUT"
           printf ' - The plaintext that you would actually edit [Raw .md](%s/docs/demo/demo.md)\n' "$RAW_BASE"  >> "$OUT"
- 
 
+          printf '\n' >> "$OUT"
           # Embed screenshots from demo_assets/ inline — left-aligned, full pixel quality.
           # GitHub renders images from raw.githubusercontent.com directly in Markdown.
           ASSETS_SRC="$DEMO_SRC/demo_assets"
