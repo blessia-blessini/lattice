@@ -20,6 +20,8 @@
 #
 # See LICENCE file in GitHUB root folder of the repository.
 # END OF NOTE
+param([switch]$Fast)
+
 # Pre-build checks and setup
 $oldEnv = $env:LATTICEBUILD_NO
 
@@ -34,6 +36,75 @@ try {
 
     # call the preambule script
     . "$PSScriptRoot\_pre-build.ps1" -DefaultBuildNo "TESTVERSION" -ScriptName "build-test.ps1"
+
+    #**************************************************************
+    # Invoke-FastTests
+    #**************************************************************
+    # FAST mode: test only the crates touched by *uncommitted* changes
+    # (working tree vs HEAD + untracked files), skipping coverage,
+    # integration, E2E and the HTML report. Meant for the inner dev loop;
+    # the full (no -Fast) run remains the gate required for "Done".
+    # See code-prompt-DoD.md / DRY-and-Variants.md.
+    if ($Fast) {
+        Write-Output "FAST mode: testing only crates with uncommitted changes..."
+
+        $changed = @()
+        $changed += git diff --name-only HEAD
+        $changed += git ls-files --others --exclude-standard
+        $changed = $changed | Where-Object { $_ } | Sort-Object -Unique
+        if (-not $changed) { Write-Output "No uncommitted changes. Nothing to test."; exit 0 }
+
+        # Map each changed *.rs file to its owning crate (nearest Cargo.toml with a name).
+        $pkgs = @()
+        foreach ($f in $changed) {
+            if ($f -notmatch '\.rs$') { continue }
+            $dir = Split-Path -Parent $f
+            while ($dir -and (Test-Path $dir)) {
+                $manifest = Join-Path $dir 'Cargo.toml'
+                if (Test-Path $manifest) {
+                    $m = Select-String -Path $manifest -Pattern '^\s*name\s*=\s*"([^"]+)"' | Select-Object -First 1
+                    if ($m) { $pkgs += $m.Matches.Groups[1].Value; break }
+                }
+                $parent = Split-Path -Parent $dir
+                if (-not $parent -or $parent -eq $dir) { break }
+                $dir = $parent
+            }
+        }
+        $pkgs = $pkgs | Sort-Object -Unique
+
+        $failed = 0
+        if ($pkgs) {
+            $pkgArgs = @(); foreach ($p in $pkgs) { $pkgArgs += '-p'; $pkgArgs += $p }
+            Write-Output "Rust crates: $($pkgs -join ', ')"
+            Push-Location src-tauri
+            try {
+                cargo test --lib @pkgArgs
+                if ($LASTEXITCODE -ne 0) { $failed = 1 }
+                if ($failed -eq 0) {
+                    cargo clippy @pkgArgs -- -D warnings
+                    if ($LASTEXITCODE -ne 0) { $failed = 1 }
+                }
+            } finally { Pop-Location }
+        } else {
+            Write-Output "No Rust crate changes detected."
+        }
+
+        # Frontend: run only the vitest suites related to changed .ts/.tsx files.
+        $fe = $changed | Where-Object { $_ -match '\.(ts|tsx)$' }
+        if ($fe -and $failed -eq 0) {
+            Write-Output "Frontend: vitest related ($($fe.Count) changed file(s))"
+            # vite.config.ts requires LATTICEBUILD_NO to be set (it throws otherwise).
+            # Now covered by the preamble sourced once above (line 40), which runs
+            # before this Fast branch — no need to source it again here.
+            npx vitest related @fe --run
+            if ($LASTEXITCODE -ne 0) { $failed = 1 }
+        }
+
+        if ($failed -ne 0) { Write-Output "FAST tests FAILED."; exit 1 }
+        Write-Output "FAST tests passed."
+        exit 0
+    }
+    # Invoke-FastTests END *****************************************
 
     # 1a. Run Backend Unit Tests (Rust)
     # --no-report accumulates coverage data without generating a report yet,
@@ -124,6 +195,12 @@ try {
     # reverse push/pop Location
     Push-Location ..
     try {
+        # vitest discovers all *.test.{ts,tsx} files automatically.
+        # This includes both App.test.tsx and App.link-routing.test.tsx
+        # (the link-routing suite was split to allow sandbox isolation runs).
+        # vitest discovers all *.test.{ts,tsx} files automatically.
+        # This includes both App.test.tsx and App.link-routing.test.tsx
+        # (the link-routing suite was split to allow sandbox isolation runs).
         # param pool=forks prevents caching while keeping the
         #   coverage results merged
         npm run test:coverage -- --pool=forks

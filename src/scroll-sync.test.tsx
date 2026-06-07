@@ -44,6 +44,19 @@
  *     (line 1), snapping the editor to the top.  The fix finds the closest
  *     entry instead.
  *
+ *  4. Delayed-echo suppression guard (Linux/X11 burst-scroll drift) — the
+ *     reentrancy guard that stops a programmatic write to one pane from being
+ *     misread as user input on the other was originally a single-rAF
+ *     `isSyncing` flag. On Linux/X11 (incl. WSLg), wheel scrolling fires many
+ *     small, coalesced 'scroll' events whose delivery can lag the write by
+ *     more than one animation frame — long enough for that flag to have
+ *     already cleared. The echo then slips through, drives the other pane,
+ *     which drives this one back, and small interpolation error compounds
+ *     into a slow drift toward the top. The fix replaced the rAF flag with a
+ *     timestamp-based suppression window per pane (editorSyncUntil /
+ *     previewSyncUntil): any 'scroll' event arriving within ~120 ms of our own
+ *     write to that pane is ignored as an echo, regardless of frame timing.
+ *
  * Key testing strategy:
  *   - pauseScrollSync tests: render with real timers (so waitFor works), then
  *     call vi.useFakeTimers() AFTER the component is mounted and in dual view.
@@ -320,6 +333,124 @@ describe('scroll-sync fix #2 — pauseScrollSync', () => {
     // (Timer expiry is covered by tests 2a–2b above.)
     act(() => { fireEvent.scroll(preview); });
     expect(scrollToLineSpy).not.toHaveBeenCalled();
+  });
+});
+
+// ===========================================================================
+// 4. Delayed-echo suppression guard (Linux/X11 burst-scroll drift)
+// ===========================================================================
+// Reproduces the scenario described in the App.tsx scroll-sync effect: a
+// programmatic write to one pane (e.g. preview.scrollTop set from
+// onEditorScroll) produces a 'scroll' *echo* on that pane. Under bursty wheel
+// scrolling on Linux/X11 (incl. WSLg), that echo can arrive noticeably later
+// than the write — beyond a single requestAnimationFrame — which is exactly
+// what the old `isSyncing` flag could no longer catch.
+//
+// The fix arms a ~120 ms suppression window (previewSyncUntil / editorSyncUntil)
+// at the moment of the write and ignores any 'scroll' event on that pane until
+// the window elapses, regardless of how many frames have passed. These tests
+// fire the echo at two points relative to that window — comfortably inside it,
+// and clearly outside it — and assert the guard suppresses the former while
+// treating the latter as genuine input that must drive the other pane.
+//
+// `performance` must be included in the faked timers list so that the
+// timestamp comparisons inside the guard (`now() < previewSyncUntil`) advance
+// in lockstep with `vi.advanceTimersByTime`.
+// ===========================================================================
+describe('scroll-sync fix #4 — delayed-echo suppression guard (Linux/X11 burst scrolling)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sessionStorage.clear();
+    localStorage.clear();
+    delete (window as any).__LATTICE_INIT_DATA__;
+    scrollToLineSpy = vi.fn();
+    vi.mocked(TauriCore.invoke).mockImplementation(makeInvokeMock());
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  // Helper: render in dual view, let the 350 ms "switched into dual view"
+  // pauseScrollSync window elapse on the *real* clock, THEN switch to fake
+  // timers so the guard logic under test runs in isolation.
+  //
+  // Order matters here: renderInDualView() schedules pauseScrollSync's pause
+  // via a real `setTimeout`. Installing fake timers before that pending real
+  // timeout fires would orphan it — `vi.advanceTimersByTime` only drives the
+  // fake clock, the real timeout never resolves, `scrollSyncPaused.current`
+  // stays stuck `true`, and every handler below silently no-ops, turning
+  // "not called" assertions into false positives (which is exactly what
+  // happened: suppression-window test passed for the wrong reason, and the
+  // "after window" / per-pane tests failed because nothing ever fires).
+  // Draining the real pause first, then installing fake timers, avoids the
+  // mismatched-clock race entirely.
+  const setupPastInitialPause = async () => {
+    const { container, preview } = await renderInDualView();
+    const editorScroll = container.querySelector('[data-testid="mock-editor"]') as HTMLElement;
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 400)); // past the 350 ms pause, on the real clock
+    });
+
+    vi.useFakeTimers({
+      toFake: ['Date', 'performance', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'],
+    });
+
+    return { editorScroll, preview };
+  };
+
+  it('ignores a delayed preview-scroll echo that arrives within the ~120 ms suppression window', async () => {
+    const { editorScroll, preview } = await setupPastInitialPause();
+
+    // User scrolls the editor. onEditorScroll computes the target offset and
+    // writes preview.scrollTop directly — arming previewSyncUntil ~120 ms out.
+    act(() => { fireEvent.scroll(editorScroll); });
+
+    // The echo lands ~80 ms later: well inside the window, but past the point
+    // a single rAF (~16 ms) would have already cleared the old `isSyncing` flag.
+    act(() => { vi.advanceTimersByTime(80); });
+    act(() => { fireEvent.scroll(preview); });
+
+    // Must be recognised as our own echo and dropped — NOT bounced back to the editor.
+    expect(scrollToLineSpy).not.toHaveBeenCalled();
+  });
+
+  it('treats a preview scroll arriving after the suppression window as genuine user input', async () => {
+    const { editorScroll, preview } = await setupPastInitialPause();
+
+    act(() => { fireEvent.scroll(editorScroll); });
+
+    // Past the ~120 ms window — any further scroll on the preview pane is
+    // genuine (new) input and must still drive the editor as usual.
+    act(() => { vi.advanceTimersByTime(130); });
+    act(() => { fireEvent.scroll(preview); });
+
+    expect(scrollToLineSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('suppression is per-pane: an editor-pane echo does not block a genuine preview scroll', async () => {
+    const { editorScroll, preview } = await setupPastInitialPause();
+
+    // Editor scroll arms previewSyncUntil (suppresses echoes on the *preview*
+    // pane only) — it must not also suppress unrelated scroll input on the
+    // preview pane that happens to land at the same moment from a different cause.
+    act(() => { fireEvent.scroll(editorScroll); });
+
+    // Immediately past the window for the *editor* pane's own guard
+    // (editorSyncUntil is untouched here — only previewSyncUntil was armed),
+    // a preview scroll should resolve on its own merits once its window elapses.
+    act(() => { vi.advanceTimersByTime(130); });
+    act(() => { fireEvent.scroll(preview); });
+    expect(scrollToLineSpy).toHaveBeenCalledTimes(1);
+
+    // And a subsequent genuine editor scroll is not permanently blocked by the
+    // earlier preview-pane guard — guards expire independently per pane.
+    act(() => { vi.advanceTimersByTime(130); });
+    act(() => { fireEvent.scroll(editorScroll); });
+    // (No assertion on scrollToLineSpy here — onEditorScroll drives the preview,
+    // not the editor; this just confirms the handler still runs without throwing
+    // and without being wedged by a stale guard from the first scroll.)
   });
 });
 

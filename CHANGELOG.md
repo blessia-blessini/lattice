@@ -2,15 +2,36 @@
 
 All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
----
 
+
+
+## v0.3.2
+### Changes
+  <!-- INSERT BULLETS UNDER THIS LINE -->
+- Demo Docs, fast test mode, init traceability
+- Bump version to 0.3.1
+- CHANGELOG: END v0.3.1 entry Prep v0.3.2 entry
+  
+---
 
 ## v0.3.1
 ### Changes
-  <!-- INSERT BULLETS UNDER THIS LINE -->
-- Prep Update CHANGELOG for v0.3.1 entries
+- FIX: Linux scroll drifting. 
+- FAST test mode and scroll-sync guard tests.
+   - Add fast mode to run tests only on changed crates
+- Document artefacts  linking in traceability
   
 ---
+
+RAW: 
+- FIX: Linux scroll drifting. FAST test mode and scroll-sync guard tests.
+- Add fast mode to run tests only on changed crates
+- Document artefact linking in traceability
+- Clean up demo docs and remove deprecated files
+- Clarify vitest test discovery in build-test script
+- Add link routing tests and implement bare www handling
+- Update release notes header and demo references
+- Prep Update CHANGELOG for v0.3.1 entries
 
 ## v0.3.0
 ### Changes

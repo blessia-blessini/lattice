@@ -1085,7 +1085,25 @@ function App() {
     const preview = previewPaneRef.current;
     if (!editorScroll || !preview) return;
 
-    let isSyncing = false;
+    // Suppress-window guard (replaces a single-rAF `isSyncing` flag).
+    //
+    // On Linux/X11 (incl. WSLg), mouse-wheel scrolling fires many small,
+    // coalesced 'scroll' events whose delivery can lag a frame or more behind
+    // the programmatic write that caused them — long enough for a one-rAF
+    // `isSyncing` reset to have already cleared. The "echo" of our own write
+    // then slips through as if it were user input, drives the other pane,
+    // and that drives this one back, compounding small interpolation error
+    // into a slow drift toward the top. (Keyboard scrolling moves the cursor
+    // at a much lower event rate and stays inside a single rAF, so it never
+    // triggers the loop.)
+    //
+    // Fix: remember *when* we last wrote to each pane and ignore any 'scroll'
+    // event on that pane that arrives within SYNC_GUARD_MS of that write —
+    // regardless of how many animation frames have elapsed.
+    const SYNC_GUARD_MS = 120;
+    let editorSyncUntil = 0;
+    let previewSyncUntil = 0;
+    const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
     // Build sorted [sourceLine, offsetTop] pairs from preview's tagged elements.
     const buildLineMap = (): Array<[number, number]> => {
@@ -1147,25 +1165,25 @@ function App() {
     };
 
     const onEditorScroll = () => {
-      if (isSyncing || scrollSyncPaused.current) return;
+      if (scrollSyncPaused.current) return;
+      if (now() < editorSyncUntil) return; // echo of our own preview→editor write
       const handle = editorRef.current;
       if (!handle) return;
       const line = handle.getTopVisibleLine();
       if (line == null) return;
       const target = offsetForLine(buildLineMap(), line);
-      isSyncing = true;
+      previewSyncUntil = now() + SYNC_GUARD_MS;
       preview.scrollTop = target;
-      requestAnimationFrame(() => { isSyncing = false; });
     };
 
     const onPreviewScroll = () => {
-      if (isSyncing || scrollSyncPaused.current) return;
+      if (scrollSyncPaused.current) return;
+      if (now() < previewSyncUntil) return; // echo of our own editor→preview write
       const handle = editorRef.current;
       if (!handle) return;
       const line = lineForOffset(buildLineMap(), preview.scrollTop);
-      isSyncing = true;
+      editorSyncUntil = now() + SYNC_GUARD_MS;
       handle.scrollToLine(line);
-      requestAnimationFrame(() => { isSyncing = false; });
     };
 
     editorScroll.addEventListener('scroll', onEditorScroll, { passive: true });
@@ -1243,6 +1261,18 @@ function App() {
           e.preventDefault();
           const id = decodeURIComponent(href.slice(1));
           document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+          return;
+        }
+
+        // ── Schemeless web URL → assume https and open externally ───────────
+        // IMPL-LTTCE-LNK-00004
+        // Catches bare www. links written without a protocol, e.g.
+        // [text](www.example.com). The markdown renderer passes the raw href
+        // through; without this guard the link falls through to the local-file
+        // handler and silently does nothing.
+        if (href.startsWith('www.')) {
+          e.preventDefault();
+          openUrl(`https://${href}`).catch(err => console.error('Failed to open URL externally:', err));
           return;
         }
 

@@ -1,7 +1,7 @@
 # Lattice — Feature Showcase
 
-> **Open this file with Lattice** to see every feature rendered live.
-> Switch between **Edit**, **Preview**, and **Dual** view with the toolbar selector.
+> **Open this file with Lattice** to see every feature rendered live.  
+> Switch between **Edit**, **Preview**, and **Dual** view with the toolbar selector.  
 > Try `Ctrl/Cmd+Shift+T` to auto-generate the Table of Contents below.
 
 ---
@@ -348,7 +348,7 @@ classDiagram
 pie title Lattice Platform Coverage
     "Windows (x64)" : 30
     "macOS (ARM64)" : 25
-    "macOS (Intel)" : 15
+    "macOS (AMD/Intel)" : 15
     "Linux AppImage" : 15
     "Android" : 15
 ```

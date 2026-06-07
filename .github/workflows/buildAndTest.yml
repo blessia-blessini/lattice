@@ -672,7 +672,7 @@ jobs:
         printf '%s\n' "# Lattice ${VERSION}"  > "$OUT"
         printf '%s\n' "**Released:** ${DATE}" >> "$OUT"
         printf '%s\n' "$( [ -f release-notes.md ] && cat release-notes.md )" >> "$OUT"
-        printf '%s\n' "## Downloads"                        >> "$OUT"
+        printf '%s\n' "## Download Lattice"                  >> "$OUT"
         printf '%s\n' "| File | Install on | Size |"         >> "$OUT"
         printf '%s\n' "|:-----|:-----------|-----:|"         >> "$OUT"
 
@@ -767,7 +767,9 @@ jobs:
             "A Markdown file — open directly in Lattice, read on GitHub, or view as HTML/PDF here." \
             "" >> "$OUT"
 
-          printf '%s\n\n' "### The documment named \`demo.md\`" "" >> "$OUT"
+          printf '%s\n\n' "### A documment named \`demo.md\`" "" >> "$OUT"
+          printf '%s\n' "Here is a pdf that lattice generated as a print-out." "" >> "$OUT"
+          printf '%s\n' "Please scroll-down to see how Lattice looks on windows." "" >> "$OUT"
 
           # PDF — embed an inline viewer if demo.md.pdf was shipped alongside demo.md.
           # pdf-viewer.html (PDF.js, Apache 2.0) lives in Lattice-Releases/ and accepts
@@ -775,16 +777,16 @@ jobs:
           if [ -f "$DEMO_SRC/demo.md.pdf" ]; then
             PDF_RAW="${RAW_BASE}/docs/demo/demo.md.pdf"
             # URL-encode the full PDF URL so it is safe as a query parameter value.
-            PDF_ENC=$(jq -rn --arg str "$PDF_RAW" '$str | @uri') # URL encoding 
+            PDF_ENC=$(jq -rn --arg str "$PDF_RAW" '$str | @uri') # URL encoding
             # Emit an iframe — marked.js passes raw HTML through, so this renders inline.
             printf '<iframe src="pdf-viewer.html?file=%s" width="100%%" style="border:none;border-radius:4px;margin:12px 0;display:block;min-height:70vh"></iframe>\n\n' \
               "$PDF_ENC" >> "$OUT"
             printf ' - Download [Lattice-generated PDF](%s)\n' "$PDF_RAW" >> "$OUT"
           fi
 
-
           printf ' - FOR REFERENCE AS [RENDERED BY GitHub](%s/docs/demo/demo.md)\n' "$BLOB_BASE" >> "$OUT"
-          printf ' - [Raw .md](%s/docs/demo/demo.md)\n'          "$RAW_BASE"  >> "$OUT"
+          printf ' - The plaintext that you would actually edit [Raw .md](%s/docs/demo/demo.md)\n' "$RAW_BASE"  >> "$OUT"
+ 
 
           # Embed screenshots from demo_assets/ inline — left-aligned, full pixel quality.
           # GitHub renders images from raw.githubusercontent.com directly in Markdown.

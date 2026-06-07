@@ -25,6 +25,11 @@ compliance efforts.
 
 ---
 
+## How we link artefacts
+
+  - in the artefact file itself we place a **comment** with an unique identifier.
+  - The bidirectional link between artefacts is done by crating a file with the same name but a suffix `.trace-cov.md` and listing the list of links inside it.
+
 ## ID Schema
 
 ### Format

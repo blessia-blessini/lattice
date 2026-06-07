@@ -27,6 +27,61 @@ export DEFAULT_BUILD_NO="TESTVERSION"
 export SCRIPT_NAME="build-test.sh"
 source ./scripts/_pre-build.sh
 
+#**************************************************************
+# fast_tests
+#**************************************************************
+# FAST mode: test only the crates touched by *uncommitted* changes
+# (working tree vs HEAD + untracked files), skipping coverage,
+# integration, E2E and the HTML report. Inner dev loop only; the full
+# (no "fast" arg) run stays the gate required for "Done".
+# See code-prompt-DoD.md / DRY-and-Variants.md.
+#
+# NOTE: this block must run *after* `_pre-build.sh` (above), which sets
+# LATTICEBUILD_NO. vite.config.ts throws "LATTICEBUILD_NO environment
+# variable is not defined" otherwise — `npx vitest related` below needs it.
+if [ "$1" = "fast" ] || [ "$1" = "--fast" ] || [ "$1" = "-Fast" ]; then
+    echo "FAST mode: testing only crates with uncommitted changes..."
+    mapfile -t CHANGED < <( { git diff --name-only HEAD; git ls-files --others --exclude-standard; } | sort -u )
+    [ ${#CHANGED[@]} -eq 0 ] && { echo "No uncommitted changes. Nothing to test."; exit 0; }
+
+    # Map each changed *.rs file to its owning crate (nearest Cargo.toml with a name).
+    declare -A PKGSET
+    for f in "${CHANGED[@]}"; do
+        case "$f" in *.rs) ;; *) continue ;; esac
+        dir=$(dirname "$f")
+        while [ -n "$dir" ] && [ "$dir" != "." ] && [ "$dir" != "/" ]; do
+            if [ -f "$dir/Cargo.toml" ]; then
+                name=$(grep -m1 -E '^[[:space:]]*name[[:space:]]*=[[:space:]]*"' "$dir/Cargo.toml" | sed -E 's/.*"([^"]+)".*/\1/')
+                [ -n "$name" ] && PKGSET["$name"]=1 && break
+            fi
+            dir=$(dirname "$dir")
+        done
+    done
+
+    FAILED=0
+    if [ ${#PKGSET[@]} -gt 0 ]; then
+        PKG_ARGS=(); for p in "${!PKGSET[@]}"; do PKG_ARGS+=( -p "$p" ); done
+        echo "Rust crates: ${!PKGSET[*]}"
+        pushd src-tauri || exit
+            cargo test --lib "${PKG_ARGS[@]}" || FAILED=1
+            [ $FAILED -eq 0 ] && { cargo clippy "${PKG_ARGS[@]}" -- -D warnings || FAILED=1; }
+        popd || exit
+    else
+        echo "No Rust crate changes detected."
+    fi
+
+    # Frontend: run only the vitest suites related to changed .ts/.tsx files.
+    FE=(); for f in "${CHANGED[@]}"; do case "$f" in *.ts|*.tsx) FE+=("$f") ;; esac; done
+    if [ ${#FE[@]} -gt 0 ] && [ $FAILED -eq 0 ]; then
+        echo "Frontend: vitest related (${#FE[@]} changed file(s))"
+        npx vitest related "${FE[@]}" --run || FAILED=1
+    fi
+
+    [ $FAILED -ne 0 ] && { echo "FAST tests FAILED."; exit 1; }
+    echo "FAST tests passed."; exit 0
+fi
+# fast_tests END **********************************************
+
 pushd src-tauri || exit
 cargo llvm-cov clean
 popd
@@ -159,6 +214,9 @@ rm -f "$RUST_OUT_UNIT" "$RUST_OUT_WIRING" "$RUST_OUT_FILEOPEN" "$RUST_OUT_E2E" "
 # 2b. Run Frontend Coverage
 # runs in project root
 echo "Running Frontend Coverage..."
+# vitest discovers all *.test.{ts,tsx} files automatically.
+# This includes both App.test.tsx and App.link-routing.test.tsx
+# (the link-routing suite was split to allow sandbox isolation runs).
 # param pool=forks prevents caching while keeping the
 #   coverage results merged
 npm run test:coverage -- --pool=forks
