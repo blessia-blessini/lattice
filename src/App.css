@@ -237,9 +237,12 @@ body {
 
 /* Counter-invert raster images, Mermaid SVGs and video back to natural
    colors (REQ-LTTCE-DVW-00002): invert(1) on top of the parent's
-   invert(1) composes to identity. */
+   invert(1) composes to identity.
+   Deliberately scoped to .mermaid svg — NOT bare svg: KaTeX renders
+   stretchy glyphs (sqrt bars, wide braces) as inline <svg>, and those
+   must invert together with the surrounding math text, not stay black. */
 .markdown-body .lattice-cursor-flash img,
-.markdown-body .lattice-cursor-flash svg,
+.markdown-body .lattice-cursor-flash .mermaid svg,
 .markdown-body .lattice-cursor-flash video {
   filter: invert(1);
 }
@@ -250,7 +253,7 @@ body {
    equal specificity, later wins. */
 .markdown-body .lattice-cursor-flash--fade,
 .markdown-body .lattice-cursor-flash--fade img,
-.markdown-body .lattice-cursor-flash--fade svg,
+.markdown-body .lattice-cursor-flash--fade .mermaid svg,
 .markdown-body .lattice-cursor-flash--fade video {
   filter: invert(0);
   transition: filter 400ms ease-out;
@@ -260,7 +263,7 @@ body {
 @media print {
   .markdown-body .lattice-cursor-flash,
   .markdown-body .lattice-cursor-flash img,
-  .markdown-body .lattice-cursor-flash svg,
+  .markdown-body .lattice-cursor-flash .mermaid svg,
   .markdown-body .lattice-cursor-flash video {
     filter: none !important;
     background-color: transparent !important;

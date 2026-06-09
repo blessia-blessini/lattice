@@ -648,6 +648,12 @@ its own module for headless unit testing):
 1. **Source-range tagging** — `rehypeAddSourceLines` (App.tsx) already tags every preview element with
    `data-source-line` (start line). It is extended to also emit `data-source-line-end` from
    `node.position.end.line`, giving every preview block a closed source-line interval `[start, end]`.
+   **Display-math exception**: `rehype-katex` *replaces* the tagged math host element
+   (`<pre><code class="language-math math-display">`) with generated KaTeX nodes, destroying the tags. A
+   dedicated plugin `rehypeWrapMathBlocks` (App.tsx, registered between `rehypeAddSourceLines` and
+   `rehypeKatex`) wraps every display-math host in a `<div class="math-block-anchor">` carrying a copy of
+   the interval; the wrapper survives the KaTeX splice, so `$$...$$` blocks stay flashable. Inline math
+   needs no wrapper (its paragraph keeps its own tags).
 
 2. **Cursor-line notification** — `Editor.tsx` accepts a new optional prop `onCursorLineChange(line)`.
    The CodeMirror `updateListener` computes the 1-based cursor line on every `selectionSet` / `docChanged`
@@ -670,7 +676,7 @@ its own module for headless unit testing):
 
 ### Inversion CSS
 
-`App.css` implements "inverted" as `filter: invert(1)` on the flashed element, with an explicit per-theme background color (`#ffffff` light / `#0d1117` dark — the `PREVIEW_THEME_COLORS` values) so the inversion produces a solid negative block rather than inverting text alone over an unchanged page background. `<mark>` spans inside the block are inverted together with the rest of the inline content (their amber background turns blue-ish — unmistakably "inside the flash"). `img` and `svg` (Mermaid) descendants get a counter `filter: invert(1)`, which composes with the parent inversion back to natural colors. The fade is a `transition` on `filter` triggered by the `--fade` modifier class.
+`App.css` implements "inverted" as `filter: invert(1)` on the flashed element, with an explicit per-theme background color (`#ffffff` light / `#0d1117` dark — the `PREVIEW_THEME_COLORS` values) so the inversion produces a solid negative block rather than inverting text alone over an unchanged page background. `<mark>` spans inside the block are inverted together with the rest of the inline content (their amber background turns blue-ish — unmistakably "inside the flash"). `img` and `.mermaid svg` descendants get a counter `filter: invert(1)`, which composes with the parent inversion back to natural colors. The counter rule is deliberately scoped to Mermaid's container — KaTeX renders stretchy glyphs (root bars, wide braces) as inline `<svg>`, and those must invert *with* the math text, so bare `svg` must never appear in the counter-invert selector. The fade is a `transition` on `filter` triggered by the `--fade` modifier class.
 
 ### Integration Point
 

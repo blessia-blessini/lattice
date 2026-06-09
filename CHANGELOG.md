@@ -4,12 +4,19 @@ All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
 
+## v0.3.5
+### Changes
+  <!-- INSERT BULLETS UNDER THIS LINE -->
+- RELEASE v0.3.3
+- RELEASE 0.3.2
+- Update CHANGELOG.md
+
+---
 
 ## v0.3.3
 ### Changes
-  <!-- INSERT BULLETS UNDER THIS LINE -->
-- RELEASE 0.3.2
-- Update CHANGELOG.md
+  
+- FIX: Katex blocks doo not flash the cursor
 
 ---
 

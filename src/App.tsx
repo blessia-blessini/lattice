@@ -75,6 +75,62 @@ const rehypeAddSourceLines = () => (tree: any) => {
   walk(tree);
 };
 
+//******************************************************************************
+// rehypeWrapMathBlocks
+//******************************************************************************
+// IMPL-LTTCE-DVW-00005 — rehype-katex REPLACES the display-math host element
+// (`<pre><code class="language-math math-display">`, or a legacy
+// `div.math-display`) with freshly generated KaTeX spans
+// (`parent.children.splice(index, 1, ...result)`), destroying the
+// data-source-line / data-source-line-end attributes rehypeAddSourceLines put
+// on the host. Math blocks therefore had no source interval and never reacted
+// to the cursor flash (and were invisible to the scroll-sync line map).
+//
+// Fix: wrap every display-math host in a <div class="math-block-anchor"> that
+// carries a COPY of the interval. KaTeX replaces the inner host; the wrapper
+// and its attributes survive. Inline math needs no wrapper — its enclosing
+// paragraph keeps its own attributes.
+// MUST run AFTER rehypeAddSourceLines and BEFORE rehypeKatex.
+const rehypeWrapMathBlocks = () => (tree: any) => {
+  const hasClass = (node: any, name: string) =>
+    Array.isArray(node?.properties?.className) && node.properties.className.includes(name);
+
+  const isDisplayMathHost = (node: any): boolean => {
+    if (node?.type !== 'element') return false;
+    // Legacy shape: <div class="math math-display"> (older mdast-util-math).
+    if (hasClass(node, 'math-display') && node.tagName !== 'code') return true;
+    // Current shape: <pre> hosting <code class="language-math math-display">.
+    return node.tagName === 'pre' && Array.isArray(node.children) &&
+      node.children.some((c: any) => c?.type === 'element' && c.tagName === 'code' &&
+        (hasClass(c, 'language-math') || hasClass(c, 'math-display')));
+  };
+
+  const walk = (node: any) => {
+    if (!Array.isArray(node?.children)) return;
+    for (let i = 0; i < node.children.length; i++) {
+      const child = node.children[i];
+      if (child?.type === 'element' && isDisplayMathHost(child) &&
+          child.properties?.['data-source-line'] != null) {
+        node.children[i] = {
+          type: 'element',
+          tagName: 'div',
+          properties: {
+            className: ['math-block-anchor'],
+            'data-source-line': child.properties['data-source-line'],
+            'data-source-line-end':
+              child.properties['data-source-line-end'] ?? child.properties['data-source-line'],
+          },
+          children: [child],
+        };
+      } else {
+        walk(child);
+      }
+    }
+  };
+  walk(tree);
+};
+// rehypeWrapMathBlocks END ****************************************************
+
 const PREVIEW_THEME_COLORS = {
   light: { backgroundColor: '#ffffff', color: '#24292e', colorScheme: 'light' as const },
   dark: { backgroundColor: '#0d1117', color: '#c9d1d9', colorScheme: 'dark' as const },
@@ -1522,6 +1578,7 @@ function App() {
       remarkPlugins={[remarkStripHtmlComments, remarkGfm, remarkMath]}
       rehypePlugins={[
         rehypeAddSourceLines,
+        rehypeWrapMathBlocks, // after AddSourceLines, before Katex — see plugin doc
         rehypeAddHeadingIds,
         rehypeKatex,
         ...(m_highlightMark ? [rehypeHighlightMark] : []),

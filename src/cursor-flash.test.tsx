@@ -112,7 +112,10 @@ vi.mock('./components/Editor', () => ({
 //   5: - item one        (ul spans 5..6, li one is 5..5)
 //   6: - item two
 //   8: closing paragraph
-// Line 2/4/7 are blank separator lines (must produce NO flash).
+//  10: $$                (display math, spans 10..12 — KaTeX-rendered)
+//  11: E = mc^2
+//  12: $$
+// Line 2/4/7/9 are blank separator lines (must produce NO flash).
 // ---------------------------------------------------------------------------
 const TEST_DOC = [
   '# Title',
@@ -123,6 +126,10 @@ const TEST_DOC = [
   '- item two',
   '',
   'Last paragraph.',
+  '',
+  '$$',
+  'E = mc^2',
+  '$$',
 ].join('\n');
 
 const makeInvokeMock = () => (cmd: string, args: any) => {
@@ -196,6 +203,20 @@ describe('cursor flash — source interval tagging', () => {
     expect(ul).toBeTruthy();
     expect(ul.getAttribute('data-source-line-end')).toBe('6');
   });
+
+  it('display-math blocks keep a source interval despite the KaTeX replacement (IMPL-LTTCE-DVW-00005)', async () => {
+    const { preview } = await renderInDualView();
+    await waitFor(() => expect(preview.querySelector('.katex')).toBeTruthy());
+
+    // rehype-katex splices the tagged <pre><code class="language-math">
+    // host out of the tree; the wrapper injected by rehypeWrapMathBlocks
+    // must survive, carrying the copied [10, 12] interval.
+    const anchor = preview.querySelector('div.math-block-anchor') as HTMLElement;
+    expect(anchor).toBeTruthy();
+    expect(anchor.getAttribute('data-source-line')).toBe('10');
+    expect(anchor.getAttribute('data-source-line-end')).toBe('12');
+    expect(anchor.querySelector('.katex')).toBeTruthy(); // KaTeX output is inside
+  });
 });
 
 // ===========================================================================
@@ -236,6 +257,18 @@ describe('cursor flash — block selection (REQ-LTTCE-DVW-00001/00002)', () => {
 
     flashCursorTo(4); // blank line between paragraph and list
     expect(flashed(preview)).toHaveLength(0);
+  });
+
+  it('flashes the display-math wrapper when the cursor is inside $$...$$ (regression: math did not react)', async () => {
+    const { preview } = await renderInDualView();
+    await waitFor(() => expect(preview.querySelector('div.math-block-anchor')).toBeTruthy());
+
+    flashCursorTo(11); // middle line of the $$ block
+
+    const hits = flashed(preview);
+    expect(hits).toHaveLength(1);
+    expect(hits[0].classList.contains('math-block-anchor')).toBe(true);
+    expect(hits[0].querySelector('.katex')).toBeTruthy();
   });
 
   it('moving the cursor moves the flash (old block is cleaned)', async () => {
@@ -348,10 +381,17 @@ describe('cursor flash — App.css invariants (IMPL-LTTCE-DVW-00004)', () => {
       .toContain('background-color: #0d1117');
   });
 
-  it('counter-inverts images and SVGs back to natural colors (REQ-LTTCE-DVW-00002)', () => {
+  it('counter-inverts images and Mermaid SVGs back to natural colors (REQ-LTTCE-DVW-00002)', () => {
     const block = ruleBlock('.markdown-body .lattice-cursor-flash img,');
-    expect(block).toContain('svg');
+    expect(block).toContain('.mermaid svg');
     expect(block).toContain('filter: invert(1)');
+  });
+
+  it('does NOT counter-invert bare svg — KaTeX glyph SVGs must invert with the math text', () => {
+    // A selector like `.lattice-cursor-flash svg` (without the .mermaid
+    // scope) would leave sqrt bars / stretchy braces black inside an
+    // otherwise inverted math block.
+    expect(css).not.toMatch(/\.lattice-cursor-flash(--fade)?\s+svg\b/);
   });
 
   it('does NOT exempt <mark> from the inversion — marks must invert with the block', () => {

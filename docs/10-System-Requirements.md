@@ -233,9 +233,11 @@ one spanning the smallest source-line range (ties resolved to the later-starting
 
 <!--REQ-LTTCE-DVW-00002-->
 **REQ-LTTCE-DVW-00002** — The inversion SHALL apply to the block's entire rendered inline content, expressly
-including `==highlight==` `<mark>` spans, whose highlight background SHALL appear inverted as well. Raster
-images and Mermaid[^mermaid] diagrams inside the flashed block SHALL be counter-inverted so that they keep
-their natural colors.
+including `==highlight==` `<mark>` spans, whose highlight background SHALL appear inverted as well. Display
+mathematics (`$$...$$` blocks rendered by KaTeX[^katex]) SHALL react to the flash like any other block, and
+the KaTeX output — including its internal SVG glyphs (root bars, stretchy braces) — SHALL invert together
+with the text. Raster images and Mermaid[^mermaid] diagrams inside the flashed block SHALL be
+counter-inverted so that they keep their natural colors.
 
 <!--REQ-LTTCE-DVW-00003-->
 **REQ-LTTCE-DVW-00003** — The inverted highlight SHALL appear without perceptible delay on cursor movement,
@@ -248,6 +250,9 @@ survive a preview re-render (e.g. caused by typing) for the remainder of its hol
 
 [^mermaid]: Mermaid — a JavaScript diagramming library rendering text definitions inside fenced code blocks
     as SVG diagrams. <https://mermaid.js.org>
+
+[^katex]: KaTeX — a fast math typesetting library rendering TeX notation to HTML/SVG in the browser.
+    <https://katex.org>
 
 ---
 
