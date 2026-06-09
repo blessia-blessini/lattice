@@ -17,6 +17,7 @@ import { Toc, TOC_OPEN_MARKER, TOC_CLOSE_MARKER } from '../services/Toc';
 import { TableFormat } from '../services/TableFormat';
 import { symbolPicker } from '../editor-extensions/symbol-picker';
 import { tocTooltip } from '../editor-extensions/toc-tooltip';
+import { cursorLineOf } from '../lib/cursor-block';
 
 /** Props for the {@link Editor} component. */
 export interface EditorProps {
@@ -36,6 +37,12 @@ export interface EditorProps {
     currentFilePath?: string | null;
     /** Called whenever the dirty state (unsaved changes) transitions. */
     onDirtyChange?: (isDirty: boolean) => void;
+    /**
+     * Called when the primary cursor moves to a *different* 1-based source
+     * line (deduplicated — consecutive updates on the same line fire once).
+     * Used by the dual-view cursor flash (IMPL-LTTCE-DVW-00002).
+     */
+    onCursorLineChange?: (line: number) => void;
 }
 
 //******************************************************************************
@@ -118,7 +125,8 @@ export interface EditorHandle {
     padTables: () => Promise<boolean>;
 }
 export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
-    theme, wordWrap, fontSize, highlightMark, onChange, initialDoc, currentFilePath, onDirtyChange
+    theme, wordWrap, fontSize, highlightMark, onChange, initialDoc, currentFilePath, onDirtyChange,
+    onCursorLineChange
 }, ref) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
@@ -133,6 +141,17 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
     useEffect(() => {
         currentFilePathRef.current = currentFilePath;
     }, [currentFilePath]);
+
+    // IMPL-LTTCE-DVW-00002 — cursor-line change notification (dual-view
+    // cursor flash). The callback lives in a ref so the updateListener
+    // closure (captured once when the extensions are built) never goes
+    // stale; lastCursorLine deduplicates per-line so same-line cursor
+    // movement (e.g. horizontal arrow keys) does not re-fire.
+    const onCursorLineChangeRef = useRef(onCursorLineChange);
+    const lastCursorLine = useRef<number>(-1);
+    useEffect(() => {
+        onCursorLineChangeRef.current = onCursorLineChange;
+    }, [onCursorLineChange]);
 
     // History Depth State
     const lastSavedDepth = useRef<number>(0);
@@ -387,6 +406,17 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
                 const currentDepth = undoDepth(update.state);
                 const isDirty = currentDepth !== lastSavedDepth.current;
                 onDirtyChange(isDirty);
+            }
+
+            // IMPL-LTTCE-DVW-00002 — notify on cursor-line change (dual-view
+            // cursor flash). docChanged is included because typing can move
+            // the cursor to a new line without a discrete selection event.
+            if (update.selectionSet || update.docChanged) {
+                const line = cursorLineOf(update.state);
+                if (line !== lastCursorLine.current) {
+                    lastCursorLine.current = line;
+                    onCursorLineChangeRef.current?.(line);
+                }
             }
         }),
         EditorView.domEventHandlers({

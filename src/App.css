@@ -212,6 +212,62 @@ body {
   background-color: rgba(255, 215, 0, 0.22);
 }
 
+/* ============================================================
+   Dual-View Cursor Flash (IMPL-LTTCE-DVW-00004)
+   REQ-LTTCE-DVW-00001/00002/00003, ARCH-LTTCE-DVW-00001.
+   "Inverted" = filter: invert(1) on the flashed block. An explicit
+   opaque background equal to the preview theme background is
+   REQUIRED: filter only inverts the element's own pixels, so a
+   transparent block would invert text to white over a still-white
+   page (invisible). <mark> spans inside invert together with the
+   text (amber -> blue-ish), satisfying REQ-LTTCE-DVW-00002.
+   ============================================================ */
+.markdown-body .lattice-cursor-flash {
+  filter: invert(1);
+  border-radius: 3px;
+}
+
+.markdown-body[data-theme="light"] .lattice-cursor-flash {
+  background-color: #ffffff;   /* PREVIEW_THEME_COLORS.light */
+}
+
+.markdown-body[data-theme="dark"] .lattice-cursor-flash {
+  background-color: #0d1117;   /* PREVIEW_THEME_COLORS.dark */
+}
+
+/* Counter-invert raster images, Mermaid SVGs and video back to natural
+   colors (REQ-LTTCE-DVW-00002): invert(1) on top of the parent's
+   invert(1) composes to identity. */
+.markdown-body .lattice-cursor-flash img,
+.markdown-body .lattice-cursor-flash svg,
+.markdown-body .lattice-cursor-flash video {
+  filter: invert(1);
+}
+
+/* Fade-out phase (REQ-LTTCE-DVW-00003): the --fade modifier transitions
+   the filter back to identity over ~400 ms; JS removes both classes when
+   the transition window has elapsed. Must come after the base rule —
+   equal specificity, later wins. */
+.markdown-body .lattice-cursor-flash--fade,
+.markdown-body .lattice-cursor-flash--fade img,
+.markdown-body .lattice-cursor-flash--fade svg,
+.markdown-body .lattice-cursor-flash--fade video {
+  filter: invert(0);
+  transition: filter 400ms ease-out;
+}
+
+/* A flash must never reach the printer. */
+@media print {
+  .markdown-body .lattice-cursor-flash,
+  .markdown-body .lattice-cursor-flash img,
+  .markdown-body .lattice-cursor-flash svg,
+  .markdown-body .lattice-cursor-flash video {
+    filter: none !important;
+    background-color: transparent !important;
+    transition: none !important;
+  }
+}
+
 [data-theme="dark"] .pane-divider {
   background-color: #30363d;
 }

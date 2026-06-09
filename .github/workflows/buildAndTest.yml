@@ -733,7 +733,7 @@ jobs:
         pwd
         ls ..
         cp -r ./coverage-html/. "$COVERAGE_DIR/"
-        COVERAGE_URL="https://lattice-technologies.com/Lattice-Releases/assets-${VERSION}/coverage/"
+        COVERAGE_URL="https://lattice-md.app/Lattice-Releases/assets-${VERSION}/coverage/"
 
         # Append coverage link to index.md
         printf '%s\n' "## Test Coverage of" \
@@ -753,7 +753,7 @@ jobs:
           echo "Demo docs copied to $DEMO_DEST"
 
           # Base URL for this release on GitHub Pages
-          PAGES_BASE="https://lattice-technologies.com/Lattice-Releases/assets-${VERSION}"
+          PAGES_BASE="https://lattice-md.app/Lattice-Releases/assets-${VERSION}"
           # Alpha tags (ending in a non-digit, e.g. v1.2.3b) land on alpha-releases;
           # stable tags land on main. Use the same logic as the commit step below.
           DOCS_BRANCH=$(if [[ "$VERSION" =~ [^0-9]$ ]]; then echo "alpha-releases"; else echo "main"; fi)
@@ -838,5 +838,5 @@ jobs:
         VERSION="${{ steps.version.outputs.VERSION }}"
         echo "### Release published" >> $GITHUB_STEP_SUMMARY
         echo " - GitHub Release: ${RELEASE_URL}" >> $GITHUB_STEP_SUMMARY
-        echo " - Release page: https://lattice-technologies.com/Lattice-Releases/assets-${VERSION}/" >> $GITHUB_STEP_SUMMARY
-        echo " - Coverage report: https://lattice-technologies.com/Lattice-Releases/assets-${VERSION}/coverage/" >> $GITHUB_STEP_SUMMARY
+        echo " - Release page: https://lattice-md.app/Lattice-Releases/assets-${VERSION}/" >> $GITHUB_STEP_SUMMARY
+        echo " - Coverage report: https://lattice-md.app/Lattice-Releases/assets-${VERSION}/coverage/" >> $GITHUB_STEP_SUMMARY

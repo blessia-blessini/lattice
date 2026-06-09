@@ -5,9 +5,25 @@ Edit the section for your next version **before** pushing the release tag like v
 
 
 
-## v0.3.2
+## v0.3.3
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- RELEASE 0.3.2
+- Update CHANGELOG.md
+
+---
+
+## v0.3.2
+### Changes
+- FEAT: Dual-View Cursor Flash
+- DOC: Update docs links, changelog, and workflow
+- DOC: Add blank line between demo links
+- Chore: Update project dependencies
+
+---
+
+- merged trunk into WIP (only version bump)
+- Update asset URLs to new domain lattice-md.app
 - bump version to 0.3.2
 - Update docs links, changelog, and workflow
 - Add blank line between demo links

@@ -48,6 +48,7 @@ import { open, save } from '@tauri-apps/plugin-dialog';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import tauriConfig from '../src-tauri/tauri.conf.json';
 import { resolveRelativePath, isDocumentLink } from './lib/link-utils';
+import { toSourceRange, findInnermostBlockIndex, isBlockTag } from './lib/cursor-block';
 
 import { StaticRuntime } from "@services/StaticRuntime";
 
@@ -55,11 +56,17 @@ const APP_NAME = tauriConfig.productName || "Lattice";
 
 // Rehype plugin: copy each element's source line number from its mdast position
 // onto a data-source-line attribute, used by dual-view scroll sync.
+// IMPL-LTTCE-DVW-00003 — additionally emits data-source-line-end so every
+// preview element carries a closed [start, end] source interval, which the
+// cursor-flash feature needs for innermost-block containment tests.
 const rehypeAddSourceLines = () => (tree: any) => {
   const walk = (node: any) => {
     if (node.type === 'element' && node.position?.start?.line != null) {
       node.properties = node.properties || {};
       node.properties['data-source-line'] = String(node.position.start.line);
+      if (node.position?.end?.line != null) {
+        node.properties['data-source-line-end'] = String(node.position.end.line);
+      }
     }
     if (node.children) {
       for (const child of node.children) walk(child);
@@ -1204,6 +1211,110 @@ function App() {
   }, [viewMode, m_currentFilePath]); // eslint-disable-line react-hooks/exhaustive-deps
 
   //****************************************************************************
+  // Dual-View Cursor Flash (IMPL-LTTCE-DVW-00003)
+  //****************************************************************************
+  // When the editor cursor changes line in a dual view, invert the innermost
+  // preview block whose [data-source-line, data-source-line-end] interval
+  // contains that line. Hold ~2 s after the last cursor move, then fade out
+  // (REQ-LTTCE-DVW-00001..00003 / ARCH-LTTCE-DVW-00001).
+  //
+  // All DOM bookkeeping lives here; the selection algorithm is pure and lives
+  // in lib/cursor-block.ts (IMPL-LTTCE-DVW-00001). Refs (not state) are used
+  // throughout so cursor movement never re-renders the App tree.
+  const FLASH_HOLD_MS = 2000;
+  const FLASH_FADE_MS = 400;
+  const flashLineRef = useRef<number>(-1);      // last cursor line reported
+  const flashUntilRef = useRef<number>(0);      // epoch ms when hold expires
+  const flashElRef = useRef<HTMLElement | null>(null);
+  const flashHoldTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flashFadeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  //****************************************************************************
+  // clearCursorFlash
+  //****************************************************************************
+  /** Cancel timers and strip flash classes from the current element (if any). */
+  const clearCursorFlash = useCallback(() => {
+    if (flashHoldTimer.current != null) {
+      clearTimeout(flashHoldTimer.current);
+      flashHoldTimer.current = null;
+    }
+    if (flashFadeTimer.current != null) {
+      clearTimeout(flashFadeTimer.current);
+      flashFadeTimer.current = null;
+    }
+    const el = flashElRef.current;
+    if (el) {
+      el.classList.remove('lattice-cursor-flash', 'lattice-cursor-flash--fade');
+      flashElRef.current = null;
+    }
+  }, []);
+  // clearCursorFlash END ******************************************************
+
+  //****************************************************************************
+  // applyCursorFlashAt
+  //****************************************************************************
+  /**
+   * Apply the inverted flash to the innermost preview block containing
+   * `line`, holding for `holdMs` before starting the fade. No-op (after
+   * clearing any previous flash) when no block contains the line — e.g. the
+   * cursor sits on a blank separator line (REQ-LTTCE-DVW-00001).
+   */
+  const applyCursorFlashAt = useCallback((line: number, holdMs: number) => {
+    clearCursorFlash();
+    const preview = previewPaneRef.current;
+    if (!preview || holdMs <= 0) return;
+    const elements = Array.from(
+      preview.querySelectorAll<HTMLElement>('[data-source-line]')
+    ).filter(el => isBlockTag(el.tagName));
+    const ranges = elements.map(el =>
+      toSourceRange(el.getAttribute('data-source-line'), el.getAttribute('data-source-line-end'))
+    );
+    const idx = findInnermostBlockIndex(ranges, line);
+    if (idx < 0) return;
+    const el = elements[idx];
+    el.classList.add('lattice-cursor-flash');
+    flashElRef.current = el;
+    flashHoldTimer.current = setTimeout(() => {
+      el.classList.add('lattice-cursor-flash--fade');
+      flashFadeTimer.current = setTimeout(() => {
+        el.classList.remove('lattice-cursor-flash', 'lattice-cursor-flash--fade');
+        if (flashElRef.current === el) flashElRef.current = null;
+      }, FLASH_FADE_MS);
+    }, holdMs);
+  }, [clearCursorFlash]);
+  // applyCursorFlashAt END ****************************************************
+
+  //****************************************************************************
+  // handleCursorLineChange
+  //****************************************************************************
+  /** Editor → App callback: cursor moved to a new 1-based source line. */
+  const handleCursorLineChange = useCallback((line: number) => {
+    flashLineRef.current = line;
+    if (!isDual(viewMode)) return; // single edit/preview: no flash (DVW-00003)
+    flashUntilRef.current = Date.now() + FLASH_HOLD_MS;
+    applyCursorFlashAt(line, FLASH_HOLD_MS);
+  }, [viewMode, applyCursorFlashAt]);
+  // handleCursorLineChange END ************************************************
+
+  // Re-apply after a preview re-render: typing replaces the preview DOM
+  // (ReactMarkdown), which silently drops the flash class. If the hold
+  // period is still running, re-apply with the *remaining* hold time so the
+  // total lifetime stays ~FLASH_HOLD_MS (REQ-LTTCE-DVW-00003). Also clears
+  // the flash when leaving dual view. Cleanup clears on unmount.
+  useEffect(() => {
+    if (!isDual(viewMode)) {
+      clearCursorFlash();
+      return;
+    }
+    const remaining = flashUntilRef.current - Date.now();
+    if (remaining > 0) {
+      applyCursorFlashAt(flashLineRef.current, remaining);
+    }
+    return clearCursorFlash;
+  }, [previewContent, viewMode, applyCursorFlashAt, clearCursorFlash]);
+  // Dual-View Cursor Flash END ************************************************
+
+  //****************************************************************************
   // Memoized preview pipeline
   // ---------------------------------------------------------------------------
   // Two memoization layers, both important for avoiding full-preview redraws:
@@ -1627,6 +1738,7 @@ function App() {
               currentFilePath={m_currentFilePath}
               onDirtyChange={setIsDirty}
               onChange={handleEditorChange}
+              onCursorLineChange={handleCursorLineChange}
             />
           </div>
           {isDual(viewMode) && (

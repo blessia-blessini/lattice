@@ -12,6 +12,7 @@ implementation artefacts. For the ID schema definition see `11-Traceability-Requ
   - [Table of Contents](#table-of-contents)
   - [Chapter LNT — GFM Linter](#chapter-lnt-gfm-linter)
   - [Chapter LNK — Preview Link Routing](#chapter-lnk-preview-link-routing)
+  - [Chapter DVW — Dual-View Cursor Flash](#chapter-dvw-dual-view-cursor-flash)
     - [General](#general)
     - [Severity Visualisation](#severity-visualisation)
     - [Rule: Setext Headings](#rule-setext-headings)
@@ -212,6 +213,41 @@ normalise separators to the platform convention detected from the current file p
 <!--REQ-LTTCE-LNK-00007-->
 **REQ-LTTCE-LNK-00007** — Local file links whose target does NOT match the document extensions in
 REQ-LTTCE-LNK-00005 (e.g. `.pdf`, `.png`) SHALL be silently ignored — no navigation, no new window.
+
+---
+
+## Chapter DVW — Dual-View Cursor Flash
+
+In all dual view modes (`dual`, `dual-swap`, `dual-top`, `dual-bottom`) the editor and the preview pane are
+visible simultaneously. While editing, the user needs immediate visual confirmation of *where* the line under
+the editing cursor is located in the rendered preview. The Cursor Flash feature provides this by briefly
+rendering the corresponding preview block with inverted colors.
+
+<!--REQ-LTTCE-DVW-00001-->
+**REQ-LTTCE-DVW-00001** — In any dual view mode, whenever the editor cursor moves to a different source
+line (by keyboard, mouse click, or as a side effect of typing), the **innermost** preview block element whose
+source-line range contains that cursor line SHALL be highlighted with **inverted colors** (color inversion of
+the block's rendered content and background). If no preview element's source range contains the cursor line
+(e.g. a blank separator line), no highlight SHALL be shown. Innermost means: of all containing elements, the
+one spanning the smallest source-line range (ties resolved to the later-starting element).
+
+<!--REQ-LTTCE-DVW-00002-->
+**REQ-LTTCE-DVW-00002** — The inversion SHALL apply to the block's entire rendered inline content, expressly
+including `==highlight==` `<mark>` spans, whose highlight background SHALL appear inverted as well. Raster
+images and Mermaid[^mermaid] diagrams inside the flashed block SHALL be counter-inverted so that they keep
+their natural colors.
+
+<!--REQ-LTTCE-DVW-00003-->
+**REQ-LTTCE-DVW-00003** — The inverted highlight SHALL appear without perceptible delay on cursor movement,
+SHALL persist for approximately 2 seconds after the last cursor-line change, and SHALL then fade out
+(approx. 400 ms). Any further cursor-line change SHALL restart the hold period and move the highlight to the
+new block. The highlight SHALL NOT appear in the single `edit` or single `preview` view modes, and SHALL
+survive a preview re-render (e.g. caused by typing) for the remainder of its hold period.
+
+---
+
+[^mermaid]: Mermaid — a JavaScript diagramming library rendering text definitions inside fenced code blocks
+    as SVG diagrams. <https://mermaid.js.org>
 
 ---
 

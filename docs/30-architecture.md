@@ -633,25 +633,59 @@ Three rules operate on the raw document string rather than the Lezer tree, becau
 
 ---
 
+## Feature: Dual-View Cursor Flash
+
+<!--ARCH-LTTCE-DVW-00001-->
+### Overview
+
+Covers REQ-LTTCE-DVW-00001 / 00002 / 00003. When the editor cursor changes line in any dual view mode, the
+innermost preview block containing that source line is flashed with inverted colors, then fades out after a
+~2 s hold. The feature is composed of four cooperating parts, all in the frontend layer (a per-keystroke IPC
+round-trip to the Rust backend would add latency on the hot editing path for pure DOM bookkeeping, so the
+"logic in Rust" default is deliberately not applied here; the pure selection algorithm is still isolated in
+its own module for headless unit testing):
+
+1. **Source-range tagging** — `rehypeAddSourceLines` (App.tsx) already tags every preview element with
+   `data-source-line` (start line). It is extended to also emit `data-source-line-end` from
+   `node.position.end.line`, giving every preview block a closed source-line interval `[start, end]`.
+
+2. **Cursor-line notification** — `Editor.tsx` accepts a new optional prop `onCursorLineChange(line)`.
+   The CodeMirror `updateListener` computes the 1-based cursor line on every `selectionSet` / `docChanged`
+   update and invokes the callback only when the line actually changed (deduplicated; callback held in a
+   ref so the listener never goes stale).
+
+3. **Innermost-block selection** — pure module `src/lib/cursor-block.ts`:
+   `findInnermostBlockIndex(ranges, line)` returns the index of the smallest `[start, end]` interval
+   containing `line` (tie → later start; none → `-1`), and `cursorLineOf(state)` derives the cursor line
+   from a headless CodeMirror `EditorState`. No DOM, no React — fully unit-testable.
+
+4. **Flash application & lifetime** — a `useEffect` in App.tsx (active only when `isDual(viewMode)`)
+   reacts to cursor-line changes: it queries `[data-source-line]` elements in the preview pane, builds the
+   interval list, selects the innermost match and applies class `lattice-cursor-flash`. Timers: after
+   `FLASH_HOLD_MS` (2000) the class `lattice-cursor-flash--fade` is added (CSS transition back to normal,
+   `FLASH_FADE_MS` = 400), after which both classes are removed. A new cursor-line change clears both
+   timers, removes classes from the previous element and re-applies. Because typing re-renders the preview
+   (ReactMarkdown replaces DOM nodes), the effect also re-applies the class after each `previewContent`
+   change while the hold period is still running.
+
+### Inversion CSS
+
+`App.css` implements "inverted" as `filter: invert(1)` on the flashed element, with an explicit per-theme background color (`#ffffff` light / `#0d1117` dark — the `PREVIEW_THEME_COLORS` values) so the inversion produces a solid negative block rather than inverting text alone over an unchanged page background. `<mark>` spans inside the block are inverted together with the rest of the inline content (their amber background turns blue-ish — unmistakably "inside the flash"). `img` and `svg` (Mermaid) descendants get a counter `filter: invert(1)`, which composes with the parent inversion back to natural colors. The fade is a `transition` on `filter` triggered by the `--fade` modifier class.
+
+### Integration Point
+
+`<Editor onCursorLineChange={...}>` in App.tsx's main layout; the flash effect lives next to the existing "Dual View Scroll Synchronization" effect and shares its view-mode gating (`isDual`). The scroll-sync line map is unaffected: it keys on `[data-source-line]` presence only, and the added end attribute is inert for it.
+
+---
+
 ## Architectural Decisions
 
 ### ADR-01: External Image Fetches Blocked by Default
 
-**Context.** The preview pane renders Markdown via `ReactMarkdown`, which converts
-`![alt](url)` into an `<img src="url">`. When `url` is `http://` or `https://`,
-the WebView fetches the image automatically — leaking the user's IP address,
-User-Agent, and the fact that they are viewing a specific document to the
-third-party host. For a local-first editor that targets engineering and PKM
-workflows, this is a non-trivial privacy and supply-chain concern (a compromised
+**Context.** The preview pane renders Markdown via `ReactMarkdown`, which converts `![alt](url)` into an `<img src="url">`. When `url` is `http://` or `https://`, the WebView fetches the image automatically — leaking the user's IP address, User-Agent, and the fact that they are viewing a specific document to the third-party host. For a local-first editor that targets engineering and PKM workflows, this is a non-trivial privacy and supply-chain concern (a compromised
 image host could also be used as a side-channel beacon).
 
-**Decision.** Block external image fetches by default. The setting
-`blockExternalImages` (persisted in `settings.json`, defaults to `true`) controls
-the behaviour. When enabled, any `<img>` whose `src` starts with `http://` or
-`https://` is replaced in the preview by a visible *"🚫 External image blocked"*
-placeholder containing a click-through `<a href>` link to the same URL — the
-user can choose to follow the link in a real browser without the editor itself
-making the request.
+**Decision.** Block external image fetches by default. The setting `blockExternalImages` (persisted in `settings.json`, defaults to `true`) controls the behaviour. When enabled, any `<img>` whose `src` starts with `http://` or `https://` is replaced in the preview by a visible *"🚫 External image blocked"* placeholder containing a click-through `<a href>` link to the same URL — the user can choose to follow the link in a real browser without the editor itself making the request.
 
 **Alternatives considered.**
 - *Tauri CSP `img-src` restriction* — enforced at WebView level, zero custom code.
@@ -661,15 +695,9 @@ making the request.
   stripping of tracking parameters. Rejected for v1 as added complexity without
   clearly better privacy than simply refusing to fetch.
 
-**Trade-offs.** README files and other documents that legitimately depend on
-external badges/screenshots will render with placeholders by default; the user
-must explicitly opt in to allow external fetches. This is the intended
-privacy-by-default posture.
+**Trade-offs.** README files and other documents that legitimately depend on external badges/screenshots will render with placeholders by default; the user must explicitly opt in to allow external fetches. This is the intended privacy-by-default posture.
 
-**Scope.** Applies only to the preview pane. The editor (CodeMirror) renders
-the markdown source as text and never fetches images. Local relative-path
-images continue to work normally — they are loaded via the
-`read_file_base64` Tauri command, not via HTTP.
+**Scope.** Applies only to the preview pane. The editor (CodeMirror) renders the markdown source as text and never fetches images. Local relative-path images continue to work normally — they are loaded via the `read_file_base64` Tauri command, not via HTTP.
 
 **Files involved.**
 - `src-tauri/src/settings.rs` — `block_external_images` field, default `true`

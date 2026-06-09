@@ -74,6 +74,7 @@ related items. Example convention for `LNT`:
 | `LNK`   | SSS     | Preview link routing            |
 | `LNT`   | SSS     | GFM[^gfm] Linter subsystem     |
 | `TRC`   | SSS     | Traceability system            |
+| `DVW`   | SSS     | Dual-view features (cursor flash) |
 
 ---
 
