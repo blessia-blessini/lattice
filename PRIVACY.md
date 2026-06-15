@@ -12,7 +12,7 @@
 Lattice does not collect, transmit, or share any personal data.
 Everything the app knows about you stays on your own machine.
 Versions are built and published online by automatic scripts on [GitHub Actions](https://github.com/features/actions).
-These versions are [attested](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds)(one can verify that the downloadable file comes from the automated scripts from Hithub actions) and scanned for viruses already.
+These versions are [attested](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds)(one can verify that the downloadable file comes from the automated scripts from Github actions) and scanned for viruses already.
 
 Thus, anyone can check the source and a release origins.
 
