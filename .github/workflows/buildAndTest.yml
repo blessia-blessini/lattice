@@ -696,7 +696,7 @@ jobs:
 
           printf '| [%s](%s) | %s | %s |\n' "$name" "$url" "$platform" "$size_mb" >> "$OUT"
 
-          # Antivisrus scan #########################################
+          # Antivirus scan ##########################################
           PAYLOAD=$(jq -nc \
             --arg ref "${{ github.ref_name }}" \
             --arg url "$url" \
@@ -716,10 +716,12 @@ jobs:
         done <<< "$ASSETS_JSON"
 
         # Footer
+        printf '%s\n' "" >> "$OUT"
         printf '%s\n' "## Notes" >> "$OUT"
-        printf '%s\n' " - [Full release on GitHub](${RELEASE_URL})" >> "$OUT"
-        printf '%s\n' " - DUAL LICENCE - FOR TERMS DETAILS SEE [README.md section Licencing](https://github.com/${{ github.repository }}#licensing)." \
-         "" >> "$OUT"
+        printf '%s\n' "" >> "$OUT"
+        printf '%s\n' "- [Full release on GitHub](${RELEASE_URL})" >> "$OUT"
+        printf '%s\n' "- DUAL LICENSE — for terms, see [README.md section Licensing](https://github.com/${{ github.repository }}#licensing)." >> "$OUT"
+        printf '%s\n' "" >> "$OUT"
 
         # Copy the app logo into the release folder so the release page can use it,
         # and into the Lattice-Releases root so the favicon reference stays static.
@@ -736,9 +738,10 @@ jobs:
         COVERAGE_URL="https://lattice-md.app/Lattice-Releases/assets-${VERSION}/coverage/"
 
         # Append coverage link to index.md
-        printf '%s\n' "## Test Coverage of" \
-          " - [BACKEND](${COVERAGE_URL}src-tauri/target/llvm-cov/html/)" \
-          " - [FRONTEND](${COVERAGE_URL}coverage/)" \
+        printf '%s\n' "## Test Coverage" \
+          "" \
+          "- [BACKEND](${COVERAGE_URL}src-tauri/target/llvm-cov/html/)" \
+          "- [FRONTEND](${COVERAGE_URL}coverage/)" \
           "" >> "$OUT"
 
         # ── Demo documents ──────────────────────────────────────────────────
@@ -767,9 +770,9 @@ jobs:
             "A Markdown file — open directly in Lattice, read on GitHub, or view as HTML/PDF here." \
             "" >> "$OUT"
 
-          printf '%s\n\n' "### A documment named \`demo.md\`" "" >> "$OUT"
-          printf '%s\n' "Here is a pdf that lattice generated as a print-out." "" >> "$OUT"
-          printf '%s\n' "Please scroll-down to see how Lattice looks on windows." "" >> "$OUT"
+          printf '%s\n\n' "### A document named \`demo.md\`" "" >> "$OUT"
+          printf '%s\n' "Here is a PDF that Lattice generated as a print-out." "" >> "$OUT"
+          printf '%s\n' "Please scroll down to see how Lattice looks on Windows." "" >> "$OUT"
 
           # PDF — embed an inline viewer if demo.md.pdf was shipped alongside demo.md.
           # pdf-viewer.html (PDF.js, Apache 2.0) lives in Lattice-Releases/ and accepts
@@ -781,11 +784,11 @@ jobs:
             # Emit an iframe — marked.js passes raw HTML through, so this renders inline.
             printf '<iframe src="pdf-viewer.html?file=%s" width="100%%" style="border:none;border-radius:4px;margin:12px 0;display:block;min-height:70vh"></iframe>\n\n' \
               "$PDF_ENC" >> "$OUT"
-            printf ' - Download [Lattice-generated PDF](%s)\n' "$PDF_RAW" >> "$OUT"
+            printf -- '- Download [Lattice-generated PDF](%s)\n' "$PDF_RAW" >> "$OUT"
           fi
 
-          printf ' - FOR REFERENCE AS [RENDERED BY GitHub](%s/docs/demo/demo.md)\n' "$BLOB_BASE" >> "$OUT"
-          printf ' - The plaintext that you would actually edit [Raw .md](%s/docs/demo/demo.md)\n' "$RAW_BASE"  >> "$OUT"
+          printf -- '- Only for reference, as [rendered by GitHub](%s/docs/demo/demo.md)\n' "$BLOB_BASE" >> "$OUT"
+          printf -- '- The plaintext that you would actually edit: [Raw .md](%s/docs/demo/demo.md)\n' "$RAW_BASE"  >> "$OUT"
 
           printf '\n' >> "$OUT"
           # Embed screenshots from demo_assets/ inline — left-aligned, full pixel quality.
@@ -795,7 +798,7 @@ jobs:
             for img in "$ASSETS_SRC"/*.png; do
               [ -f "$img" ] || continue
               FNAME=$(basename "$img")
-              printf '![](%s/docs/demo/demo_assets/%s)\n\n' "$RAW_BASE" "$FNAME" >> "$OUT"
+              printf '![Lattice demo screenshot](%s/docs/demo/demo_assets/%s)\n\n' "$RAW_BASE" "$FNAME" >> "$OUT"
             done
           fi
 

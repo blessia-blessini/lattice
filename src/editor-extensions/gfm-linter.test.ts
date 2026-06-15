@@ -121,10 +121,42 @@ describe('lintGfm — HTML block', () => {
 
 // ── Rule: Inline HTML tag (REQ-LTTCE-LNT-0000D) ──────────────────────────────
 
-describe('lintGfm — inline HTML tag', () => {
-    it('emits a hint on an inline HTML tag', async () => {
+describe('lintGfm — inline HTML tag (whitelisted → hint)', () => {
+    it('emits a hint for <br> (whitelisted void)', async () => {
         const diags = await lint('Some text with a <br> line break.\n');
-        const d = diags.find(d => d.severity === 'hint' && d.message.includes('Inline HTML'));
+        const d = diags.find(d => d.severity === 'hint' && d.message.includes('rendered in Lattice'));
+        expect(d).toBeTruthy();
+    });
+
+    it('emits a hint for <sup> (whitelisted paired)', async () => {
+        const diags = await lint('X<sup>2</sup>\n');
+        const hints = diags.filter(d => d.severity === 'hint' && d.message.includes('rendered in Lattice'));
+        expect(hints.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('emits a hint for <sub> (whitelisted paired)', async () => {
+        const diags = await lint('H<sub>2</sub>O\n');
+        const hints = diags.filter(d => d.severity === 'hint' && d.message.includes('rendered in Lattice'));
+        expect(hints.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('emits a hint for <kbd> (whitelisted paired)', async () => {
+        const diags = await lint('Press <kbd>Ctrl</kbd>+S\n');
+        const hints = diags.filter(d => d.severity === 'hint' && d.message.includes('rendered in Lattice'));
+        expect(hints.length).toBeGreaterThanOrEqual(1);
+    });
+});
+
+describe('lintGfm — inline HTML tag (non-whitelisted → warning)', () => {
+    it('emits a warning for <span> (not whitelisted)', async () => {
+        const diags = await lint('Some <span>text</span> here.\n');
+        const d = diags.find(d => d.severity === 'warning' && d.message.includes('not rendered in Lattice'));
+        expect(d).toBeTruthy();
+    });
+
+    it('emits a warning for <em> (not whitelisted)', async () => {
+        const diags = await lint('Use <em>emphasis</em> carefully.\n');
+        const d = diags.find(d => d.severity === 'warning' && d.message.includes('not rendered in Lattice'));
         expect(d).toBeTruthy();
     });
 });

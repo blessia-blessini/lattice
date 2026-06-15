@@ -1,7 +1,7 @@
 {
   "name": "lattice",
   "private": true,
-  "version": "0.3.3",
+  "version": "0.3.5",
   "type": "module",
   "engines": {
     "node": ">=24"
@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:e2e_test": "tsc && vite build --config vite.e2e_test.config.ts",
     "preview": "vite preview",
     "tauri": "node scripts/tauri-wrapper.js",
     "test": "vitest",
@@ -25,6 +26,7 @@
     "@codemirror/language-data": "^6.5.2",
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.39.2",
+    "@lezer/highlight": "^1.2.3",
     "@tauri-apps/api": "^2.10.1",
     "@tauri-apps/plugin-dialog": "^2.7.0",
     "@tauri-apps/plugin-opener": "^2.5.3",
@@ -48,14 +50,14 @@
     "@types/node": "^25.6.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react": "^4.6.0",
+    "@vitejs/plugin-react": "^6.0.2",
     "@vitest/coverage-v8": "^4.0.18",
     "jsdom": "^27.4.0",
     "rimraf": "^6.1.3",
     "typedoc": "^0.28.15",
     "typedoc-plugin-markdown": "^4.9.0",
     "typescript": "~5.8.3",
-    "vite": "^7.3.2",
+    "vite": "^8.0.16",
     "vitest": "^4.0.16"
   },
   "overrides": {

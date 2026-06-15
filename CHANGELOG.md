@@ -4,16 +4,46 @@ All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
 
-## v0.3.5
+## v0.3.6
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
-- Merged v0.3.3
-- bump version to v0.3.3
-- bump version to 3.3
-- RELEASE v0.3.3
-- RELEASE 0.3.2
-- Update CHANGELOG.md
+- build and pass by skipping one test
+- CHORE: npm and cargo update with vulnerabilities fix
+- npm and cargo update with vulnerabilities fix
+- update of npm update
+- bumped version to v0.3.5
+- FEAT: Whitelist of HTML Tags
+- FIX: Syntax Highlight in print mode (not only edit)
+- publish script typo errors fixed
+- merge back dev branch
+
+---
+
+
+## v0.3.5
+
+### Changes
+- CHORE: refactor E2E tests to pass faster on windows
+  - prep macOS and Linux  
+- CHORE: npm and cargo update with vulnerabilities fix
+- FEAT: Whitelist of HTML Tags
+- FIX: Syntax Highlight in print mode (not only edit)
+- publish script typo errors fixed
+
+---
+
+### Changes
+- build and pass by skipping one test
+- CHORE: npm and cargo update with vulnerabilities fix
+- npm and cargo update with vulnerabilities fix
+- update of npm update
+- bumped version to v0.3.5
+- FEAT: Whitelist of HTML Tags
+- FIX: Syntax Highlight in print mode (not only edit)
+- publish script typo errors fixed
+- merge back dev branch
+
 ---
 
 ## v0.3.3

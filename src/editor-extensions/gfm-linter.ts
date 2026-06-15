@@ -138,19 +138,40 @@ function lintGfm(view: EditorView): Diagnostic[] {
                 to,
                 severity: 'warning',
                 markClass: 'cm-gfm-lint cm-gfm-lint-warning',
-                message: 'Raw HTML block: may be stripped or sanitized by some Markdown renderers.',
+                message:
+                    'Raw HTML block: not rendered in Lattice preview. ' +
+                    'Use Markdown equivalents for portability — many renderers ' +
+                    '(Obsidian, VS Code, Typora) strip or ignore HTML blocks.',
             });
         }
 
         // IMPL-LTTCE-LNT-0000D ── Inline HTML tags ─────────────────────────────
+        // A small whitelist (<sup>, <sub>, <kbd>, <br>) is rendered by Lattice.
+        // Everything else is shown as literal text.
         if (name === 'HTMLTag') {
-            diagnostics.push({
-                from,
-                to,
-                severity: 'hint',
-                markClass: 'cm-gfm-lint',
-                message: 'Inline HTML tag: may be stripped or sanitized by some Markdown renderers.',
-            });
+            const tagText = doc.sliceString(from, to);
+            const isWhitelisted = /^<\/?(sup|sub|kbd|br)\s*\/?>$/i.test(tagText);
+            if (isWhitelisted) {
+                diagnostics.push({
+                    from,
+                    to,
+                    severity: 'hint',
+                    markClass: 'cm-gfm-lint',
+                    message:
+                        `Inline HTML tag: rendered in Lattice, but may not display correctly ` +
+                        `in all other Markdown renderers (portability risk).`,
+                });
+            } else {
+                diagnostics.push({
+                    from,
+                    to,
+                    severity: 'warning',
+                    markClass: 'cm-gfm-lint cm-gfm-lint-warning',
+                    message:
+                        'Inline HTML tag: not rendered in Lattice preview (shown as literal text). ' +
+                        'Use a Markdown equivalent for reliable cross-renderer display.',
+                });
+            }
         }
 
         // IMPL-LTTCE-LNT-0000E ── Table column-count validation ────────────────

@@ -38,6 +38,7 @@ const DEFAULT_SETTINGS: &str = r#"{}"#;
 // Private Path variable of this module
 static M_PATH: Mutex<String> = Mutex::new(String::new());
 
+pub mod e2e;
 pub mod file_state;
 pub mod settings;
 mod table_format;
@@ -319,6 +320,19 @@ fn build_window_with_file(app: &tauri::AppHandle, path: Option<String>) -> Resul
     Ok(())
 }
 // build_window_with_file END **********************************************
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Test-only modules (stripped from every production build)
+// ─────────────────────────────────────────────────────────────────────────────
+/// Trait + mock + pure dispatch logic.  Not visible to any external caller.
+#[cfg(test)]
+mod test_hooks;
+
+/// Unit tests for the CLI startup dispatch path.
+/// Inline via #[path] so they share this module's private scope.
+#[cfg(test)]
+#[path = "cli_desktop_tests.rs"]
+mod cli_desktop_tests;
 
 //******************************************************************************
 // open_settings_window
@@ -1013,6 +1027,22 @@ fn get_version_string() -> String {
 /// (Android JNI / iOS UIApplicationMain) can call it directly.
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // E2E binary registration mode.
+    //
+    // `cargo llvm-cov --no-report run --bin lattice --features e2e_test` is called once
+    // from the build script solely to register this binary as a source-mapping object for
+    // `cargo llvm-cov report` (without it, cli_desktop.rs / e2e.rs appear as 0% because
+    // they are only compiled with --features e2e_test and not known to cargo-llvm-cov).
+    //
+    // The build script writes `e2e_register_only.txt` in src-tauri/ (the binary's cwd
+    // during `cargo run`) before invoking cargo-llvm-cov.  Returning here exits the process
+    // before Tauri ever starts, so the step takes <1 s instead of ~15 s.
+    #[cfg(e2e_test)]
+    if std::path::Path::new("e2e_register_only.txt").exists() {
+        let _ = std::fs::remove_file("e2e_register_only.txt");
+        return; // LLVM runtime writes profraw on process exit — binary IS registered
+    }
+
     tauri::Builder::default()
         .plugin(tauri_plugin_log::Builder::default().build())
         .setup(|app| setup_handler(app))
@@ -1081,6 +1111,32 @@ pub fn run() {
 /// A `Result` containing `()` on success, or a boxed `Error` if a window
 /// cannot be built, causing Tauri to abort startup.
 fn setup_handler(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    // E2E shutdown listener — compiled away in production builds.
+    // Polls for `e2e_shutdown.txt` in the repo root every 500 ms.
+    // When found: deletes the file, then calls app_handle.exit(0) —
+    // the portable equivalent of WM_QUIT / NSApp terminate / GTK quit.
+    if e2e::is_e2e_tst_build() {
+        let handle = app.handle().clone();
+        // Resolve repo root: when run from src-tauri/ step up one level.
+        let cwd = std::env::current_dir().unwrap_or_default();
+        let repo_root = if cwd.ends_with("src-tauri") {
+            cwd.parent().unwrap_or(&cwd).to_path_buf()
+        } else {
+            cwd
+        };
+        std::thread::spawn(move || {
+            let signal = repo_root.join("e2e_shutdown.txt");
+            loop {
+                std::thread::sleep(std::time::Duration::from_millis(500));
+                if signal.exists() {
+                    let _ = std::fs::remove_file(&signal);
+                    handle.exit(0);
+                    break;
+                }
+            }
+        });
+    }
+
     platform::open_windows_on_startup(app)
 } // setup_handler END *****************************************************
 

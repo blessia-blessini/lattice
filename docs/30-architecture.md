@@ -608,8 +608,9 @@ The following rules are implemented by traversing the Lezer syntax tree produced
 | ------------------------------------ | --------------------------------- | -------- | ----------------- |
 | `SetextHeading1`, `SetextHeading2`   | Setext heading ambiguity          | hint     | REQ-LTTCE-LNT-0000A |
 | `CodeBlock`                          | Indented code block               | hint     | REQ-LTTCE-LNT-0000B |
-| `HTMLBlock`                          | Raw HTML block                    | warning  | REQ-LTTCE-LNT-0000C |
-| `HTMLTag`                            | Inline HTML tag                   | hint     | REQ-LTTCE-LNT-0000D |
+| `HTMLBlock`                          | Raw HTML block (not rendered)     | warning  | REQ-LTTCE-LNT-0000C |
+| `HTMLTag` (whitelisted)              | Inline tag rendered by Lattice; portability risk | hint    | REQ-LTTCE-LNT-0000D |
+| `HTMLTag` (non-whitelisted)          | Inline tag not rendered (shown as text)          | warning | REQ-LTTCE-LNT-0000D |
 | `Table` → `TableHeader` / `TableRow` | Column count mismatch             | error    | REQ-LTTCE-LNT-0000E |
 | `BulletList`, `OrderedList`          | Loose list (blank line in list)   | hint     | REQ-LTTCE-LNT-00011 |
 | `FencedCode` (no `CodeInfo` child)   | Missing language tag              | warning  | REQ-LTTCE-LNT-00012 |
@@ -681,6 +682,54 @@ its own module for headless unit testing):
 ### Integration Point
 
 `<Editor onCursorLineChange={...}>` in App.tsx's main layout; the flash effect lives next to the existing "Dual View Scroll Synchronization" effect and shares its view-mode gating (`isDual`). The scroll-sync line map is unaffected: it keys on `[data-source-line]` presence only, and the added end attribute is inert for it.
+
+---
+
+## Feature: Preview Code Syntax Highlighting
+
+<!--ARCH-LTTCE-PRV-00001-->
+### Overview
+
+Covers REQ-LTTCE-PRV-00001 / 00003. Fenced code blocks in the preview pane are highlighted by **reusing
+the exact Lezer parser registry the edit pane already uses** (`@codemirror/language-data`), instead of
+adding a second highlighting engine (highlight.js / Prism / Shiki). This guarantees tag-for-tag identical
+language matching in both panes and adds no new dependency (`@lezer/highlight` was already in the tree;
+it is now an explicit dependency). The feature is frontend-only by necessity — highlighting decorates the
+ReactMarkdown render tree, so a Rust round-trip would serialize DOM concerns over IPC for no gain. Three
+cooperating parts:
+
+1. **Pure logic** — `src/lib/code-highlight.ts` (IMPL-LTTCE-PRV-00001): `findCodeLanguage(tag)` resolves
+   a fence tag through `LanguageDescription.matchLanguageName` (same matcher the editor's markdown
+   `codeLanguages` uses); `loadCodeLanguage(tag)` lazy-loads the parser bundle (dynamic import, identical
+   to the editor's lazy path) and degrades to `null` on failure; `highlightTokens(code, language)` runs
+   `highlightCode` with Lezer's `classHighlighter`, returning flat `(text, classes)` pairs. DOM-free and
+   React-free — fully unit-testable headless.
+
+2. **React glue** — `src/components/HighlightedCode.tsx` (IMPL-LTTCE-PRV-00002): renders plain
+   `<code>` immediately, swaps in `tok-*` spans when the language bundle resolves (module-level
+   per-session promise cache, one load per language). Unknown tags stay plain forever; unmount/tag-change
+   races are guarded by an effect cancellation flag. Wired into the existing `code` renderer override in
+   App.tsx **after** the `mermaid` special case, and only for `language-*` classNames — inline code and
+   untagged fences keep the previous plain rendering.
+
+<!--ARCH-LTTCE-PRV-00002-->
+### Token Theming
+
+Covers REQ-LTTCE-PRV-00002. `classHighlighter` emits stable class names (`tok-keyword`, `tok-string`,
+…), so colors live in plain CSS — `App.css` (IMPL-LTTCE-PRV-00003) defines the palette twice, scoped to
+the existing `.markdown-body[data-theme="light"]` / `[data-theme="dark"]` preview-theme selectors that
+github-markdown-css overrides already use. The palettes are GitHub's light/dark syntax colors, matching
+both the block's `github-markdown-css` chrome and the editor pane's `githubLight`/`githubDark` themes.
+Because theming is pure CSS keyed on the preview's `data-theme` attribute, a preview theme switch
+recolors highlighted blocks with **no re-parse and no re-render** — the Independence Guarantee of the
+Theme Design chapter is preserved.
+
+### Integration Point
+
+`code(props)` inside `previewComponents` (App.tsx). `HighlightedCode` is a stable import, so the
+`previewComponents` `useMemo` identity is unchanged — the cursor-flash and scroll-sync machinery, which
+rely on stable component identities across re-renders, are unaffected. The flash inversion CSS composes
+with token colors (both are plain CSS on descendants).
 
 ---
 

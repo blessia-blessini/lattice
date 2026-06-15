@@ -90,15 +90,28 @@ whitespace rules.
 
 <!--REQ-LTTCE-LNT-0000C-->
 **REQ-LTTCE-LNT-0000C** — The linter SHALL emit a **warning** diagnostic on any raw HTML block.
-The message SHALL note that HTML may be stripped or sanitized by many Markdown renderers
-(GitHub Docs, VS Code preview, Obsidian, Typora).
-*Rationale*: GFM[^gfm] permits HTML but renderer support varies widely; content may silently disappear.
+The message SHALL note that HTML blocks are not rendered in the Lattice preview, and that many
+other renderers (VS Code preview, Obsidian, Typora) also strip or ignore them.
+*Rationale*: GFM[^gfm] permits HTML blocks but renderer support varies widely; Lattice does not
+render them. Authors should use Markdown equivalents for reliable, portable output.
 
 ### Rule: Inline HTML Tag
 
 <!--REQ-LTTCE-LNT-0000D-->
-**REQ-LTTCE-LNT-0000D** — The linter SHALL emit a **hint** diagnostic on any inline HTML tag embedded in
-prose. The message SHALL note the same renderer-compatibility risk as raw HTML blocks.
+**REQ-LTTCE-LNT-0000D** — The linter SHALL emit a diagnostic on any inline HTML tag embedded in
+prose, with severity depending on whether the tag is in the Lattice safe-render whitelist:
+
+- **Whitelisted tags** (`<sup>`, `<sub>`, `<kbd>`, `<br>`): **hint** severity.
+  The message SHALL note that the tag renders in Lattice but may not display in all other renderers
+  (portability risk).
+- **All other inline tags**: **warning** severity.
+  The message SHALL note that the tag is not rendered in Lattice (shown as literal text) and that a
+  Markdown equivalent should be used instead.
+
+*Rationale*: Lattice renders a curated whitelist of typographic inline tags (`<sup>`, `<sub>`,
+`<kbd>`, `<br>`) for authoring convenience — these are also rendered by GitHub and Obsidian.
+All other raw HTML is intentionally not rendered. The two-tier diagnostic guides authors toward
+portable alternatives without blocking the common, well-supported cases.
 
 ### Rule: Table Column Mismatch
 
@@ -245,6 +258,30 @@ SHALL persist for approximately 2 seconds after the last cursor-line change, and
 (approx. 400 ms). Any further cursor-line change SHALL restart the hold period and move the highlight to the
 new block. The highlight SHALL NOT appear in the single `edit` or single `preview` view modes, and SHALL
 survive a preview re-render (e.g. caused by typing) for the remainder of its hold period.
+
+---
+
+## Chapter PRV — Preview Code Syntax Highlighting
+
+The edit pane already syntax-highlights fenced code blocks via CM6[^cm6] Lezer parsers. The preview
+pane must give the user the same comprehension aid on the rendered side, with colors fitting the
+preview's own (independent) light/dark theme.
+
+<!--REQ-LTTCE-PRV-00001-->
+**REQ-LTTCE-PRV-00001** — The preview pane SHALL syntax-highlight the content of every fenced code
+block carrying a language tag, using the **same language registry** (names and aliases) the edit pane
+uses for fence highlighting. A tag unknown to that registry, an untagged fence, and inline code SHALL
+render as plain (unhighlighted) code. A `mermaid` tag keeps its existing diagram rendering.
+
+<!--REQ-LTTCE-PRV-00002-->
+**REQ-LTTCE-PRV-00002** — Highlight colors SHALL follow the preview pane's own light/dark theme
+selection (GitHub-style palettes, consistent with the editor's GitHub themes), and highlighting SHALL
+NOT alter the text content of the code block in any way.
+
+<!--REQ-LTTCE-PRV-00003-->
+**REQ-LTTCE-PRV-00003** — Language parser bundles SHALL be loaded lazily and asynchronously; while a
+bundle loads (and if loading fails) the block SHALL be readable as plain code. Highlighting SHALL
+never block or break preview rendering.
 
 ---
 

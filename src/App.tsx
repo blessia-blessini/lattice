@@ -37,8 +37,10 @@ import 'github-markdown-css/github-markdown.css';
 import { Editor } from "./components/Editor";
 import { Mermaid } from "./components/Mermaid";
 import { Menu } from "./components/Menu";
+import { HighlightedCode } from "./components/HighlightedCode";
 import { rehypeAddHeadingIds } from "./lib/rehype-heading-ids";
 import { rehypeHighlightMark } from "./lib/rehype-highlight-mark";
+import { rehypeSafeHtml } from "./lib/rehype-safe-html";
 import { remarkStripHtmlComments } from "./lib/remark-strip-html-comments";
 // we opted for using the settings pane within the same window
 //  as it will be more mobile-friendly for porting later
@@ -1465,9 +1467,21 @@ function App() {
     },
     code(props) {
       const { children, className, node, ...rest } = props;
-      const match = /language-(\w+)/.exec(className || '');
+      const match = /language-([\w+#-]+)/.exec(className || '');
       if (match && match[1] === 'mermaid') {
         return <Mermaid chart={String(children).replace(/\n$/, '')} theme={m_theme} mermaidInit={m_defaultMermaidInit} />;
+      }
+      // IMPL-LTTCE-PRV-00002 — fenced blocks with a language tag are
+      // syntax-highlighted with the same Lezer parsers as the edit pane.
+      // Inline code and untagged fences keep the plain rendering below.
+      if (match) {
+        return (
+          <HighlightedCode
+            code={String(children).replace(/\n$/, '')}
+            languageTag={match[1]}
+            className={className}
+          />
+        );
       }
       return (
         <code className={className} {...rest}>
@@ -1579,6 +1593,7 @@ function App() {
       rehypePlugins={[
         rehypeAddSourceLines,
         rehypeWrapMathBlocks, // after AddSourceLines, before Katex — see plugin doc
+        rehypeSafeHtml,       // before Katex — whitelisted raw tags → hast elements
         rehypeAddHeadingIds,
         rehypeKatex,
         ...(m_highlightMark ? [rehypeHighlightMark] : []),

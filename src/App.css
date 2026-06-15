@@ -80,6 +80,48 @@ body {
   & code, & pre { background-color: #f6f8fa !important; color: #1f2328 !important; }
 }
 
+/* IMPL-LTTCE-PRV-00003 — Preview Code Syntax Highlighting token colors.
+   Classes are the stable `tok-*` names emitted by Lezer's classHighlighter
+   (lib/code-highlight.ts). Palettes follow GitHub light/dark so the preview
+   matches both github-markdown-css and the editor pane's githubLight /
+   githubDark themes. */
+.markdown-body[data-theme="light"] {
+  & .tok-keyword, & .tok-modifier, & .tok-operatorKeyword { color: #cf222e !important; }
+  & .tok-string, & .tok-string2, & .tok-regexp { color: #0a3069 !important; }
+  & .tok-comment, & .tok-lineComment, & .tok-blockComment, & .tok-docComment { color: #59636e !important; }
+  & .tok-number, & .tok-bool, & .tok-atom, & .tok-literal { color: #0550ae !important; }
+  & .tok-typeName, & .tok-className, & .tok-namespace { color: #953800 !important; }
+  & .tok-definition.tok-variableName, & .tok-function, & .tok-macroName { color: #8250df !important; }
+  & .tok-propertyName, & .tok-attributeName, & .tok-labelName { color: #0550ae !important; }
+  & .tok-tagName { color: #116329 !important; }
+  & .tok-meta, & .tok-processingInstruction { color: #59636e !important; }
+  & .tok-link, & .tok-url { color: #0969da !important; }
+  & .tok-heading { color: #0550ae !important; font-weight: bold; }
+  & .tok-emphasis { font-style: italic; }
+  & .tok-strong { font-weight: bold; }
+  & .tok-strikethrough { text-decoration: line-through; }
+  & .tok-invalid { color: #82071e !important; }
+}
+
+.markdown-body[data-theme="dark"] {
+  & .tok-keyword, & .tok-modifier, & .tok-operatorKeyword { color: #ff7b72 !important; }
+  & .tok-string, & .tok-string2, & .tok-regexp { color: #a5d6ff !important; }
+  & .tok-comment, & .tok-lineComment, & .tok-blockComment, & .tok-docComment { color: #8b949e !important; }
+  & .tok-number, & .tok-bool, & .tok-atom, & .tok-literal { color: #79c0ff !important; }
+  & .tok-typeName, & .tok-className, & .tok-namespace { color: #ffa657 !important; }
+  & .tok-definition.tok-variableName, & .tok-function, & .tok-macroName { color: #d2a8ff !important; }
+  & .tok-propertyName, & .tok-attributeName, & .tok-labelName { color: #79c0ff !important; }
+  & .tok-tagName { color: #7ee787 !important; }
+  & .tok-meta, & .tok-processingInstruction { color: #8b949e !important; }
+  & .tok-link, & .tok-url { color: #58a6ff !important; }
+  & .tok-heading { color: #79c0ff !important; font-weight: bold; }
+  & .tok-emphasis { font-style: italic; }
+  & .tok-strong { font-weight: bold; }
+  & .tok-strikethrough { text-decoration: line-through; }
+  & .tok-invalid { color: #ffa198 !important; }
+}
+/* IMPL-LTTCE-PRV-00003 END */
+
 .container {
   width: 100%;
   height: 100%;

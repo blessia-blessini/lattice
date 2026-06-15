@@ -46,8 +46,16 @@ const sendTrace = (level: string, msg: string, ...args: any[]) => {
 export const StaticRuntime: IStaticRuntime = {
     //**************************************************************
     // init
-    //************************************************************** 
+    //**************************************************************
     init: () => {
+        // E2E / dev startup signal.
+        // Fire-and-forget so init() stays synchronous (IStaticRuntime.init(): void).
+        // The E2E harness waits up to 15 s for 'e2e_startup_ok.txt' before
+        // proceeding — this is how every scenario detects "frontend loaded".
+        // In normal `tauri dev` the file lands in the repo root and is harmless.
+        invoke('write_text_file', { path: 'e2e_startup_ok.txt', content: 'OK' })
+            .catch(() => { /* best-effort — never block startup */ });
+
         // Intercept global console methods to ensure ALL existing app logs
         // get forwarded to the backend trace.
         if ((console as any).__isPatched) return;

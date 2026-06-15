@@ -46,15 +46,22 @@
 Normal paragraph text flows here. Lattice renders Markdown as **close to GitHub** as possible,
 so files look identical whether viewed in the editor preview, on GitHub, or printed.
 
-| Style            | Syntax              | Result            |
-| :--------------- | :------------------ | :---------------- |
-| Bold             | `**bold**`          | **bold**          |
-| Italic           | `*italic*`          | *italic*          |
-| Bold + italic    | `***both***`        | ***both***        |
-| Strikethrough    | `~~strikethrough~~` | ~~strikethrough~~ |
-| Inline code      | `` `code` ``        | `code`            |
-| Superscript HTML | `X<sup>2</sup>`     | X<sup>2</sup>     |
-| Subscript HTML   | `H<sub>2</sub>O`    | H<sub>2</sub>O    |
+| Style         | Syntax              | Result            |
+| :------------ | :------------------ | :---------------- |
+| Bold          | `**bold**`          | **bold**          |
+| Italic        | `*italic*`          | *italic*          |
+| Bold + italic | `***both***`        | ***both***        |
+| Strikethrough | `~~strikethrough~~` | ~~strikethrough~~ |
+| Inline code   | `` `code` ``        | `code`            |
+| Superscript   | `X<sup>2</sup>`     | X<sup>2</sup>     |
+| Subscript     | `H<sub>2</sub>O`    | H<sub>2</sub>O    |
+
+> **Note — sub/superscript:** CommonMark/GFM has no native sub/superscript syntax.
+> Lattice renders `<sup>` and `<sub>` HTML tags directly (GitHub and Obsidian do too).
+> We recommend, though that you use alternatives that work everywhere: 
+>   KaTeX math (`$X^2$` → $X^2$, `$H_2O$` → $H_2O$)
+> or Unicode characters (`X²`, `H₂O`).
+> The linter flags these tags as a portability hint — they may not render in all renderers.
 
 ---
 
@@ -233,7 +240,7 @@ The Euler identity $e^{i\pi} + 1 = 0$ is often called the most beautiful equatio
 ### Display math — Calculus
 
 $$
-\int_{-\infty}^{\infty} e^{-x^2}\, dx = \sqrt{\pi}
+\int_{-\infty}^{\infty} e^{-x^2}\, dx = \sqrt{\pi} 
 $$
 
 $$
@@ -398,35 +405,25 @@ Auto-link: https://github.com/blessia-blessini/lattice
 
 ## HTML in Markdown
 
-Lattice passes safe inline HTML through to the preview.
-Useful for fine-grained formatting unavailable in pure Markdown:
+Lattice renders a **safe whitelist** of inline HTML tags and passes everything else
+through as literal text.  The linter flags all inline HTML — whitelisted tags get a
+**hint** (portability risk), non-whitelisted tags get a **warning** (not rendered here).
 
-<details>
-<summary>Click to expand — collapsible section</summary>
+| HTML element | Lattice preview        | GitHub | Portable alternative                          |
+| :----------- | :--------------------- | :----- | :-------------------------------------------- |
+| `<sup>`      | ✅ rendered            | ✅     | KaTeX: `$X^2$` → $X^2$ · Unicode: `X²`       |
+| `<sub>`      | ✅ rendered            | ✅     | KaTeX: `$H_2O$` → $H_2O$ · Unicode: `H₂O`   |
+| `<kbd>`      | ✅ rendered            | ✅     | Inline code: `` `Ctrl+S` ``                   |
+| `<br>`       | ✅ rendered            | ✅     | Two trailing spaces or blank line             |
+| `<mark>`     | ⚠️ plain text          | ✅     | `==highlight==` (Lattice-native)              |
+| `<details>`  | ⚠️ plain text          | ✅     | Headings + TOC (no universal equivalent)      |
+| Other HTML   | ⚠️ plain text          | varies | Markdown equivalent (case-by-case)            |
 
-Hidden content revealed on click. Great for long appendices or spoilers.
+Live examples of the whitelisted tags:
 
-```json
-{
-  "product": "Lattice",
-  "version": "0.3.0",
-  "license": "AGPL-3.0"
-}
-
-```
-
-</details>
-
-<br>
-
-| HTML element | Use case                                    |
-| :----------- | :------------------------------------------ |
-| `<mark>`     | Rendered by `==highlight==` syntax          |
-| `<details>`  | Collapsible sections                        |
-| `<sup>`      | Superscripts: X<sup>2</sup>                 |
-| `<sub>`      | Subscripts: CO<sub>2</sub>                  |
-| `<br>`       | Explicit line break                         |
-| `<kbd>`      | Keyboard keys: <kbd>Ctrl</kbd>+<kbd>S</kbd> |
+- Superscript: X<sup>2</sup> + Y<sup>3</sup>
+- Subscript: H<sub>2</sub>O and CO<sub>2</sub>
+- Keyboard: press <kbd>Ctrl</kbd>+<kbd>S</kbd> to save
 
 ---
 

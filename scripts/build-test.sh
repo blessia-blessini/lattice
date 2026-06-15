@@ -137,30 +137,221 @@ if [ $FILE_OPEN_RESULT -ne 0 ]; then
     exit $FILE_OPEN_RESULT
 fi
 
-# 1c. Run E2E / Conflict Reproducer (Rust example)
-# The example spawns the full Lattice app as a child process.
-# When CARGO_LLVM_COV is set, reproduce_conflict.rs forwards
-# -C instrument-coverage via RUSTFLAGS to the child compilation so
-# the child's profraw data is written to the same directory and merged
-# into the combined HTML report in step 4.
-echo "*** skipping Running E2E Conflict Reproducer..."
-# pushd src-tauri || exit
-   # Use 'cargo llvm-cov run' (not the default test-harness mode) so that
-   # main() is actually called. Without 'run', cargo routes --example through
-   # the test harness, finds 0 #[test] functions, and exits in 0.00s without
-   # ever executing the binary.
-#   if [ "$(uname)" == "Linux" ] && command -v xvfb-run >/dev/null 2>&1; then
-#       RUSTFLAGS="--cfg integration_test" xvfb-run --auto-servernum cargo llvm-cov run --no-report --example reproduce_conflict 2>&1 | tee "$RUST_OUT_E2E"
-#   else
-#       RUSTFLAGS="--cfg integration_test" cargo llvm-cov run --no-report --example reproduce_conflict 2>&1 | tee "$RUST_OUT_E2E"
-#   fi
-   # source ./scripts/Test-Conflict.sh
-#   E2E_RESULT=${PIPESTATUS[0]}
-# popd  || exit
+# 1c. E2E Desktop Harness
+# Step 1: build the instrumented Lattice binary (frontend must already be built).
+# Step 2: run the e2e_harness example which launches the binary for each scenario.
+#
+# The binary is compiled with --features e2e_test; build.rs emits
+# cargo:rustc-cfg=e2e_test so is_e2e_tst_build() returns true,
+# enabling the shutdown signal listener and E2E hooks.
+# The harness sets LLVM_PROFILE_FILE per scenario; profraw data lands in the
+# coverage directory and is merged into the HTML report in step 4.
+# E2E Desktop Harness runs ONLY on Windows.
+# Rationale: the harness launches the instrumented GUI binary; driving it
+# headlessly is reliable on Windows but flaky elsewhere (Linux xvfb/WebKitGTK,
+# macOS WKWebView XPC). The per-OS launch branches below are kept for reference
+# but the whole block is gated to Git Bash on Windows (MINGW/MSYS/CYGWIN).
+case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*) RUN_E2E=1 ;;
+    *)                    RUN_E2E=0 ;;
+esac
+
+if [ "$RUN_E2E" -eq 1 ]; then
+echo "Running E2E Desktop Harness..."
+pushd src-tauri || exit
+
+echo "  [1c-build] Building instrumented Lattice binary..."
+# Avoid show-env: its single-quoted Windows paths cause os error 123.
+# Set flags directly instead.
+# Clear RUSTC_WRAPPER so any leftover from a previous llvm-cov run
+# in this shell session does not interfere.
+unset RUSTC_WRAPPER
+# tauri-build reads TAURI_DEV_SERVER_URL at *build time* and bakes it as a
+# compile-time constant.  If set from a previous `tauri dev` session, the
+# E2E binary will always try localhost instead of its embedded dist/ assets.
+unset TAURI_DEV_SERVER_URL
+# build:e2e_test uses vite.e2e_test.config.ts which calls makeViteConfig(true),
+# baking IS_E2E_TST_BUILD=true into the bundle — the TS equivalent of --cfg e2e_test.
+echo "  [1c-frontend] Building frontend assets (npm run build:e2e_test)..."
+pushd .. || exit
+npm run build:e2e_test
+NPM_RESULT=$?
+popd || exit
+if [ $NPM_RESULT -ne 0 ]; then
+    echo "Frontend build failed!"
+    popd || exit
+    exit $NPM_RESULT
+fi
+
+COVERAGE_DIR="$(pwd)/target/llvm-cov"
+
+# Step A: Register the lattice binary with cargo-llvm-cov so it appears as a
+# source-mapping object in `cargo llvm-cov report` (needed for cli_desktop.rs,
+# e2e.rs etc. which are only compiled with --features e2e_test).
+# The binary checks for `e2e_register_only.txt` at startup and exits before
+# Tauri even starts — so this step completes in <1 s instead of ~15 s.
+echo "  [1c-register] Registering lattice binary with cargo-llvm-cov..."
+echo "register" > e2e_register_only.txt
+cargo llvm-cov --no-report run --bin lattice --features e2e_test 2>&1
+REGISTER_RESULT=${PIPESTATUS[0]}
+rm -f e2e_register_only.txt   # safety net (run() already removes it)
+if [ $REGISTER_RESULT -ne 0 ]; then
+    echo "E2E binary registration failed!"
+    popd || exit
+    exit $REGISTER_RESULT
+fi
+
+# Step B: Locate the binary that cargo-llvm-cov just built and ensure it exists at
+# target/debug/lattice (the path that lattice_bin() in the harness falls back to).
+# cargo-llvm-cov's binary output location varies by version and host config:
+#   - target/llvm-cov/debug/lattice  (clean CI build — cargo-llvm-cov sets CARGO_TARGET_DIR)
+#   - target/debug/lattice           (warm-cache local build — binary already present)
+# We search both paths, then fall back to a find, and copy to target/debug/ if needed.
+# Copying is safe: the copy has the same build-ID as the original registered binary,
+# so profraw files from harness subprocesses still map correctly in `cargo llvm-cov report`.
+echo "  [1c-locate] Locating E2E binary (cargo-llvm-cov output dir varies by platform)..."
+# Binary name differs on Windows (.exe suffix).
+case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*) _BIN="lattice.exe" ;;
+    *) _BIN="lattice" ;;
+esac
+_LLVM_BIN="$(pwd)/target/llvm-cov/debug/$_BIN"
+_DBG_BIN="$(pwd)/target/debug/$_BIN"
+if [ -f "$_LLVM_BIN" ]; then
+    _FOUND="$_LLVM_BIN"
+elif [ -f "$_DBG_BIN" ]; then
+    _FOUND="$_DBG_BIN"
+else
+    # Unexpected layout — search the whole target tree (excludes examples and .d files)
+    _FOUND=$(find "$(pwd)/target" -name "$_BIN" -type f \
+        ! -path "*/examples/*" ! -name "*.d" 2>/dev/null | head -1)
+fi
+if [ -z "$_FOUND" ]; then
+    echo "ERROR: E2E binary not found anywhere in target/ after Step A!"
+    find "$(pwd)/target" -maxdepth 5 -name "lattice*" 2>/dev/null | head -20 || true
+    popd || exit
+    exit 1
+fi
+echo "  [1c-locate] Found: $_FOUND"
+# Copy to target/debug/ so the harness finds it at the expected path.
+# The copy has the same build-ID as the registered binary, so profraw files
+# from harness subprocesses still map correctly in `cargo llvm-cov report`.
+if [ "$_FOUND" != "$_DBG_BIN" ]; then
+    mkdir -p "$(dirname "$_DBG_BIN")"
+    cp "$_FOUND" "$_DBG_BIN"
+    echo "  [1c-locate] Copied to: $_DBG_BIN"
+fi
+
+# Set LLVM_PROFILE_FILE so each lattice subprocess launched by the harness writes
+# its own e2e_{PID}.profraw into the llvm-cov directory for the report step.
+export LLVM_PROFILE_FILE="$COVERAGE_DIR/e2e_%p.profraw"
+
+echo "  [1c-run] Running E2E harness scenarios..."
+if [ "$(uname)" == "Linux" ] && command -v xvfb-run >/dev/null 2>&1; then
+    # WebKitGTK headless CI fixes (Ubuntu 24.04 / Noble):
+    #
+    #   WEBKIT_FORCE_SANDBOX=0          — disables WebKitGTK's bubblewrap sandbox.
+    #   WEBKIT_DISABLE_COMPOSITING_MODE=1 — disables GPU compositing; falls back to
+    #                                       software rendering (no GPU on CI).
+    #   WEBKIT_DISABLE_DMABUF_RENDERER=1  — WebKit 2.42+ introduced a DMA-BUF renderer
+    #                                       that requires a GPU; disable it on CI.
+    #   GDK_BACKEND=x11                 — Ubuntu 24.04 defaults GTK to Wayland when
+    #                                       possible; no Wayland compositor runs on CI so
+    #                                       GTK may error or hang.  Force X11 to use the
+    #                                       Xvfb display xvfb-run provides.
+    #   NO_AT_BRIDGE=1                  — suppresses AT-SPI accessibility bus errors.
+    #   RUST_LOG=error                  — surface Rust-level errors in the harness log
+    #                                       (otherwise the app runs completely silently).
+    #   --server-args="-screen 0 1280x1024x24" — 24-bit colour depth; some WebKit
+    #                                       versions reject the default 8-bit xvfb screen.
+    #
+    # Ubuntu 24.04 AppArmor fix:
+    #   Noble sets kernel.apparmor_restrict_unprivileged_userns=1 by default, blocking
+    #   unprivileged user namespaces system-wide.  bwrap (bubblewrap) needs user
+    #   namespaces even when WEBKIT_FORCE_SANDBOX=0 is set, because bwrap runs before
+    #   WebKitGTK can bypass it.  Relaxing this sysctl restores the namespace permission.
+    #   (sudo is available passwordless on all GitHub Actions Linux runners.)
+    sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 2>/dev/null || true
+    GDK_BACKEND=x11 \
+    WEBKIT_FORCE_SANDBOX=0 \
+    WEBKIT_DISABLE_COMPOSITING_MODE=1 \
+    WEBKIT_DISABLE_DMABUF_RENDERER=1 \
+    NO_AT_BRIDGE=1 \
+    RUST_LOG=error \
+    xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24" \
+        cargo run --example e2e_harness 2>&1 | tee "$RUST_OUT_E2E"
+elif [ "$(uname)" == "Darwin" ]; then
+    # macOS CI fix: wrap the binary in a minimal .app bundle so WKWebView works.
+    #
+    # On macOS 14+ (Sonoma/Sequoia), WKWebView spawns its renderer in the separate
+    # XPC service com.apple.WebKit.WebContent.  The OS requires the HOST APP to have
+    # a valid .app bundle with a CFBundleIdentifier in Info.plist before the XPC
+    # service is permitted to start.  A bare cargo debug binary has no bundle context,
+    # so the XPC service is terminated immediately → "web content process terminated"
+    # fires in every scenario → the frontend JS never runs → e2e_startup_ok.txt is
+    # never written → 15 s timeout.
+    #
+    # Fix: copy the instrumented binary into a minimal .app bundle structure that
+    # carries the same CFBundleIdentifier as tauri.conf.json, ad-hoc sign the whole
+    # bundle, then set LATTICE_E2E_BIN so the harness's lattice_bin() picks up the
+    # bundled binary instead of the bare one in target/.
+    #
+    # NOTE: $_LLVM_BIN / $_DBG_BIN were set by the 1c-locate step above.
+    echo "  [1c-bundle] Creating minimal .app bundle for macOS WKWebView XPC..."
+    _E2E_APP="/tmp/LatticeE2E.app"
+    rm -rf "$_E2E_APP"
+    mkdir -p "$_E2E_APP/Contents/MacOS"
+
+    # Pick the coverage-instrumented binary (CI path first, warm-cache fallback).
+    if [ -f "$_LLVM_BIN" ]; then
+        _BUNDLE_SRC="$_LLVM_BIN"
+    else
+        _BUNDLE_SRC="$_DBG_BIN"
+    fi
+    cp "$_BUNDLE_SRC" "$_E2E_APP/Contents/MacOS/lattice"
+    echo "  [1c-bundle]   binary source : $_BUNDLE_SRC"
+
+    # Info.plist — CFBundleIdentifier MUST match tauri.conf.json "identifier" field
+    # so that Tauri's internal bundle-ID checks (used by some plugin APIs) don't fail.
+    cat > "$_E2E_APP/Contents/Info.plist" << 'EOPLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>CFBundleExecutable</key><string>lattice</string>
+  <key>CFBundleIdentifier</key><string>com.blessia-blessini.lattice-app</string>
+  <key>CFBundleName</key><string>Lattice</string>
+  <key>CFBundleVersion</key><string>1.0</string>
+  <key>NSHighResolutionCapable</key><true/>
+  <key>NSPrincipalClass</key><string>NSApplication</string>
+</dict></plist>
+EOPLIST
+
+    # Ad-hoc sign the entire bundle (--deep signs the nested binary too).
+    # No Hardened Runtime needed — ad-hoc signing alone satisfies the XPC policy.
+    codesign --sign - --force --deep "$_E2E_APP" \
+        && echo "  [1c-bundle]   bundle signed : $_E2E_APP" \
+        || echo "  [1c-bundle]   WARN: codesign failed (non-fatal on older macOS)"
+
+    # Point the harness at the bundled binary via env var.
+    # The harness keeps .current_dir(root) so CWD stays the repo root —
+    # e2e_startup_ok.txt is still written to the expected location.
+    export LATTICE_E2E_BIN="$_E2E_APP/Contents/MacOS/lattice"
+    echo "  [1c-bundle]   LATTICE_E2E_BIN=$LATTICE_E2E_BIN"
+
+    cargo run --example e2e_harness 2>&1 | tee "$RUST_OUT_E2E"
+else
+    cargo run --example e2e_harness 2>&1 | tee "$RUST_OUT_E2E"
+fi
+E2E_RESULT=${PIPESTATUS[0]}
+popd || exit
 
 if [ $E2E_RESULT -ne 0 ]; then
-  echo "E2E Conflict Reproducer failed!"
-  exit $E2E_RESULT
+    echo "E2E Desktop Harness failed!"
+    exit $E2E_RESULT
+fi
+else
+    echo "Skipping E2E Desktop Harness — runs on Windows only (see scripts/build-test.sh)."
 fi
 
 pushd src-tauri || exit

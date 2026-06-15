@@ -30,6 +30,7 @@ use std::fs;
 fn main() {
     // 0. Sabotage files
     println!("cargo:rustc-check-cfg=cfg(integration_test)");
+    println!("cargo:rustc-check-cfg=cfg(e2e_test)");
 
     // 1. Determine Build Number: Check Env Var OR Panic
     // Use a macro to create a "constant" that concat! can accept
@@ -195,6 +196,29 @@ fn main() {
         println!("cargo:rerun-if-changed=test.manifest");
         println!("cargo:rustc-link-arg-tests=/MANIFEST:EMBED");
         println!("cargo:rustc-link-arg-tests=/MANIFESTINPUT:{}", test_manifest.display());
+    }
+
+    // E2E builds: activate E2E hooks and remove devUrl from the embedded config.
+    //
+    // Triggered by: cargo build --bin lattice --features e2e_test
+    // No env var required from the caller.
+    //
+    // Two things happen here:
+    // 1. cargo:rustc-cfg=e2e_test — makes #[cfg(e2e_test)] / is_e2e_tst_build() true
+    //    in library code without needing --cfg e2e_test in RUSTFLAGS.
+    // 2. TAURI_CONFIG patch — tauri_build's official JSON Merge Patch (RFC 7396)
+    //    applied on top of tauri.conf.json before the config is embedded into the
+    //    binary.  null removes devUrl so the runtime loads dist/ assets, not localhost.
+    //    tauri_build already emits cargo:rerun-if-env-changed=TAURI_CONFIG internally.
+    //
+    // CARGO_FEATURE_E2E_TEST is set by Cargo when --features e2e_test is passed.
+    if env::var("CARGO_FEATURE_E2E_TEST").is_ok() {
+        println!("cargo:rustc-cfg=e2e_test");
+        // SAFETY: build.rs is always single-threaded; no concurrent env access.
+        #[allow(unused_unsafe)]
+        unsafe { env::set_var("TAURI_CONFIG", r#"{"build":{"devUrl":null}}"#); }
+        println!("cargo:warning=E2E feature active: cfg(e2e_test) set, \
+                  devUrl removed from embedded Tauri config.");
     }
 
     tauri_build::build()

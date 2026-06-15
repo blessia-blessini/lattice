@@ -22,7 +22,24 @@
 // END OF NOTE
 
 //**************************************************************
-// reproduce_conflict
+// reproduce_conflict  [LEGACY — MANUAL USE ONLY]
+//
+// This is the OLD conflict-reproduction tool, kept for historical
+// reference and occasional manual testing.
+//
+// ⚠️  DO NOT use this for automated CI.  Use `e2e_harness.rs` instead.
+//
+// Differences vs the E2E harness:
+//   • Launches `npm run tauri dev` (slow cold-build, ~3–8 min)
+//   • Uses `--cfg integration_test` + `maybe_sabotage_file` for the trigger
+//   • Relies on `StaticRuntime.dev.ts::setupTestModeListeners` (dev-server only)
+//   • Kills the app with taskkill (Windows-only)
+//
+// The E2E harness (`e2e_harness.rs`) supersedes this:
+//   • Pre-built instrumented binary (< 5 s startup)
+//   • Harness writes to the file externally; notify watcher detects the change
+//   • E2E build writes conflict_success.txt from Rust (portable)
+//   • Clean exit via e2e_shutdown.txt signal file
 //**************************************************************
 use std::env;
 use std::fs;

@@ -80,3 +80,10 @@ utils/changelog-update/changelog-update
 src-tauri/irrelevant_path.md
 _test_samples/temp/crlf_1line.md.bin
 _test_samples/temp/crlf_multi.md.bin
+e2e_multi_a.md
+e2e_startup_ok.txt
+conflict_success.txt
+e2e_register_only.txt
+e2e_single.md
+e2e_multi_b.md
+e2e_shutdown.txt
