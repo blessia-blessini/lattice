@@ -1,8 +1,23 @@
 # _Lattice_ &emsp;&emsp;&emsp; [![Build and Test Matrix](https://github.com/blessia-blessini/lattice/actions/workflows/buildAndTest.yml/badge.svg)](https://github.com/blessia-blessini/lattice/actions/workflows/buildAndTest.yml) [![License](https://img.shields.io/badge/License-AGPL--3.0-red.svg)](LICENSE) 
 
-**Lattice** is an open-source, local-first Markdown environment editor, designed to bridge the gap between Personal Knowledge Management (PKM) and Corporate Systems Engineering.
+**Lattice** is an open-source, local-first Markdown editor and viewer, designed to bridge the gap between Personal Knowledge Management (PKM), and Systems Engineering.
 
 ## WHAT IS `Lattice` and WHY it exists
+
+
+Lattice is a local-first, multiplatform, private Markdown Editor and Viewer.  
+It is designed for productivity (Desktop work): Windows, MacOS and Linux.  
+Lattice works on Android and is designed to work on with iOS "one day".  
+
+Lattice is transparent - being **open-source is a core part of the value of the product**. 
+It guarantees that it's user will not be "kept a hostage".
+
+By using MD format, Lattice:
+ - strikes the right balance between form and content
+ - is very good for version control. 
+
+Thus, it is very well-fit for projects adopting plain text as major documentation format for any project.
+
 
 Being Markdown based, enables users of _Lattice_ to have:  
 &ensp;&ensp;  ⇒ **DOCUMENTS AS CODE**  
