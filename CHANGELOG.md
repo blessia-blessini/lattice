@@ -3,11 +3,21 @@
 All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
+## v0.3.7
+
+### Changes
+  <!-- INSERT BULLETS UNDER THIS LINE -->
+- Fix: npm and cargo update with vulnerabilities fix
+
+---
+
 
 ## v0.3.6
 
 ### Changes
-  <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: #2: npm and cargo update with vulnerabilities fix
+---
+
 - build and pass by skipping one test
 - CHORE: npm and cargo update with vulnerabilities fix
 - npm and cargo update with vulnerabilities fix
@@ -17,9 +27,6 @@ Edit the section for your next version **before** pushing the release tag like v
 - FIX: Syntax Highlight in print mode (not only edit)
 - publish script typo errors fixed
 - merge back dev branch
-
----
-
 
 ## v0.3.5
 

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- AppStream metainfo — required by Flathub. Validate before submitting:
+       flatpak run org.freedesktop.appstream-glib validate com.lattice_md.Lattice.metainfo.xml
+     [CONFIRM] the URLs, summary, screenshots and release dates below. -->
+<component type="desktop-application">
+  <id>com.lattice_md.Lattice</id>
+
+  <name>Lattice</name>
+  <summary>A local-first Markdown Editor</summary>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>AGPL-3.0-or-later</project_license>
+
+  <description>
+    <p>
+      Lattice is a local-first Markdown editor. It edits your files directly on
+      your machine, with live preview, math, and diagram support.
+    </p>
+    <!-- [CONFIRM] Expand with real feature bullets users will recognise. -->
+    <ul>
+      <li>Local-first: your files stay on your device</li>
+      <li>Live Markdown preview</li>
+      <li>Math (KaTeX) and diagrams (Mermaid)</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">com.lattice_md.Lattice.desktop</launchable>
+
+  <url type="homepage">https://www.lattice-md.com</url>
+  <url type="bugtracker">https://github.com/blessia-blessini/lattice/issues</url>
+  <url type="vcs-browser">https://github.com/blessia-blessini/lattice</url>
+
+  <developer id="com.lattice_md">
+    <name>Blessia Blessini</name>
+  </developer>
+
+  <!-- Flathub requires at least one screenshot hosted at a stable URL. -->
+  <screenshots>
+    <screenshot type="default">
+      <image>https://www.lattice-md.com/screenshots/main.png</image>
+      <caption>Editing a Markdown document with live preview</caption>
+    </screenshot>
+  </screenshots>
+
+  <content_rating type="oars-1.1" />
+
+  <releases>
+    <!-- [CONFIRM] real dates; keep newest first. -->
+    <release version="0.3.5" date="2026-06-01">
+      <url>https://github.com/blessia-blessini/lattice/releases/tag/v0.3.5</url>
+    </release>
+  </releases>
+</component>

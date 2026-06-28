@@ -613,14 +613,113 @@ jobs:
         ls -lh staging/
 
     ################################################################
+    # 903.4 / Code-sign the Windows installers via SignPath Foundation
+    #         (free OSS code signing — Sectigo-rooted certificate).
+    #
+    #   Runs ONLY when repo variable SIGNPATH_ENABLED == 'true', so the
+    #   release pipeline keeps working before SignPath approval. Flip the
+    #   variable on (Settings > Secrets and variables > Actions > Variables)
+    #   after the project is approved and configured in the SignPath portal.
+    #
+    #   Prerequisites once approved (all from the SignPath portal):
+    #     - Secret   SIGNPATH_API_TOKEN         (CI token; NEVER hardcode)
+    #     - Variable SIGNPATH_ORGANIZATION_ID   (GUID of your org)
+    #     - A project "lattice" with a signing policy + artifact config
+    #       whose slugs match the values below.
+    #
+    #   Flow: upload the unsigned .exe files as a GitHub artifact, hand the
+    #   artifact id to SignPath (it re-fetches from this run to verify
+    #   provenance), then copy the signed .exe back over staging/ so the
+    #   attestation in 903.5 covers the SIGNED binaries users download.
+    ################################################################
+    - name: 903.4a. Upload unsigned Windows installers (for SignPath)
+      id: upload-unsigned-win
+      if: vars.SIGNPATH_ENABLED == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: unsigned-windows-installers
+        path: staging/*.exe
+        if-no-files-found: error
+
+    - name: 903.4b. Submit to SignPath and wait for signed artifacts
+      if: vars.SIGNPATH_ENABLED == 'true'
+      uses: signpath/github-action-submit-signing-request@v1
+      with:
+        api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+        organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+        project-slug: lattice
+        signing-policy-slug: release-signing
+        artifact-configuration-slug: windows-installers
+        github-artifact-id: ${{ steps.upload-unsigned-win.outputs.artifact-id }}
+        wait-for-completion: true
+        output-artifact-directory: staging-signed
+
+    - name: 903.4c. Replace unsigned installers with signed ones
+      if: vars.SIGNPATH_ENABLED == 'true'
+      shell: bash
+      run: |
+        # Guard: fail loudly if SignPath returned nothing, rather than
+        # silently shipping unsigned binaries.
+        if ! ls staging-signed/*.exe >/dev/null 2>&1; then
+          echo "::error::SignPath produced no signed .exe in staging-signed/"
+          exit 1
+        fi
+        cp -f staging-signed/*.exe staging/
+        echo "--- Signed installers now in staging/ ---"
+        ls -lh staging/*.exe
+
+    ################################################################
     # 903.5 / Attest all release artifacts (build provenance)
     #         Links each installer to this exact workflow run + commit.
+    #         Runs AFTER 903.4 so the attestation covers the signed
+    #         Windows binaries (and the unsigned macOS/Linux artifacts).
     #         Verifiable by anyone with: gh attestation verify <file> --repo blessia-blessini/lattice
     ################################################################
     - name: 903.5. Attest build artifacts
       uses: actions/attest@v4
       with:
         subject-path: staging/*
+
+    ################################################################
+    # 903.6 / Generate + GPG-sign SHA256SUMS (Linux/macOS trust layer)
+    #         One detached signature over a checksum manifest covers
+    #         EVERY artifact (.AppImage, .deb, .dmg, .exe). Linux users
+    #         verify with the project's published public key:
+    #           gpg --verify SHA256SUMS.asc SHA256SUMS
+    #           sha256sum -c SHA256SUMS
+    #
+    #   Runs ONLY when repo variable GPG_SIGNING_ENABLED == 'true'.
+    #   Prerequisites (Settings > Secrets and variables > Actions):
+    #     - Secret   GPG_PRIVATE_KEY      (ASCII-armored private key; NEVER hardcode)
+    #     - Secret   GPG_PASSPHRASE       (passphrase for that key)
+    #     - Variable GPG_SIGNING_KEY_ID   (key fingerprint or signing email)
+    #   Publish the matching PUBLIC key on the download site so users can import it.
+    #
+    #   Computed AFTER 903.4, so checksums reflect the SIGNED .exe files.
+    #   The SHA256SUMS pair is added to staging/ and thus uploaded by 904.
+    ################################################################
+    - name: 903.6. Generate and GPG-sign SHA256SUMS
+      if: vars.GPG_SIGNING_ENABLED == 'true'
+      shell: bash
+      env:
+        GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        GPG_SIGNING_KEY_ID: ${{ vars.GPG_SIGNING_KEY_ID }}
+      run: |
+        set -euo pipefail
+        # Import the signing key into an ephemeral keyring (runner is throwaway).
+        echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+        cd staging
+        # Hash every release binary. Glob expands before SHA256SUMS exists,
+        # so the manifest never tries to include itself.
+        sha256sum * > SHA256SUMS
+        gpg --batch --yes --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" \
+            --local-user "$GPG_SIGNING_KEY_ID" \
+            --armor --detach-sign --output SHA256SUMS.asc SHA256SUMS
+        echo "--- SHA256SUMS ---"
+        cat SHA256SUMS
+        # Self-check before publishing.
+        gpg --verify SHA256SUMS.asc SHA256SUMS
 
     ################################################################
     # 904 / Create GitHub Release on blessia-blessini/lattice and

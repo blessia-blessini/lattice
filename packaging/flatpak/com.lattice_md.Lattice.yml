@@ -1,0 +1,74 @@
+# Flathub manifest for Lattice (Tauri v2 + WebKitGTK).
+#
+# STATUS: starting point — NOT yet build-ready. Flathub builds run OFFLINE,
+# so the npm and cargo dependencies must be vendored into generated source
+# files first (see README.md in this folder). The two `*-sources.json`
+# includes below are produced by those generators.
+#
+# App ID note: the Tauri identifier is `com.blessia-blessini.lattice-app`,
+# but Flatpak app IDs cannot contain hyphens (D-Bus name rules). We use the
+# domain you control (lattice-md.com) with the hyphen replaced by underscore:
+#   com.lattice_md.Lattice
+# The .desktop file, icons, and metainfo must all be installed under this ID.
+
+app-id: com.lattice_md.Lattice
+runtime: org.gnome.Platform
+runtime-version: '47'        # bump to the current GNOME runtime at submission time
+sdk: org.gnome.Sdk
+command: lattice
+
+# Build-time toolchains (Rust + Node) come from SDK extensions.
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+  - org.freedesktop.Sdk.Extension.node22   # match your engines.node (>=24 → use node24 when available on the runtime)
+
+finish-args:
+  # Display + GPU
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --share=ipc
+  - --device=dri
+  # A Markdown editor opens/saves user files. PREFER portals (no static perm
+  # needed — the file-chooser portal grants per-file access at runtime).
+  # Keep static filesystem access minimal; uncomment only if portals are
+  # insufficient for your open/save flows:
+  # - --filesystem=xdg-documents
+  # - --filesystem=home
+  # Network: only if Lattice fetches remote content at runtime (e.g. images
+  # in previews). Remove if not needed — Flathub reviewers scrutinise this.
+  # - --share=network
+
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/node22/bin
+  env:
+    CARGO_HOME: /run/build/lattice/cargo
+
+modules:
+  - name: lattice
+    buildsystem: simple
+    build-options:
+      env:
+        # Force cargo/npm offline using the vendored sources.
+        CARGO_NET_OFFLINE: '1'
+    build-commands:
+      # 1) Restore vendored node_modules from the generated node sources.
+      # 2) Build the frontend (vite) and the Tauri bundle, offline.
+      #    Adjust to your actual scripts (package.json: build + tauri).
+      - npm ci --offline
+      - npm run build
+      - cargo build --release --manifest-path src-tauri/Cargo.toml --offline
+      # 3) Install the binary, desktop file, icon and metainfo under the app-id.
+      - install -Dm755 src-tauri/target/release/lattice -t /app/bin/
+      - install -Dm644 packaging/flatpak/com.lattice_md.Lattice.desktop -t /app/share/applications/
+      - install -Dm644 packaging/flatpak/com.lattice_md.Lattice.metainfo.xml -t /app/share/metainfo/
+      - install -Dm644 src-tauri/icons/128x128.png /app/share/icons/hicolor/128x128/apps/com.lattice_md.Lattice.png
+    sources:
+      # Pin to the released tag you are packaging (Flathub prefers a tagged
+      # commit + sha256, not a moving branch).
+      - type: git
+        url: https://github.com/blessia-blessini/lattice.git
+        tag: v0.3.5
+        # commit: <fill the exact commit sha for the tag>
+      # Generated, vendored dependency manifests (see README.md):
+      - cargo-sources.json   # produced by flatpak-cargo-generator.py from src-tauri/Cargo.lock
+      - node-sources.json    # produced by flatpak-node-generator from package-lock.json

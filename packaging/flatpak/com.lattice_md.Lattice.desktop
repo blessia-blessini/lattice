@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Lattice
+GenericName=Markdown Editor
+Comment=A local-first Markdown editor
+Exec=lattice %F
+Icon=com.lattice_md.Lattice
+Terminal=false
+Categories=Office;TextEditor;Utility;
+MimeType=text/markdown;text/x-markdown;
+Keywords=markdown;md;editor;notes;
+StartupNotify=true
+StartupWMClass=lattice
