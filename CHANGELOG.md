@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- npm and cargo update #07-13
 - Fix: npm and cargo update with vulnerabilities fix
 
 ---
