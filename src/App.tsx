@@ -27,6 +27,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { homeDir } from "@tauri-apps/api/path";
 import { shortenHomePath } from "./lib/path-utils";
+import { clampTabSize, TAB_SIZE_DEFAULT } from "./lib/tab-size";
 import "./App.css";
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -214,6 +215,8 @@ function App() {
   const [m_previewTheme, setPreviewTheme] = useState<'dark' | 'light'>('light'); // Preview pane theme (independent)
   const [m_wordWrap, setWordWrap] = useState(false);
   const [m_highlightMark, setHighlightMark] = useState(true);
+  const [m_showWhitespace, setShowWhitespace] = useState(false); // REQ-LTTCE-WSP-00002 — default OFF
+  const [m_tabSize, setTabSize] = useState(TAB_SIZE_DEFAULT); // REQ-LTTCE-WSP-00005 — shared contract in lib/tab-size.ts
   const [m_blockExternalImages, setBlockExternalImages] = useState(true);
   const [m_defaultMermaidInit, setDefaultMermaidInit] = useState<string>('');
   const [m_dailyNotesPath, setDailyNotesPath] = useState<string>('');
@@ -429,6 +432,10 @@ function App() {
       setSaveOnBlur(settings.saveOnBlur !== false); // default true
       setDailyNotesPath(settings.dailyNotesPath || '');
       setHighlightMark(settings.highlightMark !== false); // default true
+      setShowWhitespace(settings.showWhitespace === true); // default false — opt-in (REQ-LTTCE-WSP-00002)
+      // Rust clamps on load, but guard against a malformed value anyway
+      // (defensive; REQ-LTTCE-WSP-00005; shared contract in lib/tab-size.ts).
+      setTabSize(clampTabSize(settings.tabSize));
       setBlockExternalImages(settings.blockExternalImages !== false); // default true — privacy-by-default
       setDefaultMermaidInit(settings.defaultMermaidInit || '');
 
@@ -1617,6 +1624,10 @@ function App() {
       onDailyNotesPathChange={setDailyNotesPath}
       highlightMark={m_highlightMark}
       onHighlightMarkChange={setHighlightMark}
+      showWhitespace={m_showWhitespace}
+      onShowWhitespaceChange={setShowWhitespace}
+      tabSize={m_tabSize}
+      onTabSizeChange={setTabSize}
       blockExternalImages={m_blockExternalImages}
       onBlockExternalImagesChange={setBlockExternalImages}
       defaultMermaidInit={m_defaultMermaidInit}
@@ -1650,6 +1661,10 @@ function App() {
             onDailyNotesPathChange={setDailyNotesPath}
             highlightMark={m_highlightMark}
             onHighlightMarkChange={setHighlightMark}
+            showWhitespace={m_showWhitespace}
+            onShowWhitespaceChange={setShowWhitespace}
+            tabSize={m_tabSize}
+            onTabSizeChange={setTabSize}
             blockExternalImages={m_blockExternalImages}
             onBlockExternalImagesChange={setBlockExternalImages}
             defaultMermaidInit={m_defaultMermaidInit}
@@ -1782,6 +1797,16 @@ function App() {
                 onClick: () => { pauseScrollSync(); void editorRef.current?.padTables(); },
                 title: "Space-pad every GFM pipe table so columns line up vertically. Shortcut: Ctrl/Cmd+Shift+L"
               },
+              {
+                label: "Tabify Indentation (Ctrl+Alt+T)",
+                onClick: () => { pauseScrollSync(); void editorRef.current?.tabifyIndentation(); },
+                title: "Convert line-start spaces to tabs on the selected lines (whole document if nothing is selected). Only leading whitespace is touched. Shortcut: Ctrl/Cmd+Alt+T"
+              },
+              {
+                label: "Untabify Indentation (Ctrl+Alt+Shift+T)",
+                onClick: () => { pauseScrollSync(); void editorRef.current?.untabifyIndentation(); },
+                title: "Convert line-start tabs to spaces on the selected lines (whole document if nothing is selected). Only leading whitespace is touched. Shortcut: Ctrl/Cmd+Alt+Shift+T"
+              },
               { label: "---" },
               { label: "Exit", onClick: () => invoke('exit_app') }
             ]}
@@ -1806,6 +1831,8 @@ function App() {
               wordWrap={m_wordWrap}
               fontSize={m_fontSize}
               highlightMark={m_highlightMark}
+              showWhitespace={m_showWhitespace}
+              tabSize={m_tabSize}
               initialDoc={m_loadedContent}
               currentFilePath={m_currentFilePath}
               onDirtyChange={setIsDirty}

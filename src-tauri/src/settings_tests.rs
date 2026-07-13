@@ -109,6 +109,12 @@ fn test_default_factory_fns() {
     assert_eq!(default_word_wrap(), false);
     assert_eq!(default_save_on_blur(), true);
     assert_eq!(default_highlight_mark(), true);
+    // UTST for REQ-LTTCE-WSP-00002 — whitespace visualization is OFF by default
+    assert_eq!(default_show_whitespace(), false);
+    // UTST for REQ-LTTCE-WSP-00005 — tab size defaults to 2, range 2..=8
+    assert_eq!(default_tab_size(), 2);
+    assert_eq!(TAB_SIZE_MIN, 2);
+    assert_eq!(TAB_SIZE_MAX, 8);
     assert!(default_mermaid_init().contains("'theme': 'base'"));
 }
 
@@ -123,6 +129,8 @@ fn test_settings_default_trait() {
     assert_eq!(s.save_on_blur, true);
     assert_eq!(s.daily_notes_path, "");
     assert_eq!(s.highlight_mark, true);
+    assert_eq!(s.show_whitespace, false);
+    assert_eq!(s.tab_size, 2);
     assert!(s.default_mermaid_init.contains("'theme': 'base'"));
 }
 
@@ -138,7 +146,145 @@ fn test_settings_serde_defaults_on_empty_json() {
     assert!(s.save_on_blur);
     assert_eq!(s.daily_notes_path, "");
     assert!(s.highlight_mark);
+    // UTST for REQ-LTTCE-WSP-00002 — missing key must default to OFF
+    assert!(!s.show_whitespace);
     assert!(s.default_mermaid_init.contains("'theme': 'base'"), "defaultMermaidInit must default to the base-theme init string");
+}
+
+// -----------------------------------------------------------------------
+// test_show_whitespace_default_and_roundtrip
+// -----------------------------------------------------------------------
+/// UTST for REQ-LTTCE-WSP-00002 / IMPL-LTTCE-WSP-00004.
+/// Verify showWhitespace defaults to false when absent from JSON and that
+/// it survives a serialize → deserialize round-trip with both values.
+#[test]
+fn test_show_whitespace_default_and_roundtrip() {
+    // Missing key → defaults to false (feature is opt-in)
+    let s: Settings = serde_json::from_str("{}").unwrap();
+    assert!(!s.show_whitespace);
+
+    // Explicit true survives roundtrip (camelCase key on the wire)
+    let json_on = r#"{"showWhitespace": true}"#;
+    let s_on: Settings = serde_json::from_str(json_on).unwrap();
+    assert!(s_on.show_whitespace);
+    let serialized = serde_json::to_string(&s_on).unwrap();
+    assert!(serialized.contains("\"showWhitespace\":true"));
+    let s_on2: Settings = serde_json::from_str(&serialized).unwrap();
+    assert!(s_on2.show_whitespace);
+
+    // Explicit false stays false
+    let json_off = r#"{"showWhitespace": false}"#;
+    let s_off: Settings = serde_json::from_str(json_off).unwrap();
+    assert!(!s_off.show_whitespace);
+}
+
+// -----------------------------------------------------------------------
+// test_parse_settings_lenient
+// -----------------------------------------------------------------------
+/// UTST for REQ-LTTCE-SET-00001 / IMPL-LTTCE-SET-00001.
+/// One corrupt field must cost exactly that field — never the whole file.
+#[test]
+fn test_parse_settings_lenient_drops_only_corrupt_fields() {
+    // tabSize = 2^64-1 does not fit u32 → previously the WHOLE file reset.
+    // Now: wordWrap survives, tabSize falls back to its default.
+    let json = r#"{"wordWrap": true, "tabSize": 18446744073709551615}"#;
+    let s = parse_settings_lenient(json);
+    assert!(s.word_wrap, "valid field must survive a corrupt sibling");
+    assert_eq!(s.tab_size, 2, "corrupt field must fall back to its default");
+
+    // Wrong type on a bool: same rule.
+    let json2 = r#"{"wordWrap": "yes", "showWhitespace": true, "dailyNotesPath": "/d"}"#;
+    let s2 = parse_settings_lenient(json2);
+    assert!(!s2.word_wrap, "corrupt bool falls back to default (false)");
+    assert!(s2.show_whitespace);
+    assert_eq!(s2.daily_notes_path, "/d");
+}
+
+#[test]
+fn test_parse_settings_lenient_valid_file_unchanged() {
+    // Fast path: a fully valid file parses exactly as before.
+    let json = r#"{"wordWrap": true, "tabSize": 4, "defaultOpenTheme": "light"}"#;
+    let s = parse_settings_lenient(json);
+    assert!(s.word_wrap);
+    assert_eq!(s.tab_size, 4);
+    assert_eq!(s.default_open_theme, "light");
+}
+
+#[test]
+fn test_parse_settings_lenient_unsalvageable_input() {
+    // Not JSON / not an object → all defaults (previous behaviour kept).
+    assert_eq!(parse_settings_lenient("not json at all"), Settings::default());
+    assert_eq!(parse_settings_lenient("[1, 2, 3]"), Settings::default());
+    assert_eq!(parse_settings_lenient(""), Settings::default());
+}
+
+#[test]
+fn test_parse_settings_lenient_preserves_unknown_keys_tolerance() {
+    // Unknown keys were always tolerated (forward compatibility) and must
+    // still be: they parse fine in isolation and are simply ignored.
+    let json = r#"{"futureSetting": {"nested": 1}, "wordWrap": true}"#;
+    let s = parse_settings_lenient(json);
+    assert!(s.word_wrap);
+}
+
+#[test]
+fn test_load_settings_internal_survives_corrupt_field() {
+    // End-to-end through the loader: corrupt tabSize on disk → other
+    // settings intact, tabSize clamped default.
+    let temp = tempfile::tempdir().unwrap();
+    let lattice_dir = temp.path().join("vault").join(".lattice");
+    fs::create_dir_all(&lattice_dir).unwrap();
+    let settings_path = lattice_dir.join("settings.json");
+    let home = temp.path().join("home");
+
+    fs::write(
+        &settings_path,
+        r#"{"wordWrap": true, "tabSize": 18446744073709551615}"#,
+    )
+    .unwrap();
+    let s = load_settings_internal(&settings_path.to_string_lossy(), &home).unwrap();
+    assert!(s.word_wrap);
+    assert_eq!(s.tab_size, 2);
+}
+
+// -----------------------------------------------------------------------
+// test_tab_size_default_roundtrip_and_clamp
+// -----------------------------------------------------------------------
+/// UTST for REQ-LTTCE-WSP-00005 / IMPL-LTTCE-WSP-00008.
+/// tabSize: default 2 when absent, camelCase on the wire, survives a
+/// roundtrip, and load clamps hand-edited out-of-range values into 2..=8.
+#[test]
+fn test_tab_size_default_roundtrip_and_clamp() {
+    // Missing key → default 2
+    let s: Settings = serde_json::from_str("{}").unwrap();
+    assert_eq!(s.tab_size, 2);
+
+    // Explicit value survives roundtrip with camelCase key
+    let s4: Settings = serde_json::from_str(r#"{"tabSize": 4}"#).unwrap();
+    assert_eq!(s4.tab_size, 4);
+    let serialized = serde_json::to_string(&s4).unwrap();
+    assert!(serialized.contains("\"tabSize\":4"));
+
+    // load_settings_internal clamps out-of-range values (settings.json is
+    // hand-editable). Uses a real temp settings file like the other
+    // load tests.
+    let temp = tempfile::tempdir().unwrap();
+    let lattice_dir = temp.path().join("vault").join(".lattice");
+    fs::create_dir_all(&lattice_dir).unwrap();
+    let settings_path = lattice_dir.join("settings.json");
+    let home = temp.path().join("home");
+
+    fs::write(&settings_path, r#"{"tabSize": 1}"#).unwrap();
+    let low = load_settings_internal(&settings_path.to_string_lossy(), &home).unwrap();
+    assert_eq!(low.tab_size, TAB_SIZE_MIN);
+
+    fs::write(&settings_path, r#"{"tabSize": 99}"#).unwrap();
+    let high = load_settings_internal(&settings_path.to_string_lossy(), &home).unwrap();
+    assert_eq!(high.tab_size, TAB_SIZE_MAX);
+
+    fs::write(&settings_path, r#"{"tabSize": 6}"#).unwrap();
+    let ok = load_settings_internal(&settings_path.to_string_lossy(), &home).unwrap();
+    assert_eq!(ok.tab_size, 6);
 }
 
 // -----------------------------------------------------------------------
@@ -395,26 +541,78 @@ fn test_save_settings_internal_merges_unknown_keys() {
 }
 
 // -----------------------------------------------------------------------
-// test_save_settings_internal_invalid_vault_path_skips_condense
+// test_save_settings_internal_refuses_non_vault_path
 // -----------------------------------------------------------------------
-/// When the settings path doesn't follow .lattice convention, condense is
-/// skipped and the daily_notes_path is stored verbatim.
+/// UTST for REQ-LTTCE-SET-00002 / IMPL-LTTCE-SET-00002 (path gate).
+/// A settings path outside the `.lattice/settings.json` convention must be
+/// REFUSED (Err) and the target file must be left untouched — save_settings
+/// must never be usable as an arbitrary-path file write.
+/// (Replaces the pre-hardening test that allowed such writes and merely
+/// skipped path condensing.)
 #[test]
-fn test_save_settings_internal_invalid_vault_path_skips_condense() {
+fn test_save_settings_internal_refuses_non_vault_path() {
     let temp = tempfile::tempdir().unwrap();
     let plain_dir = temp.path().join("plain");
     fs::create_dir_all(&plain_dir).unwrap();
-    let settings_path = plain_dir.join("settings.json");
-    fs::write(&settings_path, "{}").unwrap();
-
     let home = temp.path();
+
+    // Wrong parent directory (not `.lattice`)
+    let settings_path = plain_dir.join("settings.json");
+    fs::write(&settings_path, "original-content").unwrap();
+    let result = save_settings_internal(
+        &settings_path.to_string_lossy(),
+        Settings::default(),
+        home,
+    );
+    assert!(result.is_err(), "Expected Err for non-.lattice path");
+    assert_eq!(
+        fs::read_to_string(&settings_path).unwrap(),
+        "original-content",
+        "Refused save must not touch the target file"
+    );
+
+    // Wrong filename (not `settings.json`), even inside `.lattice`
+    let lattice_dir = temp.path().join("vault").join(".lattice");
+    fs::create_dir_all(&lattice_dir).unwrap();
+    let wrong_name = lattice_dir.join("evil.json");
+    let result2 = save_settings_internal(
+        &wrong_name.to_string_lossy(),
+        Settings::default(),
+        home,
+    );
+    assert!(result2.is_err(), "Expected Err for wrong filename");
+    assert!(!wrong_name.exists(), "Refused save must not create the file");
+}
+
+// -----------------------------------------------------------------------
+// test_save_settings_internal_clamps_tab_size_on_disk
+// -----------------------------------------------------------------------
+/// UTST for REQ-LTTCE-SET-00002 / IMPL-LTTCE-SET-00002 (value gate).
+/// A typed-but-absurd tabSize must be clamped BEFORE persisting, so the
+/// file on disk never holds an out-of-range value.
+#[test]
+fn test_save_settings_internal_clamps_tab_size_on_disk() {
+    let temp = tempfile::tempdir().unwrap();
+    let lattice_dir = temp.path().join("vault").join(".lattice");
+    fs::create_dir_all(&lattice_dir).unwrap();
+    let settings_path = lattice_dir.join("settings.json");
+    fs::write(&settings_path, "{}").unwrap();
+    let home = temp.path().join("home");
+
     let mut s = Settings::default();
-    s.daily_notes_path = "/some/absolute/path/daily".to_string();
-    save_settings_internal(&settings_path.to_string_lossy(), s, home).unwrap();
+    s.tab_size = 1_000_000; // fits u32, semantically absurd
+    save_settings_internal(&settings_path.to_string_lossy(), s, &home).unwrap();
 
     let raw = fs::read_to_string(&settings_path).unwrap();
     let v: serde_json::Value = serde_json::from_str(&raw).unwrap();
-    assert_eq!(v["dailyNotesPath"], "/some/absolute/path/daily");
+    assert_eq!(v["tabSize"], TAB_SIZE_MAX, "On-disk tabSize must be clamped");
+
+    let mut s2 = Settings::default();
+    s2.tab_size = 0;
+    save_settings_internal(&settings_path.to_string_lossy(), s2, &home).unwrap();
+    let v2: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(&settings_path).unwrap()).unwrap();
+    assert_eq!(v2["tabSize"], TAB_SIZE_MIN);
 }
 
 // -----------------------------------------------------------------------

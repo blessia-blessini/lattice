@@ -41,6 +41,7 @@ static M_PATH: Mutex<String> = Mutex::new(String::new());
 pub mod e2e;
 pub mod file_state;
 pub mod settings;
+mod tabify;
 mod table_format;
 mod textcontent_hashing;
 mod toc;
@@ -1078,7 +1079,9 @@ pub fn run() {
             trace_log,
             exit_app,
             toc::update_toc,
-            table_format::pad_tables
+            table_format::pad_tables,
+            tabify::tabify_text,
+            tabify::untabify_text
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

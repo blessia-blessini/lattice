@@ -13,6 +13,8 @@ implementation artefacts. For the ID schema definition see `11-Traceability-Requ
   - [Chapter LNT — GFM Linter](#chapter-lnt-gfm-linter)
   - [Chapter LNK — Preview Link Routing](#chapter-lnk-preview-link-routing)
   - [Chapter DVW — Dual-View Cursor Flash](#chapter-dvw-dual-view-cursor-flash)
+  - [Chapter WSP — Show Whitespace](#chapter-wsp-show-whitespace)
+  - [Chapter SET — Settings Robustness](#chapter-set-settings-robustness)
     - [General](#general)
     - [Severity Visualisation](#severity-visualisation)
     - [Rule: Setext Headings](#rule-setext-headings)
@@ -285,6 +287,80 @@ never block or break preview rendering.
 
 ---
 
+## Chapter WSP — Show Whitespace
+
+When editing whitespace-sensitive Markdown (indented list continuations, code blocks, trailing
+double-space line breaks) the user needs to *see* spaces and tabs to understand the document
+structure. The Show Whitespace feature visualizes them in the edit pane, in the subtle style
+familiar from Word and VS Code.
+
+<!--REQ-LTTCE-WSP-00001-->
+**REQ-LTTCE-WSP-00001** — When the feature is enabled, the edit pane SHALL visualize whitespace
+characters: each stretch of space characters SHALL be rendered with a faint centered dot per space,
+and each tab character SHALL be rendered with a faint arrow. The visualization SHALL be subtle —
+clearly dimmer than the surrounding text — yet perceivable in both the light and the dark editor
+theme.
+
+<!--REQ-LTTCE-WSP-00002-->
+**REQ-LTTCE-WSP-00002** — The feature SHALL be controlled by a setting **"Show Whitespace"**
+(persisted key `showWhitespace`) that is **OFF by default**, can be set and cleared from the
+Settings panel, is persisted to the vault `settings.json`, and takes effect in the edit pane
+immediately on toggle (no application restart or file reload).
+
+<!--REQ-LTTCE-WSP-00003-->
+**REQ-LTTCE-WSP-00003** — The visualization SHALL be purely decorative: it SHALL NOT modify the
+document text, character metrics, line layout, cursor behaviour, or the saved file content in any
+way, in either state of the setting.
+
+<!--REQ-LTTCE-WSP-00004-->
+**REQ-LTTCE-WSP-00004** — Pressing the **Tab** key in the edit pane SHALL insert a literal tab
+character (`\t`) at the cursor when the selection is empty, and SHALL indent the selected lines when
+a selection exists (Shift-Tab SHALL un-indent). The Tab key SHALL NOT move keyboard focus out of the
+editor; the standard CM6[^cm6] escape sequence (Esc, then Tab) remains available for keyboard-only
+focus navigation.
+
+<!--REQ-LTTCE-WSP-00005-->
+**REQ-LTTCE-WSP-00005** — A setting **"Tab Size"** (persisted key `tabSize`) SHALL control the
+display width of a tab character in the edit pane, in columns. Valid values are the integers
+**2 to 8**; the default is **2**. Out-of-range values in the hand-editable settings file SHALL be
+clamped into the valid range on load. The setting SHALL be editable from the Settings panel and
+SHALL take effect in the edit pane immediately. The editor's indent unit SHALL be one tab
+character, so the indent width and the tab display width are always the same value.
+
+<!--REQ-LTTCE-WSP-00006-->
+**REQ-LTTCE-WSP-00006** — The editor SHALL provide **Tabify** and **Untabify** operations that
+convert **only line-start (leading) whitespace**, column-accurately with respect to the Tab Size
+setting: Tabify SHALL replace each full tab-stop of leading space width with one tab character,
+keeping any remainder columns as spaces; Untabify SHALL replace leading tabs with the equivalent
+number of space columns. The operations SHALL apply to the lines covered by the selection, or to
+the **whole document** when the selection is empty, SHALL leave all non-leading text untouched,
+SHALL preserve undo history, and SHALL be available both from the application menu and via the
+keyboard shortcuts Ctrl/Cmd+Alt+T (Tabify) and Ctrl/Cmd+Alt+Shift+T (Untabify).
+
+---
+
+## Chapter SET — Settings Robustness
+
+The vault `settings.json` is a hand-editable file. Editing mistakes (a wrong type, an absurd
+number) must degrade gracefully: the user should lose at most the mistyped setting, never the
+whole configuration.
+
+<!--REQ-LTTCE-SET-00001-->
+**REQ-LTTCE-SET-00001** — When loading settings, a field whose value cannot be parsed (wrong JSON
+type, numeric overflow, or any other per-field error) SHALL fall back to that field's default
+value **without affecting any other field** in the file. Only a file that is not valid JSON at
+all (or whose top level is not an object) MAY cause all settings to fall back to defaults.
+Unknown keys SHALL continue to be tolerated (forward compatibility).
+
+<!--REQ-LTTCE-SET-00002-->
+**REQ-LTTCE-SET-00002** — When saving settings, the application SHALL (a) refuse to write to any
+path that is not a `settings.json` file directly inside a `.lattice` directory, leaving the
+target untouched and returning an error, and (b) clamp range-constrained numeric fields (such as
+`tabSize`) into their valid range **before** persisting, so the settings file on disk never
+holds an out-of-range value regardless of the value received over IPC[^ipc].
+
+---
+
 [^mermaid]: Mermaid — a JavaScript diagramming library rendering text definitions inside fenced code blocks
     as SVG diagrams. <https://mermaid.js.org>
 
@@ -323,3 +399,6 @@ never block or break preview rendering.
     industry's profile of this standard.
 
 [^toc]: TOC — Table of Contents.
+
+[^ipc]: IPC — Inter-Process Communication. In Lattice: the Tauri command channel between the
+    WebView frontend and the Rust backend (`invoke`).

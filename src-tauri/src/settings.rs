@@ -23,6 +23,17 @@ pub struct Settings {
     #[serde(default = "default_highlight_mark")]
     pub highlight_mark: bool,
 
+    // IMPL-LTTCE-WSP-00004 — persisted "Show Whitespace" flag (default OFF)
+    #[serde(default = "default_show_whitespace")]
+    pub show_whitespace: bool,
+
+    // IMPL-LTTCE-WSP-00008 — persisted tab display width in columns. Valid
+    // range TAB_SIZE_MIN..=TAB_SIZE_MAX; clamped on load (defensive: the
+    // settings file is user-editable JSON). The editor's indent unit is one
+    // real tab character, so indent width always equals this value.
+    #[serde(default = "default_tab_size")]
+    pub tab_size: u32,
+
     #[serde(default = "default_block_external_images")]
     pub block_external_images: bool,
 
@@ -42,6 +53,15 @@ fn default_save_on_blur() -> bool {
 fn default_highlight_mark() -> bool {
     true
 }
+fn default_show_whitespace() -> bool {
+    false
+}
+/// Valid range for `tab_size` (shared by clamp-on-load and the Settings UI contract).
+pub const TAB_SIZE_MIN: u32 = 2;
+pub const TAB_SIZE_MAX: u32 = 8;
+fn default_tab_size() -> u32 {
+    2
+}
 fn default_block_external_images() -> bool {
     true
 }
@@ -57,6 +77,8 @@ impl Default for Settings {
             save_on_blur: default_save_on_blur(),
             daily_notes_path: "".to_string(),
             highlight_mark: default_highlight_mark(),
+            show_whitespace: default_show_whitespace(),
+            tab_size: default_tab_size(),
             block_external_images: default_block_external_images(),
             default_mermaid_init: default_mermaid_init(),
         }
@@ -146,11 +168,55 @@ pub fn merge_settings(
 // merge_settings END ******************************************
 
 //**************************************************************
+// parse_settings_lenient
+//**************************************************************
+/// Parse settings JSON with per-field graceful degradation
+/// (IMPL-LTTCE-SET-00001).
+///
+/// Fast path: a whole-struct parse, byte-for-byte the previous behaviour.
+/// On failure (settings.json is hand-editable — one field with the wrong
+/// type, e.g. `"tabSize": 2e64` or `"wordWrap": "yes"`, used to reset
+/// EVERY setting to its default), each top-level key is probed in
+/// isolation: `{key: value}` must deserialize into `Settings` (whose
+/// remaining fields fall back to their serde defaults). Offending keys are
+/// dropped, the surviving keys are parsed once — so a single corrupt field
+/// costs exactly that field, nothing else.
+///
+/// DRY note: this stays generic over the one derived schema — no field
+/// name, type, or default is repeated here; new settings fields get this
+/// protection automatically.
+pub fn parse_settings_lenient(content: &str) -> Settings {
+    if let Ok(settings) = serde_json::from_str::<Settings>(content) {
+        return settings; // fast path — valid file, zero extra work
+    }
+    let Ok(serde_json::Value::Object(map)) = serde_json::from_str::<serde_json::Value>(content)
+    else {
+        // Not JSON at all, or not an object — nothing salvageable.
+        return Settings::default();
+    };
+    let mut clean = serde_json::Map::new();
+    for (key, value) in map {
+        let probe = serde_json::Value::Object(std::iter::once((key.clone(), value.clone())).collect());
+        if serde_json::from_value::<Settings>(probe).is_ok() {
+            clean.insert(key, value);
+        }
+    }
+    serde_json::from_value(serde_json::Value::Object(clean)).unwrap_or_default()
+}
+// parse_settings_lenient END **********************************
+
+//**************************************************************
 // load_settings_internal  (pure — no AppHandle)
 //**************************************************************
 pub fn load_settings_internal(settings_path: &str, home_path: &Path) -> Result<Settings, String> {
     let content = fs::read_to_string(settings_path).unwrap_or_else(|_| "{}".to_string());
-    let settings: Settings = serde_json::from_str(&content).unwrap_or_default();
+    let mut settings = parse_settings_lenient(&content);
+
+    // Defensive clamp (IMPL-LTTCE-WSP-00008): settings.json is hand-editable,
+    // so an out-of-range tabSize must not reach the editor. Keep in sync with
+    // the frontend counterpart in src/lib/tab-size.ts (documented pairing —
+    // the two codebases cannot share one constant without codegen).
+    settings.tab_size = settings.tab_size.clamp(TAB_SIZE_MIN, TAB_SIZE_MAX);
 
     match get_vault_root(settings_path, Some(home_path)) {
         Ok(vault_root) => Ok(expand_daily_notes_path(settings, &vault_root)),
@@ -181,10 +247,22 @@ pub fn save_settings_internal(
     settings: Settings,
     home_path: &Path,
 ) -> Result<(), String> {
+    // IMPL-LTTCE-SET-00002 — write-side gate (REQ-LTTCE-SET-00002).
+    // (1) Path gate: refuse to write anywhere except a `.lattice/settings.json`
+    //     (the same shape check the vault-root derivation uses). Tauri
+    //     commands are reachable from the WebView, so without this gate a
+    //     compromised frontend could turn save_settings into an
+    //     arbitrary-path file write.
+    let vault_root = get_vault_root(settings_path, Some(home_path))
+        .map_err(|e| format!("Refusing to save settings: {}", e))?;
+
+    // (2) Value gate: clamp numeric fields before persisting, so the file on
+    //     disk never holds out-of-range values (the loader clamps too —
+    //     belt and braces, both sides use the same constants).
     let mut final_settings = settings;
-    if let Ok(vault_root) = get_vault_root(settings_path, Some(home_path)) {
-        final_settings = condense_daily_notes_path(final_settings, &vault_root);
-    }
+    final_settings.tab_size = final_settings.tab_size.clamp(TAB_SIZE_MIN, TAB_SIZE_MAX);
+
+    final_settings = condense_daily_notes_path(final_settings, &vault_root);
 
     let current_content = fs::read_to_string(settings_path).unwrap_or_else(|_| "{}".to_string());
     let current_json: serde_json::Value =

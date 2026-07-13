@@ -4,9 +4,9 @@ import { EditorState, Compartment, StateEffect } from '@codemirror/state';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
 import { githubLight, githubDark } from '@uiw/codemirror-themes-all';
-import { HighlightStyle, syntaxHighlighting, indentOnInput, bracketMatching, foldGutter, defaultHighlightStyle } from '@codemirror/language';
+import { HighlightStyle, syntaxHighlighting, indentOnInput, indentUnit, bracketMatching, foldGutter, defaultHighlightStyle } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
-import { undoDepth, history, historyKeymap, defaultKeymap, undo, redo } from '@codemirror/commands';
+import { undoDepth, history, historyKeymap, defaultKeymap, indentWithTab, undo, redo } from '@codemirror/commands';
 import { closeBrackets, closeBracketsKeymap, completionKeymap } from '@codemirror/autocomplete';
 import { searchKeymap, highlightSelectionMatches } from '@codemirror/search';
 import { foldKeymap } from '@codemirror/language';
@@ -15,7 +15,9 @@ import { gfmLinter } from '../editor-extensions/gfm-linter';
 import { FileSystem } from '../services/FileSystem';
 import { Toc, TOC_OPEN_MARKER, TOC_CLOSE_MARKER } from '../services/Toc';
 import { TableFormat } from '../services/TableFormat';
+import { Tabify } from '../services/Tabify';
 import { symbolPicker } from '../editor-extensions/symbol-picker';
+import { showWhitespaceExtension } from '../editor-extensions/show-whitespace';
 import { tocTooltip } from '../editor-extensions/toc-tooltip';
 import { cursorLineOf } from '../lib/cursor-block';
 
@@ -29,6 +31,18 @@ export interface EditorProps {
     fontSize: number;
     /** When true, `==text==` patterns are rendered with a highlighted background. */
     highlightMark: boolean;
+    /**
+     * When true, whitespace characters are visualized in the edit pane:
+     * spaces as faint centered dots, tabs as faint arrows (subtle, VS-Code
+     * style — decoration only, never changes the text). IMPL-LTTCE-WSP-00002.
+     */
+    showWhitespace: boolean;
+    /**
+     * Tab display width in columns (valid 2–8, enforced by the settings
+     * layer). The indent unit is one real tab character, so the indent
+     * width always equals this value. IMPL-LTTCE-WSP-00006.
+     */
+    tabSize: number;
     /** Called on every document change with the full updated text. */
     onChange?: (doc: string) => void;
     /** Initial document text loaded into the editor on mount. */
@@ -123,9 +137,18 @@ export interface EditorHandle {
      * edit invalidated the snapshot mid-IPC.
      */
     padTables: () => Promise<boolean>;
+    /**
+     * Convert line-start whitespace to tabs (column-accurate for the current
+     * tab size) on the selected lines, or the whole document when the
+     * selection is empty. Returns true iff the document changed.
+     * REQ-LTTCE-WSP-00006.
+     */
+    tabifyIndentation: () => Promise<boolean>;
+    /** Opposite direction of {@link tabifyIndentation}: leading tabs → spaces. */
+    untabifyIndentation: () => Promise<boolean>;
 }
 export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
-    theme, wordWrap, fontSize, highlightMark, onChange, initialDoc, currentFilePath, onDirtyChange,
+    theme, wordWrap, fontSize, highlightMark, showWhitespace, tabSize, onChange, initialDoc, currentFilePath, onDirtyChange,
     onCursorLineChange
 }, ref) => {
     const editorRef = useRef<HTMLDivElement>(null);
@@ -135,6 +158,14 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
     const fontSizeCompartment = useRef(new Compartment());
     const historyCompartment = useRef(new Compartment());
     const highlightMarkCompartment = useRef(new Compartment());
+    const showWhitespaceCompartment = useRef(new Compartment());
+    const tabSizeCompartment = useRef(new Compartment());
+    // Latest tabSize for closures captured once at extension-build time
+    // (same stale-props guard as onCursorLineChangeRef below).
+    const tabSizeRef = useRef(tabSize);
+    useEffect(() => {
+        tabSizeRef.current = tabSize;
+    }, [tabSize]);
     const isRemoteUpdate = useRef(false);
     const currentFilePathRef = useRef(currentFilePath);
 
@@ -241,6 +272,66 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
     };
     // padTablesFromBackend END *************************************************
 
+    //**************************************************************************
+    // convertIndentationFromBackend
+    //**************************************************************************
+    /**
+     * Shared tabify/untabify engine (IMPL-LTTCE-WSP-00009 wiring;
+     * REQ-LTTCE-WSP-00006). Converts ONLY line-start whitespace, column-
+     * accurate for the current tab size. Scope: the lines covered by the
+     * main selection, or the whole document when the selection is empty.
+     * Same snapshot → IPC → guarded-dispatch flow as the TOC and table-pad
+     * operations: a concurrent edit invalidates the snapshot and the stale
+     * result is dropped.
+     */
+    const convertIndentationFromBackend = async (toTabs: boolean): Promise<boolean> => {
+        const view = viewRef.current;
+        if (!view) return false;
+
+        const before = view.state.doc.toString();
+
+        // 1-based inclusive line range of the main selection; 0/0 = whole
+        // document. A selection ending exactly at a line start excludes
+        // that line (the user has not visually selected any of it).
+        const sel = view.state.selection.main;
+        let startLine = 0;
+        let endLine = 0;
+        if (!sel.empty) {
+            startLine = view.state.doc.lineAt(sel.from).number;
+            const endLineObj = view.state.doc.lineAt(sel.to);
+            endLine = (sel.to === endLineObj.from && endLineObj.number > startLine)
+                ? endLineObj.number - 1
+                : endLineObj.number;
+        }
+
+        let after: string;
+        try {
+            after = toTabs
+                ? await Tabify.toTabs(before, tabSizeRef.current, startLine, endLine)
+                : await Tabify.toSpaces(before, tabSizeRef.current, startLine, endLine);
+        } catch (e) {
+            console.error('Indentation conversion failed:', e);
+            return false;
+        }
+
+        const liveView = viewRef.current;
+        if (!liveView) return false;
+        if (liveView.state.doc.toString() !== before) {
+            // Concurrent change — drop the stale result rather than clobber.
+            return false;
+        }
+        if (after === before) {
+            // Nothing to convert (already in the requested form).
+            return false;
+        }
+
+        liveView.dispatch({
+            changes: { from: 0, to: liveView.state.doc.length, insert: after },
+        });
+        return true;
+    };
+    // convertIndentationFromBackend END ****************************************
+
     useImperativeHandle(ref, () => ({
         markAsSaved: () => {
             if (viewRef.current) {
@@ -313,7 +404,9 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
             await refreshTocFromBackend();
             return true;
         },
-        padTables: padTablesFromBackend
+        padTables: padTablesFromBackend,
+        tabifyIndentation: () => convertIndentationFromBackend(true),
+        untabifyIndentation: () => convertIndentationFromBackend(false)
     }));
 
     const getExtensions = () => [
@@ -336,6 +429,13 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
         drawSelection(),
         dropCursor(),
         EditorState.allowMultipleSelections.of(true),
+        // IMPL-LTTCE-WSP-00005 — the indent unit is a real tab character.
+        // CM6's `insertTab` (bound below via indentWithTab) inserts the
+        // configured indent unit, which defaults to two spaces; without this
+        // facet the Tab key would insert spaces instead of "\t"
+        // (REQ-LTTCE-WSP-00004). Selection-indent and auto-indent use the
+        // same unit, so all indentation is consistently tab-based.
+        indentUnit.of('\t'),
         indentOnInput(),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
         bracketMatching(),
@@ -352,6 +452,13 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
             ...foldKeymap,
             ...completionKeymap,
             ...lintKeymap,
+            // IMPL-LTTCE-WSP-00005 — Tab types a real tab character instead of
+            // moving browser focus (REQ-LTTCE-WSP-00004). CM6's standard
+            // binding: empty selection → insert "\t"; selection → indent the
+            // selected lines; Shift-Tab → un-indent. Keyboard-only users can
+            // still leave the editor with the documented CM6 escape hatch:
+            // press Esc, then Tab.
+            indentWithTab,
             // Refresh all TOC blocks in the document. Mod = Cmd on macOS,
             // Ctrl elsewhere. The handler returns true synchronously and
             // performs the IPC + dispatch in the background (the helper
@@ -382,6 +489,28 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
                     return true;
                 },
             },
+            // Tabify / Untabify leading whitespace (REQ-LTTCE-WSP-00006).
+            // Same fire-and-forget pattern as the two operations above.
+            // Why Mod-Alt-t: Mod-Shift-t is taken (TOC refresh), and the
+            // Alt layer keeps the T mnemonic ("Tabify"); the shifted
+            // variant is the inverse operation, mirroring the
+            // indentMore/indentLess pairing of Tab/Shift-Tab.
+            {
+                key: 'Mod-Alt-t',
+                preventDefault: true,
+                run: () => {
+                    void convertIndentationFromBackend(true);
+                    return true;
+                },
+            },
+            {
+                key: 'Mod-Alt-Shift-t',
+                preventDefault: true,
+                run: () => {
+                    void convertIndentationFromBackend(false);
+                    return true;
+                },
+            },
         ]),
         gfmLinter,    // <-- GFM ambiguity + error linter (green/orange/red underlines)
         symbolPicker, // <-- Add our custom extension here
@@ -396,6 +525,13 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
         wrappingCompartment.current.of(wordWrap ? EditorView.lineWrapping : []),
         fontSizeCompartment.current.of(EditorView.theme({ '.cm-content': { fontSize: `${fontSize}%` }, '.cm-gutters': { fontSize: `${fontSize}%` } })),
         highlightMarkCompartment.current.of(highlightMark ? highlightMarkExtension : []),
+        // IMPL-LTTCE-WSP-00002 — "Show Whitespace" lives in its own compartment
+        // so the setting toggles live without recreating the editor state.
+        showWhitespaceCompartment.current.of(showWhitespace ? showWhitespaceExtension : []),
+        // IMPL-LTTCE-WSP-00006 — tab display width (REQ-LTTCE-WSP-00005).
+        // The indent unit above is one real tab, so indent width and tab
+        // width are the same value by construction.
+        tabSizeCompartment.current.of(EditorState.tabSize.of(tabSize)),
         EditorView.updateListener.of((update) => {
             if (update.docChanged && onChange && !isRemoteUpdate.current) {
                 onChange(update.state.doc.toString());
@@ -546,6 +682,28 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
             });
         }
     }, [highlightMark]);
+
+    // Update show-whitespace extension when prop changes (IMPL-LTTCE-WSP-00002)
+    useEffect(() => {
+        if (viewRef.current) {
+            viewRef.current.dispatch({
+                effects: showWhitespaceCompartment.current.reconfigure(
+                    showWhitespace ? showWhitespaceExtension : []
+                )
+            });
+        }
+    }, [showWhitespace]);
+
+    // Update tab display width when prop changes (IMPL-LTTCE-WSP-00006)
+    useEffect(() => {
+        if (viewRef.current) {
+            viewRef.current.dispatch({
+                effects: tabSizeCompartment.current.reconfigure(
+                    EditorState.tabSize.of(tabSize)
+                )
+            });
+        }
+    }, [tabSize]);
 
     return <div ref={editorRef} className="editor-container" />;
 });

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FileSystem } from '../services/FileSystem';
 import { invoke } from '@tauri-apps/api/core';
+import { clampTabSize, TAB_SIZE_MIN, TAB_SIZE_MAX } from '../lib/tab-size';
 
 /** Props for the {@link Settings} panel component. */
 export interface SettingsProps {
@@ -22,6 +23,14 @@ export interface SettingsProps {
     highlightMark: boolean;
     /** Called when the user flips the highlight-mark toggle. */
     onHighlightMarkChange: (enabled: boolean) => void;
+    /** Current "Show Whitespace" state (spaces/tabs visualized in the edit pane). Default OFF. */
+    showWhitespace: boolean;
+    /** Called when the user flips the show-whitespace toggle. IMPL-LTTCE-WSP-00003. */
+    onShowWhitespaceChange: (enabled: boolean) => void;
+    /** Tab display width in columns (2–8, default 2). Indent width always equals this. */
+    tabSize: number;
+    /** Called with the clamped new tab size. IMPL-LTTCE-WSP-00007. */
+    onTabSizeChange: (size: number) => void;
     /** When true, the preview pane refuses to fetch `http://` / `https://` images and shows a blocked-link placeholder instead (privacy-by-default). */
     blockExternalImages: boolean;
     /** Called when the user flips the block-external-images toggle. */
@@ -40,15 +49,63 @@ export interface SettingsProps {
 }
 
 //******************************************************************************
+// Toggle
+//******************************************************************************
+/** Props for the shared {@link Toggle} switch. */
+interface ToggleProps {
+    /** Whether the switch is in its "on" (green, knob right) position. */
+    on: boolean;
+    /** Called when the user clicks anywhere on the switch. */
+    onClick: () => void;
+}
+/**
+ * Shared on/off switch used by every boolean setting in this panel (DRY —
+ * previously this exact markup was copy-pasted per setting). Renders the
+ * same DOM shape as the historical inline version: an outer clickable pill
+ * `<div>` containing the knob `<div>`, so sibling-based DOM queries (e.g.
+ * in Settings.test.tsx helpers) are unaffected.
+ */
+const Toggle: React.FC<ToggleProps> = ({ on, onClick }) => (
+    <div
+        onClick={onClick}
+        style={{
+            width: '50px',
+            height: '24px',
+            backgroundColor: on ? '#2ea44f' : '#ccc',
+            borderRadius: '12px',
+            position: 'relative',
+            cursor: 'pointer',
+            transition: 'background-color 0.2s'
+        }}
+    >
+        <div style={{
+            width: '20px',
+            height: '20px',
+            backgroundColor: '#fff',
+            borderRadius: '50%',
+            position: 'absolute',
+            top: '2px',
+            left: on ? '28px' : '2px',
+            transition: 'left 0.2s',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+        }} />
+    </div>
+);
+// Toggle END ******************************************************************
+
+
+//******************************************************************************
 // Settings
 //******************************************************************************
-export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultThemeChange, wordWrap, onWordWrapChange, saveOnBlur, dailyNotesPath, onDailyNotesPathChange, highlightMark, onHighlightMarkChange, blockExternalImages, onBlockExternalImagesChange, defaultMermaidInit, onDefaultMermaidInitChange, onClose, settingsPath }) => {
+export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultThemeChange, wordWrap, onWordWrapChange, saveOnBlur, dailyNotesPath, onDailyNotesPathChange, highlightMark, onHighlightMarkChange, showWhitespace, onShowWhitespaceChange, tabSize, onTabSizeChange, blockExternalImages, onBlockExternalImagesChange, defaultMermaidInit, onDefaultMermaidInitChange, onClose, settingsPath }) => {
     const [status, setStatus] = useState<string>('');
 
     const saveSettings = async (newTheme: 'light' | 'dark',
         newWordWrap: boolean,
         newDailyNotesPath: string,
         newHighlightMark: boolean,
+        newShowWhitespace: boolean,
+        newTabSize: number,
         newBlockExternalImages: boolean,
         newDefaultMermaidInit: string) => {
         try {
@@ -58,6 +115,8 @@ export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultTheme
                 saveOnBlur: saveOnBlur,
                 dailyNotesPath: newDailyNotesPath,
                 highlightMark: newHighlightMark,
+                showWhitespace: newShowWhitespace,
+                tabSize: newTabSize,
                 blockExternalImages: newBlockExternalImages,
                 defaultMermaidInit: newDefaultMermaidInit,
             };
@@ -72,37 +131,56 @@ export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultTheme
 
     const handleThemeChange = (newTheme: 'light' | 'dark') => {
         onDefaultThemeChange(newTheme);
-        saveSettings(newTheme, wordWrap, dailyNotesPath, highlightMark, blockExternalImages, defaultMermaidInit);
+        saveSettings(newTheme, wordWrap, dailyNotesPath, highlightMark, showWhitespace, tabSize, blockExternalImages, defaultMermaidInit);
     };
 
     const handleWordWrapChange = () => {
         const newWrap = !wordWrap;
         onWordWrapChange(newWrap);
-        saveSettings(defaultTheme, newWrap, dailyNotesPath, highlightMark, blockExternalImages, defaultMermaidInit);
+        saveSettings(defaultTheme, newWrap, dailyNotesPath, highlightMark, showWhitespace, tabSize, blockExternalImages, defaultMermaidInit);
     };
 
     const handleDailyNotesPathChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newPath = e.target.value;
         onDailyNotesPathChange(newPath);
-        saveSettings(defaultTheme, wordWrap, newPath, highlightMark, blockExternalImages, defaultMermaidInit);
+        saveSettings(defaultTheme, wordWrap, newPath, highlightMark, showWhitespace, tabSize, blockExternalImages, defaultMermaidInit);
     };
 
     const handleHighlightMarkChange = () => {
         const newValue = !highlightMark;
         onHighlightMarkChange(newValue);
-        saveSettings(defaultTheme, wordWrap, dailyNotesPath, newValue, blockExternalImages, defaultMermaidInit);
+        saveSettings(defaultTheme, wordWrap, dailyNotesPath, newValue, showWhitespace, tabSize, blockExternalImages, defaultMermaidInit);
+    };
+
+    // IMPL-LTTCE-WSP-00003 — "Show Whitespace" toggle: propagate + persist
+    const handleShowWhitespaceChange = () => {
+        const newValue = !showWhitespace;
+        onShowWhitespaceChange(newValue);
+        saveSettings(defaultTheme, wordWrap, dailyNotesPath, highlightMark, newValue, tabSize, blockExternalImages, defaultMermaidInit);
+    };
+
+    // IMPL-LTTCE-WSP-00007 — "Tab Size" numeric setting: clamp to the valid
+    // range (shared contract in lib/tab-size.ts, mirroring the Rust-side
+    // clamp on load), propagate + persist. Non-numeric intermediate input
+    // states (e.g. an emptied field) are ignored rather than saved.
+    const handleTabSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const parsed = parseInt(e.target.value, 10);
+        if (Number.isNaN(parsed)) return;
+        const newValue = clampTabSize(parsed);
+        onTabSizeChange(newValue);
+        saveSettings(defaultTheme, wordWrap, dailyNotesPath, highlightMark, showWhitespace, newValue, blockExternalImages, defaultMermaidInit);
     };
 
     const handleBlockExternalImagesChange = () => {
         const newValue = !blockExternalImages;
         onBlockExternalImagesChange(newValue);
-        saveSettings(defaultTheme, wordWrap, dailyNotesPath, highlightMark, newValue, defaultMermaidInit);
+        saveSettings(defaultTheme, wordWrap, dailyNotesPath, highlightMark, showWhitespace, tabSize, newValue, defaultMermaidInit);
     };
 
     const handleDefaultMermaidInitChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const newValue = e.target.value;
         onDefaultMermaidInitChange(newValue);
-        saveSettings(defaultTheme, wordWrap, dailyNotesPath, highlightMark, blockExternalImages, newValue);
+        saveSettings(defaultTheme, wordWrap, dailyNotesPath, highlightMark, showWhitespace, tabSize, blockExternalImages, newValue);
     };
 
     return (
@@ -120,60 +198,17 @@ export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultTheme
                     <span>Default Open Theme:</span>
                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                         <span style={{ fontWeight: defaultTheme === 'light' ? 'bold' : 'normal' }}>Light</span>
-                        <div
+                        <Toggle
+                            on={defaultTheme === 'dark'}
                             onClick={() => handleThemeChange(defaultTheme === 'light' ? 'dark' : 'light')}
-                            style={{
-                                width: '50px',
-                                height: '24px',
-                                backgroundColor: defaultTheme === 'dark' ? '#2ea44f' : '#ccc',
-                                borderRadius: '12px',
-                                position: 'relative',
-                                cursor: 'pointer',
-                                transition: 'background-color 0.2s'
-                            }}
-                        >
-                            <div style={{
-                                width: '20px',
-                                height: '20px',
-                                backgroundColor: '#fff',
-                                borderRadius: '50%',
-                                position: 'absolute',
-                                top: '2px',
-                                left: defaultTheme === 'dark' ? '28px' : '2px',
-                                transition: 'left 0.2s',
-                                boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
-                            }} />
-                        </div>
+                        />
                         <span style={{ fontWeight: defaultTheme === 'dark' ? 'bold' : 'normal' }}>Dark</span>
                     </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '1.5rem' }}>
                     <span>Word Wrap:</span>
-                    <div
-                        onClick={handleWordWrapChange}
-                        style={{
-                            width: '50px',
-                            height: '24px',
-                            backgroundColor: wordWrap ? '#2ea44f' : '#ccc',
-                            borderRadius: '12px',
-                            position: 'relative',
-                            cursor: 'pointer',
-                            transition: 'background-color 0.2s'
-                        }}
-                    >
-                        <div style={{
-                            width: '20px',
-                            height: '20px',
-                            backgroundColor: '#fff',
-                            borderRadius: '50%',
-                            position: 'absolute',
-                            top: '2px',
-                            left: wordWrap ? '28px' : '2px',
-                            transition: 'left 0.2s',
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
-                        }} />
-                    </div>
+                    <Toggle on={wordWrap} onClick={handleWordWrapChange} />
                     <span>{wordWrap ? 'On' : 'Off'}</span>
                 </div>
 
@@ -185,61 +220,47 @@ export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultTheme
                             padding: '0 2px',
                             transition: 'background-color 0.2s, color 0.2s',
                         }}>==text==</code>):</span>
-                    <div
-                        onClick={handleHighlightMarkChange}
-                        style={{
-                            width: '50px',
-                            height: '24px',
-                            backgroundColor: highlightMark ? '#2ea44f' : '#ccc',
-                            borderRadius: '12px',
-                            position: 'relative',
-                            cursor: 'pointer',
-                            transition: 'background-color 0.2s'
-                        }}
-                    >
-                        <div style={{
-                            width: '20px',
-                            height: '20px',
-                            backgroundColor: '#fff',
-                            borderRadius: '50%',
-                            position: 'absolute',
-                            top: '2px',
-                            left: highlightMark ? '28px' : '2px',
-                            transition: 'left 0.2s',
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
-                        }} />
-                    </div>
+                    <Toggle on={highlightMark} onClick={handleHighlightMarkChange} />
                     <span>{highlightMark ? 'On' : 'Off'}</span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '1.5rem' }}>
+                    <span title="When ON, spaces are shown as faint dots and tabs as faint arrows in the edit pane (like Word or VS Code). Purely visual — the text is never changed.">
+                        Show Whitespace:
+                    </span>
+                    <Toggle on={showWhitespace} onClick={handleShowWhitespaceChange} />
+                    <span>{showWhitespace ? 'Visible' : 'Hidden'}</span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '1.5rem' }}>
+                    <span title="Display width of a tab character in columns (2–8). The editor indents with real tabs, so the indent width is always exactly this value.">
+                        Tab Size:
+                    </span>
+                    <input
+                        type="number"
+                        min={TAB_SIZE_MIN}
+                        max={TAB_SIZE_MAX}
+                        step={1}
+                        value={tabSize}
+                        onChange={handleTabSizeChange}
+                        aria-label="Tab Size"
+                        style={{
+                            width: '4rem',
+                            padding: '0.4rem',
+                            borderRadius: '4px',
+                            border: `1px solid ${defaultTheme === 'dark' ? '#30363d' : '#e1e4e8'}`,
+                            backgroundColor: defaultTheme === 'dark' ? '#161b22' : '#f6f8fa',
+                            color: defaultTheme === 'dark' ? '#c9d1d9' : '#24292e',
+                        }}
+                    />
+                    <span style={{ opacity: 0.7 }}>columns ({TAB_SIZE_MIN}–{TAB_SIZE_MAX})</span>
                 </div>
 
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '1.5rem' }}>
                     <span title="When ON, the preview will not fetch http(s):// images. Protects privacy by avoiding requests to third-party servers.">
                         Block External Images (privacy):
                     </span>
-                    <div
-                        onClick={handleBlockExternalImagesChange}
-                        style={{
-                            width: '50px',
-                            height: '24px',
-                            backgroundColor: blockExternalImages ? '#2ea44f' : '#ccc',
-                            borderRadius: '12px',
-                            position: 'relative',
-                            cursor: 'pointer',
-                            transition: 'background-color 0.2s'
-                        }}
-                    >
-                        <div style={{
-                            width: '20px',
-                            height: '20px',
-                            backgroundColor: '#fff',
-                            borderRadius: '50%',
-                            position: 'absolute',
-                            top: '2px',
-                            left: blockExternalImages ? '28px' : '2px',
-                            transition: 'left 0.2s',
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
-                        }} />
-                    </div>
+                    <Toggle on={blockExternalImages} onClick={handleBlockExternalImagesChange} />
                     <span>{blockExternalImages ? 'Blocked' : 'Allowed'}</span>
                 </div>
 

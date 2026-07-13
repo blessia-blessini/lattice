@@ -40,6 +40,10 @@ const DEFAULT_PROPS = {
     onDailyNotesPathChange: vi.fn(),
     highlightMark: true,
     onHighlightMarkChange: vi.fn(),
+    showWhitespace: false,
+    onShowWhitespaceChange: vi.fn(),
+    tabSize: 2,
+    onTabSizeChange: vi.fn(),
     blockExternalImages: true,
     onBlockExternalImagesChange: vi.fn(),
     defaultMermaidInit: "{'theme': 'base'}",
@@ -75,6 +79,16 @@ const getHighlightMarkToggle = (container: HTMLElement) => {
     );
     // Second On/Off span belongs to highlight-mark toggle
     return onOffSpans[1].previousElementSibling as HTMLElement;
+};
+
+// Show-whitespace toggle: the onClick div whose next sibling is the
+// "Visible"/"Hidden" status span (labels chosen distinct from On/Off so the
+// span-counting helpers above stay stable).
+const getShowWhitespaceToggle = (container: HTMLElement) => {
+    const statusSpan = Array.from(container.querySelectorAll('span')).find(
+        s => s.textContent === 'Visible' || s.textContent === 'Hidden'
+    )!;
+    return statusSpan.previousElementSibling as HTMLElement;
 };
 
 describe('Settings', () => {
@@ -290,6 +304,110 @@ describe('Settings', () => {
             expect.objectContaining({
                 settings: expect.objectContaining({ highlightMark: false }),
             })
+        );
+    });
+
+    // -----------------------------------------------------------------------
+    // Show-whitespace toggle (UTST for REQ-LTTCE-WSP-00002 / IMPL-LTTCE-WSP-00003)
+    // -----------------------------------------------------------------------
+    it('shows "Hidden" label when showWhitespace is false (default)', () => {
+        const { getByText } = render(<Settings {...DEFAULT_PROPS} showWhitespace={false} />);
+        expect(getByText('Hidden')).toBeTruthy();
+    });
+
+    it('shows "Visible" label when showWhitespace is true', () => {
+        const { getByText } = render(<Settings {...DEFAULT_PROPS} showWhitespace={true} />);
+        expect(getByText('Visible')).toBeTruthy();
+    });
+
+    it('calls onShowWhitespaceChange with true when toggled on', async () => {
+        const onChange = vi.fn();
+        const { container } = render(
+            <Settings {...DEFAULT_PROPS} showWhitespace={false} onShowWhitespaceChange={onChange} />
+        );
+        await act(async () => { fireEvent.click(getShowWhitespaceToggle(container)); });
+        expect(onChange).toHaveBeenCalledWith(true);
+    });
+
+    it('calls onShowWhitespaceChange with false when toggled off', async () => {
+        const onChange = vi.fn();
+        const { container } = render(
+            <Settings {...DEFAULT_PROPS} showWhitespace={true} onShowWhitespaceChange={onChange} />
+        );
+        await act(async () => { fireEvent.click(getShowWhitespaceToggle(container)); });
+        expect(onChange).toHaveBeenCalledWith(false);
+    });
+
+    it('invokes save_settings with showWhitespace after toggle (persistence)', async () => {
+        const { container } = render(<Settings {...DEFAULT_PROPS} showWhitespace={false} />);
+        await act(async () => { fireEvent.click(getShowWhitespaceToggle(container)); });
+        expect(TauriCore.invoke).toHaveBeenCalledWith(
+            'save_settings',
+            expect.objectContaining({
+                settings: expect.objectContaining({ showWhitespace: true }),
+            })
+        );
+    });
+
+    // -----------------------------------------------------------------------
+    // Tab Size input (UTST for REQ-LTTCE-WSP-00005 / IMPL-LTTCE-WSP-00007)
+    // -----------------------------------------------------------------------
+    it('renders the Tab Size input with the provided value', () => {
+        const { getByLabelText } = render(<Settings {...DEFAULT_PROPS} tabSize={4} />);
+        expect((getByLabelText('Tab Size') as HTMLInputElement).value).toBe('4');
+    });
+
+    it('calls onTabSizeChange with the new value and persists it', async () => {
+        const onChange = vi.fn();
+        const { getByLabelText } = render(
+            <Settings {...DEFAULT_PROPS} tabSize={2} onTabSizeChange={onChange} />
+        );
+        await act(async () => {
+            fireEvent.change(getByLabelText('Tab Size'), { target: { value: '4' } });
+        });
+        expect(onChange).toHaveBeenCalledWith(4);
+        expect(TauriCore.invoke).toHaveBeenCalledWith(
+            'save_settings',
+            expect.objectContaining({
+                settings: expect.objectContaining({ tabSize: 4 }),
+            })
+        );
+    });
+
+    it('clamps Tab Size input above the maximum to 8', async () => {
+        const onChange = vi.fn();
+        const { getByLabelText } = render(
+            <Settings {...DEFAULT_PROPS} onTabSizeChange={onChange} />
+        );
+        await act(async () => {
+            fireEvent.change(getByLabelText('Tab Size'), { target: { value: '99' } });
+        });
+        expect(onChange).toHaveBeenCalledWith(8);
+    });
+
+    it('clamps Tab Size input below the minimum to 2', async () => {
+        const onChange = vi.fn();
+        const { getByLabelText } = render(
+            <Settings {...DEFAULT_PROPS} tabSize={4} onTabSizeChange={onChange} />
+        );
+        await act(async () => {
+            fireEvent.change(getByLabelText('Tab Size'), { target: { value: '1' } });
+        });
+        expect(onChange).toHaveBeenCalledWith(2);
+    });
+
+    it('ignores a non-numeric Tab Size input state (no change, no save)', async () => {
+        const onChange = vi.fn();
+        const { getByLabelText } = render(
+            <Settings {...DEFAULT_PROPS} onTabSizeChange={onChange} />
+        );
+        await act(async () => {
+            fireEvent.change(getByLabelText('Tab Size'), { target: { value: '' } });
+        });
+        expect(onChange).not.toHaveBeenCalled();
+        expect(TauriCore.invoke).not.toHaveBeenCalledWith(
+            'save_settings',
+            expect.anything()
         );
     });
 

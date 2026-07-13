@@ -3,14 +3,42 @@
 All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
-## v0.3.7
+
+## v0.3.8
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
-- npm and cargo update #07-13
-- Fix: npm and cargo update with vulnerabilities fix
+- RELEASE: SETTINGS ROBUSTNESS, TAB-/IDENT-Size, Whitespaces
+- CHORE: npm and cargo update #2 from 07-13
 
 ---
+
+## v0.3.7
+
+### Changes
+- CHORE: npm and cargo update 2026-07-13
+- FIX: Settings robustness - lenient parse and save-side gates
+- CHORE: DRY and settings robustness
+- FEAT: (Un)Tabify and default indentSize (tab-size)
+- FEAT: Usy TAB keyboard as \t instead of navigating out of CM6
+- FIX: Manual Adjustment of showWhitespaceTheme
+- CHORE: DRY Follow-up - (re)factor-out a toggle setting
+- FEAT: Whitespace visualisation
+- FIX: npm and cargo update with vulnerabilities fix
+---
+
+### Changes
+- CHORE: npm and cargo update #2 from 07-13
+- FIX: Settings robustness - lenient parse and save-side gates
+- CHORE: DRY and settings robustness
+- FEAT: (Un)Tabify and default indentSize (tab-size)
+- FEAT: Usy TAB keyboard as \t instead of navigating out of CM6
+- FIX: Manual Adjustment of showWhitespaceTheme
+- CHORE: DRY Follow-up - (re)factor-out a toggle setting
+- FEAT: Whitespace visualisation
+- CHORE: npm and cargo update #07-13
+- Fix: npm and cargo update with vulnerabilities fix
+
 
 
 ## v0.3.6

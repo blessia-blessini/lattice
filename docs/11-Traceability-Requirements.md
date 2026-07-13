@@ -75,6 +75,8 @@ related items. Example convention for `LNT`:
 | `LNT`   | SSS     | GFM[^gfm] Linter subsystem     |
 | `TRC`   | SSS     | Traceability system            |
 | `DVW`   | SSS     | Dual-view features (cursor flash) |
+| `WSP`   | SSS     | Show Whitespace (edit-pane whitespace visualization) |
+| `SET`   | SSS     | Settings robustness (parsing, validation)             |
 
 ---
 

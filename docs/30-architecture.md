@@ -733,6 +733,101 @@ with token colors (both are plain CSS on descendants).
 
 ---
 
+## Feature: Show Whitespace
+
+<!--ARCH-LTTCE-WSP-00001-->
+### Overview
+
+Covers REQ-LTTCE-WSP-00001 / 00002 / 00003. Whitespace characters (spaces and tabs) are visualized in
+the edit pane by **reusing CM6[^cm6]'s built-in `highlightWhitespace()` extension** from
+`@codemirror/view` — no new dependency and no custom decorator. The extension marks stretches of spaces
+with `.cm-highlightSpace` (rendered as a small centered dot per space) and each tab with
+`.cm-highlightTab` (rendered as an arrow background image). Both are **mark decorations only**: no
+widget insertion, no text mutation, no metric change — satisfying the "purely decorative" requirement by
+construction. The feature is frontend-only by necessity (it decorates the CodeMirror render path; there
+is no logic that could live in Rust beyond the persisted flag itself). Three cooperating parts:
+
+1. **Extension** — `src/editor-extensions/show-whitespace.ts` (IMPL-LTTCE-WSP-00001):
+   `showWhitespaceExtension` bundles `highlightWhitespace()` with an `EditorView.baseTheme` that dims
+   the CM6 default marks to VS-Code-like subtlety, with separate `&light` / `&dark` scopes so the marks
+   fit both GitHub editor themes (grey dot at 50 % alpha; tab arrow faded via opacity).
+
+2. **Editor wiring** — `Editor.tsx` (IMPL-LTTCE-WSP-00002): new `showWhitespace` prop; the extension
+   lives in a dedicated CM6 `Compartment` (same pattern as word-wrap and highlight-mark), so a settings
+   toggle dispatches a `reconfigure` effect on the live view — immediate effect, no editor-state
+   recreation, undo history preserved.
+
+3. **Setting persistence** — `Settings.tsx` toggle (IMPL-LTTCE-WSP-00003, status labels
+   "Visible"/"Hidden") writing the camelCase key `showWhitespace` through the existing
+   `save_settings` IPC path; `settings.rs` field `show_whitespace` with serde default **false**
+   (IMPL-LTTCE-WSP-00004); loaded in App.tsx's settings-loading path with the same strict
+   `=== true` opt-in comparison used by `wordWrap`.
+
+4. **Tab input** — `Editor.tsx` keymap entry `indentWithTab` plus `indentUnit.of('\t')`
+   (IMPL-LTTCE-WSP-00005): browsers otherwise treat Tab as focus navigation, so without this
+   binding no tab character can ever be typed (or visualized). CM6's `insertTab` inserts the
+   configured *indent unit* — which defaults to two spaces — so the `indentUnit` facet must be
+   set to a real tab for Tab to produce `\t`; selection-indent (`indentMore`) and auto-indent
+   then use the same tab unit. Shift-Tab → `indentLess`. Accessibility: CM6's built-in
+   Esc-then-Tab escape hatch is unaffected — this trade-off is the documented CM6 pattern for
+   editors that need real tab input.
+
+5. **Tab size** — setting `tabSize` (Rust field `tab_size`, IMPL-LTTCE-WSP-00008, serde default
+   **2**, clamped to `TAB_SIZE_MIN..=TAB_SIZE_MAX` = 2..=8 in `load_settings_internal` because
+   settings.json is hand-editable). The Settings panel exposes a numeric input
+   (IMPL-LTTCE-WSP-00007) that clamps on input, mirroring the Rust-side clamp. `Editor.tsx`
+   holds `EditorState.tabSize.of(n)` in its own compartment (IMPL-LTTCE-WSP-00006) so changes
+   apply live. Because the indent unit is one real tab (part 4), indent width ≡ tab display
+   width by construction — the two can never diverge, satisfying the "indent-unit and tab-size
+   are the same" constraint without a second setting.
+
+6. **Tabify / Untabify** — pure logic in Rust (`src-tauri/src/tabify.rs`,
+   IMPL-LTTCE-WSP-00009), following the same backend-for-pure-logic split as table padding:
+   `tabify_leading` / `untabify_leading` rewrite ONLY the leading whitespace run of each line
+   in a 1-based inclusive line range (`None` = whole document), column-accurate (a tab advances
+   to the next multiple of `tab_size`; tabify emits `width/tab_size` tabs + `width%tab_size`
+   spaces; untabify emits `width` spaces). Exposed as Tauri commands `tabify_text` /
+   `untabify_text` (0/0 line range = whole document), wrapped by the thin frontend service
+   `src/services/Tabify.ts`. `Editor.tsx` drives them through
+   `convertIndentationFromBackend(toTabs)` — the same snapshot → IPC → guarded-dispatch flow as
+   TOC refresh and table padding (concurrent edits drop the stale result; the full-document
+   dispatch preserves undo history). Scope: main-selection line range, whole document when the
+   selection is empty; a selection ending exactly at a line start excludes that line. Invoked
+   from the app menu ("Tabify/Untabify Indentation") and keymap `Mod-Alt-t` / `Mod-Alt-Shift-t`
+   (T mnemonic; `Mod-Shift-t` was taken by TOC refresh).
+
+### Integration Point — Settings Robustness
+
+<!--ARCH-LTTCE-SET-00001-->
+Covers REQ-LTTCE-SET-00001. `parse_settings_lenient` in `settings.rs` (IMPL-LTTCE-SET-00001)
+replaces the previous all-or-nothing `from_str(...).unwrap_or_default()`: fast path is an
+unchanged whole-struct parse; on failure each top-level key of the raw JSON map is probed in
+isolation (`{key: value}` → `Settings`, remaining fields defaulting via serde) and corrupt keys
+are dropped before one final parse. The probe is generic over the single derived schema — no
+field name, type, or default is duplicated (DRY), so future settings fields inherit the
+protection automatically. Numeric range constraints stay in the dedicated clamps: Rust
+`TAB_SIZE_MIN..=TAB_SIZE_MAX` on load, mirrored by the frontend's `src/lib/tab-size.ts`
+(IMPL-LTTCE-WSP-0000A — single frontend source for min/max/default + `clampTabSize`, imported
+by Settings.tsx and App.tsx; the Rust/TS constant pairing is documented at both sites since the
+codebases cannot share one constant without codegen).
+
+The **write side** is gated too (IMPL-LTTCE-SET-00002, covers REQ-LTTCE-SET-00002):
+`save_settings_internal` (a) hard-fails unless the target path is a `settings.json` directly
+inside a `.lattice` directory — reusing the exact `get_vault_root` shape check — so a
+compromised WebView cannot turn the command into an arbitrary-path file write; and (b) clamps
+`tab_size` before persisting, so the on-disk file never holds an out-of-range value even when
+the IPC caller bypasses the Settings UI. Both gates sit in the pure `_internal` function, so
+they are unit-testable without an AppHandle.
+
+### Integration Point
+
+`<Editor showWhitespace={m_showWhitespace}>` in App.tsx's main layout; both `<Settings>` render sites
+(dedicated settings window and in-window modal) receive the value + setter pair. The compartment is
+inert for scroll-sync, cursor flash, and the GFM linter — it only adds CSS classes inside existing
+line DOM.
+
+---
+
 ## Architectural Decisions
 
 ### ADR-01: External Image Fetches Blocked by Default
