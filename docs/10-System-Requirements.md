@@ -15,6 +15,7 @@ implementation artefacts. For the ID schema definition see `11-Traceability-Requ
   - [Chapter DVW — Dual-View Cursor Flash](#chapter-dvw-dual-view-cursor-flash)
   - [Chapter WSP — Show Whitespace](#chapter-wsp-show-whitespace)
   - [Chapter SET — Settings Robustness](#chapter-set-settings-robustness)
+  - [Chapter CPY — Preview Copy Fidelity](#chapter-cpy-preview-copy-fidelity)
     - [General](#general)
     - [Severity Visualisation](#severity-visualisation)
     - [Rule: Setext Headings](#rule-setext-headings)
@@ -358,6 +359,28 @@ path that is not a `settings.json` file directly inside a `.lattice` directory, 
 target untouched and returning an error, and (b) clamp range-constrained numeric fields (such as
 `tabSize`) into their valid range **before** persisting, so the settings file on disk never
 holds an out-of-range value regardless of the value received over IPC[^ipc].
+
+---
+
+## Chapter CPY — Preview Copy Fidelity
+
+Rich text copied from the preview pane is pasted into external applications — MS Word, the new
+Outlook, mail clients, wikis. The clipboard carries the selected DOM fragment as HTML, but **not**
+the application's stylesheets, so any styling that lives only in CSS classes is lost on paste.
+Word-family applications additionally ignore the HTML5 `<mark>` element entirely (their HTML reader
+predates HTML5 and has no default style for it), which silently drops the `==highlight==` yellow
+background.
+
+<!--REQ-LTTCE-CPY-00001-->
+**REQ-LTTCE-CPY-00001** — When the user copies a preview-pane selection that contains at least one
+`==highlight==` `<mark>` span, the `text/html` clipboard flavor SHALL carry the highlight
+background as an **inline CSS style** on an element type that legacy HTML readers understand
+(`<span style="background:…">`), so the highlight survives pasting into applications that ignore
+the `<mark>` tag (MS Word, new Outlook). The highlighted text content, surrounding markup, and the
+`text/plain` clipboard flavor SHALL be unchanged. A copy whose selection contains no `<mark>`
+SHALL be left to the WebView's native copy behavior. The copied highlight color SHALL be the light
+preview theme's highlight color regardless of the active preview theme, since pasted content
+typically lands on a white document.
 
 ---
 

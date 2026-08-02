@@ -8,6 +8,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FEAT: Preview Copy Fidelity
 - RELEASE: SETTINGS ROBUSTNESS, TAB-/IDENT-Size, Whitespaces
 - CHORE: npm and cargo update #2 from 07-13
 

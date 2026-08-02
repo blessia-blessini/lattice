@@ -41,6 +41,7 @@ import { Menu } from "./components/Menu";
 import { HighlightedCode } from "./components/HighlightedCode";
 import { rehypeAddHeadingIds } from "./lib/rehype-heading-ids";
 import { rehypeHighlightMark } from "./lib/rehype-highlight-mark";
+import { handlePreviewCopy } from "./lib/preview-copy";
 import { rehypeSafeHtml } from "./lib/rehype-safe-html";
 import { remarkStripHtmlComments } from "./lib/remark-strip-html-comments";
 // we opted for using the settings pane within the same window
@@ -1361,6 +1362,18 @@ function App() {
   }, [viewMode, applyCursorFlashAt]);
   // handleCursorLineChange END ************************************************
 
+  //****************************************************************************
+  // handlePreviewPaneCopy
+  //****************************************************************************
+  /** Preview pane copy: rewrite clipboard HTML so ==highlight== <mark>
+   *  backgrounds survive pasting into MS Word / new Outlook, which drop the
+   *  HTML5 <mark> tag (IMPL-LTTCE-CPY-00002, REQ-LTTCE-CPY-00001).
+   *  Delegates all logic to src/lib/preview-copy.ts. */
+  const handlePreviewPaneCopy = useCallback((e: React.ClipboardEvent<HTMLDivElement>) => {
+    handlePreviewCopy(e, window.getSelection());
+  }, []);
+  // handlePreviewPaneCopy END *************************************************
+
   // Re-apply after a preview re-render: typing replaces the preview DOM
   // (ReactMarkdown), which silently drops the flash class. If the hold
   // period is still running, re-apply with the *remaining* hold time so the
@@ -1858,6 +1871,7 @@ function App() {
             ...PREVIEW_THEME_COLORS[m_previewTheme],
           }}>
             <div className="markdown-body preview-pane__body" data-theme={m_previewTheme}
+              onCopy={handlePreviewPaneCopy}
               style={{
                 backgroundColor: PREVIEW_THEME_COLORS[m_previewTheme].backgroundColor,
                 color: PREVIEW_THEME_COLORS[m_previewTheme].color,

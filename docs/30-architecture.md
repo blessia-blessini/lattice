@@ -828,6 +828,41 @@ line DOM.
 
 ---
 
+## Feature: Preview Copy Fidelity
+
+<!--ARCH-LTTCE-CPY-00001-->
+### Overview
+
+Covers REQ-LTTCE-CPY-00001. Copying from the preview pane puts the selected DOM fragment on the
+clipboard as `text/html` — **without** the application's stylesheets. The `==highlight==` yellow
+therefore leaves the app as a bare `<mark>` element, and Word-family HTML readers (MS Word, new
+Outlook) drop the HTML5 `<mark>` tag entirely (no UA default style, unknown-tag content is kept but
+the tag and its attributes are discarded). Fix: intercept the `copy` event and rewrite the clipboard
+payload so the highlight travels as an inline style on a tag legacy readers understand.
+
+1. **Pure logic** — `src/lib/preview-copy.ts` (IMPL-LTTCE-CPY-00001): `inlineMarkHighlights()`
+   replaces each `<mark>` in the cloned selection fragment with
+   `<span style="background:#ffe000;">` (children moved, not cloned; nested inline markup
+   preserved); `handlePreviewCopy()` rewrites `text/html` + `text/plain` via
+   `clipboardData.setData()` and calls `preventDefault()`. If the selection contains no `<mark>`
+   the native copy path is left completely untouched (minimal interference). The color constant
+   `HIGHLIGHT_COPY_BG` mirrors `.markdown-body mark` in App.css (light value on purpose — paste
+   targets are usually white documents).
+
+2. **Wiring** — `onCopy={handlePreviewPaneCopy}` on the `.markdown-body` preview div in App.tsx
+   (IMPL-LTTCE-CPY-00002); a `useCallback` one-liner delegating to the lib.
+
+**Frontend-only by necessity** (exception to the Rust-first preference): `clipboardData.setData()`
+is only valid *synchronously during the copy event dispatch*; an async Tauri IPC round-trip cannot
+participate. The logic is pure DOM-fragment manipulation, unit-tested in jsdom.
+
+### Integration Point
+
+The handler sits on the same div that hosts the memoized `previewMarkdown` element; it adds no
+render-path dependency, so ReactMarkdown memoization, scroll-sync, and cursor-flash are unaffected.
+
+---
+
 ## Architectural Decisions
 
 ### ADR-01: External Image Fetches Blocked by Default
