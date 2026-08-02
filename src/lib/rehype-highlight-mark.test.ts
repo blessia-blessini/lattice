@@ -93,7 +93,7 @@ describe('splitAtMarks', () => {
         const parts = splitAtMarks('==hello==');
         expect(parts).toHaveLength(1);
         expect(parts[0].type).toBe('element');
-        expect(parts[0].tagName).toBe('mark');
+        expect(parts[0].tagName).toBe('span');
         expect(parts[0].children[0].value).toBe('hello');
     });
 
@@ -101,7 +101,7 @@ describe('splitAtMarks', () => {
         const parts = splitAtMarks('before ==hi== after');
         expect(parts).toHaveLength(3);
         expect(parts[0]).toEqual({ type: 'text', value: 'before ' });
-        expect(parts[1].tagName).toBe('mark');
+        expect(parts[1].tagName).toBe('span');
         expect(parts[1].children[0].value).toBe('hi');
         expect(parts[2]).toEqual({ type: 'text', value: ' after' });
     });
@@ -109,11 +109,32 @@ describe('splitAtMarks', () => {
     it('handles two adjacent marks', () => {
         const parts = splitAtMarks('==a== ==b==');
         expect(parts).toHaveLength(3);
-        expect(parts[0].tagName).toBe('mark');
+        expect(parts[0].tagName).toBe('span');
         expect(parts[0].children[0].value).toBe('a');
         expect(parts[1]).toEqual({ type: 'text', value: ' ' });
-        expect(parts[2].tagName).toBe('mark');
+        expect(parts[2].tagName).toBe('span');
         expect(parts[2].children[0].value).toBe('b');
+    });
+
+    // REQ-LTTCE-CPY-00001 — the reason the element is a styled <span> and not
+    // a <mark>: the colour must be part of the copied markup, on a tag that
+    // Word's pre-HTML5 reader does not discard.
+    it('emits an inline background-color so the highlight survives a copy', () => {
+        const parts = splitAtMarks('==hello==');
+        expect(parts[0].tagName).toBe('span');
+        expect(parts[0].properties.style).toBe('background-color:#ffe000');
+        expect(parts[0].properties.className).toEqual(['lattice-mark']);
+    });
+
+    it('never emits a <mark> element (Word discards unknown tags)', () => {
+        const parts = splitAtMarks('a ==b== c ==d== e');
+        expect(parts.filter((p: any) => p.tagName === 'mark')).toHaveLength(0);
+        expect(parts.filter((p: any) => p.tagName === 'span')).toHaveLength(2);
+    });
+
+    it('honours a caller-supplied colour (dark preview theme)', () => {
+        const parts = splitAtMarks('==x==', '#423d12');
+        expect(parts[0].properties.style).toBe('background-color:#423d12');
     });
 
     it('is idempotent — calling twice does not double-wrap', () => {
@@ -130,13 +151,20 @@ describe('splitAtMarks', () => {
 // rehypeHighlightMark — tree transformation
 // ---------------------------------------------------------------------------
 describe('rehypeHighlightMark', () => {
-    it('converts ==text== in a paragraph to a <mark> element', () => {
+    it('passes its colour option through to the emitted span', () => {
+        const tree = root(para('hello ==world== end'));
+        rehypeHighlightMark({ color: '#abcdef' })(tree);
+        expect(tree.children[0].children[1].properties.style)
+            .toBe('background-color:#abcdef');
+    });
+
+    it('converts ==text== in a paragraph to a styled <span> element', () => {
         const tree = root(para('hello ==world== end'));
         process(tree);
         const children = tree.children[0].children;
         expect(children).toHaveLength(3);
         expect(children[0]).toEqual({ type: 'text', value: 'hello ' });
-        expect(children[1].tagName).toBe('mark');
+        expect(children[1].tagName).toBe('span');
         expect(children[1].children[0].value).toBe('world');
         expect(children[2]).toEqual({ type: 'text', value: ' end' });
     });
@@ -194,9 +222,9 @@ describe('rehypeHighlightMark', () => {
     it('handles multiple paragraphs', () => {
         const tree = root(para('==a=='), para('plain'), para('==b=='));
         process(tree);
-        expect(tree.children[0].children[0].tagName).toBe('mark');
+        expect(tree.children[0].children[0].tagName).toBe('span');
         expect(tree.children[1].children[0].value).toBe('plain');
-        expect(tree.children[2].children[0].tagName).toBe('mark');
+        expect(tree.children[2].children[0].tagName).toBe('span');
     });
 
     it('is a no-op on an empty root', () => {
@@ -266,7 +294,7 @@ describe('rehypeHighlightMark', () => {
         const tree = root(blockquote);
         process(tree);
         // The inner paragraph should now have a <mark> child.
-        expect(innerPara.children[0].tagName).toBe('mark');
+        expect(innerPara.children[0].tagName).toBe('span');
         expect(innerPara.children[0].children[0].value).toBe('highlighted');
     });
 });

@@ -364,23 +364,59 @@ holds an out-of-range value regardless of the value received over IPC[^ipc].
 
 ## Chapter CPY — Preview Copy Fidelity
 
-Rich text copied from the preview pane is pasted into external applications — MS Word, the new
-Outlook, mail clients, wikis. The clipboard carries the selected DOM fragment as HTML, but **not**
-the application's stylesheets, so any styling that lives only in CSS classes is lost on paste.
-Word-family applications additionally ignore the HTML5 `<mark>` element entirely (their HTML reader
-predates HTML5 and has no default style for it), which silently drops the `==highlight==` yellow
-background.
+Rich text copied from the preview pane is pasted into external applications — MS Word, Outlook,
+mail clients, wikis. The clipboard carries the selected DOM subtree as HTML, but **not** the
+application's stylesheets, so any styling that lives only in a CSS class is lost on paste.
+Word-family applications additionally discard the HTML5 `<mark>` element together with its
+attributes (their HTML reader predates HTML5 and has no default style for it), which silently
+drops the `==highlight==` yellow background.
 
 <!--REQ-LTTCE-CPY-00001-->
-**REQ-LTTCE-CPY-00001** — When the user copies a preview-pane selection that contains at least one
-`==highlight==` `<mark>` span, the `text/html` clipboard flavor SHALL carry the highlight
-background as an **inline CSS style** on an element type that legacy HTML readers understand
-(`<span style="background:…">`), so the highlight survives pasting into applications that ignore
-the `<mark>` tag (MS Word, new Outlook). The highlighted text content, surrounding markup, and the
-`text/plain` clipboard flavor SHALL be unchanged. A copy whose selection contains no `<mark>`
-SHALL be left to the WebView's native copy behavior. The copied highlight color SHALL be the light
-preview theme's highlight color regardless of the active preview theme, since pasted content
-typically lands on a white document.
+**REQ-LTTCE-CPY-00001** — The preview pane SHALL render each `==highlight==` as an element whose
+highlight background is carried by an **inline CSS style** on a tag that legacy HTML readers
+understand (`<span style="background-color:…">`), and SHALL NOT use the HTML5 `<mark>` element.
+Consequently, copying any preview selection SHALL preserve the highlight background when pasted
+into applications whose HTML readers predate HTML5 (MS Word) — WYSIWYG across the clipboard — for
+**every** copy path offered by the WebView[^webview] (keyboard, context menu, drag-and-drop), and
+without the application intercepting clipboard events.
+
+*Rationale*: CSS class rules do not travel with the clipboard, and Word-family readers discard
+unknown tags together with their attributes — so a highlight defined by a stylesheet rule on a
+`<mark>` element is lost twice over. Placing the colour inline, on a `<span>`, removes both failure
+modes at the source rather than patching the clipboard afterwards.
+
+<!--REQ-LTTCE-CPY-00002-->
+**REQ-LTTCE-CPY-00002** — The inline highlight colour SHALL follow the active preview theme
+(light/dark), matching the colour the user sees on screen, and SHALL be expressed as an **opaque
+`#rrggbb` value** — not `rgba()`, `hsl()`, or a colour keyword.
+
+*Rationale*: the value is parsed by the receiving application's CSS engine, which on the
+Word/Outlook family is far older than any WebView's and may drop notations it does not recognise,
+taking the highlight with them. The requirement is platform-neutral: it holds identically on
+Windows and Android (Chromium), macOS and iOS (WebKit) and Linux (WebKitGTK), because the mechanism
+is markup, not a platform clipboard API.
+
+### Receiving-application constraints (outside Lattice's control)
+
+Two behaviours of the *receiving* application can still discard a correctly emitted highlight.
+Recorded here so they are not mistaken for defects in the requirements above.
+
+1. **MS Word paste mode.** Word keeps the highlight only when the paste preserves source
+   formatting. Under *Merge Formatting* it retains structure, bold and lists but drops background
+   shading — which looks exactly like a Lattice bug. Users set *File → Options → Advanced → Cut,
+   copy, and paste → Pasting from other programs* to **Keep Source Formatting**, or pick it from
+   the paste-options button per paste.
+
+2. **New Outlook for Windows — known limitation, not addressable from Lattice.** New Outlook
+   replaced Word's rendering engine with a web editor whose paste sanitiser removes inline
+   background styling outright. Measured 2026-08-02 by placing hand-built CF_HTML directly on the
+   clipboard (bypassing the app): `<span style="background-color:…">`, bare `<mark>`,
+   `<mark style="…">`, `<mark>` wrapping a styled `<span>`, the `background:yellow` keyword form,
+   and Word's own `background:yellow;mso-highlight:yellow` export form were **all** stripped. Only
+   `bgcolor` on a `<td>` survived, which is unusable for inline text — a table is block-level and
+   would destroy text flow in the preview. The same loss applies to content copied out of Word
+   itself, confirming this is an Outlook behaviour, not a Lattice one. User workarounds: classic
+   Outlook, or paste as an image.
 
 ---
 

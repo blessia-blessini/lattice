@@ -140,6 +140,21 @@ const PREVIEW_THEME_COLORS = {
   dark: { backgroundColor: '#0d1117', color: '#c9d1d9', colorScheme: 'dark' as const },
 };
 
+// ==highlight== background per preview theme (REQ-LTTCE-CPY-00001/00002).
+// Handed to rehypeHighlightMark and written as an INLINE style on the emitted
+// <span>, which is what lets the highlight survive a copy into MS Word — a CSS
+// class would not travel with the clipboard.
+//
+// OPAQUE HEX ONLY — deliberately no rgba()/hsl()/colour keywords. These values
+// are consumed by foreign HTML readers whose CSS parsers are far older than the
+// WebView's; `#rrggbb` is the one notation they all accept. The dark value is
+// the former rgba(255, 215, 0, 0.22) flattened over the dark preview background
+// #0d1117, so it looks identical on screen while remaining copy-safe.
+const MARK_COLORS = {
+  light: '#ffe000',
+  dark: '#423d12',
+};
+
 const VIEW_EDIT = 'edit' as const;
 const VIEW_PREVIEW = 'preview' as const;
 const VIEW_DUAL = 'dual' as const;
@@ -1616,13 +1631,19 @@ function App() {
         rehypeSafeHtml,       // before Katex — whitelisted raw tags → hast elements
         rehypeAddHeadingIds,
         rehypeKatex,
-        ...(m_highlightMark ? [rehypeHighlightMark] : []),
+        // The highlight colour is passed as data, not taken from CSS, so it is
+        // written as an inline style and therefore survives a copy into MS Word
+        // (REQ-LTTCE-CPY-00001).
+        ...(m_highlightMark
+          ? [[rehypeHighlightMark, { color: MARK_COLORS[m_previewTheme] }] as
+            [typeof rehypeHighlightMark, { color: string }]]
+          : []),
       ]}
       components={previewComponents}
     >
       {previewContent}
     </ReactMarkdown>
-  ), [previewContent, previewComponents, m_highlightMark]);
+  ), [previewContent, previewComponents, m_highlightMark, m_previewTheme]);
 
   // Settings Window
   //****************************************************************************

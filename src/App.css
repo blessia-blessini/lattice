@@ -238,20 +238,18 @@ body {
   background-color: rgba(255, 220, 0, 0.50);
 }
 
-/* Preview pane: applied to <mark> elements produced by rehypeHighlightMark */
-.markdown-body mark {
-  background-color: #ffe000;
+/* Preview pane: applied to the <span class="lattice-mark"> elements produced by
+   rehypeHighlightMark.
+
+   NOTE — the background COLOUR is deliberately absent here. It is written as an
+   inline style by the rehype plugin (MARK_COLORS in App.tsx) so that it travels
+   with the clipboard into MS Word; a CSS class does not (REQ-LTTCE-CPY-00001).
+   Only layout belongs in this rule. Do not add a background-color here — it
+   would be dead in the app and misleading to read. */
+.markdown-body .lattice-mark {
   border-radius: 2px;
   padding: 0 1px;
   color: inherit;
-}
-
-.markdown-body[data-theme="dark"] mark {
-  background-color: rgba(255, 220, 0, 0.50);
-}
-
-.markdown-body[data-theme="dark"] mark {
-  background-color: rgba(255, 215, 0, 0.22);
 }
 
 /* ============================================================
@@ -393,8 +391,10 @@ body {
   }
 
   /* Force background colours to print (browsers suppress them by default).
-     Without this the yellow <mark> highlight disappears on paper. */
-  .markdown-body mark {
+     Without this the yellow highlight disappears on paper. The colour itself
+     comes from the element's inline style; on paper we always want the opaque
+     light-theme value, so it is restated here (print is white-paper only). */
+  .markdown-body .lattice-mark {
     background-color: #ffe000 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;

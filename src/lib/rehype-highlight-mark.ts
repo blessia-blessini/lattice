@@ -44,12 +44,40 @@
 // Exported for direct use in tests.
 export const MARK_RE = /==((?:[^=\n]|=(?!=))+?)==/g;
 
+// Default highlight colour — the light preview theme's value.
+export const MARK_COLOR_DEFAULT = '#ffe000';
+
+// Class kept for layout styling (radius/padding) and as a DOM hook for tests
+// and the cursor-flash logic. The *colour* deliberately does NOT live in CSS.
+export const MARK_CLASS = 'lattice-mark';
+
+/**
+ * WHY A STYLED <span> AND NOT <mark> (REQ-LTTCE-CPY-00001):
+ *
+ * The highlight has to survive a copy/paste into MS Word — WYSIWYG across the
+ * clipboard. Two independent facts break `<mark>` there:
+ *
+ *   1. CSS classes do not travel with the clipboard. A colour defined in
+ *      App.css as `.markdown-body mark { background-color: … }` is simply
+ *      absent from the copied fragment, so the receiver has nothing to apply.
+ *   2. Word's HTML reader predates HTML5. It has no default style for `<mark>`
+ *      and discards unknown tags together with their attributes — so even an
+ *      inline style on a `<mark>` would be thrown away.
+ *
+ * Emitting `<span class="lattice-mark" style="background-color:…">` fixes both
+ * at the source: `<span>` is a tag every HTML reader understands, and the
+ * inline style is part of the copied markup. The WebView serializes the
+ * selected DOM subtree as-is, so this works for *every* copy path — keyboard,
+ * context menu, drag-and-drop — with no clipboard event interception anywhere,
+ * and identically on Chromium (Windows/Android) and WebKit (macOS/iOS/Linux).
+ */
+
 /**
  * Split a plain string at every ==...== boundary, returning a HAST node array:
- * alternating text nodes and <mark> element nodes.
+ * alternating text nodes and highlight <span> element nodes.
  * Exported for unit tests.
  */
-export function splitAtMarks(text: string): any[] {
+export function splitAtMarks(text: string, color: string = MARK_COLOR_DEFAULT): any[] {
     const parts: any[] = [];
     let lastIndex = 0;
     MARK_RE.lastIndex = 0;
@@ -60,8 +88,12 @@ export function splitAtMarks(text: string): any[] {
         }
         parts.push({
             type: 'element',
-            tagName: 'mark',
-            properties: {},
+            tagName: 'span',
+            properties: {
+                className: [MARK_CLASS],
+                // Inline — this is what crosses the clipboard. See the note above.
+                style: `background-color:${color}`,
+            },
             children: [{ type: 'text', value: match[1] }],
         });
         lastIndex = match.index + match[0].length;
@@ -80,7 +112,7 @@ export function splitAtMarks(text: string): any[] {
  * `inCode` is true when we are inside a <code> or <pre> subtree; text nodes
  * there are left completely unchanged.
  */
-function walk(node: any, inCode: boolean): void {
+function walk(node: any, inCode: boolean, color: string): void {
     if (!node) return;
 
     if (node.type === 'element') {
@@ -98,11 +130,11 @@ function walk(node: any, inCode: boolean): void {
                     continue;
                 }
                 if (!nowInCode && child.type === 'text' && MARK_RE.test(child.value)) {
-                    // Expand this text node into text + <mark> sequences.
-                    newChildren.push(...splitAtMarks(child.value));
+                    // Expand this text node into text + highlight-span sequences.
+                    newChildren.push(...splitAtMarks(child.value, color));
                 } else {
                     // Recurse before pushing so nested elements are processed.
-                    walk(child, nowInCode);
+                    walk(child, nowInCode, color);
                     newChildren.push(child);
                 }
             }
@@ -110,10 +142,15 @@ function walk(node: any, inCode: boolean): void {
         }
     } else if (Array.isArray(node.children)) {
         // Root node or other container — just recurse.
-        for (const child of node.children) walk(child, inCode);
+        for (const child of node.children) walk(child, inCode, color);
     }
 }
 
-export const rehypeHighlightMark = () => (tree: any) => {
-    walk(tree, false);
+/**
+ * @param options.color Highlight background written as an inline style. Passed
+ *   by App.tsx from the active preview theme, so dark mode stays subdued while
+ *   the colour still travels with the clipboard.
+ */
+export const rehypeHighlightMark = (options?: { color?: string }) => (tree: any) => {
+    walk(tree, false, options?.color ?? MARK_COLOR_DEFAULT);
 };

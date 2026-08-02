@@ -833,33 +833,72 @@ line DOM.
 <!--ARCH-LTTCE-CPY-00001-->
 ### Overview
 
-Covers REQ-LTTCE-CPY-00001. Copying from the preview pane puts the selected DOM fragment on the
-clipboard as `text/html` — **without** the application's stylesheets. The `==highlight==` yellow
-therefore leaves the app as a bare `<mark>` element, and Word-family HTML readers (MS Word, new
-Outlook) drop the HTML5 `<mark>` tag entirely (no UA default style, unknown-tag content is kept but
-the tag and its attributes are discarded). Fix: intercept the `copy` event and rewrite the clipboard
-payload so the highlight travels as an inline style on a tag legacy readers understand.
+Covers REQ-LTTCE-CPY-00001 / 00002. Copying from the preview pane puts the selected DOM subtree on
+the clipboard as `text/html`. Two independent facts made the `==highlight==` yellow disappear when
+pasting into MS Word:
 
-1. **Pure logic** — `src/lib/preview-copy.ts` (IMPL-LTTCE-CPY-00001): `inlineMarkHighlights()`
-   replaces each `<mark>` in the cloned selection fragment with
-   `<span style="background:#ffe000;">` (children moved, not cloned; nested inline markup
-   preserved); `handlePreviewCopy()` rewrites `text/html` + `text/plain` via
-   `clipboardData.setData()` and calls `preventDefault()`. If the selection contains no `<mark>`
-   the native copy path is left completely untouched (minimal interference). The color constant
-   `HIGHLIGHT_COPY_BG` mirrors `.markdown-body mark` in App.css (light value on purpose — paste
-   targets are usually white documents).
+1. **Stylesheets do not travel with the clipboard.** The colour lived in App.css as
+   `.markdown-body mark { background-color: … }`, so the copied fragment carried no colour at all.
+2. **Word's HTML reader predates HTML5.** It has no default style for `<mark>` and discards unknown
+   tags *together with their attributes* — so even an inline style on a `<mark>` would be dropped.
 
-2. **Wiring** — `onCopy={handlePreviewPaneCopy}` on the `.markdown-body` preview div in App.tsx
-   (IMPL-LTTCE-CPY-00002); a `useCallback` one-liner delegating to the lib.
+**Decision: fix it at the source, not at the clipboard.** `rehypeHighlightMark`
+(IMPL-LTTCE-CPY-00001, `src/lib/rehype-highlight-mark.ts`) emits
+`<span class="lattice-mark" style="background-color:…">` instead of `<mark>`. `<span>` is understood
+by every HTML reader, and the colour is part of the markup. The WebView serializes the selected DOM
+subtree as-is, so the highlight survives **every** copy path (keyboard, context menu,
+drag-and-drop) with **no clipboard-event interception anywhere**.
 
-**Frontend-only by necessity** (exception to the Rust-first preference): `clipboardData.setData()`
-is only valid *synchronously during the copy event dispatch*; an async Tauri IPC round-trip cannot
-participate. The logic is pure DOM-fragment manipulation, unit-tested in jsdom.
+- `App.css` keeps only *layout* for `.lattice-mark` (radius, padding). It deliberately carries no
+  `background-color`: a colour there would be invisible in the app (the inline style wins) and
+  would not reach the clipboard — i.e. exactly the original bug re-introduced.
+- The colour is data, supplied per preview theme from `MARK_COLORS` in App.tsx
+  (IMPL-LTTCE-CPY-00002) through the plugin's `{ color }` option. Both values are **opaque
+  `#rrggbb`**; the dark value `#423d12` is the former `rgba(255, 215, 0, 0.22)` flattened over the
+  dark preview background `#0d1117`, so it is pixel-identical on screen but copy-safe.
+- The print stylesheet restates the opaque light value with `print-color-adjust: exact`, since
+  paper is always white.
+
+**Rejected alternative — rewriting the clipboard in a `copy` handler.** Three variants were built
+and all failed in the release build: a React `onCopy` prop (never fires — the browser dispatches
+`copy` at the selection, whose target for a multi-block selection is an ancestor such as `<body>`);
+a document-level capture listener scoped by element containment (drops Ctrl+A and any drag released
+past the text); and an unscoped variant. The approach is inherently fragile because it depends on
+event targeting and on intercepting one specific copy path. Emitting correct markup has none of
+those dependencies and needs no runtime code at all.
+
+### Platform Independence
+
+The mechanism is **markup only** — no clipboard API, no event handling, no OS-specific code, and
+therefore no platform variant in the sense of `DRY-and-Variants.md`. Every engine Lattice targets
+serializes a copied selection's inline styles: Chromium (Windows WebView2, Android System WebView),
+WebKit (macOS/iOS WKWebView), WebKitGTK (Linux). This was the decisive argument against the
+rejected clipboard-event design: `clipboardData.setData()` semantics differ between Chromium and
+WebKit, and on iOS/Android copy is initiated from the native selection callout, which need not
+dispatch a JS `copy` event at all — that design could have passed on Windows and silently failed on
+iOS.
 
 ### Integration Point
 
-The handler sits on the same div that hosts the memoized `previewMarkdown` element; it adds no
-render-path dependency, so ReactMarkdown memoization, scroll-sync, and cursor-flash are unaffected.
+`rehypePlugins` in App.tsx's `previewMarkdown` `useMemo`, which now also depends on
+`m_previewTheme`. No listeners, no refs, no clipboard APIs; scroll-sync and cursor-flash are
+unaffected (cursor-flash inversion composes with the inline background exactly as it did with the
+`<mark>` background).
+
+### Verification
+
+`rehype-highlight-mark.test.ts` asserts the hast the plugin builds;
+`rehype-highlight-mark.render.test.tsx` asserts the **rendered DOM** — that a real
+`<span class="lattice-mark" style="background-color: rgb(255, 224, 0);">` reaches the document and
+that no `<mark>` exists anywhere. The rendered-DOM assertion is the meaningful one: what the WebView
+serializes into the clipboard is the DOM, so a hast-only test can pass while the user-visible
+behaviour is broken — which is precisely what happened during development.
+
+Confirmed end-to-end on Windows by dumping the real clipboard after a preview copy
+(`Get-Clipboard -TextFormatType Html`), which showed the expected
+`<span class="lattice-mark" style="…background-color: rgb(255, 224, 0);">`. The remaining hop —
+what the receiving application does with that markup — is a property of that application; see
+"Receiving-application constraints" in Chapter CPY of the requirements.
 
 ---
 
