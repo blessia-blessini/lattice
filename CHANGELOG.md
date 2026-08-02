@@ -4,11 +4,26 @@ All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
 
-## v0.3.8
+## v0.3.9
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- RELEASE 0.3.8: FEAT COPY/PASTE to HTML FIDELTY
+- CHORE: UODATED NPM and CARGO dependencies
+- Update chagelog
+
+
+---
+
+## v0.3.8
+
+### Changes
+
+- CHORE: UODATED NPM and CARGO dependencies
 - FEAT: Preview Copy Fidelity
+
+---
+
 - RELEASE: SETTINGS ROBUSTNESS, TAB-/IDENT-Size, Whitespaces
 - CHORE: npm and cargo update #2 from 07-13
 
