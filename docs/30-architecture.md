@@ -834,8 +834,13 @@ line DOM.
 ### Overview
 
 Covers REQ-LTTCE-CPY-00001 / 00002. Copying from the preview pane puts the selected DOM subtree on
+<<<<<<< HEAD
+the clipboard as `text/html`. Two independent facts made `==highlight==` lose its yellow on paste
+into MS Word / the new Outlook:
+=======
 the clipboard as `text/html`. Two independent facts made the `==highlight==` yellow disappear when
 pasting into MS Word:
+>>>>>>> dev
 
 1. **Stylesheets do not travel with the clipboard.** The colour lived in App.css as
    `.markdown-body mark { background-color: … }`, so the copied fragment carried no colour at all.
@@ -845,6 +850,33 @@ pasting into MS Word:
 **Decision: fix it at the source, not at the clipboard.** `rehypeHighlightMark`
 (IMPL-LTTCE-CPY-00001, `src/lib/rehype-highlight-mark.ts`) emits
 `<span class="lattice-mark" style="background-color:…">` instead of `<mark>`. `<span>` is understood
+<<<<<<< HEAD
+by every HTML reader, and the colour is part of the markup. Chromium — and therefore WebView2 —
+serializes the selected DOM subtree as-is, so the highlight survives **every** copy path (Ctrl+C,
+the WebView context menu, drag-and-drop) with **no clipboard-event interception anywhere**.
+
+- `App.css` keeps only *layout* for `.lattice-mark` (radius, padding). It deliberately carries no
+  `background-color`: a colour there would be invisible in the app (the inline style wins) and
+  would not reach the clipboard, i.e. exactly the original bug re-introduced.
+- The colour is data, supplied per preview theme from `MARK_COLORS` in App.tsx
+  (IMPL-LTTCE-CPY-00002) via the plugin's `{ color }` option, satisfying REQ-LTTCE-CPY-00002.
+  Both values are **opaque `#rrggbb`** — no `rgba()`/`hsl()`. The consumer of this string is a
+  foreign application's CSS parser (Word, Outlook, Pages, Google Docs), decades older than any
+  WebView's; `#rrggbb` is the notation all of them accept. The dark value `#423d12` is the former
+  `rgba(255, 215, 0, 0.22)` flattened over the dark preview background `#0d1117`, so it is
+  pixel-identical on screen while remaining copy-safe.
+- The print stylesheet restates the opaque light value with `print-color-adjust: exact`, since
+  paper is always white.
+
+**Rejected alternative — rewriting the clipboard in a `copy` handler.** Three successive variants
+were tried and all failed in the release build: a React `onCopy` prop (never fires — the browser
+dispatches `copy` at the selection, whose target for a multi-block selection is an ancestor such as
+`<body>`, not the pane element); a document-level capture listener scoped by element containment
+(drops Ctrl+A and any drag released past the text, both of which leave `anchorNode`/`focusNode` on
+`<body>`); and an unscoped variant. The approach is inherently fragile because it depends on event
+targeting and on intercepting one specific copy path. Emitting correct markup has none of those
+dependencies and needs no runtime code at all.
+=======
 by every HTML reader, and the colour is part of the markup. The WebView serializes the selected DOM
 subtree as-is, so the highlight survives **every** copy path (keyboard, context menu,
 drag-and-drop) with **no clipboard-event interception anywhere**.
@@ -877,6 +909,7 @@ rejected clipboard-event design: `clipboardData.setData()` semantics differ betw
 WebKit, and on iOS/Android copy is initiated from the native selection callout, which need not
 dispatch a JS `copy` event at all — that design could have passed on Windows and silently failed on
 iOS.
+>>>>>>> dev
 
 ### Integration Point
 
@@ -885,11 +918,34 @@ iOS.
 unaffected (cursor-flash inversion composes with the inline background exactly as it did with the
 `<mark>` background).
 
+<<<<<<< HEAD
+### Platform Independence
+
+The mechanism is **markup only** — no clipboard API, no event handling, no OS-specific code, and
+therefore no platform variant in the sense of `DRY-and-Variants.md`. Every engine Lattice targets
+serializes a copied selection's inline styles: Chromium (Windows WebView2, Android System WebView),
+WebKit (macOS/iOS WKWebView), WebKitGTK (Linux). This was the decisive argument against the
+rejected clipboard-event design: `clipboardData.setData()` semantics differ between Chromium and
+WebKit, and on iOS/Android copy is initiated from the native selection callout, which need not
+dispatch a JS `copy` event at all — that design could have passed on Windows and silently failed on
+iOS.
+
+=======
+>>>>>>> dev
 ### Verification
 
 `rehype-highlight-mark.test.ts` asserts the hast the plugin builds;
 `rehype-highlight-mark.render.test.tsx` asserts the **rendered DOM** — that a real
 `<span class="lattice-mark" style="background-color: rgb(255, 224, 0);">` reaches the document and
+<<<<<<< HEAD
+that no `<mark>` exists anywhere. The rendered-DOM assertion is the meaningful one: what Chromium
+serializes into the clipboard is the DOM, so a hast-only test can pass while the user-visible
+behaviour is broken.
+
+**Residual manual step.** Whether Word then honours `background-color` on a `<span>` cannot be
+asserted from the test suite — no automated harness available here can drive a foreign
+application's HTML importer. That single hop remains a manual paste check.
+=======
 that no `<mark>` exists anywhere. The rendered-DOM assertion is the meaningful one: what the WebView
 serializes into the clipboard is the DOM, so a hast-only test can pass while the user-visible
 behaviour is broken — which is precisely what happened during development.
@@ -899,6 +955,7 @@ Confirmed end-to-end on Windows by dumping the real clipboard after a preview co
 `<span class="lattice-mark" style="…background-color: rgb(255, 224, 0);">`. The remaining hop —
 what the receiving application does with that markup — is a property of that application; see
 "Receiving-application constraints" in Chapter CPY of the requirements.
+>>>>>>> dev
 
 ---
 

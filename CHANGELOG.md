@@ -8,6 +8,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- RELEASE v0.3.8 Copy Highlights reliably
 - FIX: Emit ==highlight== as inline-styled <span>, not <mark> (Word paste)
 - RELEASE 0.3.8: FEAT COPY/PASTE to HTML FIDELTY
 - CHORE: UODATED NPM and CARGO dependencies

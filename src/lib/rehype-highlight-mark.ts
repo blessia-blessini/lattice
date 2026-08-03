@@ -22,11 +22,12 @@
 // END OF NOTE
 
 /**
- * Rehype plugin: convert ==highlight== markers to <mark> elements.
+ * Rehype plugin: convert ==highlight== markers to inline-styled <span> elements.
  *
  * Walks the HAST tree and, for every text node whose value contains at least
  * one `==...==` span, replaces that text node with a sequence of plain text
- * nodes and <mark> element nodes.
+ * nodes and highlight <span> element nodes. See the note on MARK_CLASS below
+ * for why the element is a styled <span> and not the semantic <mark>.
  *
  * Code fences and inline code are deliberately left untouched — text nodes
  * inside a <code> or <pre> ancestor are skipped entirely.
@@ -70,6 +71,7 @@ export const MARK_CLASS = 'lattice-mark';
  * selected DOM subtree as-is, so this works for *every* copy path — keyboard,
  * context menu, drag-and-drop — with no clipboard event interception anywhere,
  * and identically on Chromium (Windows/Android) and WebKit (macOS/iOS/Linux).
+
  */
 
 /**
@@ -107,7 +109,7 @@ export function splitAtMarks(text: string, color: string = MARK_COLOR_DEFAULT): 
 /**
  * Walk the HAST tree. When we encounter an element node, rebuild its children
  * array by expanding any text node that contains `==...==` into the appropriate
- * text / <mark> sequence.
+ * text / highlight-<span> sequence.
  *
  * `inCode` is true when we are inside a <code> or <pre> subtree; text nodes
  * there are left completely unchanged.

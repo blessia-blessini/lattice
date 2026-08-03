@@ -236,6 +236,7 @@ describe('cursor flash — block selection (REQ-LTTCE-DVW-00001/00002)', () => {
     // The ==marked text== <mark> is INSIDE the flashed block, so the CSS
     // inversion applies to it (REQ-LTTCE-DVW-00002).
     // Now a styled <span class="lattice-mark">, not a <mark> — see
+
     // REQ-LTTCE-CPY-00001 for why the tag had to change.
     const highlight = hits[0].querySelector('span.lattice-mark');
     expect(highlight).toBeTruthy();

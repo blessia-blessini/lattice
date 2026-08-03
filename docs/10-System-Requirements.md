@@ -385,6 +385,7 @@ unknown tags together with their attributes — so a highlight defined by a styl
 `<mark>` element is lost twice over. Placing the colour inline, on a `<span>`, removes both failure
 modes at the source rather than patching the clipboard afterwards.
 
+
 <!--REQ-LTTCE-CPY-00002-->
 **REQ-LTTCE-CPY-00002** — The inline highlight colour SHALL follow the active preview theme
 (light/dark), matching the colour the user sees on screen, and SHALL be expressed as an **opaque
@@ -417,6 +418,7 @@ Recorded here so they are not mistaken for defects in the requirements above.
    would destroy text flow in the preview. The same loss applies to content copied out of Word
    itself, confirming this is an Outlook behaviour, not a Lattice one. User workarounds: classic
    Outlook, or paste as an image.
+
 
 ---
 

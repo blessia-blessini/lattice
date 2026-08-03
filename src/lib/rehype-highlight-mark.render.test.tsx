@@ -21,6 +21,7 @@
 // See LICENCE file in GitHUB root folder of the repository.
 // END OF NOTE
 
+
 // UTST for REQ-LTTCE-CPY-00001 / 00002 (IMPL-LTTCE-CPY-00001).
 //
 // WHY THIS FILE EXISTS, SEPARATE FROM rehype-highlight-mark.test.ts:
@@ -84,11 +85,13 @@ describe('rendered ==highlight== DOM (clipboard fidelity)', () => {
         expect(span.getAttribute('style')).toContain('background-color');
     });
 
+
     // PORTABILITY GUARD (REQ-LTTCE-CPY-00002): the inline colour is parsed by
     // foreign HTML readers whose CSS support is much older than any WebView's.
     // Opaque `#rrggbb` is the notation they all accept; rgba()/hsl() risk being
     // dropped, taking the highlight with them. Must hold on every platform
     // Lattice ships on (Windows/Android = Chromium, macOS/iOS/Linux = WebKit).
+
     it.each(Object.entries({ light: LIGHT, dark: DARK }))(
         'the %s theme colour is an opaque hex, not rgba()/hsl()', (_theme, color) => {
             expect(color).toMatch(/^#[0-9a-f]{6}$/i);
@@ -106,6 +109,7 @@ describe('rendered ==highlight== DOM (clipboard fidelity)', () => {
         expect(span).not.toBeNull();
         expect(span.textContent).toBe('bold highlight');
         expect(container.querySelector('strong')).not.toBeNull();
+        expect(span.getAttribute('style')).toContain('background-color');
     });
 
     // Pre-existing, unchanged limitation (NOT introduced by the <span> switch):

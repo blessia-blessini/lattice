@@ -246,6 +246,7 @@ body {
    with the clipboard into MS Word; a CSS class does not (REQ-LTTCE-CPY-00001).
    Only layout belongs in this rule. Do not add a background-color here — it
    would be dead in the app and misleading to read. */
+
 .markdown-body .lattice-mark {
   border-radius: 2px;
   padding: 0 1px;

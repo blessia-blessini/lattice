@@ -135,6 +135,7 @@ describe('splitAtMarks', () => {
     it('honours a caller-supplied colour (dark preview theme)', () => {
         const parts = splitAtMarks('==x==', '#423d12');
         expect(parts[0].properties.style).toBe('background-color:#423d12');
+
     });
 
     it('is idempotent — calling twice does not double-wrap', () => {
