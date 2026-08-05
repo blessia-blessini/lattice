@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useImperativeHandle } from 'react';
+import React, { useEffect, useRef, useState, useImperativeHandle } from 'react';
 import { EditorView, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, dropCursor, rectangularSelection, crosshairCursor, highlightActiveLine, keymap, MatchDecorator, ViewPlugin, DecorationSet, ViewUpdate, Decoration } from '@codemirror/view';
 import { EditorState, Compartment, StateEffect } from '@codemirror/state';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
@@ -16,10 +16,13 @@ import { FileSystem } from '../services/FileSystem';
 import { Toc, TOC_OPEN_MARKER, TOC_CLOSE_MARKER } from '../services/Toc';
 import { TableFormat } from '../services/TableFormat';
 import { Tabify } from '../services/Tabify';
+import { TsvTable, mayBeTabular, TabularPaste } from '../services/TsvTable';
+import { PasteTableDialog, PasteTableChoice } from './PasteTableDialog';
 import { symbolPicker } from '../editor-extensions/symbol-picker';
 import { showWhitespaceExtension } from '../editor-extensions/show-whitespace';
 import { tocTooltip } from '../editor-extensions/toc-tooltip';
 import { cursorLineOf } from '../lib/cursor-block';
+import { wrapAsBlock } from '../lib/block-insert';
 
 /** Props for the {@link Editor} component. */
 export interface EditorProps {
@@ -172,6 +175,70 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
     useEffect(() => {
         currentFilePathRef.current = currentFilePath;
     }, [currentFilePath]);
+
+    /**
+     * Spreadsheet paste awaiting the user's decision, or `null` when no dialog
+     * is open (IMPL-LTTCE-TBL-00003). `text` is the untouched clipboard payload
+     * so "Insert as plain text" still delivers exactly what was copied.
+     */
+    const [pendingPaste, setPendingPaste] = useState<(TabularPaste & { text: string }) | null>(null);
+
+
+    //**************************************************************************
+    // insertAtSelection
+    //**************************************************************************
+    /**
+     * Replace the current selection with `text` as if it had been pasted —
+     * one undo step, cursor left after the insertion, view scrolled to it.
+     *
+     * With `asBlock`, the insertion is forced onto its own line(s): a GFM table
+     * is only recognised when its header row starts a line, so pasting into the
+     * middle of a paragraph must break the line first. Blank surroundings are
+     * left alone — we never add a newline that isn't needed.
+     */
+    const insertAtSelection = (view: EditorView, text: string, asBlock: boolean) => {
+        const { from, to } = view.state.selection.main;
+        let body = text;
+        if (asBlock) {
+            const startLine = view.state.doc.lineAt(from);
+            const endLine = view.state.doc.lineAt(to);
+            body = wrapAsBlock(
+                body,
+                view.state.sliceDoc(startLine.from, from),
+                view.state.sliceDoc(to, endLine.to)
+            );
+        }
+        view.dispatch({
+            ...view.state.replaceSelection(body),
+            scrollIntoView: true,
+            userEvent: 'input.paste',
+        });
+    };
+    // insertAtSelection END ***************************************************
+
+
+    //**************************************************************************
+    // resolvePendingPaste
+    //**************************************************************************
+    /**
+     * Apply the user's answer to the spreadsheet-paste dialog and close it.
+     * `cancel` inserts nothing at all — the document is left exactly as it was
+     * before the paste (REQ-LTTCE-TBL-00002).
+     */
+    const resolvePendingPaste = (choice: PasteTableChoice) => {
+        const pending = pendingPaste;
+        setPendingPaste(null);
+        const view = viewRef.current;
+        if (!pending || !view) return;
+        if (choice === 'table') {
+            insertAtSelection(view, pending.markdown, true);
+        } else if (choice === 'plain') {
+            insertAtSelection(view, pending.text, false);
+        }
+        // Return focus to the document; the dialog took it on open.
+        view.focus();
+    };
+    // resolvePendingPaste END *************************************************
 
     // IMPL-LTTCE-DVW-00002 — cursor-line change notification (dual-view
     // cursor flash). The callback lives in a ref so the updateListener
@@ -592,6 +659,36 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
                         }
                     }
                 }// paste END **********************************************************
+
+                //**********************************************************************
+                // spreadsheet paste (IMPL-LTTCE-TBL-00003)
+                //**********************************************************************
+                // Only reached when the image branch above did not claim the event.
+                // The handler must decide *synchronously* whether to preventDefault,
+                // so the gate here is the weakest possible pre-filter ("is there a
+                // TAB?"); the real verdict comes from Rust a tick later. If the
+                // backend says "not a grid" — or the IPC fails — we insert the raw
+                // text ourselves, so the user still sees an ordinary paste.
+                if (!event.defaultPrevented) {
+                    const pastedText = event.clipboardData?.getData('text/plain') ?? '';
+                    if (mayBeTabular(pastedText)) {
+                        event.preventDefault();
+                        void (async () => {
+                            let verdict: TabularPaste | null = null;
+                            try {
+                                verdict = await TsvTable.analyze(pastedText);
+                            } catch (err) {
+                                console.error('Tabular paste analysis failed', err);
+                            }
+                            if (!verdict || !verdict.tabular) {
+                                insertAtSelection(view, pastedText, false);
+                                return;
+                            }
+                            setPendingPaste({ ...verdict, text: pastedText });
+                        })();
+                    }
+                }
+                // spreadsheet paste END ***********************************************
             }
         })
     ];
@@ -705,6 +802,22 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
         }
     }, [tabSize]);
 
-    return <div ref={editorRef} className="editor-container" />;
+    return (
+        <>
+            <div ref={editorRef} className="editor-container" />
+            {/* IMPL-LTTCE-TBL-00003 — rendered next to the editor rather than
+                from App.tsx: the paste event, the pending payload and the
+                insertion all live here, so the dialog has no props to thread. */}
+            {pendingPaste && (
+                <PasteTableDialog
+                    theme={theme}
+                    rows={pendingPaste.rows}
+                    columns={pendingPaste.columns}
+                    markdown={pendingPaste.markdown}
+                    onChoice={resolvePendingPaste}
+                />
+            )}
+        </>
+    );
 });
 // Editor END ******************************************************************

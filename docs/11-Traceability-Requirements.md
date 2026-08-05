@@ -77,6 +77,8 @@ related items. Example convention for `LNT`:
 | `DVW`   | SSS     | Dual-view features (cursor flash) |
 | `WSP`   | SSS     | Show Whitespace (edit-pane whitespace visualization) |
 | `SET`   | SSS     | Settings robustness (parsing, validation)             |
+| `CPY`   | SSS     | Preview copy fidelity (clipboard HTML)                |
+| `TBL`   | SSS     | Spreadsheet paste (TSV clipboard → GFM[^gfm] table)   |
 
 ---
 

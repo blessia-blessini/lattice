@@ -137,15 +137,19 @@ fn is_alignment_cell(cell: &str) -> bool {
 /// Split a row into raw (un-trimmed) cell strings, stripping a single leading
 /// and/or trailing pipe if present. A line with no `|` returns a single cell.
 ///
-/// We deliberately don't try to escape `\|` inside cells: standard Markdown
-/// tables don't permit literal pipes in cells (you have to use `&#124;`), and
-/// supporting backslash-escapes here would require a full tokenizer.
+/// A backslash-escaped pipe (`\|`) is **cell content**, not a delimiter — that
+/// is the GFM[^gfm] escape for a literal pipe inside a table cell, and it is
+/// what `tsv_table.rs` emits when a pasted spreadsheet cell contains a `|`.
+/// Splitting on it would shred such a table on every padding pass. The escape
+/// is left in the returned cell verbatim (we re-emit the row, we don't render
+/// it), so a leading/trailing `\|` still round-trips unchanged.
 fn split_table_row(line: &str) -> Vec<String> {
     let mut s = line.trim();
     if s.starts_with('|') {
         s = &s[1..];
     }
-    if s.ends_with('|') {
+    // A trailing `\|` is an escaped pipe, not the closing delimiter.
+    if s.ends_with('|') && !s.ends_with("\\|") {
         s = &s[..s.len() - 1];
     }
     if s.is_empty() {
@@ -153,7 +157,26 @@ fn split_table_row(line: &str) -> Vec<String> {
         // shape, not zero cells (which would otherwise terminate the table).
         return vec![String::new()];
     }
-    s.split('|').map(|c| c.to_string()).collect()
+
+    let mut cells: Vec<String> = Vec::new();
+    let mut cell = String::new();
+    let mut chars = s.chars().peekable();
+    while let Some(c) = chars.next() {
+        match c {
+            '\\' => {
+                // Keep the backslash *and* whatever it escapes together, so an
+                // escaped pipe never reaches the delimiter test below.
+                cell.push('\\');
+                if let Some(next) = chars.next() {
+                    cell.push(next);
+                }
+            }
+            '|' => cells.push(std::mem::take(&mut cell)),
+            _ => cell.push(c),
+        }
+    }
+    cells.push(cell);
+    cells
 }
 // split_table_row END *******************************************************
 
@@ -163,7 +186,10 @@ fn split_table_row(line: &str) -> Vec<String> {
 /// `true` iff `line` is a GFM alignment-separator row — i.e. every one of its
 /// cells (after stripping the optional leading/trailing pipes) is a valid
 /// alignment cell.
-fn is_table_separator_line(line: &str) -> bool {
+///
+/// `pub(crate)` because `tsv_table.rs` reuses it to recognise a payload that is
+/// already a Markdown table (one detection rule, one implementation — DRY).
+pub(crate) fn is_table_separator_line(line: &str) -> bool {
     let trimmed = line.trim();
     if !trimmed.contains('|') {
         return false;

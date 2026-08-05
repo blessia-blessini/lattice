@@ -16,6 +16,7 @@ implementation artefacts. For the ID schema definition see `11-Traceability-Requ
   - [Chapter WSP — Show Whitespace](#chapter-wsp-show-whitespace)
   - [Chapter SET — Settings Robustness](#chapter-set-settings-robustness)
   - [Chapter CPY — Preview Copy Fidelity](#chapter-cpy-preview-copy-fidelity)
+  - [Chapter TBL — Spreadsheet Paste](#chapter-tbl-spreadsheet-paste)
     - [General](#general)
     - [Severity Visualisation](#severity-visualisation)
     - [Rule: Setext Headings](#rule-setext-headings)
@@ -422,6 +423,78 @@ Recorded here so they are not mistaken for defects in the requirements above.
 
 ---
 
+## Chapter TBL — Spreadsheet Paste
+
+Copying a range out of a spreadsheet (Excel, LibreOffice Calc, Google Sheets, Numbers) puts a TSV[^tsv]
+grid on the clipboard: rows separated by newlines, cells separated by TAB. Pasted verbatim into a Markdown
+document that grid is unreadable — nothing aligns and no renderer treats it as a table. Retyping it as a
+GFM[^gfm] pipe table by hand is the manual step this chapter removes.
+
+The conversion is offered, never imposed: the raw TSV is sometimes exactly what the user wants (a code
+fence, a data snippet), and silently rewriting a paste is the kind of surprise that erodes trust in an
+editor.
+
+<!--REQ-LTTCE-TBL-00001-->
+**REQ-LTTCE-TBL-00001** — When text pasted into the edit pane is recognised as a spreadsheet grid, Lattice
+SHALL NOT insert it directly but SHALL first ask the user to choose between inserting it as a GFM[^gfm]
+table and inserting the clipboard text verbatim.
+
+*Rationale*: the conversion is lossy in one direction (TSV structure becomes Markdown markup) and the user
+is the only one who knows which form they wanted.
+
+<!--REQ-LTTCE-TBL-00002-->
+**REQ-LTTCE-TBL-00002** — The choice SHALL be presented by an application-rendered dialog — not by a
+platform dialog service — offering exactly three outcomes: insert as a Markdown table (the default action),
+insert the clipboard text verbatim, and cancel. Cancel SHALL leave the document byte-identical to its state
+before the paste. The dialog SHALL be operable from the keyboard alone.
+
+*Rationale*: Lattice ships on Windows, macOS, Linux, Android and iOS. Platform dialog services differ in
+availability, appearance and blocking behaviour across those five targets; markup rendered by the
+application itself behaves identically on all of them and is reachable from the automated tests.
+
+<!--REQ-LTTCE-TBL-00003-->
+**REQ-LTTCE-TBL-00003** — In the converted table the **first grid row** SHALL become the header row,
+followed by a generated alignment-separator row; the remaining rows SHALL become body rows. The column
+count SHALL be that of the widest row, and shorter rows SHALL be extended with empty cells so every row
+carries the same number of delimiters.
+
+<!--REQ-LTTCE-TBL-00004-->
+**REQ-LTTCE-TBL-00004** — Cell content SHALL be sanitised so that it cannot break the row it sits in:
+a literal `|` SHALL be emitted as `\|`, a literal `\` as `\\`, and a line break inside a cell as `<br>`.
+Leading and trailing whitespace SHALL be trimmed.
+
+*Rationale*: a GFM[^gfm] table row is delimited by `|` and confined to one line; both characters are
+common in spreadsheet data (units, paths, multi-line notes).
+
+<!--REQ-LTTCE-TBL-00005-->
+**REQ-LTTCE-TBL-00005** — Recognition SHALL honour the spreadsheet quoting dialect: a cell wrapped in
+double quotes is read as one cell whose TABs and line breaks are content, and a doubled `""` inside such a
+cell is one literal `"`.
+
+*Rationale*: spreadsheets do not emit bare TSV[^tsv]. A naive split on TAB and newline turns any multi-line
+cell into extra columns and rows, silently corrupting the pasted data.
+
+<!--REQ-LTTCE-TBL-00006-->
+**REQ-LTTCE-TBL-00006** — The emitted table SHALL be column-padded by the same rules the "Pad Tables"
+command applies, so a pasted table is indistinguishable from one the user has already tidied.
+
+<!--REQ-LTTCE-TBL-00007-->
+**REQ-LTTCE-TBL-00007** — Pastes that are not spreadsheet grids SHALL be unaffected — no dialog, no
+conversion, no change to the existing paste behaviour. This includes plain prose, single-column payloads,
+payloads that are already GFM[^gfm] tables, and image pastes.
+
+*Rationale*: the feature must be invisible until it is wanted; a false positive costs the user a dialog on
+every ordinary paste.
+
+<!--REQ-LTTCE-TBL-00008-->
+**REQ-LTTCE-TBL-00008** — An inserted table SHALL occupy whole lines: when the insertion point sits inside
+a line that already holds text, a line break SHALL be inserted on the affected side(s).
+
+*Rationale*: GFM[^gfm] only recognises a table whose header row starts a line. Without the break the paste
+renders as a paragraph full of pipes.
+
+---
+
 [^mermaid]: Mermaid — a JavaScript diagramming library rendering text definitions inside fenced code blocks
     as SVG diagrams. <https://mermaid.js.org>
 
@@ -460,6 +533,10 @@ Recorded here so they are not mistaken for defects in the requirements above.
     industry's profile of this standard.
 
 [^toc]: TOC — Table of Contents.
+
+[^tsv]: TSV — Tab-Separated Values. A plain-text tabular format: one record per line, fields separated by
+    TAB. It is the `text/plain` clipboard flavour every major spreadsheet application writes when a cell
+    range is copied.
 
 [^ipc]: IPC — Inter-Process Communication. In Lattice: the Tauri command channel between the
     WebView frontend and the Rust backend (`invoke`).

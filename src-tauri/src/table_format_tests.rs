@@ -409,3 +409,40 @@ fn test_pad_tables_command_wrapper() {
     assert!(out.contains("| foo |"), "header cell must survive in output");
     assert!(out.contains("| baz |"), "body cell must survive in output");
 }
+
+//*************************************************************************
+// test_escaped_pipe_is_cell_content_not_a_delimiter
+//*************************************************************************
+/// `\|` is GFM's escape for a literal pipe inside a cell. Splitting on it
+/// would turn a 2-column table into a 3-column one and shred the row on
+/// every padding pass — which is exactly what a pasted spreadsheet cell
+/// containing `|` produces (see `tsv_table.rs`).
+#[test]
+fn test_escaped_pipe_is_cell_content_not_a_delimiter() {
+    let doc = "| a\\|b | c |\n| --- | --- |\n| 1 | 2 |\n";
+    let out = pad_tables_in_document(doc);
+    for line in out.lines() {
+        // 2 columns → exactly 3 delimiter pipes once the escaped one is
+        // removed from consideration.
+        assert_eq!(
+            line.replace("\\|", "").matches('|').count(),
+            3,
+            "row must stay two columns wide: {line}"
+        );
+    }
+    assert!(out.contains("a\\|b"), "the escape must survive: {out}");
+}
+
+//*************************************************************************
+// test_trailing_escaped_pipe_keeps_its_delimiter
+//*************************************************************************
+/// A cell whose content *ends* with an escaped pipe must not have the row's
+/// closing delimiter mistaken for the escape (or vice versa).
+#[test]
+fn test_trailing_escaped_pipe_keeps_its_delimiter() {
+    let doc = "| x | y\\| |\n| --- | --- |\n| 1 | 2 |\n";
+    let out = pad_tables_in_document(doc);
+    let header = out.lines().next().unwrap();
+    assert!(header.ends_with('|'), "closing delimiter lost: {header}");
+    assert!(header.contains("y\\|"), "escape lost: {header}");
+}

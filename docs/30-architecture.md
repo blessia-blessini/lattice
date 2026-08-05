@@ -959,6 +959,128 @@ what the receiving application does with that markup — is a property of that a
 
 ---
 
+## Feature: Spreadsheet Paste
+
+<!--ARCH-LTTCE-TBL-00001-->
+
+### Overview
+
+Covers Chapter TBL of the requirements. A paste carrying a spreadsheet TSV grid is intercepted in the edit
+pane, converted to a padded GFM pipe table by the Rust backend, and inserted only after the user confirms.
+The split follows the same rule as TOC and Table Padding — **all string logic in Rust, a minimal IPC
+wrapper plus UI in the frontend** — with one deliberate exception documented below.
+
+### Rust Backend — `tsv_table.rs`
+
+One public entry point:
+
+```
+analyze_tabular_paste(text: &str) -> TabularPaste { tabular, rows, columns, markdown }
+```
+
+- **Guard clauses first.** Empty payload, no TAB anywhere, or a payload that is already a Markdown table
+  (a `|` row followed by an alignment-separator row) ⇒ `tabular: false`, and the frontend pastes verbatim
+  (REQ-LTTCE-TBL-00007).
+- **Grid scan.** `parse_tsv_grid` is a character-level scanner, not a `split`, because spreadsheets escape
+  CSV-style: a cell containing TAB, newline or `"` is wrapped in `"` with internal quotes doubled
+  (REQ-LTTCE-TBL-00005). CRLF, LF and lone CR all count as one row break; the trailing row break every
+  spreadsheet emits does not produce a phantom row. An unterminated quote keeps its content rather than
+  discarding it — losing pasted data is the worse failure.
+- **Column floor.** Fewer than two columns ⇒ not tabular. A single copied spreadsheet column is
+  indistinguishable from ordinary multi-line text, and a one-column table is never what the user meant.
+- **Cell escaping.** `\` → `\\` first, then `|` → `\|`, then any embedded line break → `<br>`
+  (REQ-LTTCE-TBL-00004). The backslash must be escaped first, otherwise the backslash inserted in front of
+  a pipe would itself be escaped on a second pass and the pipe would come back to life.
+- **Padding is delegated,** not reimplemented: the canonical unpadded table is handed to
+  `table_format::pad_tables_in_document` (REQ-LTTCE-TBL-00006). One padding implementation, one set of
+  alignment and minimum-dash rules, for both the "Pad Tables" command and this one.
+
+**Change to `table_format.rs` required by this feature.** `split_table_row` previously split on every `|`.
+Since pasted cells may now legitimately contain `\|`, the splitter treats a backslash and the character it
+escapes as one unit, and a trailing `\|` is no longer mistaken for the closing delimiter. Without this, the
+first padding pass over a pasted table would shred every row that contained a pipe.
+
+### Frontend Glue
+
+| Layer         | File                                    | Responsibility                                                                                                                                                     |
+| ------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Service       | `src/services/TsvTable.ts`              | Wraps `invoke('analyze_tabular_paste_cmd', { text })`; also exports the synchronous pre-filter `mayBeTabular`.                                                      |
+| Paste handler | `src/components/Editor.tsx`             | CodeMirror `domEventHandlers.paste`, after the existing image branch. Pre-filters, prevents default, awaits the verdict, opens the dialog, applies the user's answer. |
+| Dialog        | `src/components/PasteTableDialog.tsx`   | The three-outcome confirmation, rendered by the application itself (REQ-LTTCE-TBL-00002).                                                                          |
+| Placement     | `src/lib/block-insert.ts`               | `wrapAsBlock` — pure rule deciding whether the insertion needs a leading and/or trailing newline (REQ-LTTCE-TBL-00008).                                             |
+
+**The one piece of detection that is *not* in Rust.** A DOM paste handler must decide synchronously whether
+to call `preventDefault()`; it cannot await an IPC round-trip first. So `mayBeTabular` applies the weakest
+possible test — "does the payload contain a TAB at all" — which is a deliberate *superset* of the backend's
+rule, not a duplicate of it. When the backend then answers `tabular: false`, or the IPC call fails
+outright, the handler inserts the raw clipboard text itself, so the user sees an ordinary paste either way.
+
+**Why an in-app dialog rather than a platform one.** Lattice targets Windows, macOS, Linux, Android and
+iOS. `window.confirm` blocks the WebView differently across those engines (and is suppressed entirely in
+some mobile WebView configurations), and `@tauri-apps/plugin-dialog` has no meaningful presence in the
+mobile builds. Markup rendered by the application behaves identically everywhere and — unlike a native
+dialog — is drivable from the vitest suite.
+
+### Spreadsheet Paste Flow Diagram
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {
+  'signalColor':     '#1a1a1a',
+  'signalTextColor': '#1a1a1a',
+  'lineColor':       '#1a1a1a',
+  'actorLineColor':  '#1a1a1a',
+  'fontSize':        '16px'
+}}}%%
+
+
+sequenceDiagram
+    participant User
+    participant CM as CodeMirror (paste event)
+    participant Editor as Editor.tsx
+    participant Svc as TsvTable.ts (Service)
+    participant Rust as Rust — tsv_table.rs
+    participant Dlg as PasteTableDialog.tsx
+
+    User->>CM: Ctrl/Cmd-V (clipboard from Excel)
+    CM->>Editor: paste event (text/plain)
+
+    alt payload has no TAB
+        Editor->>CM: let CodeMirror paste normally
+    else payload has a TAB
+        Editor->>CM: preventDefault()
+        Editor->>Svc: TsvTable.analyze(text)
+        Svc->>Rust: invoke('analyze_tabular_paste_cmd', { text })
+        Rust->>Rust: parse grid → escape cells → pad via table_format
+        Rust-->>Svc: { tabular, rows, columns, markdown }
+        Svc-->>Editor: verdict
+
+        alt not tabular, or IPC failed
+            Editor->>CM: insert raw clipboard text
+        else tabular
+            Editor->>Dlg: open with rows × columns + preview
+            Dlg-->>Editor: 'table' | 'plain' | 'cancel'
+            alt 'table'
+                Editor->>CM: insert padded Markdown table (whole lines)
+            else 'plain'
+                Editor->>CM: insert raw clipboard text
+            else 'cancel'
+                Editor->>Editor: no-op — document untouched
+            end
+        end
+    end
+```
+
+### Verification
+
+`tsv_table_tests.rs` covers the grid scanner and the escaping against real clipboard shapes (CRLF rows,
+quoted multi-line cells, doubled quotes, pipes, trailing backslashes, non-ASCII). `table_format_tests.rs`
+gained two cases for the escaped-pipe splitter. On the frontend, `PasteTableDialog.test.tsx` covers the
+dialog's markup, keyboard contract and three outcomes; `Editor.paste-table.test.tsx` covers the wiring with
+the Tauri command mocked (pre-filter, IPC contract, each outcome, and both fall-backs);
+`block-insert.test.ts` covers the line-break rule.
+
+---
+
 ## Architectural Decisions
 
 ### ADR-01: External Image Fetches Blocked by Default

@@ -45,6 +45,8 @@ mod tabify;
 mod table_format;
 mod textcontent_hashing;
 mod toc;
+// IMPL-LTTCE-TBL-00001 — spreadsheet (TSV) clipboard → GFM table conversion.
+mod tsv_table;
 
 // Platform module — lib.rs has zero OS knowledge.
 // Platform selection is handled by build.rs; see platform/mod.rs.
@@ -1081,7 +1083,8 @@ pub fn run() {
             toc::update_toc,
             table_format::pad_tables,
             tabify::tabify_text,
-            tabify::untabify_text
+            tabify::untabify_text,
+            tsv_table::analyze_tabular_paste_cmd
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

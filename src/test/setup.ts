@@ -66,6 +66,29 @@ Object.defineProperty(global, 'sessionStorage', {
     configurable: true
 });
 
+// jsdom has no layout engine and, unlike Element, its Range does not even
+// expose the geometry methods (they would only ever return zeros). CodeMirror
+// measures text through a DOM Range, so any measure pass throws
+// "textRange(...).getClientRects is not a function" — and because measuring is
+// scheduled in a requestAnimationFrame it surfaces *after* the test, as an
+// unhandled error that fails the whole run. Supply the zero-size answers jsdom
+// gives for every other layout query so CodeMirror falls back to its defaults.
+const zeroRect = () => ({
+    x: 0, y: 0, top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0,
+    toJSON: () => ({}),
+} as DOMRect);
+if (typeof Range !== 'undefined') {
+    if (!Range.prototype.getClientRects) {
+        Range.prototype.getClientRects = function () {
+            const list: DOMRect[] = [];
+            return Object.assign(list, { item: (i: number) => list[i] ?? null }) as unknown as DOMRectList;
+        };
+    }
+    if (!Range.prototype.getBoundingClientRect) {
+        Range.prototype.getBoundingClientRect = zeroRect;
+    }
+}
+
 // Mock Tauri API
 vi.mock('@tauri-apps/api/core', () => ({
     invoke: vi.fn((cmd, args) => {

@@ -4,16 +4,20 @@ All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
 
-## v0.3.9
+
+## v0.3.10
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
-- RELEASE v0.3.8 Copy Highlights reliably
-- FIX: Emit ==highlight== as inline-styled <span>, not <mark> (Word paste)
-- RELEASE 0.3.8: FEAT COPY/PASTE to HTML FIDELTY
-- CHORE: UODATED NPM and CARGO dependencies
-- Update chagelog
+- Chore: Release Prep
+- Update version
 
+---
+
+## v0.3.9
+
+### Changes
+- FEAT: Paste spreadsheet clipboard as a Markdown table
 
 ---
 
