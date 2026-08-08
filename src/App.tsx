@@ -52,6 +52,8 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 import tauriConfig from '../src-tauri/tauri.conf.json';
 import { resolveRelativePath, isDocumentLink } from './lib/link-utils';
 import { toSourceRange, findInnermostBlockIndex, isBlockTag } from './lib/cursor-block';
+import { PREVIEW_THEME_COLORS } from './lib/preview-theme';
+import { buildCopyHtml } from './lib/preview-copy';
 
 import { StaticRuntime } from "@services/StaticRuntime";
 
@@ -134,10 +136,8 @@ const rehypeWrapMathBlocks = () => (tree: any) => {
 };
 // rehypeWrapMathBlocks END ****************************************************
 
-const PREVIEW_THEME_COLORS = {
-  light: { backgroundColor: '#ffffff', color: '#24292e', colorScheme: 'light' as const },
-  dark: { backgroundColor: '#0d1117', color: '#c9d1d9', colorScheme: 'dark' as const },
-};
+// Preview colours live in lib/preview-theme.ts — the diagram rasteriser needs
+// the same background value (IMPL-LTTCE-MRC-00001).
 
 // ==highlight== background per preview theme (REQ-LTTCE-CPY-00001/00002).
 // Handed to rehypeHighlightMark and written as an INLINE style on the emitted
@@ -234,10 +234,16 @@ function App() {
   const [m_tabSize, setTabSize] = useState(TAB_SIZE_DEFAULT); // REQ-LTTCE-WSP-00005 — shared contract in lib/tab-size.ts
   const [m_blockExternalImages, setBlockExternalImages] = useState(true);
   const [m_defaultMermaidInit, setDefaultMermaidInit] = useState<string>('');
+  // REQ-LTTCE-MRC-00005 — copy diagrams light-on-white regardless of theme.
+  const [m_copyDiagramsLight, setCopyDiagramsLight] = useState(true);
   const [m_dailyNotesPath, setDailyNotesPath] = useState<string>('');
   const [viewMode, setViewMode] = useState<ViewMode>(VIEW_EDIT);
   const [splitPct, setSplitPct] = useState(57); // editor share in %, preview gets remainder
   const [m_loadedContent, setLoadedContent] = useState("");
+  // IMPL-LTTCE-FWT-00002 — monotonic counter, incremented once per genuine
+  // load/reload from disk. It is the ONLY thing that lets the editor discard
+  // its document and undo history; see `applyLoadedDocument`.
+  const [m_docEpoch, setDocEpoch] = useState(0);
   const [m_isSettingsWindow, setIsSettingsWindow] = useState(false);
   const [isModalBlocked, setIsModalBlocked] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -289,6 +295,40 @@ function App() {
   const handleEditorChange = useCallback((content: string) => {
     setPreviewContent(content);
   }, []);
+
+  //****************************************************************************
+  // Live mirrors of the dirty flag and the open path
+  //****************************************************************************
+  // IMPL-LTTCE-FWT-00002 — the `file-changed` listener is registered ONCE and
+  // therefore cannot close over `m_isDirty` / `m_currentFilePath`: a callback
+  // installed while the document was clean would keep believing that forever.
+  // Worse, `listen()` resolves asynchronously, so re-registering the callback
+  // on every dirty transition (the previous design) left a window in which the
+  // *old* callback was still the live one — it saw `isDirty === false` while
+  // the user was already typing, reloaded the file underneath them and threw
+  // the un-saved keystrokes away. Refs are read at fire time, so they are
+  // always current.
+  const isDirtyRef = useRef(false);
+  const currentFilePathRef = useRef<string | null>(null);
+
+  //****************************************************************************
+  // applyLoadedDocument
+  //****************************************************************************
+  /**
+   * The single funnel for "this text just came from disk".
+   *
+   * Bumps `m_docEpoch`, which is what actually authorises the editor to throw
+   * its state (and with it the undo history) away — see the `docEpoch` prop on
+   * `Editor`. Because the epoch is the trigger, an ordinary React re-render can
+   * never resurrect stale content into a document the user is editing; only an
+   * explicit load reaching this function can.
+   */
+  const applyLoadedDocument = useCallback((text: string) => {
+    setLoadedContent(text);
+    setPreviewContent(text);
+    setDocEpoch(prev => prev + 1);
+  }, []);
+  // applyLoadedDocument END ***************************************************
 
   const autoSaveTimer = useRef<number | null>(null);
   const mainContentRef = useRef<HTMLDivElement>(null);
@@ -453,6 +493,9 @@ function App() {
       setTabSize(clampTabSize(settings.tabSize));
       setBlockExternalImages(settings.blockExternalImages !== false); // default true — privacy-by-default
       setDefaultMermaidInit(settings.defaultMermaidInit || '');
+      // REQ-LTTCE-MRC-00005 — default ON: pasted diagrams land in white
+      // documents far more often than dark ones.
+      setCopyDiagramsLight(settings.copyDiagramsLight !== false);
 
     } catch (error) {
       console.log("Settings file not found or invalid, using default.", error);
@@ -664,41 +707,69 @@ function App() {
 
 
   //****************************************************************************
+  // Dirty / path ref mirrors
+  //****************************************************************************
+  // Updated in the same commit as the state they mirror, so any later task —
+  // a timer, an IPC event — reads the value that is actually current.
+  useEffect(() => {
+    isDirtyRef.current = m_isDirty;
+    currentFilePathRef.current = m_currentFilePath;
+  }, [m_isDirty, m_currentFilePath]);
+  // Dirty / path ref mirrors END **********************************************
+
+
+  //****************************************************************************
   // File Watching
   //****************************************************************************
+  // IMPL-LTTCE-FWT-00002 — registered exactly once, for the lifetime of the
+  // window. Everything variable is read through a ref at fire time.
   useEffect(() => {
     const unlisten = listen('file-changed', async (event) => {
       const changedPath = event.payload as string;
-      console.log(`DEBUG: Received: File Changed Event: ${changedPath} | Current: ${m_currentFilePath}`); // Debug Log
-      if (changedPath === m_currentFilePath) {
-        if (!m_isDirty) {
-          console.log("Reloaded.");
-          // Safe to reload
-          try {
-            const response = await FileSystem.readTextFile(changedPath);
-            setLoadedContent(response.content);
-            setPreviewContent(response.content); // Sync preview on reload
+      console.log(`DEBUG: Received: File Changed Event: ${changedPath} | Current: ${currentFilePathRef.current}`); // Debug Log
+      if (changedPath !== currentFilePathRef.current) return;
 
+      if (isDirtyRef.current) {
+        console.log("File is not saved, skipping reload.");
+        // If dirty, do nothing. Next save will trigger conflict resolution.
+        return;
+      }
 
-            // Should IsDirty be false here?
-            // When we reload from disk, we are by definition "saved"
-            if (editorRef.current) {
-              editorRef.current.markAsSaved();
-            }
+      try {
+        const response = await FileSystem.readTextFile(changedPath);
 
-          } catch (e) { console.error("Reload failed", e); }
-        } else {
-          console.log("File is not saved, skipping reload.");
-          // If dirty, do nothing. Next save will trigger conflict resolution.
+        // Re-check AFTER the await. Reading the file is asynchronous, and the
+        // user keeps typing during it; without this second gate a keystroke
+        // landing mid-read would be overwritten by the (now stale) disk copy.
+        if (isDirtyRef.current || changedPath !== currentFilePathRef.current) {
+          console.log("File went dirty during reload, skipping.");
+          return;
         }
 
-      }
+        // Nothing actually differs — most often the echo of our own autosave
+        // that slipped past the backend filter (IMPL-LTTCE-FWT-00001).
+        // Reloading identical text would still cost the user their undo
+        // history, so don't.
+        const inEditor = editorRef.current?.getContent();
+        if (inEditor !== undefined && inEditor === response.content) {
+          console.log("Reload skipped: content identical to editor.");
+          return;
+        }
+
+        console.log("Reloaded.");
+        applyLoadedDocument(response.content);
+
+        // When we reload from disk, we are by definition "saved"
+        if (editorRef.current) {
+          editorRef.current.markAsSaved();
+        }
+      } catch (e) { console.error("Reload failed", e); }
     });
 
     return () => {
       unlisten.then(f => f());
     };
-  }, [m_currentFilePath, m_isDirty]); // File Watching END *************************
+  }, [applyLoadedDocument]); // File Watching END *************************
 
 
   //****************************************************************************
@@ -878,8 +949,7 @@ function App() {
 
         // Load Content
         const response = await FileSystem.readTextFile(path);
-        setLoadedContent(response.content);
-        setPreviewContent(response.content); // Sync preview on load
+        applyLoadedDocument(response.content); // Sync editor + preview on load
 
 
         console.log(`DEBUG: loadDocument calling setCurrentFilePath with: ${path} (Old: ${m_currentFilePath})`);
@@ -936,8 +1006,7 @@ function App() {
       if (initData) {
         console.log("DEBUG: Direct Push Data found for:", initData.path);
         try {
-          setLoadedContent(initData.content);
-          setPreviewContent(initData.content); // Sync preview on launch
+          applyLoadedDocument(initData.content); // Sync editor + preview on launch
 
           setCurrentFilePath(initData.path);
           if (editorRef.current) {
@@ -962,8 +1031,7 @@ function App() {
           try {
             await enforceVaultPath(lastPath);
             const response = await FileSystem.readTextFile(lastPath);
-            setLoadedContent(response.content);
-            setPreviewContent(response.content);
+            applyLoadedDocument(response.content);
             setCurrentFilePath(lastPath);
             FileSystem.watchFile(lastPath);
             if (editorRef.current) editorRef.current.markAsSaved();
@@ -1377,6 +1445,46 @@ function App() {
   // handleCursorLineChange END ************************************************
 
 
+  //****************************************************************************
+  // Preview copy — carry diagrams across the clipboard (IMPL-LTTCE-MRC-00002)
+  //****************************************************************************
+  // A rendered Mermaid diagram is an inline <svg>. The WebView does put that
+  // markup on the clipboard, but the applications people paste into drop it,
+  // so the diagram arrives as a blank. Here the selection is cloned, each
+  // diagram swapped for the PNG cached on it at render time, and the result
+  // written to the text/html flavour.
+  //
+  // Selections WITHOUT a diagram are not touched at all — no preventDefault,
+  // no rewrite, the WebView's own copy path exactly as before. That is what
+  // keeps REQ-LTTCE-CPY-00001 (highlights survive a copy into legacy HTML
+  // readers, with no clipboard interception) true for every other selection.
+  useEffect(() => {
+    const preview = previewPaneRef.current;
+    if (!preview) return;
+
+    const onCopy = (event: ClipboardEvent) => {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return;
+
+      const range = selection.getRangeAt(0);
+      if (!preview.contains(range.commonAncestorContainer)) return;
+
+      const html = buildCopyHtml(range.cloneContents());
+      if (html === null) return; // no diagram in there — leave the copy alone
+
+      // Taking over the event means owning BOTH flavours: a plain-text paste
+      // must still get the text it would have got.
+      event.clipboardData?.setData('text/html', html);
+      event.clipboardData?.setData('text/plain', selection.toString());
+      event.preventDefault();
+    };
+
+    preview.addEventListener('copy', onCopy);
+    return () => preview.removeEventListener('copy', onCopy);
+  }, []);
+  // Preview copy END **********************************************************
+
+
   // Re-apply after a preview re-render: typing replaces the preview DOM
   // (ReactMarkdown), which silently drops the flash class. If the hold
   // period is still running, re-apply with the *remaining* hold time so the
@@ -1492,7 +1600,7 @@ function App() {
       const { children, className, node, ...rest } = props;
       const match = /language-([\w+#-]+)/.exec(className || '');
       if (match && match[1] === 'mermaid') {
-        return <Mermaid chart={String(children).replace(/\n$/, '')} theme={m_theme} mermaidInit={m_defaultMermaidInit} />;
+        return <Mermaid chart={String(children).replace(/\n$/, '')} theme={m_theme} mermaidInit={m_defaultMermaidInit} copyLight={m_copyDiagramsLight} />;
       }
       // IMPL-LTTCE-PRV-00002 — fenced blocks with a language tag are
       // syntax-highlighted with the same Lezer parsers as the edit pane.
@@ -1608,7 +1716,7 @@ function App() {
       }
       return <img src={src} alt={alt} />;
     },
-  }), [m_theme, m_currentFilePath, m_blockExternalImages, m_previewTheme, m_defaultMermaidInit]);
+  }), [m_theme, m_currentFilePath, m_blockExternalImages, m_previewTheme, m_defaultMermaidInit, m_copyDiagramsLight]);
 
   const previewMarkdown = useMemo(() => (
     <ReactMarkdown
@@ -1654,6 +1762,8 @@ function App() {
       onBlockExternalImagesChange={setBlockExternalImages}
       defaultMermaidInit={m_defaultMermaidInit}
       onDefaultMermaidInitChange={setDefaultMermaidInit}
+      copyDiagramsLight={m_copyDiagramsLight}
+      onCopyDiagramsLightChange={setCopyDiagramsLight}
       settingsPath={m_vaultSettingsPath || ""}
     />;
 
@@ -1691,6 +1801,8 @@ function App() {
             onBlockExternalImagesChange={setBlockExternalImages}
             defaultMermaidInit={m_defaultMermaidInit}
             onDefaultMermaidInitChange={setDefaultMermaidInit}
+            copyDiagramsLight={m_copyDiagramsLight}
+            onCopyDiagramsLightChange={setCopyDiagramsLight}
             onClose={() => setShowSettingsModal(false)}
             settingsPath={m_vaultSettingsPath || ""}
           />
@@ -1856,6 +1968,7 @@ function App() {
               showWhitespace={m_showWhitespace}
               tabSize={m_tabSize}
               initialDoc={m_loadedContent}
+              docEpoch={m_docEpoch}
               currentFilePath={m_currentFilePath}
               onDirtyChange={setIsDirty}
               onChange={handleEditorChange}

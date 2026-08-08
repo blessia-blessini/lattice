@@ -623,12 +623,19 @@ fn initialize_vault_settings(file_path: String) -> Result<String, String> {
 /// `Create`, or `Remove` events a `"file-changed"` event is broadcast on
 /// the app handle, carrying the watched path as its payload.
 ///
+/// IMPL-LTTCE-FWT-00001 — events whose on-disk content still hashes to the
+/// value Lattice recorded on its own last read/write are **not** emitted.
+/// Without that filter every autosave bounced straight back as a
+/// "the file changed externally" notification, and the frontend reload it
+/// triggered destroyed the user's editing session (see REQ-LTTCE-FWT-00001).
+///
 /// # Arguments
 ///
-/// * `app`    - The Tauri `AppHandle` used to emit events.
-/// * `path`   - Absolute file system path to watch.
-/// * `window` - The calling window; its label is used as the watcher key.
-/// * `state`  - App-managed `WatcherState` holding the watcher registry.
+/// * `app`     - The Tauri `AppHandle` used to emit events.
+/// * `path`    - Absolute file system path to watch.
+/// * `window`  - The calling window; its label is used as the watcher key.
+/// * `state`   - App-managed `WatcherState` holding the watcher registry.
+/// * `tracker` - App-managed `FileTrackerState`, used for echo detection.
 ///
 /// # Returns
 ///
@@ -640,6 +647,7 @@ fn watch_file(
     path: String,
     window: Window,
     state: tauri::State<WatcherState>,
+    tracker: tauri::State<file_state::FileTrackerState>,
 ) -> Result<(), String> {
     println!(
         "DEBUG: watch_file called for path: {} on window: {}",
@@ -649,6 +657,9 @@ fn watch_file(
     let path_clone = path.clone();
     let window_label = window.label().to_string();
     let app_handle = app.clone();
+    // The watcher callback outlives this command, so it gets its own handle
+    // onto the shared tracker rather than borrowing `tauri::State`.
+    let tracker_handle = tracker.share();
 
     let mut watchers = state.watchers.lock().unwrap();
 
@@ -669,6 +680,15 @@ fn watch_file(
                         notify::EventKind::Modify(_)
                         | notify::EventKind::Create(_)
                         | notify::EventKind::Remove(_) => {
+                            // IMPL-LTTCE-FWT-00001 — drop the echo of our own
+                            // write. The disk still holds exactly what we put
+                            // there, so there is nothing for the frontend to
+                            // reload; emitting anyway would reset the editor
+                            // out from under a user who is still typing.
+                            if file_state::disk_matches_tracked_hash(&path_clone, &tracker_handle) {
+                                println!("DEBUG: Suppressed self-write echo for: {}", path_clone);
+                                return;
+                            }
                             println!(
                                 "DEBUG: Emitting file-changed to window '{}' for: {}",
                                 window_label, path_clone

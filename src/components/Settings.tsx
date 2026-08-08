@@ -42,6 +42,15 @@ export interface SettingsProps {
     defaultMermaidInit: string;
     /** Called when the user edits the Default-Mermaid-Init textarea. */
     onDefaultMermaidInitChange: (value: string) => void;
+    /**
+     * When true, a diagram copied out of the preview is put on the clipboard
+     * as a light diagram on white, whatever theme the application is using —
+     * the documents people paste into are overwhelmingly white
+     * (REQ-LTTCE-MRC-00005). When false the copy matches what is on screen.
+     */
+    copyDiagramsLight: boolean;
+    /** Called when the user flips the copy-diagrams-light toggle. */
+    onCopyDiagramsLightChange: (enabled: boolean) => void;
     /** Optional override for the close button; falls back to `close_settings_window` Tauri command. */
     onClose?: () => void;
     /** Absolute path of the settings file; shown at the bottom of the panel. */
@@ -97,29 +106,57 @@ const Toggle: React.FC<ToggleProps> = ({ on, onClick }) => (
 //******************************************************************************
 // Settings
 //******************************************************************************
-export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultThemeChange, wordWrap, onWordWrapChange, saveOnBlur, dailyNotesPath, onDailyNotesPathChange, highlightMark, onHighlightMarkChange, showWhitespace, onShowWhitespaceChange, tabSize, onTabSizeChange, blockExternalImages, onBlockExternalImagesChange, defaultMermaidInit, onDefaultMermaidInitChange, onClose, settingsPath }) => {
+/**
+ * The persisted settings object, exactly as the `save_settings` command
+ * expects it — the camelCase mirror of the Rust `Settings` struct.
+ *
+ * Named here so the payload has one definition instead of being spelled out
+ * inside a save call; adding a setting is then a change in two places (this
+ * type and the Rust struct) rather than in every handler.
+ */
+interface SettingsPayload {
+    defaultOpenTheme: 'light' | 'dark';
+    wordWrap: boolean;
+    saveOnBlur: boolean;
+    dailyNotesPath: string;
+    highlightMark: boolean;
+    showWhitespace: boolean;
+    tabSize: number;
+    blockExternalImages: boolean;
+    defaultMermaidInit: string;
+    copyDiagramsLight: boolean;
+}
+
+export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultThemeChange, wordWrap, onWordWrapChange, saveOnBlur, dailyNotesPath, onDailyNotesPathChange, highlightMark, onHighlightMarkChange, showWhitespace, onShowWhitespaceChange, tabSize, onTabSizeChange, blockExternalImages, onBlockExternalImagesChange, defaultMermaidInit, onDefaultMermaidInitChange, copyDiagramsLight, onCopyDiagramsLightChange, onClose, settingsPath }) => {
     const [status, setStatus] = useState<string>('');
 
-    const saveSettings = async (newTheme: 'light' | 'dark',
-        newWordWrap: boolean,
-        newDailyNotesPath: string,
-        newHighlightMark: boolean,
-        newShowWhitespace: boolean,
-        newTabSize: number,
-        newBlockExternalImages: boolean,
-        newDefaultMermaidInit: string) => {
+    //**************************************************************************
+    // persist
+    //**************************************************************************
+    /**
+     * Write the whole settings object: what is currently on screen, with the
+     * one field the user just changed applied on top.
+     *
+     * Every setting is always written, because `save_settings` merges a
+     * complete object. Passing only the delta here — rather than repeating
+     * the full argument list at each call site — is what keeps adding a
+     * setting from touching every handler in this file.
+     */
+    const persist = async (overrides: Partial<SettingsPayload>) => {
+        const settingsObject: SettingsPayload = {
+            defaultOpenTheme: defaultTheme,
+            wordWrap,
+            saveOnBlur,
+            dailyNotesPath,
+            highlightMark,
+            showWhitespace,
+            tabSize,
+            blockExternalImages,
+            defaultMermaidInit,
+            copyDiagramsLight,
+            ...overrides,
+        };
         try {
-            const settingsObject = {
-                defaultOpenTheme: newTheme,
-                wordWrap: newWordWrap,
-                saveOnBlur: saveOnBlur,
-                dailyNotesPath: newDailyNotesPath,
-                highlightMark: newHighlightMark,
-                showWhitespace: newShowWhitespace,
-                tabSize: newTabSize,
-                blockExternalImages: newBlockExternalImages,
-                defaultMermaidInit: newDefaultMermaidInit,
-            };
             await invoke('save_settings', { settingsPath, settings: settingsObject });
             setStatus('Saved!');
             setTimeout(() => setStatus(''), 2000);
@@ -128,35 +165,36 @@ export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultTheme
             setStatus('Error saving settings');
         }
     };
+    // persist END *************************************************************
 
     const handleThemeChange = (newTheme: 'light' | 'dark') => {
         onDefaultThemeChange(newTheme);
-        saveSettings(newTheme, wordWrap, dailyNotesPath, highlightMark, showWhitespace, tabSize, blockExternalImages, defaultMermaidInit);
+        persist({ defaultOpenTheme: newTheme });
     };
 
     const handleWordWrapChange = () => {
         const newWrap = !wordWrap;
         onWordWrapChange(newWrap);
-        saveSettings(defaultTheme, newWrap, dailyNotesPath, highlightMark, showWhitespace, tabSize, blockExternalImages, defaultMermaidInit);
+        persist({ wordWrap: newWrap });
     };
 
     const handleDailyNotesPathChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newPath = e.target.value;
         onDailyNotesPathChange(newPath);
-        saveSettings(defaultTheme, wordWrap, newPath, highlightMark, showWhitespace, tabSize, blockExternalImages, defaultMermaidInit);
+        persist({ dailyNotesPath: newPath });
     };
 
     const handleHighlightMarkChange = () => {
         const newValue = !highlightMark;
         onHighlightMarkChange(newValue);
-        saveSettings(defaultTheme, wordWrap, dailyNotesPath, newValue, showWhitespace, tabSize, blockExternalImages, defaultMermaidInit);
+        persist({ highlightMark: newValue });
     };
 
     // IMPL-LTTCE-WSP-00003 — "Show Whitespace" toggle: propagate + persist
     const handleShowWhitespaceChange = () => {
         const newValue = !showWhitespace;
         onShowWhitespaceChange(newValue);
-        saveSettings(defaultTheme, wordWrap, dailyNotesPath, highlightMark, newValue, tabSize, blockExternalImages, defaultMermaidInit);
+        persist({ showWhitespace: newValue });
     };
 
     // IMPL-LTTCE-WSP-00007 — "Tab Size" numeric setting: clamp to the valid
@@ -168,19 +206,26 @@ export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultTheme
         if (Number.isNaN(parsed)) return;
         const newValue = clampTabSize(parsed);
         onTabSizeChange(newValue);
-        saveSettings(defaultTheme, wordWrap, dailyNotesPath, highlightMark, showWhitespace, newValue, blockExternalImages, defaultMermaidInit);
+        persist({ tabSize: newValue });
     };
 
     const handleBlockExternalImagesChange = () => {
         const newValue = !blockExternalImages;
         onBlockExternalImagesChange(newValue);
-        saveSettings(defaultTheme, wordWrap, dailyNotesPath, highlightMark, showWhitespace, tabSize, newValue, defaultMermaidInit);
+        persist({ blockExternalImages: newValue });
     };
 
     const handleDefaultMermaidInitChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const newValue = e.target.value;
         onDefaultMermaidInitChange(newValue);
-        saveSettings(defaultTheme, wordWrap, dailyNotesPath, highlightMark, showWhitespace, tabSize, blockExternalImages, newValue);
+        persist({ defaultMermaidInit: newValue });
+    };
+
+    // IMPL-LTTCE-MRC-00003 — "Copy Diagrams On Light Background" toggle
+    const handleCopyDiagramsLightChange = () => {
+        const newValue = !copyDiagramsLight;
+        onCopyDiagramsLightChange(newValue);
+        persist({ copyDiagramsLight: newValue });
     };
 
     return (
@@ -285,6 +330,15 @@ export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultTheme
 
             <div style={{ marginBottom: '2rem' }}>
                 <h3>Mermaid</h3>
+
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <span title="When ON, a diagram copied from the preview is put on the clipboard as a light diagram on a white background, whatever theme Lattice is using — most documents you paste into are white. When OFF, the copy matches what you see on screen.">
+                        Copy Diagrams On Light Background:
+                    </span>
+                    <Toggle on={copyDiagramsLight} onClick={handleCopyDiagramsLightChange} />
+                    <span>{copyDiagramsLight ? 'Always light' : 'Match theme'}</span>
+                </div>
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     <span title="Applied as the global mermaid init for diagrams that have no %%{init:...}%% block. Charts with an inline init override this automatically.">
                         Default-Mermaid-Init:

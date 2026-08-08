@@ -39,6 +39,13 @@ pub struct Settings {
 
     #[serde(default = "default_mermaid_init")]
     pub default_mermaid_init: String,
+
+    // IMPL-LTTCE-MRC-00003 — persisted "Copy Diagrams On Light Background"
+    // flag (REQ-LTTCE-MRC-00005, default ON). When set, a diagram copied to
+    // the clipboard is rendered light-on-white whatever theme the app is in,
+    // because the documents people paste into are overwhelmingly white.
+    #[serde(default = "default_copy_diagrams_light")]
+    pub copy_diagrams_light: bool,
 }
 
 fn default_theme() -> String {
@@ -65,6 +72,9 @@ fn default_tab_size() -> u32 {
 fn default_block_external_images() -> bool {
     true
 }
+fn default_copy_diagrams_light() -> bool {
+    true
+}
 fn default_mermaid_init() -> String {
     " {'theme': 'base', 'themeVariables': {\n  'signalColor':     '#1a1a1a',\n  'signalTextColor': '#1a1a1a',\n  'lineColor':       '#1a1a1a',\n  'actorLineColor':  '#1a1a1a',\n  'fontSize':        '16px'\n}}".to_string()
 }
@@ -81,6 +91,7 @@ impl Default for Settings {
             tab_size: default_tab_size(),
             block_external_images: default_block_external_images(),
             default_mermaid_init: default_mermaid_init(),
+            copy_diagrams_light: default_copy_diagrams_light(),
         }
     }
 }

@@ -686,3 +686,105 @@ fn test_write_conflict_when_file_exists_but_is_unreadable() {
     // On platforms where make_unreadable is a no-op (Windows without ACL
     // elevation) we only verify the call did not panic.
 }
+
+
+//******************************************************************************
+// disk_matches_tracked_hash tests (UTST-LTTCE-FWT-00001)
+//******************************************************************************
+// Covers the self-write echo filter that keeps Lattice's own autosave from
+// coming back as a "changed externally" event (REQ-LTTCE-FWT-00001).
+// Every uncertain case must answer `false` — the filter may never swallow a
+// real external edit.
+
+/// Fresh tracker + temp file, registered exactly as a real open would.
+/// Returns (state, temp_dir, path_string). `temp_dir` must stay alive.
+fn tracked_file(content: &str) -> (FileTrackerState, tempfile::TempDir, String) {
+    use std::collections::HashMap;
+    use std::sync::{Arc, Mutex};
+
+    let state = FileTrackerState {
+        files: Arc::new(Mutex::new(HashMap::new())),
+    };
+    let temp_dir = tempfile::tempdir().unwrap();
+    let file_path = temp_dir.path().join("watched.md");
+    let path_str = file_path.to_string_lossy().to_string();
+
+    write_text_file_internal(path_str.clone(), content.to_string(), &state).unwrap();
+    (state, temp_dir, path_str)
+}
+
+#[test]
+fn test_echo_filter_true_right_after_our_own_write() {
+    // The exact scenario that lost people's undo history: autosave writes,
+    // the OS fires Modify, and nothing on disk has actually changed.
+    let (state, _temp, path) = tracked_file("hello\nworld\n");
+    assert!(
+        super::disk_matches_tracked_hash(&path, &state),
+        "content we just wrote ourselves must be recognised as an echo"
+    );
+}
+
+#[test]
+fn test_echo_filter_true_right_after_our_own_read() {
+    let (state, _temp, path) = tracked_file("hello\n");
+    read_text_file_internal(path.clone(), Some("main".to_string()), &state).unwrap();
+    assert!(
+        super::disk_matches_tracked_hash(&path, &state),
+        "content we just read must be recognised as unchanged"
+    );
+}
+
+#[test]
+fn test_echo_filter_false_after_external_edit() {
+    let (state, _temp, path) = tracked_file("hello\n");
+    // Somebody else touches the file behind our back.
+    fs::write(&path, "hello from another editor\n").unwrap();
+    assert!(
+        !super::disk_matches_tracked_hash(&path, &state),
+        "a genuine external edit must NOT be filtered out"
+    );
+}
+
+#[test]
+fn test_echo_filter_false_for_untracked_path() {
+    use std::collections::HashMap;
+    use std::sync::{Arc, Mutex};
+
+    let state = FileTrackerState {
+        files: Arc::new(Mutex::new(HashMap::new())),
+    };
+    let temp_dir = tempfile::tempdir().unwrap();
+    let file_path = temp_dir.path().join("never-opened.md");
+    fs::write(&file_path, "content").unwrap();
+
+    assert!(
+        !super::disk_matches_tracked_hash(&file_path.to_string_lossy(), &state),
+        "a file we never read or wrote cannot be an echo of our own write"
+    );
+}
+
+#[test]
+fn test_echo_filter_false_when_file_is_gone() {
+    let (state, _temp, path) = tracked_file("hello\n");
+    fs::remove_file(&path).unwrap();
+    assert!(
+        !super::disk_matches_tracked_hash(&path, &state),
+        "deletion is a real change and must reach the frontend"
+    );
+}
+
+#[test]
+fn test_share_observes_later_updates() {
+    // The watcher callback holds a `share()`d handle taken at registration
+    // time; it must see writes that happen long afterwards.
+    let (state, _temp, path) = tracked_file("first\n");
+    let watcher_handle = state.share();
+
+    write_text_file_internal(path.clone(), "second\n".to_string(), &state).unwrap();
+
+    assert!(
+        super::disk_matches_tracked_hash(&path, &watcher_handle),
+        "shared handle must observe hashes recorded after it was created"
+    );
+}
+// disk_matches_tracked_hash tests END *****************************************

@@ -1081,6 +1081,155 @@ the Tauri command mocked (pre-filter, IPC contract, each outcome, and both fall-
 
 ---
 
+## Feature: Copying Rendered Diagrams
+
+<!--ARCH-LTTCE-MRC-00001-->
+
+### Overview
+
+Covers Chapter MRC of the requirements. The picture is produced **at render time** and consumed **at copy
+time**, which is the only arrangement that works: a `copy` listener must fill the clipboard before it
+returns, and turning an SVG into a PNG goes through the image decoder, which is asynchronous.
+
+```
+mermaid render ──▶ svg in the DOM
+                        │  idle callback
+                        ▼
+                 rasterise to PNG ──▶ cached on the container as a data attribute
+                                              │
+   Ctrl+C in preview ──▶ clone selection ──▶ does the clone carry a cached PNG?
+                                              │no ──▶ return; WebView copies as before
+                                              │yes
+                                              ▼
+                                     swap container for <img src=data:…>, set
+                                     text/html + text/plain, preventDefault
+```
+
+### Producing the image — `lib/svg-raster.ts` + `Mermaid.tsx`
+
+`rasterizeSvg` serialises a clone of the SVG with explicit width/height, decodes it through an `Image`
+from a `data:` URL, and draws it on a canvas at 2× over an opaque background. Mermaid's SVG is
+self-contained (its CSS is an internal `<style>` element), so the canvas is not tainted and `toDataURL`
+succeeds. `Mermaid.tsx` runs this in a `requestIdleCallback` after each render and parks the result, plus
+the on-screen dimensions, on the container element — the same node a cloned selection carries, so the copy
+path needs no lookup back into the live DOM.
+
+**"Copy Diagrams On Light Background" (REQ-LTTCE-MRC-00005).** With the setting on and the application in
+dark theme, the diagram is rendered a *second* time, off-screen, in light colours, and that is what gets
+rasterised. Re-backgrounding the dark rendering is not an option: Mermaid draws dark-theme diagrams in
+light colours, so white behind them gives white on white.
+
+The light theme is requested with an `%%{init:…}%%` directive prepended to the diagram source rather than
+through `mermaid.initialize`. `initialize` is global state, and several diagrams render concurrently —
+flipping the theme under them mid-flight would repaint the wrong ones. Mermaid applies directives in
+order, which gives the precedence the requirement asks for: our `theme: 'default'` first, the user's
+Default-Mermaid-Init over it, and a directive inside the diagram last. The off-screen copy is never laid
+out, so it has no box to measure; the on-screen SVG's dimensions are passed to `rasterizeSvg` explicitly.
+A failed light render falls back to rasterising what is on screen.
+
+Rasterising in Rust was rejected: it would mean an SVG-renderer crate, a heavy dependency for something the
+WebView does natively, and it would then have to reproduce the WebView's font and layout decisions to
+render the picture the user actually saw. The standing "pure logic belongs in Rust" preference does not
+reach work whose purpose is to capture what the browser rendered.
+
+The background colour comes from `lib/preview-theme.ts`, shared with the preview pane itself — two copies
+of those hex values would drift, and the drift would only ever surface in somebody's pasted document.
+
+### Consuming it — `lib/preview-copy.ts` + the listener in `App.tsx`
+
+The listener is on the preview pane. It clones the selection, hands it to `buildCopyHtml`, and does
+nothing at all if the answer is `null` — which it is whenever the selection carries no cached PNG,
+including a diagram that has not been rasterised yet (REQ-LTTCE-MRC-00004). Interception is deliberately
+this narrow so that REQ-LTTCE-CPY-00001 continues to hold, unmodified, for every other selection.
+
+Rewriting works on a clone of the live nodes, so inline styles — the mechanism the highlight guarantee
+rests on — survive by construction rather than by re-implementation.
+
+### Verification
+
+`preview-copy.test.ts` covers the transform: detection, substitution, sizing, multiple diagrams, the
+not-yet-rasterised case, and inline-style preservation. `App.preview-copy.test.tsx` covers the wiring and
+both sides of the boundary — a diagram selection is rewritten, a prose or highlighted selection is not
+touched. `Mermaid.test.tsx` covers when the light copy is requested and with which init precedence, and
+that a failed light render leaves the screen alone. `settings_tests.rs` covers the flag's default and its
+lenient parse.
+
+`svg-raster.ts` is **not** unit-tested: jsdom has no canvas and no SVG rasteriser, so neither the raster
+nor its colours can be asserted here. It is kept minimal for that reason, fails closed to `null`, and
+needs a manual paste check per platform and per theme.
+
+---
+
+## Feature: File Watching and External Reload
+
+<!--ARCH-LTTCE-FWT-00001-->
+
+### Overview
+
+Covers Chapter FWT of the requirements. A filesystem notification has to survive three gates before it is
+allowed to replace the open document. The gates are deliberately layered: each one alone closes the common
+case, and each one alone is insufficient.
+
+```
+notify event ──▶ [1] Rust: content hash ≠ tracked hash?   ──no──▶ dropped, never emitted
+                          │yes
+                          ▼
+                 [2] App: same file, not dirty, still not dirty
+                     after the read, text ≠ what the editor holds?  ──no──▶ ignored
+                          │yes
+                          ▼
+                 [3] Editor: docEpoch bumped?              ──no──▶ document untouched
+                          │yes
+                          ▼
+                 document replaced, caret kept, undo history reset
+```
+
+### Gate 1 — Rust, `watch_file` + `file_state::disk_matches_tracked_hash`
+
+`FileTrackerState` already stores the SHA-512 of the physical bytes for every file Lattice has read or
+written; `read_text_file` and `do_writefile` both keep it current. The watcher callback re-hashes the file
+and compares. Equal ⇒ the notification is the echo of our own write and is not emitted at all.
+
+The callback outlives the `watch_file` command that installed it, so it holds a `FileTrackerState::share()`
+handle (an `Arc` clone of the registry) rather than borrowing `tauri::State`. Every uncertain answer —
+untracked path, unreadable file, lock timeout — fails **open**, i.e. the event is emitted: the filter may
+lose an echo, never a real edit.
+
+### Gate 2 — Frontend, the `file-changed` listener in `App.tsx`
+
+Registered **once**, for the window's lifetime. Everything variable (`m_isDirty`, `m_currentFilePath`) is
+read through a ref at fire time. The previous design re-registered the listener on each dirty transition,
+which was the defect's direct cause: `listen()` resolves asynchronously, so the *old* callback — created
+while the document was clean — was frequently still the live one when the event arrived.
+
+The dirty check is repeated **after** the `read_text_file` await, and the result is compared against the
+editor's current text before anything is applied.
+
+### Gate 3 — `Editor`, the `docEpoch` prop
+
+`App` owns a monotonic counter bumped by `applyLoadedDocument`, the single funnel for "this text came from
+disk" — it covers all four loads (launch with a file, open, session restore, external reload), not just
+the external one. The editor rebuilds its `EditorState` when — and only when — that counter changes. The
+trigger used to be a comparison between the `initialDoc` prop and the live document, which made every
+stale render of that prop capable of destroying the session. Note that the counter deliberately does not
+say *why* the text was loaded: deciding whether a notification deserves a load is gates 1 and 2, and gate
+3 refuses to act on anything that is not an explicit request.
+
+Rebuilding resets the dirty baseline and places the caret by comparing `currentFilePath` against the path
+the current document was loaded from: same file ⇒ keep the offset (clamped to the new length), different
+file ⇒ offset 0. A path change arriving *without* an epoch bump is a Save As — the same document under a
+new name — and updates the recorded path without moving the caret.
+
+### Verification
+
+`file_state_integration_tests.rs` covers the hash filter against real files (own write, own read, external
+edit, untracked path, deleted file, shared handle). `App.file-watch.test.tsx` covers the listener gates
+including the two races — dirty *after* registration and dirty *during* the read.
+`Editor.external-load.test.tsx` covers the epoch gate, the undo history, and the caret rules (same file,
+different file, rename, clamping).
+
+---
+
 ## Architectural Decisions
 
 ### ADR-01: External Image Fetches Blocked by Default

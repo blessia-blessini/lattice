@@ -5,10 +5,25 @@ Edit the section for your next version **before** pushing the release tag like v
 
 
 
-## v0.3.10
+## v0.3.11
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- RELEASE v0.3.10
+
+---
+
+## v0.3.10
+
+### Changes
+- CHORE: Update dependencies
+- FEAT: Setting — copy Mermaid diagrams on a light background
+- FEAT: Copy Mermaid diagrams from the preview as pictures
+- FIX: Stop the file watcher from resetting the editor mid-typing
+
+
+---
+- bumped to version 3.10
 - Chore: Release Prep
 - Update version
 

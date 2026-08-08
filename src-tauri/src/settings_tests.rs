@@ -200,6 +200,33 @@ fn test_parse_settings_lenient_drops_only_corrupt_fields() {
     assert_eq!(s2.daily_notes_path, "/d");
 }
 
+// -----------------------------------------------------------------------
+// copyDiagramsLight (REQ-LTTCE-MRC-00005 / IMPL-LTTCE-MRC-00003)
+// -----------------------------------------------------------------------
+/// UTST — the flag defaults ON: a diagram pasted into a white document is by
+/// far the common case, so a settings file that predates the flag (or omits
+/// it) must behave as "always light".
+#[test]
+fn test_copy_diagrams_light_defaults_on() {
+    assert!(Settings::default().copy_diagrams_light);
+    assert!(parse_settings_lenient(r#"{"wordWrap": true}"#).copy_diagrams_light);
+}
+
+#[test]
+fn test_copy_diagrams_light_round_trips() {
+    let s = parse_settings_lenient(r#"{"copyDiagramsLight": false}"#);
+    assert!(!s.copy_diagrams_light, "an explicit false must be honoured");
+}
+
+#[test]
+fn test_copy_diagrams_light_corrupt_value_costs_only_itself() {
+    // Same lenient rule as every other field: settings.json is hand-editable.
+    let json = r#"{"copyDiagramsLight": "yes please", "wordWrap": true}"#;
+    let s = parse_settings_lenient(json);
+    assert!(s.copy_diagrams_light, "corrupt value falls back to its default");
+    assert!(s.word_wrap, "the valid sibling survives");
+}
+
 #[test]
 fn test_parse_settings_lenient_valid_file_unchanged() {
     // Fast path: a fully valid file parses exactly as before.

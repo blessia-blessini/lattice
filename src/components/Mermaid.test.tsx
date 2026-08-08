@@ -212,4 +212,71 @@ describe('Mermaid', () => {
         await waitFor(() => expect(mermaid.initialize).toHaveBeenCalledTimes(2));
         expect(vi.mocked(mermaid.initialize).mock.calls[1][0]).toMatchObject({ theme: 'base' });
     });
+
+    // -----------------------------------------------------------------------
+    // Light copy for the clipboard (REQ-LTTCE-MRC-00005, IMPL-LTTCE-MRC-00003)
+    // -----------------------------------------------------------------------
+    // Only the *request* for a light render is observable here: turning the
+    // resulting SVG into a PNG needs a canvas, which jsdom does not have.
+    // What these lock down is that the second render is asked for exactly
+    // when it should be, and that it never disturbs the diagram on screen.
+
+    /** The `chart` argument of the Nth mermaid.render call. */
+    const renderedSource = (n: number) => String(vi.mocked(mermaid.render).mock.calls[n][1]);
+
+    it('renders a second, light copy when in dark theme with copyLight on', async () => {
+        render(<Mermaid chart={CHART} theme="dark" copyLight={true} />);
+        await waitFor(() => expect(mermaid.render).toHaveBeenCalledTimes(2));
+
+        // The light theme is requested per-diagram, via a directive — NOT via
+        // mermaid.initialize, which is global and would repaint other
+        // diagrams rendering at the same time.
+        expect(renderedSource(1)).toContain('%%{init:');
+        expect(renderedSource(1)).toContain('"theme":"default"');
+        expect(renderedSource(1)).toContain(CHART);
+    });
+
+    it('does not render a second copy in light theme — the screen copy is already light', async () => {
+        render(<Mermaid chart={CHART} theme="light" copyLight={true} />);
+        await act(async () => { await new Promise(r => setTimeout(r, 10)); });
+        expect(mermaid.render).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not render a second copy when copyLight is off', async () => {
+        render(<Mermaid chart={CHART} theme="dark" copyLight={false} />);
+        await act(async () => { await new Promise(r => setTimeout(r, 10)); });
+        expect(mermaid.render).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the user Default-Mermaid-Init in the light copy', async () => {
+        // The setting decides the background, not the user's colours: their
+        // themeVariables must survive into the copy.
+        render(<Mermaid chart={CHART} theme="dark" copyLight={true}
+            mermaidInit="{'themeVariables': {'fontSize': '20px'}}" />);
+        await waitFor(() => expect(mermaid.render).toHaveBeenCalledTimes(2));
+
+        expect(renderedSource(1)).toContain('"fontSize":"20px"');
+        expect(renderedSource(1)).toContain('"theme":"default"');
+    });
+
+    it('lets a user-chosen theme win over the light default', async () => {
+        render(<Mermaid chart={CHART} theme="dark" copyLight={true} mermaidInit="{'theme':'forest'}" />);
+        await waitFor(() => expect(mermaid.render).toHaveBeenCalledTimes(2));
+
+        expect(renderedSource(1)).toContain('"theme":"forest"');
+    });
+
+    it('leaves the on-screen diagram alone when the light copy fails', async () => {
+        vi.mocked(mermaid.render)
+            .mockResolvedValueOnce({ svg: '<svg data-testid="mock-svg">on screen</svg>', diagramType: 'graph' })
+            .mockRejectedValueOnce(new Error('light render failed'));
+        const errSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+        let container!: HTMLElement;
+        await act(async () => { ({ container } = render(<Mermaid chart={CHART} theme="dark" copyLight={true} />)); });
+        await act(async () => { await new Promise(r => setTimeout(r, 10)); });
+
+        expect(container.querySelector('[data-testid="mock-svg"]')?.textContent).toBe('on screen');
+        errSpy.mockRestore();
+    });
 });

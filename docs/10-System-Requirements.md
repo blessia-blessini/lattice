@@ -386,6 +386,12 @@ unknown tags together with their attributes — so a highlight defined by a styl
 `<mark>` element is lost twice over. Placing the colour inline, on a `<span>`, removes both failure
 modes at the source rather than patching the clipboard afterwards.
 
+*Note*: the single exception to "without the application intercepting clipboard events" is a
+selection containing a rendered diagram, which REQ-LTTCE-MRC-00002 rewrites. The guarantee above is
+unaffected in either direction: selections without a diagram are never intercepted
+(REQ-LTTCE-MRC-00003), and a rewritten selection is built by cloning the live nodes, inline styles
+included.
+
 
 <!--REQ-LTTCE-CPY-00002-->
 **REQ-LTTCE-CPY-00002** — The inline highlight colour SHALL follow the active preview theme
@@ -492,6 +498,111 @@ a line that already holds text, a line break SHALL be inserted on the affected s
 
 *Rationale*: GFM[^gfm] only recognises a table whose header row starts a line. Without the break the paste
 renders as a paragraph full of pipes.
+
+
+## Chapter MRC — Copying Rendered Diagrams
+
+A Mermaid[^mermaid] diagram is rendered in the preview as an inline `<svg>`. Copying it appears to work —
+the WebView[^webview] does put that markup in the clipboard's HTML flavour — and then the paste produces
+nothing at all, because the applications people paste into (Word, Outlook, Gmail, Slack) do not render
+inline SVG received from the clipboard. There is no image flavour on the clipboard either, so applications
+that paste pictures have nothing to take. The user copies a diagram and pastes a hole.
+
+<!--REQ-LTTCE-MRC-00001-->
+**REQ-LTTCE-MRC-00001** — Each rendered diagram SHALL have a raster image of itself available, at the same
+dimensions in CSS pixels as the diagram on screen, and flattened onto an opaque background so that no
+transparency reaches the clipboard.
+
+*Rationale*: a receiving application that cannot composite alpha renders transparency as black, which on a
+diagram means an unreadable picture. Flattening at the source is the only place the correct background
+colour is known.
+
+<!--REQ-LTTCE-MRC-00005-->
+**REQ-LTTCE-MRC-00005** — A setting **"Copy Diagrams On Light Background"** (persisted key
+`copyDiagramsLight`, default **ON**) SHALL control the colours of that raster image. When ON, the image
+SHALL be a light-themed diagram on the light background colour whatever theme the application is using;
+when OFF, it SHALL match the diagram as displayed. The setting SHALL NOT change what is displayed.
+
+*Rationale*: the documents people paste into are overwhelmingly white, so a dark-theme user pasting a
+dark-theme picture gets something that does not fit the page — which is why the default is ON. It has to
+be a re-render rather than a change of background, because Mermaid[^mermaid] draws dark-theme diagrams in
+light colours: putting white behind those would yield white on white.
+
+*Note*: colours a user has chosen explicitly SHALL be preserved. The light theme applies only as a
+default, below the user's Default-Mermaid-Init and below any `%%{init:…}%%` written into the diagram
+itself.
+
+<!--REQ-LTTCE-MRC-00002-->
+**REQ-LTTCE-MRC-00002** — When a copied preview selection contains a rendered diagram, the HTML flavour
+placed on the clipboard SHALL carry that raster image in place of the diagram markup, and the plain-text
+flavour SHALL carry the text of the selection as it would have without the substitution.
+
+*Rationale*: the substitution is the whole feature; the plain-text clause is there because taking over a
+clipboard event means taking over *every* flavour it would otherwise have filled.
+
+<!--REQ-LTTCE-MRC-00003-->
+**REQ-LTTCE-MRC-00003** — A copied preview selection that contains no rendered diagram SHALL be left
+entirely to the WebView's own copy path, unmodified.
+
+*Rationale*: REQ-LTTCE-CPY-00001 guarantees highlight fidelity across every copy path the WebView offers,
+explicitly without the application intercepting clipboard events. Narrowing the interception to selections
+that actually need it keeps that guarantee intact for everything else, rather than re-establishing it by
+hand for each copy path.
+
+<!--REQ-LTTCE-MRC-00004-->
+**REQ-LTTCE-MRC-00004** — When a diagram's raster image is unavailable — not yet produced, or its
+production failed — the copy SHALL proceed unmodified rather than being blocked, delayed, or failed.
+
+*Rationale*: producing the image is opportunistic work. A copy is a user action with an immediate
+expectation; degrading to today's behaviour is always better than making the user wait or lose the copy.
+
+
+## Chapter FWT — File Watching and External Reload
+
+Lattice watches the open file so a change made by another program (a `git checkout`, a sync client, a
+second Lattice window) can be picked up without the user reopening the document. That watch points at the
+same file Lattice itself writes to, on every autosave and every save-on-blur — so the naive reading of a
+filesystem notification is wrong most of the time: the change it reports is usually Lattice's own.
+
+Acting on such a notification is not a cosmetic mistake. Loading a document replaces the editor's state,
+and the editing state — undo history and caret position — dies with it. This chapter exists because that
+outcome was reachable while the user was typing: the caret moved to the top of the file mid-sentence, the
+undo stack emptied, and the keystrokes typed during the reload were silently discarded.
+
+<!--REQ-LTTCE-FWT-00001-->
+**REQ-LTTCE-FWT-00001** — A filesystem notification whose file content is unchanged since Lattice last
+read or wrote that file SHALL NOT be reported to the editing session as an external change.
+
+*Rationale*: every save makes the operating system notify Lattice about Lattice. Content — not the
+notification itself, and not a timer — is the only sound test of whether anything actually changed.
+
+<!--REQ-LTTCE-FWT-00002-->
+**REQ-LTTCE-FWT-00002** — The document SHALL be replaced only as the result of an explicit load: opening a
+file, restoring a session, or reloading a file that has demonstrably changed on disk. No other event —
+including any repaint, re-render or stale copy of previously loaded text — SHALL replace the document.
+
+*Rationale*: replacing the document is destructive and irreversible (the undo history that would reverse
+it is exactly what gets destroyed). A destructive operation must be something the application asks for,
+never something it can drift into.
+
+<!--REQ-LTTCE-FWT-00003-->
+**REQ-LTTCE-FWT-00003** — While the document holds unsaved changes, an external change SHALL NOT be
+loaded. This SHALL hold for changes made at any point before the reload completes, including while the
+file is being read.
+
+*Rationale*: unsaved work outranks the disk copy. A check performed only at the start of an asynchronous
+reload leaves a window in which the user's keystrokes lose to a copy that was already stale when it was
+read.
+
+<!--REQ-LTTCE-FWT-00004-->
+**REQ-LTTCE-FWT-00004** — When the file being edited is reloaded, the caret SHALL be kept at its offset in
+the document, clamped to the length of the newly loaded text. When a *different* file is opened, the caret
+SHALL be placed at the start of the document. In both cases the loaded document SHALL be presented as
+having no unsaved changes.
+
+*Rationale*: a reload the user did not initiate should disturb them as little as the new content allows;
+sending the caret to the top of a long document loses their place for no reason. A newly opened file is a
+different document, in which the previous offset carries no meaning at all.
 
 ---
 

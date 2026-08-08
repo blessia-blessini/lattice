@@ -48,6 +48,8 @@ const DEFAULT_PROPS = {
     onBlockExternalImagesChange: vi.fn(),
     defaultMermaidInit: "{'theme': 'base'}",
     onDefaultMermaidInitChange: vi.fn(),
+    copyDiagramsLight: true,
+    onCopyDiagramsLightChange: vi.fn(),
     onClose: vi.fn(),
     settingsPath: '/vault/.lattice/settings.json',
 };
@@ -443,6 +445,72 @@ describe('Settings', () => {
             'save_settings',
             expect.objectContaining({
                 settings: expect.objectContaining({ defaultMermaidInit: "{'theme':'base'}" }),
+            })
+        );
+    });
+
+    // -----------------------------------------------------------------------
+    // Copy Diagrams On Light Background (REQ-LTTCE-MRC-00005)
+    // -----------------------------------------------------------------------
+    it('shows the copy-diagrams state as "Always light" when on', () => {
+        const { getByText } = render(<Settings {...DEFAULT_PROPS} copyDiagramsLight={true} />);
+        expect(getByText('Always light')).toBeTruthy();
+    });
+
+    it('shows the copy-diagrams state as "Match theme" when off', () => {
+        const { getByText } = render(<Settings {...DEFAULT_PROPS} copyDiagramsLight={false} />);
+        expect(getByText('Match theme')).toBeTruthy();
+    });
+
+    it('calls onCopyDiagramsLightChange with the flipped value', async () => {
+        const onChange = vi.fn();
+        const { getByText } = render(
+            <Settings {...DEFAULT_PROPS} copyDiagramsLight={true} onCopyDiagramsLightChange={onChange} />
+        );
+        await act(async () => {
+            fireEvent.click(getByText('Always light').previousElementSibling as HTMLElement);
+        });
+        expect(onChange).toHaveBeenCalledWith(false);
+    });
+
+    it('persists the flipped value', async () => {
+        const { getByText } = render(<Settings {...DEFAULT_PROPS} copyDiagramsLight={true} />);
+        await act(async () => {
+            fireEvent.click(getByText('Always light').previousElementSibling as HTMLElement);
+        });
+        expect(TauriCore.invoke).toHaveBeenCalledWith(
+            'save_settings',
+            expect.objectContaining({
+                settings: expect.objectContaining({ copyDiagramsLight: false }),
+            })
+        );
+    });
+
+    // -----------------------------------------------------------------------
+    // Payload completeness — every save writes the whole object
+    // -----------------------------------------------------------------------
+    // `save_settings` merges a complete object, and each handler now sends
+    // only its own delta on top of the current props. This is the guard that
+    // the "current props" half does not quietly lose a field.
+    it('writes every setting, not just the one that changed', async () => {
+        const { container } = render(<Settings {...DEFAULT_PROPS} />);
+        await act(async () => { fireEvent.click(getWordWrapToggle(container)); });
+
+        expect(TauriCore.invoke).toHaveBeenCalledWith(
+            'save_settings',
+            expect.objectContaining({
+                settings: expect.objectContaining({
+                    defaultOpenTheme: DEFAULT_PROPS.defaultTheme,
+                    wordWrap: !DEFAULT_PROPS.wordWrap,
+                    saveOnBlur: DEFAULT_PROPS.saveOnBlur,
+                    dailyNotesPath: DEFAULT_PROPS.dailyNotesPath,
+                    highlightMark: DEFAULT_PROPS.highlightMark,
+                    showWhitespace: DEFAULT_PROPS.showWhitespace,
+                    tabSize: DEFAULT_PROPS.tabSize,
+                    blockExternalImages: DEFAULT_PROPS.blockExternalImages,
+                    defaultMermaidInit: DEFAULT_PROPS.defaultMermaidInit,
+                    copyDiagramsLight: DEFAULT_PROPS.copyDiagramsLight,
+                }),
             })
         );
     });

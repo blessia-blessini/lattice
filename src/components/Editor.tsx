@@ -50,6 +50,19 @@ export interface EditorProps {
     onChange?: (doc: string) => void;
     /** Initial document text loaded into the editor on mount. */
     initialDoc?: string;
+    /**
+     * Monotonic load counter, incremented by the owner **only** when
+     * `initialDoc` carries text that genuinely came from disk (open, reopen,
+     * external-change reload). IMPL-LTTCE-FWT-00003.
+     *
+     * Resetting the editor destroys the undo history, so it must never be
+     * driven by comparing `initialDoc` against the live document: any stale
+     * prop — a re-render, a reload racing the user's keystrokes — would then
+     * silently discard the session. Gating on the epoch makes the reset
+     * something the owner asks for explicitly. Leave it undefined and the
+     * document is never replaced after mount.
+     */
+    docEpoch?: number;
     /** Absolute path of the file currently open; used to resolve relative image paste targets. */
     currentFilePath?: string | null;
     /** Called whenever the dirty state (unsaved changes) transitions. */
@@ -151,7 +164,7 @@ export interface EditorHandle {
     untabifyIndentation: () => Promise<boolean>;
 }
 export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
-    theme, wordWrap, fontSize, highlightMark, showWhitespace, tabSize, onChange, initialDoc, currentFilePath, onDirtyChange,
+    theme, wordWrap, fontSize, highlightMark, showWhitespace, tabSize, onChange, initialDoc, docEpoch, currentFilePath, onDirtyChange,
     onCursorLineChange
 }, ref) => {
     const editorRef = useRef<HTMLDivElement>(null);
@@ -172,8 +185,27 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
     const isRemoteUpdate = useRef(false);
     const currentFilePathRef = useRef(currentFilePath);
 
+    // IMPL-LTTCE-FWT-00003 — the external-load effect keys on `docEpoch` alone,
+    // so it reads the incoming text through a ref (updated on every render,
+    // during render, so a load that arrives in the same commit as its epoch
+    // bump is never missed).
+    const initialDocRef = useRef(initialDoc);
+    initialDocRef.current = initialDoc;
+    // Epoch already applied to the document. `null` until the first run, which
+    // belongs to mount — mount seeds the state from `initialDoc` directly.
+    const appliedEpoch = useRef<number | undefined | null>(null);
+    // Path the document currently in the editor was loaded from. Compared
+    // against the incoming path to tell "the file I am editing was reloaded"
+    // (keep my place) from "a different file was opened" (start at the top).
+    const loadedPathRef = useRef(currentFilePath);
+
     useEffect(() => {
         currentFilePathRef.current = currentFilePath;
+        // A path change with no load attached is a rename (Save As): the same
+        // document under a new name, so the caret still belongs to it. When a
+        // load *is* attached to this commit the epoch effect below owns the
+        // decision — it runs after this one and needs the previous value.
+        if (appliedEpoch.current === docEpoch) loadedPathRef.current = currentFilePath;
     }, [currentFilePath]);
 
     /**
@@ -716,25 +748,57 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
         };
     }, []);
 
+    //**************************************************************************
+    // External document load (IMPL-LTTCE-FWT-00003)
+    //**************************************************************************
+    // Replaces the document when — and ONLY when — the owner bumps `docEpoch`.
+    //
+    // The trigger used to be "`initialDoc` differs from what's in the editor",
+    // which made every stale render of the prop a loaded gun: a reload racing
+    // the user's typing rebuilt the state, and rebuilding the state throws away
+    // the undo history and drops the cursor at offset 0 — the user's next
+    // keystroke landed at the top of the file. The epoch makes the reset an
+    // explicit request from the owner instead of a side effect of comparison.
     useEffect(() => {
-        if (viewRef.current && initialDoc !== undefined) {
-            const currentDoc = viewRef.current.state.doc.toString();
-            // Only update if content is materially different
-            if (currentDoc !== initialDoc) {
-                // Use setState to completely reset the editor state for the new document.
-                // This clears the undo/redo history and sets the new content as the baseline.
-                const newState = EditorState.create({
-                    doc: initialDoc,
-                    extensions: getExtensions()
-                });
-                viewRef.current.setState(newState);
-
-                // When loading a new doc from outside, we assume it's "saved" state
-                lastSavedDepth.current = undoDepth(viewRef.current.state);
-                onDirtyChange?.(false);
-            }
+        // First run belongs to mount, which already seeded the state with
+        // `initialDoc`; adopt the epoch without touching the document.
+        if (appliedEpoch.current === null || appliedEpoch.current === docEpoch) {
+            appliedEpoch.current = docEpoch;
+            loadedPathRef.current = currentFilePathRef.current;
+            return;
         }
-    }, [initialDoc]);
+        appliedEpoch.current = docEpoch;
+
+        const view = viewRef.current;
+        const nextDoc = initialDocRef.current;
+        const fromPath = currentFilePathRef.current;
+        const isSameFile = fromPath === loadedPathRef.current;
+        loadedPathRef.current = fromPath;
+        if (!view || nextDoc === undefined) return;
+        if (view.state.doc.toString() === nextDoc) return; // nothing to do
+
+        // Reloading the file the user is editing (an external edit) must not
+        // fling the caret to the top: keep the offset, clamped into the new
+        // text. A *different* file is a different document — opening it
+        // anywhere but at the beginning would be meaningless to the user.
+        const anchor = isSameFile
+            ? Math.min(view.state.selection.main.anchor, nextDoc.length)
+            : 0;
+
+        // A full state reset is intentional here — the new text is a different
+        // document, so its undo history starts empty and becomes the baseline.
+        const newState = EditorState.create({
+            doc: nextDoc,
+            selection: { anchor },
+            extensions: getExtensions()
+        });
+        view.setState(newState);
+
+        // When loading a new doc from outside, we assume it's "saved" state
+        lastSavedDepth.current = undoDepth(view.state);
+        onDirtyChange?.(false);
+    }, [docEpoch]);
+    // External document load END **********************************************
 
     // Update theme when prop changes
     useEffect(() => {

@@ -64,6 +64,25 @@ pub struct FileTrackerState {
     pub files: Arc<Mutex<HashMap<String, FileState>>>,
 }
 
+impl FileTrackerState {
+    //**************************************************************************
+    // FileTrackerState::share
+    //**************************************************************************
+    /// Returns a second handle onto the *same* tracker map.
+    ///
+    /// The registry is an `Arc<Mutex<..>>`, so this is a refcount bump, not a
+    /// copy — both handles see every update. Exists so long-lived callbacks
+    /// (notably the filesystem watcher, which outlives the command invocation
+    /// that installed it) can hold the tracker without borrowing
+    /// `tauri::State`, and without anyone outside this module having to know
+    /// that the registry is `Arc`-shaped.
+    pub fn share(&self) -> FileTrackerState {
+        FileTrackerState {
+            files: Arc::clone(&self.files),
+        }
+    } // FileTrackerState::share END *******************************************
+}
+
 #[derive(serde::Serialize, Debug, Clone, PartialEq)]
 pub struct FileResponse {
     pub content: String,
@@ -456,6 +475,59 @@ fn do_writefile(
     })
 }
 // handle_conflict END *********************************************************
+
+
+//******************************************************************************
+// disk_matches_tracked_hash
+//******************************************************************************
+/// IMPL-LTTCE-FWT-00001 — self-write echo detection.
+///
+/// Returns `true` when the bytes currently on disk at `path` hash to exactly
+/// the hash Lattice recorded the last time it read or wrote that file.
+///
+/// Every `fs::write` Lattice performs makes the OS fire a `Modify` event on
+/// our own watcher a few milliseconds later. That echo is indistinguishable
+/// from a genuine third-party edit *unless* we compare content: after our own
+/// write the disk holds precisely what `do_writefile` recorded in
+/// `last_hash`, so the hashes match and there is nothing to reload. A real
+/// external edit changes the bytes, so the hashes differ.
+///
+/// The comparison is on **physical** (on-disk, OS line endings) content,
+/// matching how `read_text_file_internal` and `do_writefile` compute the
+/// stored hash — a pure line-ending rewrite by another tool therefore counts
+/// as a real change, which is what we want.
+///
+/// # Arguments
+///
+/// * `path`  - Absolute path of the watched file.
+/// * `state` - Tracker registry handle (see [`FileTrackerState::share`]).
+///
+/// # Returns
+///
+/// `true` only when the file is provably unchanged since Lattice last touched
+/// it. Every uncertain case — untracked path, unreadable file, lock timeout —
+/// returns `false`, so callers fail *open* and keep the pre-existing
+/// "notify the frontend" behaviour rather than swallowing a real edit.
+pub fn disk_matches_tracked_hash(path: &str, state: &FileTrackerState) -> bool {
+    // The lock is released before touching the filesystem: reading a large
+    // file must not block a concurrent save.
+    let expected = {
+        let tracker = match acquire_lock_with_timeout(&state.files) {
+            Ok(guard) => guard,
+            Err(_) => return false, // fail open
+        };
+        match tracker.get(path) {
+            Some(file_state) => file_state.last_hash.clone(),
+            None => return false, // never read/written by us — not an echo
+        }
+    };
+
+    match fs::read_to_string(path) {
+        Ok(physical_content) => textcontent_hashing::compute_hash(&physical_content) == expected,
+        Err(_) => false, // deleted, locked or binary — let the frontend decide
+    }
+} // disk_matches_tracked_hash END *********************************************
+
 
 //******************************************************************************
 // close_file
