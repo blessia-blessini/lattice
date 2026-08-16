@@ -87,6 +87,12 @@ export function makeViteConfig(isE2EBuild: boolean) {
       environment: 'jsdom',
       globals: true,
       setupFiles: './src/test/setup.ts',
+      // pool=forks prevents caching between test files while keeping the
+      // coverage results merged. Configured here (not as a CLI flag) because
+      // `npm run test:coverage -- --pool=forks` makes npm >= 11.2 emit
+      // "npm warn Unknown cli config \"--pool\"" — npm inspects argv past the
+      // `--` separator and will reject unknown flags in npm 12.
+      pool: 'forks',
     },
   }));
 }

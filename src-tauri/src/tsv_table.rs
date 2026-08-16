@@ -45,6 +45,7 @@
 //!   * `|`  → escaped as `\|` (GFM's documented escape inside table cells),
 //!   * newline → replaced by `<br>` (the only line break GFM renders inside a
 //!     cell; a literal newline would terminate the row).
+//!
 //! Backslashes are escaped as well, otherwise a trailing `\` in a cell would
 //! swallow the following pipe.
 //!

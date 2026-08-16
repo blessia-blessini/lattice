@@ -288,9 +288,10 @@ try {
         # vitest discovers all *.test.{ts,tsx} files automatically.
         # This includes both App.test.tsx and App.link-routing.test.tsx
         # (the link-routing suite was split to allow sandbox isolation runs).
-        # param pool=forks prevents caching while keeping the
-        #   coverage results merged
-        npm run test:coverage -- --pool=forks
+        # pool=forks (prevents caching while keeping the coverage results
+        # merged) now lives in vite.config.ts -> test.pool. Passing it as
+        # `-- --pool=forks` made npm >= 11.2 warn "Unknown cli config".
+        npm run test:coverage
         $frontendResult = $LASTEXITCODE
     }
     finally {

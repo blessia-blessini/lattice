@@ -8,12 +8,18 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.12
 
 ### Changes
-
+  <!-- INSERT BULLETS UNDER THIS LINE -->
+- RELEASE: Security ans stability fixes
 
 ## v0.3.11
 
 ### Changes
-  <!-- INSERT BULLETS UNDER THIS LINE -->
+
+- CHORE: Update NPM dependencies 2
+- Bump Version to 3.11
+- CHORE: Bump jsdom to ^29.1.1
+- FIX: future compatability | npm "Unknown cli config --pool" warning in coverage runs
+- FIX: handle future compatability | npm "Unknown cli config --pool" warning in coverage runs
 - CHORE: UPDATED NPM and CARGO dependencies 16-AUG-2026
 - SEC: prevent reinterpreting arbitrary DOM text as HTML-bearing URL content
 
