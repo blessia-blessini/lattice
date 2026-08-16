@@ -59,6 +59,14 @@ export const DIAGRAM_PNG_ATTR = 'data-lattice-diagram-png';
 /** Alt text given to the substituted image. */
 const DIAGRAM_ALT = 'Mermaid diagram';
 
+/**
+ * Accept only PNG data URIs produced by our raster path.
+ * This prevents reinterpreting arbitrary DOM text as HTML-bearing URL content.
+ */
+function isSafePngDataUri(value: string): boolean {
+    return /^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(value);
+}
+
 
 //******************************************************************************
 // fragmentHasDiagram
@@ -92,7 +100,7 @@ export function substituteDiagrams(fragment: DocumentFragment): number {
 
     containers.forEach((container) => {
         const png = container.getAttribute(DIAGRAM_PNG_ATTR);
-        if (!png) return;
+        if (!png || !isSafePngDataUri(png)) return;
 
         const img = container.ownerDocument.createElement('img');
         img.setAttribute('src', png);
