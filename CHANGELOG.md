@@ -5,10 +5,20 @@ Edit the section for your next version **before** pushing the release tag like v
 
 
 
+## v0.3.12
+
+### Changes
+
+
 ## v0.3.11
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: UPDATED NPM and CARGO dependencies 16-AUG-2026
+- SEC: prevent reinterpreting arbitrary DOM text as HTML-bearing URL content
+
+---
+
 - RELEASE v0.3.10
 
 ---
@@ -40,7 +50,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ### Changes
 
-- CHORE: UODATED NPM and CARGO dependencies
+- CHORE: UPDATED NPM and CARGO dependencies
 - FEAT: Preview Copy Fidelity
 
 ---
