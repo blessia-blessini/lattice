@@ -16,6 +16,7 @@ implementation artefacts. For the ID schema definition see `11-Traceability-Requ
   - [Chapter WSP — Show Whitespace](#chapter-wsp-show-whitespace)
   - [Chapter SET — Settings Robustness](#chapter-set-settings-robustness)
   - [Chapter CPY — Preview Copy Fidelity](#chapter-cpy-preview-copy-fidelity)
+  - [Chapter SEL — Select All Scope](#chapter-sel-select-all-scope)
   - [Chapter TBL — Spreadsheet Paste](#chapter-tbl-spreadsheet-paste)
     - [General](#general)
     - [Severity Visualisation](#severity-visualisation)
@@ -189,6 +190,29 @@ warn that all content after the fence renders as code.
 *Rationale*: an unclosed fence silently swallows the rest of the document into a code block, which is
 always unintentional.
 
+<!--REQ-LTTCE-LNT-00016-->
+**REQ-LTTCE-LNT-00016** — The linter SHALL emit an **error** diagnostic when a line has the shape of a
+GFM[^gfm] task-list item (a bullet or ordered list marker, then `[`, one character, `]`) and an
+**invisible character** occupies any of the three structural positions of that marker: between the list
+marker and the opening bracket, inside the brackets, or directly after the closing bracket. *Invisible
+character* means a character that is neither U+0020 (space) nor U+0009 (tab) and that has either no
+glyph or a glyph indistinguishable from a space — U+00A0, U+2000–U+200D, U+202F, U+205F, U+2060,
+U+3000, U+FEFF and the remaining members of that set. The diagnostic SHALL span exactly the offending
+character and SHALL name it by code point and Unicode name (e.g. `U+00A0 NO-BREAK SPACE`).
+*Rationale*: GFM accepts only space and tab in a task-list marker, so one such character silently
+demotes the item to an ordinary list item that renders a literal `[ ]` instead of a checkbox. Author and
+reviewer see two identical-looking lines rendering differently, with nothing in the editor to explain
+it. The characters arrive by paste from word processors, mail and chat clients, and survive a copy
+round-trip, so they cannot be found by re-copying the text.
+
+<!--REQ-LTTCE-LNT-00017-->
+**REQ-LTTCE-LNT-00017** — The linter SHALL emit a **warning** diagnostic when the leading whitespace of
+a line contains an invisible character as defined in REQ-LTTCE-LNT-00016. A line consisting *only* of
+whitespace SHALL NOT be flagged.
+*Rationale*: indentation decides nesting, list continuation and code blocks, and only spaces and tabs
+count as indentation. A line indented with U+00A0 does not nest as it is drawn. The exemption for
+whitespace-only lines keeps the deliberate "U+00A0 as an empty paragraph" idiom usable.
+
 ---
 
 ## Chapter LNK — Preview Link Routing
@@ -339,6 +363,19 @@ the **whole document** when the selection is empty, SHALL leave all non-leading 
 SHALL preserve undo history, and SHALL be available both from the application menu and via the
 keyboard shortcuts Ctrl/Cmd+Alt+T (Tabify) and Ctrl/Cmd+Alt+Shift+T (Untabify).
 
+<!--REQ-LTTCE-WSP-00007-->
+**REQ-LTTCE-WSP-00007** — When the feature is enabled, the edit pane SHALL additionally mark every
+**invisible character** (the set defined in REQ-LTTCE-LNT-00016) with a visual clearly distinct from the
+space dot and the tab arrow, and SHALL identify the character by code point and Unicode name on hover.
+Characters that carry no advance width SHALL still be marked. The marking SHALL remain purely
+decorative in the sense of REQ-LTTCE-WSP-00003.
+*Rationale*: the built-in whitespace visualization knows only space and tab, which is precisely the
+blind spot that lets a pasted U+00A0 hide in plain sight. The linter (REQ-LTTCE-LNT-00016 /
+REQ-LTTCE-LNT-00017) flags only the positions where such a character changes the rendering; this
+requirement covers the remainder, which are harmless to the render but still surprise the author on the
+next edit. The distinct visual is deliberate: these characters are almost never intentional, unlike the
+spaces and tabs shown in the neutral style.
+
 ---
 
 ## Chapter SET — Settings Robustness
@@ -426,6 +463,43 @@ Recorded here so they are not mistaken for defects in the requirements above.
    itself, confirming this is an Outlook behaviour, not a Lattice one. User workarounds: classic
    Outlook, or paste as an image.
 
+
+---
+
+## Chapter SEL — Select All Scope
+
+Lattice presents one WebView[^webview] document: the file-path display, the toolbar, the edit pane
+and the preview pane are branches of a single DOM tree. The platform's own Select All has no notion
+of panes — it selects the whole tree — so whenever focus is not on an editable surface (after a file
+load, after clicking a toolbar control, after a dialog closes) Ctrl/Cmd+A selects the application
+chrome along with the document, and the copy that follows carries the file path with it.
+
+<!--REQ-LTTCE-SEL-00001-->
+**REQ-LTTCE-SEL-00001** — Ctrl/Cmd+A SHALL select the **entire Markdown source as plain text in the
+edit pane** whenever the edit pane holds the keyboard focus, and also whenever focus is on
+application chrome (toolbar, file-path display, document body) while the edit pane is visible — that
+is, in the edit view and in every dual view. The selection SHALL NOT include any element outside the
+edit pane.
+*Rationale*: in any view where the source is on screen it is the document the user is working in, so
+it is the only defensible target for "select everything".
+
+<!--REQ-LTTCE-SEL-00002-->
+**REQ-LTTCE-SEL-00002** — Ctrl/Cmd+A SHALL select **exactly the rendered Markdown body of the
+preview pane** whenever the preview pane holds the keyboard focus, and whenever focus is on
+application chrome while the preview pane is the only visible pane. The resulting selection SHALL be
+copyable as HTML through the existing preview copy path (REQ-LTTCE-CPY-00001, REQ-LTTCE-MRC-00002),
+and SHALL NOT include the pane's scroll chrome or any element outside the preview body.
+
+<!--REQ-LTTCE-SEL-00003-->
+**REQ-LTTCE-SEL-00003** — Ctrl/Cmd+A SHALL retain its native meaning inside a genuine text-entry
+control (`<textarea>`, or an `<input>` of a text-bearing type), selecting that field's own content.
+The application SHALL NOT intercept the chord there.
+*Rationale*: Select All inside a settings or dialog field means "this field". Redirecting it to the
+document would replace one defect with a worse one.
+
+<!--REQ-LTTCE-SEL-00004-->
+**REQ-LTTCE-SEL-00004** — Selecting the document in the edit pane SHALL also give the edit pane the
+keyboard focus, so the selection can immediately be typed over, extended or copied.
 
 ---
 

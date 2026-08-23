@@ -5,7 +5,20 @@ import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { ensureSyntaxTree } from '@codemirror/language';
 import { forceLinting, forEachDiagnostic } from '@codemirror/lint';
 import type { Diagnostic } from '@codemirror/lint';
-import { countTableCells, gfmLinter } from './gfm-linter';
+import {
+    countTableCells,
+    findIndentInvisible,
+    findTaskMarkerInvisible,
+    gfmLinter,
+} from './gfm-linter';
+
+// Written as escapes on purpose: a literal invisible character in a test
+// fixture is exactly as unreadable as it is in a document, and a reviewer
+// could not tell a deliberate fixture from a typo. Never paste the raw glyph.
+const NBSP = '\u00a0';   // NO-BREAK SPACE - the one Word/Outlook/Teams inject
+const ZWSP = '\u200b';   // ZERO WIDTH SPACE
+const NNBSP = '\u202f';  // NARROW NO-BREAK SPACE
+const BOM = '\ufeff';    // ZERO WIDTH NO-BREAK SPACE (BOM)
 
 // ── Test helper ───────────────────────────────────────────────────────────────
 // Creates a real CM6 EditorView with the Markdown language and gfmLinter
@@ -344,5 +357,162 @@ describe('lintGfm — clean document', () => {
         ].join('\n');
         const diags = await lint(clean);
         expect(diags).toHaveLength(0);
+    });
+});
+
+// ── Rule: Invisible whitespace in a task marker (REQ-LTTCE-LNT-00016) ────────
+//
+// Regression origin: a real note pasted from a mail client carried 94 U+00A0.
+// Three of them sat directly after a `[ ]`, so those bullets rendered as plain
+// list items with a literal "[ ]" while their byte-identical-looking neighbours
+// rendered as checkboxes.
+
+describe('findTaskMarkerInvisible (pure helper)', () => {
+    it('detects NBSP directly after the closing bracket', () => {
+        const hit = findTaskMarkerInvisible(`\t- [ ]${NBSP}(Leo: indeed a CR)`);
+        expect(hit).toEqual({ index: 6, code: 0x00a0, where: 'after-checkbox' });
+    });
+
+    it('detects NBSP inside the brackets', () => {
+        const hit = findTaskMarkerInvisible(`- [${NBSP}] text`);
+        expect(hit).toEqual({ index: 3, code: 0x00a0, where: 'checkbox' });
+    });
+
+    it('detects an invisible character between the list marker and the bracket', () => {
+        const hit = findTaskMarkerInvisible(`-${NBSP}[ ] text`);
+        expect(hit).toEqual({ index: 1, code: 0x00a0, where: 'marker-gap' });
+    });
+
+    it('detects a zero-width space inside the brackets', () => {
+        const hit = findTaskMarkerInvisible(`- [${ZWSP}] text`);
+        expect(hit?.code).toBe(0x200b);
+    });
+
+    it('detects a BOM after the closing bracket', () => {
+        const hit = findTaskMarkerInvisible(`- [x]${BOM} done`);
+        expect(hit?.code).toBe(0xfeff);
+    });
+
+    it('detects a narrow no-break space after the closing bracket', () => {
+        const hit = findTaskMarkerInvisible(`* [ ]${NNBSP} text`);
+        expect(hit?.code).toBe(0x202f);
+    });
+
+    it('works for ordered list markers too', () => {
+        const hit = findTaskMarkerInvisible(`3. [ ]${NBSP}text`);
+        expect(hit?.where).toBe('after-checkbox');
+    });
+
+    it('returns null for a clean ASCII task item', () => {
+        expect(findTaskMarkerInvisible('\t- [ ] (Leo: indeed a CR)')).toBeNull();
+        expect(findTaskMarkerInvisible('- [x] done')).toBeNull();
+        expect(findTaskMarkerInvisible('- [X] done')).toBeNull();
+        expect(findTaskMarkerInvisible('- [ ]\ttab separated')).toBeNull();
+    });
+
+    it('returns null for a task item with nothing after the marker', () => {
+        expect(findTaskMarkerInvisible('- [ ]')).toBeNull();
+    });
+
+    it('returns null for lines that are not list items', () => {
+        expect(findTaskMarkerInvisible(`a paragraph with${NBSP}an NBSP`)).toBeNull();
+        expect(findTaskMarkerInvisible(`# Heading${NBSP}here`)).toBeNull();
+    });
+
+    it('returns null for a bracket that is not checkbox-shaped', () => {
+        // A reference-style link label, not a checkbox the author believes in.
+        expect(findTaskMarkerInvisible(`- [a]${NBSP}(https://example.com)`)).toBeNull();
+        expect(findTaskMarkerInvisible(`- []${NBSP}text`)).toBeNull();
+    });
+});
+
+describe('lintGfm — invisible whitespace in a task marker', () => {
+    it('emits an error and points at the offending character', async () => {
+        const doc = `8. Priority logic.\n\t- [ ]${NBSP}(Leo: indeed a CR)\n\t- [ ] (Leo: indeed a CR)\n`;
+        const diags = await lint(doc);
+        const d = diags.find(x => x.severity === 'error' && x.message.includes('U+00A0'));
+        expect(d, 'expected an error for the NBSP task marker').toBeTruthy();
+        expect(d!.message).toContain('does NOT render as a checkbox');
+        // Exactly one character wide, so the underline lands on the culprit.
+        expect(d!.to - d!.from).toBe(1);
+    });
+
+    it('flags only the broken bullet, not its clean neighbour', async () => {
+        // The parent ordered item matters: a tab-indented bullet with no parent
+        // is an indented CODE BLOCK in CommonMark, and code is never reported.
+        const doc = `8. Priority logic.\n\t- [ ]${NBSP}(a)\n\t- [ ] (b)\n`;
+        const diags = await lint(doc);
+        expect(diags.filter(d => d.message.includes('U+00A0'))).toHaveLength(1);
+    });
+
+    it('still flags a broken checkbox that Lezer parses as a link reference', async () => {
+        // Regression guard: `[<invisible>]` looks like a shortcut-reference link
+        // to the Markdown parser. Excluding Link nodes here — as the bare-URL and
+        // strikethrough scans do — would silence the rule's main case.
+        const diags = await lint(`- [${NBSP}] text\n`);
+        const d = diags.find(x => x.severity === 'error' && x.message.includes('U+00A0'));
+        expect(d, 'expected the checkbox-position error').toBeTruthy();
+    });
+
+    it('names the character it found', async () => {
+        const diags = await lint(`- [${ZWSP}] text\n`);
+        const d = diags.find(x => x.message.includes('U+200B'));
+        expect(d).toBeTruthy();
+        expect(d!.message).toContain('ZERO WIDTH SPACE');
+    });
+
+    it('does NOT flag a clean task list', async () => {
+        const diags = await lint('- [ ] one\n- [x] two\n');
+        expect(diags.filter(d => d.message.includes('Invisible character'))).toHaveLength(0);
+    });
+
+    it('does NOT flag an invisible character inside a fenced code block', async () => {
+        const diags = await lint('```text\n- [ ]' + NBSP + '(demo of the bug)\n```\n');
+        expect(diags.filter(d => d.message.includes('Invisible character'))).toHaveLength(0);
+    });
+});
+
+// ── Rule: Invisible whitespace as indentation (REQ-LTTCE-LNT-00017) ──────────
+
+describe('findIndentInvisible (pure helper)', () => {
+    it('detects an NBSP-indented line', () => {
+        const hit = findIndentInvisible(`${NBSP}${NBSP} (Leo: a comment)`);
+        expect(hit).toEqual({ index: 0, code: 0x00a0, where: 'indent' });
+    });
+
+    it('detects an NBSP mixed into an otherwise normal indent', () => {
+        const hit = findIndentInvisible(`  ${NBSP} text`);
+        expect(hit?.index).toBe(2);
+    });
+
+    it('returns null for a clean indent', () => {
+        expect(findIndentInvisible('    text')).toBeNull();
+        expect(findIndentInvisible('\t\ttext')).toBeNull();
+        expect(findIndentInvisible('text')).toBeNull();
+    });
+
+    it('returns null for a blank-only line (deliberate spacer idiom)', () => {
+        expect(findIndentInvisible(NBSP)).toBeNull();
+        expect(findIndentInvisible(`  ${NBSP}  `)).toBeNull();
+    });
+
+    it('returns null when the NBSP is inside the text, not the indent', () => {
+        expect(findIndentInvisible(`  some${NBSP}text`)).toBeNull();
+    });
+});
+
+describe('lintGfm — invisible whitespace as indentation', () => {
+    it('emits a warning for an NBSP-indented line', async () => {
+        const diags = await lint(`1. An item.\n${NBSP}${NBSP} (Leo: a comment)\n`);
+        const d = diags.find(x => x.severity === 'warning' && x.message.includes('U+00A0'));
+        expect(d, 'expected a warning for the NBSP indent').toBeTruthy();
+        expect(d!.message).toContain('does not');
+        expect(d!.markClass).toContain('cm-gfm-lint-warning');
+    });
+
+    it('does NOT flag ordinary indentation', async () => {
+        const diags = await lint('1. An item.\n   continued normally.\n');
+        expect(diags.filter(d => d.message.includes('Invisible character')
+            || d.message.includes('indented with'))).toHaveLength(0);
     });
 });

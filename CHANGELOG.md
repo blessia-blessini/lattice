@@ -9,6 +9,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: Scope Ctrl/Cmd+A to the focused pane instead of the whole window
 - RELEASE: Security ans stability fixes
 
 ## v0.3.11

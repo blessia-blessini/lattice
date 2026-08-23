@@ -6,7 +6,7 @@ import { languages } from '@codemirror/language-data';
 import { githubLight, githubDark } from '@uiw/codemirror-themes-all';
 import { HighlightStyle, syntaxHighlighting, indentOnInput, indentUnit, bracketMatching, foldGutter, defaultHighlightStyle } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
-import { undoDepth, history, historyKeymap, defaultKeymap, indentWithTab, undo, redo } from '@codemirror/commands';
+import { undoDepth, history, historyKeymap, defaultKeymap, indentWithTab, undo, redo, selectAll as cmSelectAll } from '@codemirror/commands';
 import { closeBrackets, closeBracketsKeymap, completionKeymap } from '@codemirror/autocomplete';
 import { searchKeymap, highlightSelectionMatches } from '@codemirror/search';
 import { foldKeymap } from '@codemirror/language';
@@ -122,6 +122,17 @@ export interface EditorHandle {
     undo: () => void;
     /** Redoes the last undone edit. */
     redo: () => void;
+    /**
+     * Focus the edit pane and select the whole document (IMPL-LTTCE-SEL-00003).
+     *
+     * Exposed because Ctrl/Cmd+A can arrive while focus sits on the application
+     * chrome, where CodeMirror's own keymap never sees it — see `lib/select-all.ts`
+     * for why that matters. Focusing first is part of the contract: a selection
+     * the user cannot immediately type over or extend is not Select All.
+     *
+     * @returns true when an editor view existed to act on.
+     */
+    selectAll: () => boolean;
     /**
      * Toggle a GFM task-list marker on the given 1-based source line.
      * Matches lines of the form `  - [ ] text`, `* [x] text`, `1. [X] text`, etc.
@@ -469,6 +480,19 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
         },
         redo: () => {
             if (viewRef.current) redo(viewRef.current);
+        },
+        //**********************************************************************
+        // IMPL-LTTCE-SEL-00003 — selectAll
+        //**********************************************************************
+        // Reuses CM6's own `selectAll` command rather than dispatching a
+        // hand-built selection, so multi-cursor state, the selection history
+        // and any future CM semantics stay correct by construction.
+        selectAll: () => {
+            const view = viewRef.current;
+            if (!view) return false;
+            view.focus();
+            cmSelectAll(view);
+            return true;
         },
         toggleTaskAtLine: (line: number) => {
             const view = viewRef.current;

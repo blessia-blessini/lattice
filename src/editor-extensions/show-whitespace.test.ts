@@ -107,3 +107,64 @@ describe('showWhitespaceExtension', () => {
         expect(view.state.doc.toString()).toBe('a b\tc');
     });
 });
+
+// ── Invisible / exotic whitespace (REQ-LTTCE-WSP-00007, IMPL-LTTCE-WSP-0000A) ─
+//
+// Written as escapes on purpose — a raw invisible glyph in a fixture is exactly
+// as unreadable here as it is in a user's document.
+const NBSP = '\u00a0';
+const ZWSP = '\u200b';
+const IDEO = '\u3000';   // IDEOGRAPHIC SPACE
+
+describe('showWhitespaceExtension — invisible characters', () => {
+    it('marks a no-break space with .cm-invisibleChar', () => {
+        const view = makeView(`- [ ]${NBSP}(note)`);
+        expect(view.dom.querySelectorAll('.cm-invisibleChar').length).toBe(1);
+    });
+
+    it('marks each invisible character separately', () => {
+        const view = makeView(`a${NBSP}b${NBSP}c${IDEO}d`);
+        expect(view.dom.querySelectorAll('.cm-invisibleChar').length).toBe(3);
+    });
+
+    it('tags a zero-width character with the zero-width variant class', () => {
+        const view = makeView(`a${ZWSP}b`);
+        const marks = view.dom.querySelectorAll('.cm-invisibleChar-zeroWidth');
+        expect(marks.length).toBe(1);
+    });
+
+    it('does not tag a width-carrying invisible as zero-width', () => {
+        const view = makeView(`a${NBSP}b`);
+        expect(view.dom.querySelectorAll('.cm-invisibleChar').length).toBe(1);
+        expect(view.dom.querySelectorAll('.cm-invisibleChar-zeroWidth').length).toBe(0);
+    });
+
+    it('names the character in a title attribute', () => {
+        const view = makeView(`a${NBSP}b`);
+        const mark = view.dom.querySelector('.cm-invisibleChar');
+        expect(mark?.getAttribute('title')).toBe('U+00A0 NO-BREAK SPACE');
+    });
+
+    it('does NOT mark ordinary spaces or tabs as invisible characters', () => {
+        const view = makeView('a b\tc');
+        expect(view.dom.querySelectorAll('.cm-invisibleChar').length).toBe(0);
+    });
+
+    it('does not alter the document text', () => {
+        const doc = `- [ ]${NBSP}(note)`;
+        const view = makeView(doc);
+        expect(view.state.doc.toString()).toBe(doc);
+    });
+
+    it('produces no invisible marks when the extension is absent', () => {
+        const view = makeView(`a${NBSP}b`, []);
+        expect(view.dom.querySelectorAll('.cm-invisibleChar').length).toBe(0);
+    });
+
+    it('updates the marks when the document changes', () => {
+        const view = makeView('a b');
+        expect(view.dom.querySelectorAll('.cm-invisibleChar').length).toBe(0);
+        view.dispatch({ changes: { from: 1, to: 2, insert: NBSP } });
+        expect(view.dom.querySelectorAll('.cm-invisibleChar').length).toBe(1);
+    });
+});

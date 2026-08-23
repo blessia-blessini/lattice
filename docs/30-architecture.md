@@ -628,6 +628,32 @@ Three rules operate on the raw document string rather than the Lezer tree, becau
 | `~text~` (single tilde, not `~~`)    | Single-tilde strikethrough | hint     | REQ-LTTCE-LNT-00010 |
 | Opening fence with no matching close | Unclosed fenced code block | error    | REQ-LTTCE-LNT-00015 |
 
+<!--ARCH-LTTCE-LNT-00005-->
+### Line-Scan Rules — Invisible Characters
+
+Two rules scan the document **line by line** (`doc.line(n)`), because what they detect is precisely the
+*absence* of a syntax node: a task item broken by an invisible character parses as an ordinary list
+item, indistinguishable in the Lezer tree from one the author wrote deliberately. Positions inside the
+same exclusion ranges used by the text scans are skipped, so a character shown on purpose inside a code
+fence is not reported.
+
+| Position                                       | Rule                              | Severity | REQ                 |
+| ---------------------------------------------- | --------------------------------- | -------- | ------------------- |
+| Task-list marker (gap / inside `[]` / after `]`) | Invisible char breaks the checkbox | error   | REQ-LTTCE-LNT-00016 |
+| Line-leading whitespace                        | Invisible char used as indentation | warning  | REQ-LTTCE-LNT-00017 |
+
+The character table itself is **not** owned by the linter. It lives in `src/lib/invisible-chars.ts`
+(`INVISIBLE_CHARS`, `isInvisibleChar`, `isZeroWidthChar`, `describeInvisibleChar`,
+`INVISIBLE_CHAR_CLASS`) because the Show Whitespace extension needs exactly the same set — see
+ARCH-LTTCE-WSP-00001 part 7. Both consumers depend on that module's contract only, never on each
+other, and neither carries its own copy of the code points (DRY). `INVISIBLE_CHAR_CLASS` is exported as
+a regex *source string* rather than a `RegExp`, because a shared `/g` RegExp carries mutable
+`lastIndex` state and cannot be used by two scanners safely.
+
+Detection is factored into two exported pure functions — `findTaskMarkerInvisible(line)` and
+`findIndentInvisible(line)` — so the rules are unit-testable without constructing an `EditorView`, the
+same pattern already used by `countTableCells`.
+
 ### Integration Point
 
 `gfmLinter` is registered as a CM6 extension in `src/components/Editor.tsx` `getExtensions()`. The existing `lintKeymap` (already present) provides keyboard access (`Mod-Shift-m`) to the lint panel without any additional wiring.
@@ -738,9 +764,11 @@ with token colors (both are plain CSS on descendants).
 <!--ARCH-LTTCE-WSP-00001-->
 ### Overview
 
-Covers REQ-LTTCE-WSP-00001 / 00002 / 00003. Whitespace characters (spaces and tabs) are visualized in
-the edit pane by **reusing CM6[^cm6]'s built-in `highlightWhitespace()` extension** from
-`@codemirror/view` — no new dependency and no custom decorator. The extension marks stretches of spaces
+Covers REQ-LTTCE-WSP-00001 / 00002 / 00003 / 00007. Ordinary whitespace (spaces and tabs) is visualized
+in the edit pane by **reusing CM6[^cm6]'s built-in `highlightWhitespace()` extension** from
+`@codemirror/view` — no new dependency. Invisible characters, which that extension does not know about,
+are added by a small `MatchDecorator` + `ViewPlugin` pair from the same package (part 7 below) — still
+no new dependency. The built-in extension marks stretches of spaces
 with `.cm-highlightSpace` (rendered as a small centered dot per space) and each tab with
 `.cm-highlightTab` (rendered as an arrow background image). Both are **mark decorations only**: no
 widget insertion, no text mutation, no metric change — satisfying the "purely decorative" requirement by
@@ -795,6 +823,29 @@ is no logic that could live in Rust beyond the persisted flag itself). Three coo
    selection is empty; a selection ending exactly at a line start excludes that line. Invoked
    from the app menu ("Tabify/Untabify Indentation") and keymap `Mod-Alt-t` / `Mod-Alt-Shift-t`
    (T mnemonic; `Mod-Shift-t` was taken by TOC refresh).
+
+7. **Invisible characters** — `show-whitespace.ts` (IMPL-LTTCE-WSP-0000A), covering
+   REQ-LTTCE-WSP-00007. `highlightWhitespace()` knows only U+0020 and U+0009, so the characters
+   that actually cause trouble (U+00A0 above all) are invisible even with the feature ON. A
+   `MatchDecorator` built from `INVISIBLE_CHAR_CLASS` (`src/lib/invisible-chars.ts`, the same
+   module the linter uses — see ARCH-LTTCE-LNT-00005) adds a mark decoration per occurrence,
+   `.cm-invisibleChar`, plus `.cm-invisibleChar-zeroWidth` for characters with no advance width.
+   `MatchDecorator` scans only the visible range and re-scans incrementally on update, so the
+   cost does not grow with document size. Styling uses **only `background-color` and
+   `box-shadow`**: neither participates in layout, so the "purely decorative, no metric change"
+   requirement (REQ-LTTCE-WSP-00003) holds by construction — this is also the reason a
+   zero-width character is marked with a 1px `box-shadow` ring rather than a replacing widget or
+   a `border`, both of which would add width. The `title` attribute carries
+   `describeInvisibleChar(code)` so hovering a mark names the character. The decorations live in
+   the same compartment as the rest of the feature, so the existing Show Whitespace toggle
+   governs them unchanged.
+
+   *Scope note (deliberate):* the marks follow the Show Whitespace setting, which is OFF by
+   default, so an author who never enables it still sees nothing. That is acceptable because the
+   positions where an invisible character actually changes the rendering are covered by the
+   always-on linter (ARCH-LTTCE-LNT-00005); this part is the "show me everything" complement, not
+   the safety net. Making it always-on was rejected: it would put permanent marks in the editor
+   for a setting the user turned off.
 
 ### Integration Point — Settings Robustness
 
@@ -956,6 +1007,63 @@ Confirmed end-to-end on Windows by dumping the real clipboard after a preview co
 what the receiving application does with that markup — is a property of that application; see
 "Receiving-application constraints" in Chapter CPY of the requirements.
 >>>>>>> dev
+
+---
+
+## Feature: Select All Scope
+
+<!--ARCH-LTTCE-SEL-00001-->
+### Overview
+
+Covers REQ-LTTCE-SEL-00001 / 00002 / 00003 / 00004. The whole application is one DOM tree, so the
+WebView[^webview]'s built-in Select All is document-wide by definition — it has no concept of the
+edit pane, the preview pane, or the file-path display. The fix is not to fight the platform inside
+either pane, but to decide *scope* before the platform gets the chord.
+
+Four cooperating parts, all frontend (the decision depends on focus and view mode, neither of which
+exists in Rust):
+
+1. **Decision module** — `src/lib/select-all.ts`. `resolveSelectAllScope(ctx)` maps
+   `{ focused element, pane roots, pane visibility }` to `'editor' | 'preview' | 'native' | 'none'`,
+   and `selectElementContents(el)` performs the one DOM mutation the preview case needs.
+   `isSelectAllChord(e)` isolates the key test. All three are pure of React and of globals, so the
+   behaviour is unit-testable without mounting the application — the same split the GFM linter uses
+   for `countTableCells`.
+
+   Resolution order is load-bearing: **text field → pane containment → view-mode fallback**. A
+   dialog `<input>` wins over the pane that contains it (REQ-LTTCE-SEL-00003); pane containment
+   wins over the fallback, so clicking into the preview really does scope the next Ctrl+A to the
+   preview even in a dual view; and only when focus is on chrome does the view mode decide, always
+   preferring the edit pane when it is on screen.
+
+   CodeMirror's editing surface is a `contenteditable` div, **not** an `<input>`, so it is
+   deliberately not matched by the text-field test — the edit pane is recognised by containment.
+
+2. **Key handling** — `App.tsx` (IMPL-LTTCE-SEL-00004), inside the existing window `keydown`
+   listener. It stands down when `event.defaultPrevented` is already set: that is CodeMirror's
+   signal that its own keymap handled the chord while the edit pane had focus, and CM6 stays
+   authoritative for its own surface. The focused element is taken from `event.target` (a browser
+   always targets keydown at the focused element, or `<body>`) with `document.activeElement` as the
+   fallback for a non-element target.
+
+   The listener is registered once and shares an effect with the print and wheel handlers, so the
+   view mode is read through `viewModeRef` — the same ref-mirror pattern already used for the dirty
+   flag and the open path (IMPL-LTTCE-FWT-00002), rather than re-registering all of them on every
+   view switch.
+
+3. **Pane addressing** — `editorPaneRef` (hit area: anywhere in the edit pane counts as "the editor
+   has focus") and `previewBodyRef` (selection target: the rendered Markdown body, deliberately
+   *not* the pane, so the pane's scroll chrome stays outside the selection). Refs rather than
+   `querySelector` so a class rename cannot silently break Select All.
+
+4. **Editor command** — `EditorHandle.selectAll()` (IMPL-LTTCE-SEL-00003) focuses the view and
+   delegates to CM6's own `selectAll` command from `@codemirror/commands`, so multi-cursor state and
+   selection history stay correct by construction rather than by a hand-built dispatch. Focusing is
+   part of the contract (REQ-LTTCE-SEL-00004).
+
+The preview case needs no clipboard work of its own: a selection over the rendered body is exactly
+what the existing copy paths already expect, so `==highlight==` fidelity (ARCH-LTTCE-CPY-00001) and
+diagram rasterisation (ARCH-LTTCE-MRC-00001) apply to it unchanged.
 
 ---
 

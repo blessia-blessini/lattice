@@ -43,6 +43,7 @@ import { rehypeAddHeadingIds } from "./lib/rehype-heading-ids";
 import { rehypeHighlightMark } from "./lib/rehype-highlight-mark";
 import { rehypeSafeHtml } from "./lib/rehype-safe-html";
 import { remarkStripHtmlComments } from "./lib/remark-strip-html-comments";
+import { isSelectAllChord, resolveSelectAllScope, selectElementContents } from "./lib/select-all";
 // we opted for using the settings pane within the same window
 //  as it will be more mobile-friendly for porting later
 import { Settings } from "./components/Settings";
@@ -275,6 +276,13 @@ function App() {
   const [m_isDirty, setIsDirty] = useState(false);
   const editorRef = useRef<import("./components/Editor").EditorHandle>(null);
   const previewPaneRef = useRef<HTMLDivElement>(null);
+  // IMPL-LTTCE-SEL-00004 — panes addressed by ref rather than by querySelector
+  // so Select All keeps working if the class names ever change.
+  // `editorPaneRef` is the hit area (the whole pane counts as "focus is in the
+  // editor"); `previewBodyRef` is the *selection* target — the rendered
+  // Markdown body, without the pane's scroll chrome.
+  const editorPaneRef = useRef<HTMLDivElement>(null);
+  const previewBodyRef = useRef<HTMLDivElement>(null);
 
   // When the editor reconfigures (font size, theme, word-wrap), CodeMirror fires
   // a scroll event before it has remeasured block heights. getTopVisibleLine()
@@ -310,6 +318,7 @@ function App() {
   // always current.
   const isDirtyRef = useRef(false);
   const currentFilePathRef = useRef<string | null>(null);
+  const viewModeRef = useRef<ViewMode>(VIEW_EDIT);
 
   //****************************************************************************
   // applyLoadedDocument
@@ -714,7 +723,12 @@ function App() {
   useEffect(() => {
     isDirtyRef.current = m_isDirty;
     currentFilePathRef.current = m_currentFilePath;
-  }, [m_isDirty, m_currentFilePath]);
+    // IMPL-LTTCE-SEL-00004 — the global key handler is registered once and must
+    // not close over a stale view mode; mirroring it here is the same pattern,
+    // and cheaper than re-registering the print/wheel listeners it shares an
+    // effect with on every view switch.
+    viewModeRef.current = viewMode;
+  }, [m_isDirty, m_currentFilePath, viewMode]);
   // Dirty / path ref mirrors END **********************************************
 
 
@@ -1165,6 +1179,51 @@ function App() {
       }
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'l' || e.key === 'L')) {
         pauseScrollSync();
+      }
+
+      //************************************************************************
+      // IMPL-LTTCE-SEL-00004 — scoped Select All
+      //************************************************************************
+      // Lattice is one DOM tree, so the WebView's own Ctrl+A selects the whole
+      // application — toolbar and file name included — whenever focus is not on
+      // an editable surface. Scope it to the pane that owns the keystroke; see
+      // `lib/select-all.ts` for the decision table.
+      if (isSelectAllChord(e)) {
+        // CodeMirror's keymap has already handled it when the edit pane had
+        // focus, and signals that by preventing the default. Re-running it here
+        // would be harmless but would also make CM6 no longer authoritative for
+        // its own surface, so stand down.
+        if (e.defaultPrevented) return;
+
+        // The keystroke's own target is the most accurate answer to "which pane
+        // owns the focus" — a browser always targets keydown at the focused
+        // element (or <body>). Fall back to activeElement for the case where the
+        // listener is reached with a non-element target (window itself).
+        const rawTarget = e.target as unknown as Node | null;
+        const target: Element | null = rawTarget && rawTarget.nodeType === 1
+          ? (rawTarget as Element)
+          : (document.activeElement as Element | null);
+
+        const mode = viewModeRef.current;
+        const scope = resolveSelectAllScope({
+          target,
+          editorPane: editorPaneRef.current,
+          previewPane: previewPaneRef.current,
+          editorVisible: mode !== VIEW_PREVIEW,
+          previewVisible: mode !== VIEW_EDIT,
+        });
+
+        // 'native' — a dialog text field: its own Select All is the right one.
+        // 'none'   — nothing mounted yet; leave the platform to it.
+        if (scope === 'native' || scope === 'none') return;
+
+        e.preventDefault();
+        if (scope === 'editor') {
+          editorRef.current?.selectAll?.();
+        } else {
+          selectElementContents(previewBodyRef.current);
+        }
+        return;
       }
     };
 
@@ -1954,7 +2013,7 @@ function App() {
               : viewMode === VIEW_DUAL_BOTTOM ? 'column-reverse'
                 : 'row'
         }}>
-          <div className="editor-pane" style={{
+          <div ref={editorPaneRef} className="editor-pane" style={{
             flex: isDual(viewMode) ? `0 0 ${splitPct}%` : 1,
             display: viewMode === VIEW_PREVIEW ? 'none' : 'flex',
             height: isVertical(viewMode) ? 'auto' : '100%',
@@ -1992,7 +2051,7 @@ function App() {
             height: isVertical(viewMode) ? 'auto' : '100%',
             ...PREVIEW_THEME_COLORS[m_previewTheme],
           }}>
-            <div className="markdown-body preview-pane__body" data-theme={m_previewTheme}
+            <div ref={previewBodyRef} className="markdown-body preview-pane__body" data-theme={m_previewTheme}
               style={{
                 backgroundColor: PREVIEW_THEME_COLORS[m_previewTheme].backgroundColor,
                 color: PREVIEW_THEME_COLORS[m_previewTheme].color,

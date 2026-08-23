@@ -2,6 +2,7 @@ import { linter, Diagnostic } from '@codemirror/lint';
 import { syntaxTree } from '@codemirror/language';
 import { EditorView } from '@codemirror/view';
 import { SyntaxNode } from '@lezer/common';
+import { describeInvisibleChar, isInvisibleChar } from '../lib/invisible-chars';
 
 //******************************************************************************
 // IMPL-LTTCE-LNT-0000E — countTableCells helper
@@ -54,6 +55,126 @@ function validateTable(
 }
 
 //******************************************************************************
+// InvisibleHit
+//******************************************************************************
+/** One invisible character found in a structural position on a single line. */
+export interface InvisibleHit {
+    /** 0-based offset of the offending character within the line. */
+    index: number;
+    /** Its UTF-16 code unit. */
+    code: number;
+    /** Which structural position it sits in — selects the diagnostic wording. */
+    where: 'marker-gap' | 'checkbox' | 'after-checkbox' | 'indent';
+}
+
+/** True for the two characters CommonMark/GFM accepts as structural whitespace. */
+const isMarkdownSpace = (ch: string): boolean => ch === ' ' || ch === '\t';
+
+/** True for space, tab, or any invisible look-alike — the "visually blank" set. */
+const isBlankish = (line: string, i: number): boolean =>
+    isMarkdownSpace(line[i]) || isInvisibleChar(line.charCodeAt(i));
+
+
+//******************************************************************************
+// IMPL-LTTCE-LNT-00016 — findTaskMarkerInvisible helper
+//******************************************************************************
+/**
+ * Detects an invisible character inside a construct that *looks* like a GFM
+ * task-list item but will not render as one.
+ *
+ * GFM accepts only U+0020 and U+0009 as the whitespace of a task-list marker.
+ * Any look-alike (U+00A0 above all — see `lib/invisible-chars.ts` for why it
+ * gets there) disqualifies the marker silently: the item degrades to an
+ * ordinary list item whose text begins with a literal `[ ]`, complete with its
+ * normal bullet. The two lines are indistinguishable in the editor.
+ *
+ * Only the first offending character is reported: one diagnostic per line is
+ * enough to send the author to the right place, and fixing it re-runs the scan.
+ *
+ * @param line Raw text of one document line, without its line break.
+ * @returns The hit, or `null` when the line is fine or is not task-shaped.
+ *
+ * @example findTaskMarkerInvisible('- [ ]' + '\u00a0' + '(note)')
+ *          // -> { index: 5, code: 0xa0, where: 'after-checkbox' }
+ * @example findTaskMarkerInvisible('- [ ] (note)')  // -> null (clean ASCII)
+ */
+export function findTaskMarkerInvisible(line: string): InvisibleHit | null {
+    // Leading indent + a bullet (-, *, +) or an ordered marker (N. / N)).
+    const marker = /^[ \t]*(?:[-*+]|\d{1,9}[.)])/.exec(line);
+    if (!marker) return null;
+
+    // ── Gap between the list marker and the opening bracket ────────────────
+    const gapStart = marker[0].length;
+    let i = gapStart;
+    while (i < line.length && isBlankish(line, i)) i++;
+    if (i === gapStart) return null;        // no gap → not a list item at all
+    if (line[i] !== '[') return null;       // not the `[x]` shape → not our rule
+
+    // The bracket must hold exactly one character and then close.
+    if (line[i + 2] !== ']') return null;
+
+    for (let k = gapStart; k < i; k++) {
+        if (isInvisibleChar(line.charCodeAt(k))) {
+            return { index: k, code: line.charCodeAt(k), where: 'marker-gap' };
+        }
+    }
+
+    // ── Inside the brackets ────────────────────────────────────────────────
+    const box = line[i + 1];
+    if (isInvisibleChar(line.charCodeAt(i + 1))) {
+        return { index: i + 1, code: line.charCodeAt(i + 1), where: 'checkbox' };
+    }
+    // A bracket holding anything else (a letter, a digit) is ordinary text,
+    // not a checkbox the user believes in — stay silent.
+    if (!isMarkdownSpace(box) && box !== 'x' && box !== 'X') return null;
+
+    // ── Directly after the closing bracket ─────────────────────────────────
+    const after = i + 3;
+    if (after < line.length && isInvisibleChar(line.charCodeAt(after))) {
+        return { index: after, code: line.charCodeAt(after), where: 'after-checkbox' };
+    }
+    return null;
+}
+// findTaskMarkerInvisible END *************************************************
+
+
+//******************************************************************************
+// IMPL-LTTCE-LNT-00017 — findIndentInvisible helper
+//******************************************************************************
+/**
+ * Detects an invisible character used as line-leading indentation.
+ *
+ * Indentation is what decides nesting, list continuation and code blocks, and
+ * only spaces and tabs count. A line indented with U+00A0 therefore does not
+ * nest the way it is drawn — it becomes a lazy continuation of the block above,
+ * or a paragraph of its own.
+ *
+ * A line consisting *only* of blank-ish characters is deliberately not
+ * reported: a lone U+00A0 on an otherwise empty line is a deliberate idiom for
+ * forcing a visible empty paragraph.
+ *
+ * @param line Raw text of one document line, without its line break.
+ * @returns The hit, or `null` when the indent is clean.
+ *
+ * @example findIndentInvisible('\u00a0\u00a0' + '(note)')
+ *          // -> { index: 0, code: 0xa0, where: 'indent' }
+ */
+export function findIndentInvisible(line: string): InvisibleHit | null {
+    let i = 0;
+    while (i < line.length && isBlankish(line, i)) i++;
+    if (i === line.length) return null;     // blank-only line → intentional
+
+    for (let k = 0; k < i; k++) {
+        if (isInvisibleChar(line.charCodeAt(k))) {
+            return { index: k, code: line.charCodeAt(k), where: 'indent' };
+        }
+    }
+    return null;
+}
+// findIndentInvisible END *****************************************************
+
+
+//******************************************************************************
 // IMPL-LTTCE-LNT-00001 — gfmLinter
 //
 // CodeMirror linter that surfaces GFM-specific ambiguities and errors.
@@ -80,15 +201,31 @@ function lintGfm(view: EditorView): Diagnostic[] {
     // ── Build exclusion ranges ─────────────────────────────────────────────────
     // Positions inside links, images, autolinks, and code nodes are excluded
     // from text-based scans (bare URLs, single-tilde) to avoid false positives.
+    //
+    // The code nodes are collected a second time on their own, because the
+    // invisible-character rules need a *narrower* exclusion: a broken checkbox
+    // such as `[<U+00A0>]` is parsed by Lezer as a shortcut-reference `Link`,
+    // so excluding links would silence exactly the case the rule exists for.
+    // Code, on the other hand, must stay excluded everywhere — a document that
+    // *demonstrates* the problem inside a fence is not making the mistake.
     const excluded: Array<{ from: number; to: number }> = [];
+    const codeRanges: Array<{ from: number; to: number }> = [];
     tree.cursor().iterate(node => {
-        if (['Link', 'Image', 'Autolink', 'InlineCode', 'FencedCode', 'CodeBlock'].includes(node.name)) {
+        const isCode = ['InlineCode', 'FencedCode', 'CodeBlock'].includes(node.name);
+        if (isCode) codeRanges.push({ from: node.from, to: node.to });
+        if (isCode || ['Link', 'Image', 'Autolink'].includes(node.name)) {
             excluded.push({ from: node.from, to: node.to });
             return false; // don't descend into these
         }
     });
-    const isExcluded = (from: number, to: number): boolean =>
-        excluded.some(r => from >= r.from && to <= r.to);
+    const inRanges = (
+        ranges: ReadonlyArray<{ from: number; to: number }>,
+        from: number,
+        to: number,
+    ): boolean => ranges.some(r => from >= r.from && to <= r.to);
+
+    const isExcluded = (from: number, to: number): boolean => inRanges(excluded, from, to);
+    const isInCode = (from: number, to: number): boolean => inRanges(codeRanges, from, to);
 
     // ── Heading collection for duplicate detection ─────────────────────────────
     // Gathered during the tree walk; duplicate check runs after.
@@ -352,6 +489,47 @@ function lintGfm(view: EditorView): Diagnostic[] {
                     'Everything after this fence renders as code, swallowing the rest of the document.',
             });
         }
+    }
+
+    // IMPL-LTTCE-LNT-00016 / IMPL-LTTCE-LNT-00017 ── Invisible whitespace ──────
+    // Scanned per line rather than through the Lezer tree, because the damage is
+    // precisely that no node is produced: a task item broken this way parses as
+    // an ordinary list item, indistinguishable from a deliberate one. Only
+    // *structural* positions are reported — an invisible character in the middle
+    // of prose renders as a space and is harmless, and is left to the Show
+    // Whitespace extension to visualize (REQ-LTTCE-WSP-00007).
+    for (let n = 1; n <= doc.lines; n++) {
+        const line = doc.line(n);
+
+        const hit = findTaskMarkerInvisible(line.text) ?? findIndentInvisible(line.text);
+        if (!hit) continue;
+
+        const at = line.from + hit.index;
+        if (isInCode(at, at + 1)) continue;     // inside code — literal by intent
+
+        const label = describeInvisibleChar(hit.code);
+        const isTask = hit.where !== 'indent';
+
+        const message = isTask
+            ? `Invisible character ${label} ` +
+            (hit.where === 'checkbox' ? 'inside the task-list checkbox. '
+                : hit.where === 'after-checkbox' ? 'directly after the task-list checkbox. '
+                    : 'between the list marker and the checkbox. ') +
+            'GFM accepts only a space or a tab here, so this line does NOT render as a ' +
+            'checkbox — it becomes an ordinary list item showing a literal "[ ]". ' +
+            'Replace it with a normal space.'
+            : `Line indented with the invisible character ${label}. ` +
+            'Only spaces and tabs count as Markdown indentation, so this line does not ' +
+            'nest the way it looks — it attaches to the block above or starts its own ' +
+            'paragraph. Replace it with normal spaces or a tab.';
+
+        diagnostics.push({
+            from: at,
+            to: at + 1,
+            severity: isTask ? 'error' : 'warning',
+            ...(isTask ? {} : { markClass: 'cm-gfm-lint cm-gfm-lint-warning' }),
+            message,
+        });
     }
 
     return diagnostics;
