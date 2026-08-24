@@ -23,7 +23,7 @@
 
 [package]
 name = "lattice"
-version = "0.3.12"
+version = "0.3.15"
 description = "A Markdown Editor that respects standards"
 authors = ["Blessia Blessini"]
 edition = "2024"

@@ -1,7 +1,7 @@
 {
   "name": "lattice",
   "private": true,
-  "version": "0.3.12",
+  "version": "0.3.15",
   "type": "module",
   "engines": {
     "node": ">=24"
