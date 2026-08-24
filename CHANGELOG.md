@@ -4,15 +4,24 @@ All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
 
-## v0.3.13
+## v0.3.16
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Release 0.3.15
 - bump version to 3.12
 
 ---
 
 
+## v0.3.15
+
+### Changes
+- CHORE: UPDATE dependencies
+- FIX: Scope Ctrl/Cmd+A to the focused pane instead of the whole window
+- FEAT: Additional blank-char LINTing added for TODO lists
+
+---
 
 ## v0.3.12
 
