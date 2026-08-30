@@ -8,6 +8,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: update dependencies and bump package version
 - bump version to 0.3.15
 - Release 0.3.15
 - bump version to 3.12
