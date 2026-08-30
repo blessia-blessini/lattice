@@ -8,6 +8,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: Make the settings panel scroll and keep "Close Settings" reachable
 - CHORE: Add file extension to vite.config import in the E2E config
 - REFACTOR: Extract vault path resolution into vault_path.rs with mobile policy
 - FIX: Harden vault settings path resolution (false alert + lost rejections)

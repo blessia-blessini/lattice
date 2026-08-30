@@ -106,6 +106,78 @@ describe('Settings', () => {
         expect(getByText('Settings')).toBeTruthy();
     });
 
+    // -----------------------------------------------------------------------
+    // Layout — the panel must stay navigable when it outgrows the window
+    // -----------------------------------------------------------------------
+    it('puts the settings body in a scrollable region', () => {
+        const { getByTestId } = render(<Settings {...DEFAULT_PROPS} />);
+        const scroll = getByTestId('settings-scroll');
+
+        expect(scroll.style.overflowY).toBe('auto');
+        // Without minHeight:0 a flex item will not shrink below its content
+        // height, and overflowY never engages.
+        expect(scroll.style.minHeight).toBe('0px');
+        // A rule along the top marks where the scrolling region begins.
+        expect(scroll.style.borderTop).toMatch(/^1px solid /);
+    });
+
+    it('keeps "Close Settings" outside the scrollable region so it stays visible', () => {
+        const { getByText, getByTestId } = render(<Settings {...DEFAULT_PROPS} />);
+        const closeButton = getByText('Close Settings');
+        const scroll = getByTestId('settings-scroll');
+        const footer = getByTestId('settings-footer');
+
+        expect(footer.contains(closeButton)).toBe(true);
+        // The whole point: it must NOT be able to scroll out of view.
+        expect(scroll.contains(closeButton)).toBe(false);
+    });
+
+    it('keeps the settings-path line pinned in the footer, not in the scroll body', () => {
+        const { getByTestId } = render(<Settings {...DEFAULT_PROPS} />);
+        const footer = getByTestId('settings-footer');
+        const scroll = getByTestId('settings-scroll');
+        const path = Array.from(footer.querySelectorAll('p')).find(
+            p => p.textContent?.startsWith('Settings are saved to')
+        );
+
+        expect(path).toBeTruthy();
+        expect(path!.textContent).toContain(DEFAULT_PROPS.settingsPath);
+        expect(scroll.contains(path!)).toBe(false);
+    });
+
+    it('does not leave default <p> margins opening a gap under the close button', () => {
+        const { getByTestId } = render(<Settings {...DEFAULT_PROPS} />);
+        const footer = getByTestId('settings-footer');
+        const [statusLine, pathLine] = Array.from(footer.querySelectorAll('p'));
+
+        // A <p> defaults to a 1em margin top AND bottom; stacked, those plus
+        // the reserved status height opened a large dead gap.
+        expect(statusLine.style.margin).toBe('0px');
+        expect(pathLine.style.marginBottom).toBe('0px');
+        // The status line must still RESERVE its height while empty, so a
+        // message appearing cannot shove the path line around.
+        expect(statusLine.style.visibility).toBe('hidden');
+        expect(statusLine.style.minHeight).toBe('1.2em');
+    });
+
+    it('lays the panel out as a fixed-height flex column', () => {
+        const { container } = render(<Settings {...DEFAULT_PROPS} />);
+        const root = container.firstElementChild as HTMLElement;
+
+        expect(root.style.display).toBe('flex');
+        expect(root.style.flexDirection).toBe('column');
+        expect(root.style.height).toBe('100vh');
+    });
+
+    it('keeps the heading and the action bar out of the scrolling body', () => {
+        const { getByText, getByTestId } = render(<Settings {...DEFAULT_PROPS} />);
+        const scroll = getByTestId('settings-scroll');
+
+        expect(scroll.contains(getByText('Settings'))).toBe(false);
+        // ...while the settings themselves ARE inside it.
+        expect(scroll.contains(getByText('Appearance'))).toBe(true);
+    });
+
     it('renders the "Appearance" section heading', () => {
         const { getByText } = render(<Settings {...DEFAULT_PROPS} />);
         expect(getByText('Appearance')).toBeTruthy();

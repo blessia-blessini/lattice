@@ -229,14 +229,55 @@ export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultTheme
     };
 
     return (
+        // Three-band layout: pinned title, scrolling body, pinned action bar.
+        // The root previously had `height: 100vh` with the default
+        // `overflow: visible`, so once the settings list grew taller than the
+        // window the surplus was simply clipped -- it could not be scrolled to,
+        // which put "Close Settings" out of reach.  The footer's `marginTop:
+        // auto` shows a flex column was always the intent; it just was never
+        // switched on.
         <div style={{
-            padding: '2rem',
             height: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
             backgroundColor: defaultTheme === 'dark' ? '#0d1117' : '#ffffff',
             color: defaultTheme === 'dark' ? '#c9d1d9' : '#24292e',
             boxSizing: 'border-box'
         }}>
-            <h1>Settings</h1>
+            <h1 style={{
+                flex: '0 0 auto',
+                margin: 0,
+                padding: '0.75rem 2rem 0.6rem',
+                fontSize: '1.5rem'
+            }}>Settings</h1>
+
+            {/* The ONLY scrolling region.  `minHeight: 0` is required: without
+                it a flex item refuses to shrink below its content height and
+                `overflowY` never engages.  `scrollbarGutter` reserves the
+                track so toggling a setting cannot shift the layout sideways
+                (ignored by engines that do not support it). */}
+            <div
+                data-testid="settings-scroll"
+                style={{
+                    flex: '1 1 auto',
+                    minHeight: 0,
+                    overflowY: 'auto',
+                    padding: '0 2rem',
+                    scrollbarGutter: 'stable',
+                    // Force a permanently drawn scrollbar rather than the
+                    // overlay one some engines default to: the whole point is
+                    // that the user can SEE there is more below.
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: defaultTheme === 'dark'
+                        ? '#484f58 #161b22'
+                        : '#c9d1d9 #f6f8fa',
+                    // Rule marking where the scrolling region starts, mirroring
+                    // the action bar's own top border, so the panel reads as
+                    // title / scrolling body / actions.  It also stops the
+                    // first heading's top margin collapsing out of the box.
+                    borderTop: `1px solid ${defaultTheme === 'dark' ? '#30363d' : '#e1e4e8'}`
+                }}
+            >
             <div style={{ marginBottom: '2rem' }}>
                 <h3>Appearance</h3>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -361,8 +402,19 @@ export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultTheme
                     />
                 </div>
             </div>
+            </div>
+            {/* settings-scroll END *******************************************/}
 
-            <div style={{ borderTop: `1px solid ${defaultTheme === 'dark' ? '#30363d' : '#e1e4e8'}`, paddingTop: '1rem', marginTop: 'auto' }}>
+            {/* Action bar — outside the scroll region, so "Close Settings" is
+                always on screen no matter how long the settings list gets. */}
+            <div
+                data-testid="settings-footer"
+                style={{
+                    flex: '0 0 auto',
+                    borderTop: `1px solid ${defaultTheme === 'dark' ? '#30363d' : '#e1e4e8'}`,
+                    padding: '0.65rem 2rem 0.7rem'
+                }}
+            >
                 <button
                     onClick={() => {
                         if (onClose) {
@@ -380,13 +432,30 @@ export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultTheme
                         borderRadius: '6px',
                         fontSize: '1rem',
                         cursor: 'pointer',
-                        marginBottom: '1rem'
+                        marginBottom: '0.5rem'
                     }}
                 >
                     Close Settings
                 </button>
-                <p style={{ color: '#2ea44f', marginTop: '1rem', minHeight: '1.2em', visibility: status ? 'visible' : 'hidden' }}>{status || 'Placeholder'}</p>
-                <p style={{ fontSize: '0.8rem', opacity: 0.7 }}>Settings are saved to: {settingsPath}</p>
+                {/* Both lines keep `margin: 0`: a <p> carries a 1em default
+                    margin top AND bottom, and three stacked defaults plus the
+                    reserved status height were opening a large dead gap under
+                    the button.  The status line still RESERVES its height even
+                    when empty (visibility, not display) so showing a message
+                    cannot push the path line around. */}
+                <p style={{
+                    color: '#2ea44f',
+                    margin: 0,
+                    fontSize: '0.85rem',
+                    minHeight: '1.2em',
+                    visibility: status ? 'visible' : 'hidden'
+                }}>{status || 'Placeholder'}</p>
+                <p style={{
+                    margin: '0.15rem 0 0',
+                    fontSize: '0.8rem',
+                    opacity: 0.7,
+                    overflowWrap: 'anywhere'
+                }}>Settings are saved to: {settingsPath}</p>
             </div>
         </div >
     );
