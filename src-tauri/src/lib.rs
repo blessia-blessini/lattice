@@ -33,7 +33,6 @@ use tauri::{Emitter, Manager, Window};
 
 use base64::{Engine as _, engine::general_purpose};
 
-const DEFAULT_SETTINGS: &str = r#"{}"#;
 // Private Path variable of this module
 // Private Path variable of this module
 static M_PATH: Mutex<String> = Mutex::new(String::new());
@@ -42,6 +41,10 @@ pub mod e2e;
 pub mod file_state;
 pub mod settings;
 mod tabify;
+mod vault_path;
+// Re-exported so lib_tests.rs (which does `use super::*`) keeps resolving it.
+#[cfg(test)]
+pub(crate) use vault_path::find_vault_settings_file_internal;
 mod table_format;
 mod textcontent_hashing;
 mod toc;
@@ -481,79 +484,22 @@ fn find_vault_settings_file(
     app: tauri::AppHandle,
     file_path: String,
 ) -> Result<Option<String>, String> {
-    // todo: mobile folder .. the root of the sandbox
-    // the following is for desktop only
-
     let str_home_dir = calc_base_path(app)?;
     let home_dir = Path::new(&str_home_dir);
 
     // Log the path for debugging purposes on mobile
     info!("[INFO] User Root (~/AppDataDir): {:?}", home_dir);
 
-    find_vault_settings_file_internal(file_path, home_dir)
-}
+    // Desktop keeps the historical unbounded walk to the filesystem root.
+    // On mobile the base path IS the app sandbox root: there is nothing above
+    // it we are permitted to read or write, so the walk is bounded by it.
+    // See vault_path's module docs for what a "path" means per target.
+    #[cfg(desktop)]
+    let boundary: Option<&Path> = None;
+    #[cfg(not(desktop))]
+    let boundary: Option<&Path> = Some(home_dir);
 
-/// Pure implementation of the vault-settings search.
-/// Decoupled from the Tauri runtime so it can be unit-tested with any `home_dir`.
-///
-/// Starting from `file_path`, the function walks up the directory tree looking
-/// for a `.lattice` directory.  When found, it ensures `settings.json` exists
-/// inside it (writing `{}` if absent) and returns its path.  If no `.lattice`
-/// ancestor is found, the function falls back to `home_dir/.lattice/settings.json`,
-/// creating the directory and file as needed.
-///
-/// # Arguments
-///
-/// * `file_path` - Starting path for the upward search (file or directory).
-/// * `home_dir`  - Fallback root used when no vault is found in the ancestry.
-///
-/// # Returns
-///
-/// A `Result` containing `Some(path)` with the absolute path to
-/// `settings.json` on success, or an error message `String` if a required
-/// directory or file cannot be created.
-fn find_vault_settings_file_internal(
-    file_path: String,
-    home_dir: &Path,
-) -> Result<Option<String>, String> {
-    //find_vault_path
-    let mut current = Path::new(&file_path);
-    if current.is_file() {
-        // do this only when param is a file, not a folder
-        if let Some(parent) = current.parent() {
-            current = parent;
-        }
-    }
-
-    loop {
-        let vault_dir = current.join(".lattice");
-        if vault_dir.exists() && vault_dir.is_dir() {
-            // found settings dir
-            let settings_path = vault_dir.join("settings.json");
-            if !settings_path.exists() {
-                fs::write(&settings_path, DEFAULT_SETTINGS).map_err(|e| e.to_string())?;
-            }
-            return Ok(Some(settings_path.to_string_lossy().to_string()));
-        }
-
-        match current.parent() {
-            Some(parent) => current = parent, //craw up the hierarchy
-            None => break,
-        }
-    }
-
-    // Fallback: Home directory
-    let lattice_dir = home_dir.join(".lattice");
-    let settings_path = lattice_dir.join("settings.json");
-
-    if !settings_path.exists() {
-        if !lattice_dir.exists() {
-            fs::create_dir_all(&lattice_dir).map_err(|e| e.to_string())?;
-        }
-        fs::write(&settings_path, DEFAULT_SETTINGS).map_err(|e| e.to_string())?;
-    }
-
-    Ok(Some(settings_path.to_string_lossy().to_string()))
+    vault_path::find_vault_settings_file_bounded(file_path, home_dir, boundary)
 } // find_vault_settings_file END ******************************************
 
 //******************************************************************************
@@ -580,34 +526,7 @@ fn find_vault_settings_file_internal(
 /// cannot be created.
 #[tauri::command]
 fn initialize_vault_settings(file_path: String) -> Result<String, String> {
-    let path = Path::new(&file_path);
-    const ERR_PREFIX: &str = "Cannot Initialize Vault: ";
-    let parent = if path.is_file() {
-        path.parent()
-            .ok_or_else(|| format!("{}Cannot get parent directory", ERR_PREFIX))?
-    } else {
-        path
-    };
-
-    let vault_dir = parent.join(".lattice");
-    fs::create_dir_all(&vault_dir).map_err(|e| {
-        if let Some(30) = e.raw_os_error() {
-            format!(
-                "{}The file system is read-only. This happens with external cloud files (e.g. Google Drive).\
-                 To use Vault features, please move the file to local device storage.",
-                ERR_PREFIX
-            )
-        } else {
-            format!("{}{}", ERR_PREFIX, e)
-        }
-    })?;
-
-    let settings_path = vault_dir.join("settings.json");
-    if !settings_path.exists() {
-        fs::write(&settings_path, DEFAULT_SETTINGS).map_err(|e| format!("{}{}", ERR_PREFIX, e))?;
-    }
-
-    Ok(settings_path.to_string_lossy().to_string())
+    vault_path::initialize_vault_settings_internal(file_path)
 } // initialize_vault_settings END *****************************************
 
 //******************************************************************************

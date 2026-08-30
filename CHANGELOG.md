@@ -8,6 +8,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- REFACTOR: Extract vault path resolution into vault_path.rs with mobile policy
 - FIX: Harden vault settings path resolution (false alert + lost rejections)
 - CHORE: update dependencies and bump package version
 - bump version to 0.3.15
