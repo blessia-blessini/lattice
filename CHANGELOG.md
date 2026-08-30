@@ -4,11 +4,26 @@ All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
 
-## v0.3.18
+## v0.3.19
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: Scan the release BINARY, not the URL, in AntivirusOnUrl
 - Release 0.3.17
+---
+
+## v0.3.18
+
+### Changes
+- FIX: commit the binary for check
+- FIX: Make the settings panel scroll and keep "Close Settings" reachable
+  - beautified Settings Page/Window
+  - make the settings scrollable
+- REFACTOR: Extract vault path resolution into vault_path.rs with mobile policy
+- FIX: Harden vault settings path resolution (false alert + lost rejections) 
+  and thus:
+  - FIX: permanent error-message on first "settings open".
+- CHORE: update dependencies and bump package version
 ---
 
 ## v0.3.17

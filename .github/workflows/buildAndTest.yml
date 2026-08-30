@@ -681,15 +681,20 @@ jobs:
         subject-path: staging/*
 
     ################################################################
-    # 903.6 / Generate + GPG-sign SHA256SUMS (Linux/macOS trust layer)
-    #         One detached signature over a checksum manifest covers
-    #         EVERY artifact (.AppImage, .deb, .dmg, .exe). Linux users
-    #         verify with the project's published public key:
-    #           gpg --verify SHA256SUMS.asc SHA256SUMS
+    # 903.6 / Generate SHA256SUMS (always) and GPG-sign it (optional)
+    #         One manifest covers EVERY artifact (.AppImage, .deb, .dmg,
+    #         .exe). Users verify with:
     #           sha256sum -c SHA256SUMS
+    #         and, when the detached signature is published:
+    #           gpg --verify SHA256SUMS.asc SHA256SUMS
     #
-    #   Runs ONLY when repo variable GPG_SIGNING_ENABLED == 'true'.
-    #   Prerequisites (Settings > Secrets and variables > Actions):
+    #   The MANIFEST needs no secrets, so it is generated unconditionally --
+    #   it is the only way a cautious user can check a download today, and
+    #   that matters most while the Windows installers are still unsigned.
+    #   Only the DETACHED SIGNATURE needs the key, so just that part stays
+    #   gated on repo variable GPG_SIGNING_ENABLED == 'true'.
+    #
+    #   Prerequisites for the signature (Settings > Secrets and variables):
     #     - Secret   GPG_PRIVATE_KEY      (ASCII-armored private key; NEVER hardcode)
     #     - Secret   GPG_PASSPHRASE       (passphrase for that key)
     #     - Variable GPG_SIGNING_KEY_ID   (key fingerprint or signing email)
@@ -698,7 +703,24 @@ jobs:
     #   Computed AFTER 903.4, so checksums reflect the SIGNED .exe files.
     #   The SHA256SUMS pair is added to staging/ and thus uploaded by 904.
     ################################################################
-    - name: 903.6. Generate and GPG-sign SHA256SUMS
+    - name: 903.6a. Generate SHA256SUMS
+      shell: bash
+      run: |
+        set -euo pipefail
+        cd staging
+        # Only regular files, and never the manifest itself. `find` rather
+        # than a bare glob so a stray directory cannot abort the run.
+        find . -maxdepth 1 -type f ! -name 'SHA256SUMS*' -printf '%P\n' \
+          | sort | xargs -r sha256sum > SHA256SUMS
+        echo "--- SHA256SUMS ---"
+        cat SHA256SUMS
+        # A manifest listing nothing would be worse than useless.
+        if [ ! -s SHA256SUMS ]; then
+          echo "::error::SHA256SUMS is empty -- no artifacts found in staging/"
+          exit 1
+        fi
+
+    - name: 903.6b. GPG-sign SHA256SUMS
       if: vars.GPG_SIGNING_ENABLED == 'true'
       shell: bash
       env:
@@ -710,16 +732,31 @@ jobs:
         # Import the signing key into an ephemeral keyring (runner is throwaway).
         echo "$GPG_PRIVATE_KEY" | gpg --batch --import
         cd staging
-        # Hash every release binary. Glob expands before SHA256SUMS exists,
-        # so the manifest never tries to include itself.
-        sha256sum * > SHA256SUMS
         gpg --batch --yes --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" \
             --local-user "$GPG_SIGNING_KEY_ID" \
             --armor --detach-sign --output SHA256SUMS.asc SHA256SUMS
-        echo "--- SHA256SUMS ---"
-        cat SHA256SUMS
         # Self-check before publishing.
         gpg --verify SHA256SUMS.asc SHA256SUMS
+
+    - name: 903.6c. Warn when a release ships unsigned
+      shell: bash
+      env:
+        SIGNPATH_ENABLED: ${{ vars.SIGNPATH_ENABLED }}
+        GPG_SIGNING_ENABLED: ${{ vars.GPG_SIGNING_ENABLED }}
+      run: |
+        # Deliberately OUTSIDE the SignPath/GPG gates. The guard inside 903.4c
+        # only fires once signing is already switched on, so before that a
+        # release could ship unsigned in complete silence. Windows SmartScreen
+        # and Defender heuristics treat an unsigned, zero-reputation NSIS
+        # installer as suspicious, so this must be a visible choice.
+        if [ "${SIGNPATH_ENABLED:-}" != "true" ]; then
+          echo "::warning::Windows installers in this release are UNSIGNED (SIGNPATH_ENABLED is not 'true'). Expect SmartScreen / Defender warnings for users."
+          echo " - :warning: Windows installers are **unsigned** -- users may see SmartScreen or antivirus warnings." >> "$GITHUB_STEP_SUMMARY"
+        fi
+        if [ "${GPG_SIGNING_ENABLED:-}" != "true" ]; then
+          echo "::warning::SHA256SUMS is published but NOT GPG-signed (GPG_SIGNING_ENABLED is not 'true')."
+          echo " - :warning: \`SHA256SUMS\` is published but **not GPG-signed**." >> "$GITHUB_STEP_SUMMARY"
+        fi
 
     ################################################################
     # 904 / Create GitHub Release on blessia-blessini/lattice and

@@ -7,6 +7,16 @@
 # Used the starter here:
 # BUILDS KeepasXC
 #################################################
+# Scans a RELEASE BINARY with VirusTotal.
+#
+# NOTE ON WHAT IS SCANNED — this used to POST to /api/v3/urls, which asks
+# VirusTotal "is this LINK known for phishing / malware hosting?".  A
+# github.com release link is always clean, so the job reported 🟢 no matter
+# what the binary contained: it was structurally blind to a detection in the
+# installer itself.  It now downloads the artifact and scans the BYTES via
+# /api/v3/files, which is what the release pipeline always meant to ask.
+#################################################
+
 name: AntivirusOnUrl
 
 permissions:
@@ -40,121 +50,181 @@ jobs:
         continue-on-error: false
         env:
           VT_API_KEY: ${{ secrets.VT_API_KEY }}
+          # Inputs are passed through the environment, never interpolated into
+          # the script body: a crafted file name would otherwise execute here.
           BIN_DOWNLOADS: ${{ github.event.inputs.url2scan }}
+          SUBMITTED_BY: ${{ github.event.inputs.submitted_by }}
+          # How many engines may say "malicious" before this job fails.
+          # A handful of obscure engines flagging an unsigned NSIS installer is
+          # normal noise; raise this only with a reason.
+          MAX_MALICIOUS: '0'
+          # Minutes to wait for a fresh analysis to finish.
+          TIMELIMIT_IN_MINUTES: '20'
         run: |
-          echo "### Starting ANTIVIRUS SCAN on URL: ${{ env.BIN_DOWNLOADS }}"
-          echo "   SUBMITTED by ${{ github.event.inputs.submitted_by }} "
+          set -uo pipefail
+
+          VT='https://www.virustotal.com/api/v3'
+          TARGET=/tmp/av-target.bin
+
+          echo "### Starting ANTIVIRUS SCAN on FILE from: $BIN_DOWNLOADS"
+          echo "   SUBMITTED by $SUBMITTED_BY"
           echo "   ****************************************************************"
 
-          ANTIVIRUS_SCAN_REQ=$(curl --request POST --url "https://www.virustotal.com/api/v3/urls"        \
-            --header 'accept: application/json' --header 'content-type: application/x-www-form-urlencoded' \
-            --header "x-apikey: $VT_API_KEY" --data url="${{ env.BIN_DOWNLOADS }}" )
-          echo ***REQ   $ANTIVIRUS_SCAN_REQ
-          ANTIVIRUS_SCAN_ID=$( (echo $ANTIVIRUS_SCAN_REQ) | jq -r '.data.id')
-          echo ***SCANID   $ANTIVIRUS_SCAN_ID
-          ANTIVIRUS_SCAN_REPORT_URL=$(echo $ANTIVIRUS_SCAN_REQ | jq -r '.data.links.self')
-          echo ***URL= $ANTIVIRUS_SCAN_REPORT_URL
-          echo "ANTIVIRUS_SCAN_REPORT_URL=$ANTIVIRUS_SCAN_REPORT_URL" >> $GITHUB_OUTPUT
-          echo "****************************************************************"
+          #############################################################
+          # 1. Fetch the artifact itself
+          #############################################################
+          if ! curl -fsSL --retry 3 --retry-delay 5 -o "$TARGET" "$BIN_DOWNLOADS"; then
+            echo "::error::Could not download the artifact from $BIN_DOWNLOADS"
+            exit 1
+          fi
 
-          echo "Submitted files for antivirus scan wait a min before picking the json result report ..."
-          ANALYSIS_ID="$ANTIVIRUS_SCAN_ID" # This is the ID you get after *submitting* the URL
+          SIZE=$(stat -c%s "$TARGET")
+          SHA256=$(sha256sum "$TARGET" | cut -d' ' -f1)
+          echo "Downloaded $SIZE bytes"
+          echo "SHA-256: $SHA256"
 
-          # The API endpoint to check. This example uses the VirusTotal v3 analysis endpoint.
-          API_ENDPOINT="https://www.virustotal.com/api/v3/analyses/$ANALYSIS_ID"
+          if [ "$SIZE" -eq 0 ]; then
+            echo "::error::Downloaded artifact is empty"
+            exit 1
+          fi
 
-          # How many seconds to wait between each check.
-          # Be careful not to set this too low, or you might get rate-limited (blocked) by the API.
-          POLL_INTERVAL=30
-          # ---------------------
-          echo "Starting to poll for analysis: $ANALYSIS_ID"
-          echo "Checking status every $POLL_INTERVAL seconds..."
+          #############################################################
+          # 2. Does VirusTotal already know this exact file?
+          #    Cheaper than re-uploading, and gives the full engine set.
+          #############################################################
+          HTTP=$(curl -sS -o /tmp/av-report.json -w '%{http_code}' \
+                   -H "x-apikey: $VT_API_KEY" "$VT/files/$SHA256")
 
-          # This is an infinite loop. We will use 'break' to exit it when the job is done.
-          # waiting for the remote server to answer is not very good idea to end a loop
-          TIMELIMIT_IN_MINUTES=20 # 20 Min
-          START_TIME=$(date +%s)
+          if [ "$HTTP" = "200" ]; then
+            echo "VirusTotal already has a report for this hash — reusing it."
+            STATS=$(jq -c '.data.attributes.last_analysis_stats'   /tmp/av-report.json)
+            RESULTS=$(jq -c '.data.attributes.last_analysis_results' /tmp/av-report.json)
+          else
+            echo "No existing report (HTTP $HTTP) — uploading the file."
 
-          while true; do
+            #########################################################
+            # 3. Upload. Files over 32 MB need a one-time upload URL.
+            #########################################################
+            UPLOAD_URL="$VT/files"
+            if [ "$SIZE" -gt 33554432 ]; then
+              UPLOAD_URL=$(curl -sS -H "x-apikey: $VT_API_KEY" "$VT/files/upload_url" | jq -r '.data')
+              if [ -z "$UPLOAD_URL" ] || [ "$UPLOAD_URL" = "null" ]; then
+                echo "::error::Could not obtain a large-file upload URL from VirusTotal"
+                exit 1
+              fi
+              echo "File is larger than 32 MB — using the large-file upload endpoint."
+            fi
 
-              # make a boolean expression that calculates if since START_TIME we have passed more than
-              if [[ $(($(date +%s) - START_TIME)) -gt $((TIMELIMIT_IN_MINUTES * 60)) ]]; then
-                echo "Time limit of ${TIMELIMIT_IN_MINUTES} minutes has been exceeded!"
-                break # handle the timeout
-              else
-                sleep 1
+            SUBMIT=$(curl -sS -X POST -H "x-apikey: $VT_API_KEY" \
+                       --form "file=@$TARGET" "$UPLOAD_URL")
+            ANALYSIS_ID=$(echo "$SUBMIT" | jq -r '.data.id // empty')
+
+            if [ -z "$ANALYSIS_ID" ]; then
+              echo "::error::VirusTotal did not return an analysis id"
+              echo "$SUBMIT" | jq . || echo "$SUBMIT"
+              exit 1
+            fi
+            echo "Analysis id: $ANALYSIS_ID"
+
+            #########################################################
+            # 4. Poll until the analysis completes (or we give up).
+            #    The public API allows ~4 requests/minute, so poll slowly.
+            #########################################################
+            POLL_INTERVAL=30
+            START_TIME=$(date +%s)
+            RESPONSE=''
+            STATUS=''
+
+            while true; do
+              if [ $(( $(date +%s) - START_TIME )) -gt $(( TIMELIMIT_IN_MINUTES * 60 )) ]; then
+                echo "::error::Time limit of ${TIMELIMIT_IN_MINUTES} minutes exceeded waiting for VirusTotal"
+                exit 1
               fi
 
-
-              # 1. Call the API
-              # -sS:  -s (silent) hides the progress bar
-              #       -S (show error) still shows errors if curl fails
-              # -H:   Sends the required 'x-apikey' header for authentication
-              RESPONSE=$(curl -sS -H "x-apikey: $VT_API_KEY" "$API_ENDPOINT")
-
-              # 2. Extract the status using jq
-              #    '.data.attributes.status' is the path to the status in the VT v3 JSON.
-              #    You will change this path based on your API's JSON structure.
-              #    We use '|| "error"' as a fallback in case the 'status' field doesn't exist.
+              RESPONSE=$(curl -sS -H "x-apikey: $VT_API_KEY" "$VT/analyses/$ANALYSIS_ID")
               STATUS=$(echo "$RESPONSE" | jq -r '.data.attributes.status // "error"')
 
-              # 3. Check the status and decide what to do
               case "$STATUS" in
-                  "completed")
-                      # --- SUCCESS ---
-                      # The job is done. Print a success message and break the loop.
-                      echo "" # Newline
-                      echo "Status is: COMPLETED!"
-                      echo "-----------------------"
-                      echo "Final JSON Report:"
-                      echo "$RESPONSE" | jq .  # Pretty-print the final JSON
-                      break # Exits the 'while true' loop
-                      ;;
-
-                  "queued" | "in-progress")
-                      # --- PENDING ---
-                      # The job is still running. Print a waiting message and sleep.
-                      # 'printf' with '\r' moves the cursor to the start of the line
-                      # for a clean, single-line "waiting" animation.
-                      printf "Status is: %s... (waiting %ss) \r" "$STATUS" "$POLL_INTERVAL"
-                      sleep "$POLL_INTERVAL"
-                      ;;
-
-                  *)
-                      # --- ERROR ---
-                      # Something went wrong (e.g., status is "failed", "error", or jq failed)
-                      echo "" # Newline
-                      echo "Error: Received unknown status '$STATUS' or bad response."
-                      echo "-----------------------"
-                      echo "Full Error Response:"
-                      echo "$RESPONSE" | jq .
-                      exit 1 # Exit the script with an error code
-                      ;;
+                "completed")
+                  echo "Status is: COMPLETED!"
+                  break
+                  ;;
+                "queued" | "in-progress")
+                  printf "Status is: %s... (waiting %ss)\n" "$STATUS" "$POLL_INTERVAL"
+                  sleep "$POLL_INTERVAL"
+                  ;;
+                *)
+                  echo "::error::Unexpected analysis status '$STATUS'"
+                  echo "$RESPONSE" | jq . || echo "$RESPONSE"
+                  exit 1
+                  ;;
               esac
-          done
-          echo "" # Newline
-          echo "Polling finished."
-          ANTIVIRUS_SCAN_RES=$( echo "$RESPONSE" | jq .  )
+            done
+
+            STATS=$(echo "$RESPONSE"  | jq -c '.data.attributes.stats')
+            RESULTS=$(echo "$RESPONSE" | jq -c '.data.attributes.results')
+          fi
+
+          #############################################################
+          # 5. Verdict.  `category` is the machine-readable field; it is
+          #    one of harmless / undetected / suspicious / malicious /
+          #    failure / timeout / type-unsupported.
+          #############################################################
+          MALICIOUS=$(echo "$STATS" | jq -r '.malicious  // 0')
+          SUSPICIOUS=$(echo "$STATS" | jq -r '.suspicious // 0')
+          UNDETECTED=$(echo "$STATS" | jq -r '.undetected // 0')
+          HARMLESS=$(echo "$STATS"   | jq -r '.harmless   // 0')
+          TOTAL=$(( MALICIOUS + SUSPICIOUS + UNDETECTED + HARMLESS ))
+
+          OFFENDERS=$(echo "$RESULTS" | jq -r '
+            to_entries
+            | map(select(.value.category == "malicious" or .value.category == "suspicious"))
+            | sort_by(.key)
+            | .[]
+            | "  - \(.key): \(.value.category) — \(.value.result // "n/a")"')
+
           echo "********************************************************"
-          echo ***SCANRES= "$ANTIVIRUS_SCAN_RES"
+          echo "malicious=$MALICIOUS suspicious=$SUSPICIOUS undetected=$UNDETECTED harmless=$HARMLESS (of $TOTAL engines)"
+          [ -n "$OFFENDERS" ] && echo "$OFFENDERS"
           echo "********************************************************"
-          echo "ANTIVIRUS_SCAN_RES=$RESPONSE"  >> $GITHUB_OUTPUT
 
+          {
+            echo "### ANTIVIRUS SCAN of \`$SUBMITTED_BY\`"
+            echo ""
+            echo " - source: $BIN_DOWNLOADS"
+            echo " - size: $SIZE bytes"
+            echo " - SHA-256: \`$SHA256\`"
+            echo " - report: https://www.virustotal.com/gui/file/$SHA256"
+            echo " - engines: **$MALICIOUS malicious**, $SUSPICIOUS suspicious, $UNDETECTED undetected, $HARMLESS harmless (of $TOTAL)"
+          } >> "$GITHUB_STEP_SUMMARY"
 
-          # Count any results that are NOT "clean" or "unrated"
-          ALL_CLEAN=$(echo "$ANTIVIRUS_SCAN_RES" | jq -r '[.data.attributes.results[].result] | all(. == "clean" or . == "unrated")')
+          if [ -n "$OFFENDERS" ]; then
+            {
+              echo ""
+              echo "<details><summary>Engines reporting something</summary>"
+              echo ""
+              echo '```'
+              echo "$OFFENDERS"
+              echo '```'
+              echo ""
+              echo "</details>"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
+          echo "SHA256=$SHA256"           >> "$GITHUB_OUTPUT"
+          echo "VT_MALICIOUS=$MALICIOUS"  >> "$GITHUB_OUTPUT"
+          echo "VT_SUSPICIOUS=$SUSPICIOUS" >> "$GITHUB_OUTPUT"
 
-          echo "### ANTIVIRUS SCAN on URL: ${{ env.BIN_DOWNLOADS }} finished" >> $GITHUB_STEP_SUMMARY
-          echo " - SUBMITTED by ${{ github.event.inputs.submitted_by }} " >> $GITHUB_STEP_SUMMARY
-
-          if [ "$ALL_CLEAN" = "false" ]; then
-              echo "Warning: Found results that are not clean!"
-              echo -e " - 🔴 Some THREATS DETECTED. See detailed json included in log" >> $GITHUB_STEP_SUMMARY
-              exit 1 ### see json for errors
+          if [ "$MALICIOUS" -gt "$MAX_MALICIOUS" ]; then
+            echo " - 🔴 **$MALICIOUS engine(s) report this file as malicious** (threshold $MAX_MALICIOUS)" >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::$MALICIOUS engine(s) flagged $SUBMITTED_BY as malicious"
+            exit 1
+          elif [ "$MALICIOUS" -gt 0 ]; then
+            echo " - 🟡 $MALICIOUS malicious verdict(s) — within the allowed threshold of $MAX_MALICIOUS (plus $SUSPICIOUS suspicious)" >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$SUSPICIOUS" -gt 0 ]; then
+            echo " - 🟡 no malicious verdicts, but $SUSPICIOUS engine(s) call it suspicious" >> "$GITHUB_STEP_SUMMARY"
           else
-              echo "All results are 'clean' or 'unrated'." >> $GITHUB_STEP_SUMMARY
-              echo -e " - 🟢  NO THREATS DETECTED " >> $GITHUB_STEP_SUMMARY
+            echo " - 🟢 NO THREATS DETECTED" >> "$GITHUB_STEP_SUMMARY"
           fi
 
       # - 🟢 represents a green circle.
