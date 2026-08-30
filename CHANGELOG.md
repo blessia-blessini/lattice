@@ -4,10 +4,30 @@ All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
 
-## v0.3.16
+## v0.3.18
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Release 0.3.17
+---
+
+## v0.3.17
+
+### Changes
+- FIX: Make the settings panel scroll and keep "Close Settings" reachable
+  - beautified Settings Page/Window
+  - make the settings scrollable
+- REFACTOR: Extract vault path resolution into vault_path.rs with mobile policy
+- FIX: Harden vault settings path resolution (false alert + lost rejections) 
+  and thus:
+  - FIX: permanent error-message on first "settings open".
+- CHORE: update dependencies and bump package version
+---
+
+## v0.3.16 - Intermediate/cancelled release
+
+### Changes
+
 - FIX: Make the settings panel scroll and keep "Close Settings" reachable
 - CHORE: Add file extension to vite.config import in the E2E config
 - REFACTOR: Extract vault path resolution into vault_path.rs with mobile policy
