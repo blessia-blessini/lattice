@@ -29,6 +29,6 @@
 //
 // The production build (npm run build) uses vite.config.ts with false.
 // No env-var reading; the config file name is the explicit flag.
-import { makeViteConfig } from './vite.config';
+import { makeViteConfig } from './vite.config.ts';
 
 export default makeViteConfig(true);
