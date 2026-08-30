@@ -891,6 +891,95 @@ describe('App — handleOpenSettings no vault', () => {
 });
 
 // =============================================================================
+// 24b. handleOpenSettings — vault lookup still in flight (regression)
+//      Reported symptom: the very first time Settings is opened after launch,
+//      "Critical: No vault configuration found." appears even though a vault
+//      exists.  Cause: handleOpenSettings re-read the m_vaultSettingsPath it
+//      had captured in its own closure after awaiting enforceVaultPath(), so
+//      the freshly resolved path was invisible to it and the check could only
+//      ever fail.  Settings must instead wait for the pending resolution.
+// =============================================================================
+describe('App — handleOpenSettings while vault lookup is pending', () => {
+    beforeEach(resetEnv);
+    afterEach(() => vi.restoreAllMocks());
+
+    it('opens Settings without alerting when the vault path resolves late', async () => {
+        const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+        // Hold find_vault_settings_file open so checkLaunch's enforceVaultPath
+        // is still pending when the user reaches the Settings menu item.
+        let releaseVault: (p: string) => void = () => {};
+        const vaultGate = new Promise<string>((res) => { releaseVault = res; });
+
+        const base = makeInvoke();
+        const invoke = (cmd: string, args: any) =>
+            cmd === 'find_vault_settings_file' ? vaultGate : base(cmd, args);
+
+        const { getByText } = await renderApp({ path: '/vault/test.md', invoke });
+
+        await openMenu(getByText);
+        const settings = await waitFor(() => getByText('Settings ...'));
+
+        // Click while the backend has not answered yet.
+        await act(async () => { fireEvent.click(settings); });
+        expect(alertSpy).not.toHaveBeenCalled();
+
+        // Now let the backend answer.
+        await act(async () => {
+            releaseVault('/vault/.lattice/settings.json');
+            await vaultGate;
+        });
+
+        await waitFor(() => expect(getByText('Close Settings')).toBeTruthy());
+        expect(alertSpy).not.toHaveBeenCalledWith(
+            expect.stringContaining('No vault configuration found')
+        );
+        alertSpy.mockRestore();
+    });
+});
+
+// =============================================================================
+// 24c. enforceVaultPath — backend Err (rejected invoke) must not escape
+//      find_vault_settings_file returns Err when it cannot create even the
+//      fallback vault (read-only / permission-denied app-data dir, full
+//      storage — all realistic on Android + iOS).  That rejects the invoke;
+//      an uncaught rejection would leave the user with no Settings dialog and
+//      no message at all.  Expected: degrade to the actionable alert.
+// =============================================================================
+describe('App — vault lookup rejects', () => {
+    beforeEach(resetEnv);
+    afterEach(() => vi.restoreAllMocks());
+
+    it('reports a vault failure instead of throwing when the backend errors', async () => {
+        const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+        const rejection = vi.fn();
+        window.addEventListener('unhandledrejection', rejection);
+
+        const base = makeInvoke();
+        const invoke = (cmd: string, args: any) =>
+            cmd === 'find_vault_settings_file'
+                ? Promise.reject(new Error('Permission denied (os error 13)'))
+                : base(cmd, args);
+
+        const { getByText } = await renderApp({ invoke });
+
+        await openMenu(getByText);
+        const settings = await waitFor(() => getByText('Settings ...'));
+        await act(async () => { fireEvent.click(settings); });
+
+        await waitFor(() =>
+            expect(alertSpy).toHaveBeenCalledWith(
+                expect.stringContaining('No vault configuration found')
+            )
+        );
+        expect(rejection).not.toHaveBeenCalled();
+
+        window.removeEventListener('unhandledrejection', rejection);
+        alertSpy.mockRestore();
+    });
+});
+
+// =============================================================================
 // 25. handleEditorChange — triggers preview update  (L179)
 // =============================================================================
 describe('App — handleEditorChange updates preview', () => {

@@ -249,6 +249,15 @@ function App() {
   const [isModalBlocked, setIsModalBlocked] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [m_vaultSettingsPath, setVaultSettingsPath] = useState<string>(""); // NEVER NULL
+  // Mirror of m_vaultSettingsPath that is readable *synchronously*.
+  // React state written inside an `await`ed helper is not visible to the
+  // closure that awaited it (it only lands on the next render), so any code
+  // that must act on the freshly resolved path has to read it from here.
+  const vaultSettingsPathRef = useRef<string>("");
+  // The in-flight enforceVaultPath() promise, if any.  Launch-time resolution
+  // is async; a user who hits a menu before it settles must await it instead
+  // of concluding that no vault exists.
+  const vaultResolveRef = useRef<Promise<string> | null>(null);
   const [previewContent, setPreviewContent] = useState("");
 
   // Note on checkbox-click sync:
@@ -836,25 +845,59 @@ function App() {
   // Ensures we always have a valid vault path.
   // If 'targetPath' (file path) is provided, looks for local vault.
   // If not found (or no targetPath), falls back to global (~/.lattice).
-  const enforceVaultPath = async (targetPath: string) => {
-    let vPath: string | null = await FileSystem.findVaultSettingsFile(targetPath);
+  // Returns the resolved path ("" if even the global fallback failed).  Callers
+  // MUST use the return value rather than re-reading m_vaultSettingsPath: the
+  // state setter below does not update the awaiting closure's captured value.
+  const enforceVaultPath = async (targetPath: string): Promise<string> => {
+    // The backend answers Err -- i.e. a REJECTED invoke, not a null -- when it
+    // cannot even create the fallback vault (read-only or permission-denied
+    // app-data dir, full storage; all realistic on mobile).  An uncaught
+    // rejection here would propagate out of every caller, leaving the user
+    // with no Settings dialog AND no message.  Degrade to "not found" instead
+    // so the caller reports something actionable.
+    const lookup = async (p: string): Promise<string | null> => {
+      try {
+        return await FileSystem.findVaultSettingsFile(p);
+      } catch (e) {
+        console.error(`findVaultSettingsFile("${p}") failed:`, e);
+        return null;
+      }
+    };
 
-    if (!vPath) {
-      // Fallback to global (Passing empty string triggers home dir fallback in backend)
-      // Assuming backend handles this, but let's be explicit
-      console.warn("No specific vault found, fallback to global");
-      vPath = await FileSystem.findVaultSettingsFile("");
-    }
+    const resolve = async (): Promise<string> => {
+      let vPath: string | null = await lookup(targetPath);
 
-    if (vPath) {
-      setVaultSettingsPath(vPath);
-    } else {
+      if (!vPath) {
+        // Fallback to global (Passing empty string triggers home dir fallback in backend)
+        // Assuming backend handles this, but let's be explicit
+        console.warn("No specific vault found, fallback to global");
+        vPath = await lookup("");
+      }
+
+      if (vPath) {
+        vaultSettingsPathRef.current = vPath;
+        setVaultSettingsPath(vPath);
+        return vPath;
+      }
+
       // Critical Failure - backend refused to give even a fallback
       console.error("CRITICAL: No Vault Settings Path could be resolved!");
       alert("Error: Could not resolve any settings path (local or global).");
       // this should be dead code -> never possible, assert(0), etc
       // and yet here we are with defence:
       //setVaultSettingsPath("./.lattice/settings.json");
+      return "";
+    };
+
+    // Publish the in-flight promise so concurrent callers (e.g. the Settings
+    // menu clicked while checkLaunch is still resolving) can join it instead
+    // of racing a second, possibly less specific, resolution.
+    const pending = resolve();
+    vaultResolveRef.current = pending;
+    try {
+      return await pending;
+    } finally {
+      if (vaultResolveRef.current === pending) vaultResolveRef.current = null;
     }
   }; // enforceVaultPath END *************************************************
 
@@ -1091,6 +1134,7 @@ function App() {
 
     try {
       const newSettingsPath = await FileSystem.initVaultSettingsPath(m_currentFilePath);
+      vaultSettingsPathRef.current = newSettingsPath;
       setVaultSettingsPath(newSettingsPath);
       alert(`Vault Initialized! Settings will now be saved to: ${newSettingsPath}`);
     } catch (e) {
@@ -1106,13 +1150,27 @@ function App() {
   const handleOpenSettings = async () => {
     console.log("DEBUG: Entering handleOpenSettings");
 
-    // With Strict Fallback, m_vaultSettingsPath should always be valid.
-    if (!m_vaultSettingsPath) {
-      await enforceVaultPath(m_currentFilePath || "");
-      if (!m_vaultSettingsPath) {
-        alert("Critical: No vault configuration found.");
-        return;
-      }
+    // With Strict Fallback, a vault path should always be available.  The state
+    // value can still be empty here when Settings is opened before the launch
+    // sequence has resolved it, so fall back to the ref (already resolved but
+    // not yet re-rendered), then to the in-flight resolution, then to a fresh
+    // one.  Never re-read m_vaultSettingsPath after an await -- it is captured
+    // by this closure and cannot change.
+    let vaultPath = m_vaultSettingsPath || vaultSettingsPathRef.current;
+
+    if (!vaultPath && vaultResolveRef.current) {
+      // Launch-time resolution still running: join it rather than starting a
+      // competing one that would resolve against a not-yet-known file path.
+      vaultPath = await vaultResolveRef.current;
+    }
+
+    if (!vaultPath) {
+      vaultPath = await enforceVaultPath(currentFilePathRef.current || m_currentFilePath || "");
+    }
+
+    if (!vaultPath) {
+      alert("Critical: No vault configuration found.");
+      return;
     }
 
     setShowSettingsModal(true);
