@@ -8,6 +8,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- bump version to 0.3.19
 - CHORE: Publish the checksum manifest as SHA256SUMS.txt
 - update dependencies
 - FIX: Scan the release BINARY, not the URL, in AntivirusOnUrl
