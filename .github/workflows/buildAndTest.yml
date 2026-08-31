@@ -506,6 +506,13 @@ jobs:
       id-token: write      # required for attestation (OIDC token)
       attestations: write  # required to write the attestation
 
+    env:
+      # Linked from EVERY release: the GitHub Release body (904) and the
+      # release-site page (905).  Points at the default branch so users always
+      # land on the CURRENT statement; swap `dev` for "${VERSION}" if a
+      # per-release snapshot is ever wanted instead.
+      PRIVACY_URL: https://github.com/${{ github.repository }}/blob/dev/PRIVACY.md
+
     steps:
     ################################################################
     # 900 / Extract version from tag
@@ -769,10 +776,25 @@ jobs:
       shell: bash
       run: |
         VERSION="${{ steps.version.outputs.VERSION }}"
+
+        # The release body is the changelog extract plus a standing footer.
+        # release-notes.md itself is left untouched: step 905 inlines it into
+        # the release-site page, which carries its own "Notes" footer, so
+        # editing it here would print the privacy line twice on that page.
+        cp release-notes.md release-body.md
+        {
+          printf '\n---\n\n'
+          printf 'Lattice collects no personal data — see the [Privacy Statement](%s).\n' "$PRIVACY_URL"
+        } >> release-body.md
+
+        echo "--- Release body preview ----------"
+        cat release-body.md
+        echo "--- end of Release body preview ---"
+
         RELEASE_URL=$(gh release create "$VERSION" staging/* \
           --repo "${{ github.repository }}" \
           --title "Lattice ${VERSION}" \
-          --notes-file release-notes.md \
+          --notes-file release-body.md \
           --latest)
         echo "RELEASE_URL=$RELEASE_URL" >> $GITHUB_ENV
         echo "Release created: $RELEASE_URL"
@@ -857,6 +879,7 @@ jobs:
         printf '%s\n' "" >> "$OUT"
         printf '%s\n' "- [Full release on GitHub](${RELEASE_URL})" >> "$OUT"
         printf '%s\n' "- DUAL LICENSE — for terms, see [README.md section Licensing](https://github.com/${{ github.repository }}#licensing)." >> "$OUT"
+        printf '%s\n' "- Lattice collects no personal data — see the [Privacy Statement](${PRIVACY_URL})." >> "$OUT"
         printf '%s\n' "" >> "$OUT"
 
         # Copy the app logo into the release folder so the release page can use it,
