@@ -8,6 +8,8 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: Publish the checksum manifest as SHA256SUMS.txt
+- update dependencies
 - FIX: Scan the release BINARY, not the URL, in AntivirusOnUrl
 - Release 0.3.17
 ---
@@ -15,6 +17,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.18
 
 ### Changes
+- FIX: Scan the release BINARY, not the URL, in AntivirusOnUrl
 - FIX: commit the binary for check
 - FIX: Make the settings panel scroll and keep "Close Settings" reachable
   - beautified Settings Page/Window

@@ -688,12 +688,12 @@ jobs:
         subject-path: staging/*
 
     ################################################################
-    # 903.6 / Generate SHA256SUMS (always) and GPG-sign it (optional)
+    # 903.6 / Generate SHA256SUMS.txt (always) and GPG-sign it (optional)
     #         One manifest covers EVERY artifact (.AppImage, .deb, .dmg,
     #         .exe). Users verify with:
-    #           sha256sum -c SHA256SUMS
+    #           sha256sum -c SHA256SUMS.txt
     #         and, when the detached signature is published:
-    #           gpg --verify SHA256SUMS.asc SHA256SUMS
+    #           gpg --verify SHA256SUMS.txt.asc SHA256SUMS.txt
     #
     #   The MANIFEST needs no secrets, so it is generated unconditionally --
     #   it is the only way a cautious user can check a download today, and
@@ -708,26 +708,27 @@ jobs:
     #   Publish the matching PUBLIC key on the download site so users can import it.
     #
     #   Computed AFTER 903.4, so checksums reflect the SIGNED .exe files.
-    #   The SHA256SUMS pair is added to staging/ and thus uploaded by 904.
+    #   The SHA256SUMS.txt pair is added to staging/ and thus uploaded by 904.
     ################################################################
-    - name: 903.6a. Generate SHA256SUMS
+    - name: 903.6a. Generate SHA256SUMS.txt
       shell: bash
       run: |
         set -euo pipefail
         cd staging
-        # Only regular files, and never the manifest itself. `find` rather
-        # than a bare glob so a stray directory cannot abort the run.
+        # Only regular files, and never the manifest or its signature
+        # (the SHA256SUMS* glob covers both). `find` rather than a bare
+        # glob so a stray directory cannot abort the run.
         find . -maxdepth 1 -type f ! -name 'SHA256SUMS*' -printf '%P\n' \
-          | sort | xargs -r sha256sum > SHA256SUMS
-        echo "--- SHA256SUMS ---"
-        cat SHA256SUMS
+          | sort | xargs -r sha256sum > SHA256SUMS.txt
+        echo "--- SHA256SUMS.txt ---"
+        cat SHA256SUMS.txt
         # A manifest listing nothing would be worse than useless.
-        if [ ! -s SHA256SUMS ]; then
-          echo "::error::SHA256SUMS is empty -- no artifacts found in staging/"
+        if [ ! -s SHA256SUMS.txt ]; then
+          echo "::error::SHA256SUMS.txt is empty -- no artifacts found in staging/"
           exit 1
         fi
 
-    - name: 903.6b. GPG-sign SHA256SUMS
+    - name: 903.6b. GPG-sign SHA256SUMS.txt
       if: vars.GPG_SIGNING_ENABLED == 'true'
       shell: bash
       env:
@@ -741,9 +742,9 @@ jobs:
         cd staging
         gpg --batch --yes --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" \
             --local-user "$GPG_SIGNING_KEY_ID" \
-            --armor --detach-sign --output SHA256SUMS.asc SHA256SUMS
+            --armor --detach-sign --output SHA256SUMS.txt.asc SHA256SUMS.txt
         # Self-check before publishing.
-        gpg --verify SHA256SUMS.asc SHA256SUMS
+        gpg --verify SHA256SUMS.txt.asc SHA256SUMS.txt
 
     - name: 903.6c. Warn when a release ships unsigned
       shell: bash
@@ -761,8 +762,8 @@ jobs:
           echo " - :warning: Windows installers are **unsigned** -- users may see SmartScreen or antivirus warnings." >> "$GITHUB_STEP_SUMMARY"
         fi
         if [ "${GPG_SIGNING_ENABLED:-}" != "true" ]; then
-          echo "::warning::SHA256SUMS is published but NOT GPG-signed (GPG_SIGNING_ENABLED is not 'true')."
-          echo " - :warning: \`SHA256SUMS\` is published but **not GPG-signed**." >> "$GITHUB_STEP_SUMMARY"
+          echo "::warning::SHA256SUMS.txt is published but NOT GPG-signed (GPG_SIGNING_ENABLED is not 'true')."
+          echo " - :warning: \`SHA256SUMS.txt\` is published but **not GPG-signed**." >> "$GITHUB_STEP_SUMMARY"
         fi
 
     ################################################################
