@@ -817,6 +817,26 @@ jobs:
         OUT="$OUT_DIR/index.md"
         mkdir -p "$OUT_DIR"
 
+        # -- Windows binary mirror (bin-hex) --------------------------------
+        # Windows installers and the checksum manifest are ALSO published as
+        # static files on the release site, so the download table can link to
+        # lattice-md.app instead of the GitHub Release CDN. Every other
+        # platform keeps linking to the Release asset.
+        # The files are copied from staging/ -- the same bytes step 904
+        # uploaded, after any signing in 903.4 -- rather than re-downloaded:
+        # no network round-trip and no race with the release going live.
+        BIN_DIR="$OUT_DIR/bin-hex"
+        mkdir -p "$BIN_DIR"
+        # Alpha tags (ending in a non-digit, e.g. v1.2.3b) land on
+        # alpha-releases; stable tags land on main. Must stay in sync with the
+        # branch selection in the commit step below.
+        DOCS_BRANCH=$(if [[ "$VERSION" =~ [^0-9]$ ]]; then echo "alpha-releases"; else echo "main"; fi)
+        # Base URL for this release on GitHub Pages
+        PAGES_BASE="https://lattice-md.app/Lattice-Releases/assets-${VERSION}"
+        # Deferred antivirus dispatch list: name<TAB>url<TAB>served_from_pages
+        SCAN_TARGETS="$RUNNER_TEMP/scan-targets.tsv"
+        : > "$SCAN_TARGETS"
+
         # Fetch asset download URLs from the GitHub Release API
         ASSETS_JSON=$(gh api repos/"${{ github.repository }}"/releases/tags/${VERSION} \
           --jq '.assets[] | [.name, .browser_download_url, .size] | @tsv')
@@ -850,27 +870,38 @@ jobs:
             *.apk)                 platform='<span class="material-icons">android</span> Android — Universal' ;;
             *.aab)                 platform='<span class="material-icons">android</span> Android — Universal (Play Store)' ;;
             *.ipa)                 platform='<span class="material-icons">phone_iphone</span> iOS' ;;
+            SHA256SUMS.txt)        platform='<span class="material-icons">tag</span> Checksums (SHA-256)' ;;
+            SHA256SUMS.txt.asc)    platform='<span class="material-icons">key</span> Checksums - GPG signature' ;;
             *)                     platform='?' ;;
           esac
 
-          printf '| [%s](%s) | %s | %s |\n' "$name" "$url" "$platform" "$size_mb" >> "$OUT"
+          # Windows installers and the checksum manifest are mirrored into
+          # bin-hex/ and linked from the release site; everything else keeps
+          # pointing at the GitHub Release asset URL.
+          case "$name" in
+            *-setup.exe|SHA256SUMS.txt|SHA256SUMS.txt.asc)
+              if [ -f "staging/$name" ]; then
+                cp -f "staging/$name" "$BIN_DIR/$name"
+                dl_url="${PAGES_BASE}/bin-hex/${name}"
+                on_pages=1
+              else
+                echo "::warning::$name is not in staging/ -- linking to the GitHub Release instead."
+                dl_url="$url"
+                on_pages=0
+              fi
+              ;;
+            *)
+              dl_url="$url"
+              on_pages=0
+              ;;
+          esac
 
-          # Antivirus scan ##########################################
-          PAYLOAD=$(jq -nc \
-            --arg ref "${{ github.ref_name }}" \
-            --arg url "$url" \
-            --arg who "$name" \
-            '{ref: $ref, inputs: {url2scan: $url, submitted_by: $who}}')
+          printf '| [%s](%s) | %s | %s |\n' "$name" "$dl_url" "$platform" "$size_mb" >> "$OUT"
 
-          RESPONSE=$(curl -L -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer $GH_TOKEN2" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "$HTPAYLOAD" \
-            -d "$PAYLOAD")
-
-          echo "### response from triggering Antivirus scan workflow is: (may be empty) "
-          echo "$RESPONSE" | jq .
+          # Antivirus scans are dispatched AFTER the release site is pushed:
+          # a bin-hex URL does not resolve until the Pages deploy completes,
+          # and AntivirusOnUrl.yml downloads the file it is handed.
+          printf '%s\t%s\t%s\n' "$name" "$dl_url" "$on_pages" >> "$SCAN_TARGETS"
 
         done <<< "$ASSETS_JSON"
 
@@ -915,11 +946,7 @@ jobs:
           cp -r "$DEMO_SRC"/. "$DEMO_DEST/"
           echo "Demo docs copied to $DEMO_DEST"
 
-          # Base URL for this release on GitHub Pages
-          PAGES_BASE="https://lattice-md.app/Lattice-Releases/assets-${VERSION}"
-          # Alpha tags (ending in a non-digit, e.g. v1.2.3b) land on alpha-releases;
-          # stable tags land on main. Use the same logic as the commit step below.
-          DOCS_BRANCH=$(if [[ "$VERSION" =~ [^0-9]$ ]]; then echo "alpha-releases"; else echo "main"; fi)
+          # PAGES_BASE and DOCS_BRANCH are set once near the top of this step.
           # Raw GitHub URL base (for "open as raw" links)
           RAW_BASE="https://raw.githubusercontent.com/blessia-blessini/lattice-docs-releases/${DOCS_BRANCH}/Lattice-Releases/assets-${VERSION}"
           # GitHub blob URL base (GitHub renders .md nicely)
@@ -991,6 +1018,46 @@ jobs:
         git commit -m "Release ${VERSION}: add index.md and coverage reports" \
           -m "Co-authored-by: Blessia-Blessini <273819958+blessia-blessini@users.noreply.github.com>"
         git push origin "$TARGET_BRANCH"
+        cd ..
+
+        ################################################################
+        # Antivirus scans -- dispatched now that bin-hex/ is published.
+        # Assets served from the release site need the Pages deploy to
+        # finish first, so poll one of those URLs before dispatching.
+        ################################################################
+        if awk -F'\t' '$3 == 1 {found=1} END {exit !found}' "$SCAN_TARGETS"; then
+          FIRST_PAGES_URL=$(awk -F'\t' '$3 == 1 {print $2; exit}' "$SCAN_TARGETS")
+          echo "Waiting for GitHub Pages to serve ${FIRST_PAGES_URL}"
+          for _ in $(seq 1 60); do
+            if curl -sfIL -o /dev/null "$FIRST_PAGES_URL"; then
+              echo "Pages deploy is live."
+              break
+            fi
+            sleep 20
+          done
+          curl -sfIL -o /dev/null "$FIRST_PAGES_URL" \
+            || echo "::warning::${FIRST_PAGES_URL} still not served after ~20 min; dispatching scans anyway."
+        fi
+
+        while IFS=$'\t' read -r name dl_url _on_pages; do
+          [ -n "$name" ] || continue
+
+          PAYLOAD=$(jq -nc \
+            --arg ref "${{ github.ref_name }}" \
+            --arg url "$dl_url" \
+            --arg who "$name" \
+            '{ref: $ref, inputs: {url2scan: $url, submitted_by: $who}}')
+
+          RESPONSE=$(curl -L -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN2" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "$HTPAYLOAD" \
+            -d "$PAYLOAD")
+
+          echo "### response from triggering Antivirus scan workflow for ${name}: (may be empty) "
+          echo "$RESPONSE" | jq .
+        done < "$SCAN_TARGETS"
 
     ################################################################
     # 906 / Write job summary
