@@ -19,7 +19,7 @@
   <Identity
     Name="Blessia.lattice-md"
     Publisher="CN=E88B3AC8-AD63-44BD-BDA6-22A1419A6C7B"
-    Version="0.3.19.0"
+    Version="0.3.20.0"
     ProcessorArchitecture="x64" />
 
   <Properties>

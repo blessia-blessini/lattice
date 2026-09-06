@@ -149,12 +149,16 @@ async fn open_new_window(app: tauri::AppHandle, path: Option<String>) -> Result<
     info!("open_new_window called. Path: {:?}", path);
     let label = generate_new_window_label();
 
+    // Read productName before the builder borrows `app`.
+    #[cfg(desktop)]
+    let product_name = app_product_name(&app);
+
     let mut builder =
         tauri::WebviewWindowBuilder::new(&app, &label, tauri::WebviewUrl::App("index.html".into()));
 
     #[cfg(desktop)]
     {
-        builder = configure_desktop_window(builder);
+        builder = configure_desktop_window(builder, product_name);
     }
 
     if let Some(p) = path {
@@ -216,6 +220,7 @@ fn generate_new_window_label() -> String {
     static COUNTER: AtomicUsize = AtomicUsize::new(0);
 
     let count = COUNTER.fetch_add(1, Ordering::Relaxed);
+    // Internal window label, not a visible title.
     format!("lattice-{}-window", count)
 }
 // generate_new_window_label END *******************************************
@@ -234,14 +239,62 @@ fn calculate_cascade_coordinates(count: usize) -> (f64, f64) {
 }
 
 //******************************************************************************
+// APP_NAME_SUFFIX
+//******************************************************************************
+/// Suffix appended to `productName` in every user-visible caption, giving
+/// "lattice MD" from the bundle's `productName` of "lattice".
+///
+/// It is deliberately NOT part of `productName` itself: that field also names
+/// the executable, the install directory and the NSIS/bundle artifact files
+/// (`lattice_0.3.19_x64-setup.exe`), which the release pipeline and the
+/// bin-hex mirror depend on.
+///
+/// MUST stay in sync with `APP_NAME_SUFFIX` in `src/App.tsx`.
+#[cfg(desktop)]
+const APP_NAME_SUFFIX: &str = " MD";
+
+//******************************************************************************
+// window_title
+//******************************************************************************
+/// Builds the initial window caption: `"<product name> (<version>)"`.
+///
+/// The product name comes from `productName` in tauri.conf.json so that this
+/// and the frontend's `setWindowTitle` (src/App.tsx, which reads the same
+/// field) cannot drift apart. Falls back to `"Lattice"` when the field is
+/// absent, matching the frontend's own fallback.
+///
+/// Pure function: no Tauri types, so it is unit-testable on the host.
+#[cfg(desktop)]
+fn window_title(product_name: Option<&str>, version: &str) -> String {
+    let name = product_name
+        .map(str::trim)
+        .filter(|n| !n.is_empty())
+        .unwrap_or("Lattice");
+    format!("{}{} ({})", name, APP_NAME_SUFFIX, version)
+}
+
+//******************************************************************************
+// app_product_name
+//******************************************************************************
+/// Reads `productName` from the resolved Tauri config of a running app.
+#[cfg(desktop)]
+fn app_product_name<R: tauri::Runtime, M: tauri::Manager<R>>(manager: &M) -> Option<String> {
+    manager.config().product_name.clone()
+}
+
+//******************************************************************************
 // configure_desktop_window
 //******************************************************************************
 /// Configures title, size, and cascaded positioning for desktop windows.
 /// Tiles each subsequent window 3 pixels lower and 6 pixels righter, wrapping
 /// around back to the starting position after 10 windows have been created.
+///
+/// `product_name` is the caller's `productName` from tauri.conf.json; pass
+/// `None` to fall back to `"Lattice"`. See `window_title`.
 #[cfg(desktop)]
 fn configure_desktop_window<R: tauri::Runtime, M: tauri::Manager<R>>(
     builder: tauri::WebviewWindowBuilder<'_, R, M>,
+    product_name: Option<String>,
 ) -> tauri::WebviewWindowBuilder<'_, R, M> {
     use std::sync::atomic::{AtomicUsize, Ordering};
     static DESKTOP_WINDOW_COUNTER: AtomicUsize = AtomicUsize::new(0);
@@ -250,7 +303,7 @@ fn configure_desktop_window<R: tauri::Runtime, M: tauri::Manager<R>>(
     let (x, y) = calculate_cascade_coordinates(count);
 
     builder
-        .title(format!("lattice ({})", get_version_string()))
+        .title(window_title(product_name.as_deref(), &get_version_string()))
         .inner_size(800.0, 600.0)
         .position(x, y)
 }
@@ -268,12 +321,16 @@ fn configure_desktop_window<R: tauri::Runtime, M: tauri::Manager<R>>(
 fn build_window_with_file(app: &tauri::AppHandle, path: Option<String>) -> Result<(), String> {
     let label = generate_new_window_label();
 
+    // Read productName before the builder borrows `app`.
+    #[cfg(desktop)]
+    let product_name = app_product_name(app);
+
     let mut builder =
         tauri::WebviewWindowBuilder::new(app, &label, tauri::WebviewUrl::App("index.html".into()));
 
     #[cfg(desktop)]
     {
-        builder = configure_desktop_window(builder);
+        builder = configure_desktop_window(builder, product_name);
     }
 
     let path_str = path.clone().unwrap_or_default();

@@ -200,6 +200,36 @@ fn test_calculate_cascade_coordinates() {
 // test_calculate_cascade_coordinates END **********************************
 
 //**************************************************************************
+// test_window_title
+//**************************************************************************
+#[test]
+#[cfg(desktop)]
+fn test_window_title() {
+    // productName from tauri.conf.json, plus the APP_NAME_SUFFIX brand suffix.
+    assert_eq!(window_title(Some("lattice"), "0.3.19"), "lattice MD (0.3.19)");
+
+    // A different productName flows straight through -- this is the whole
+    // point of the change: the caption is no longer a hardcoded literal.
+    assert_eq!(window_title(Some("Acme"), "1.0"), "Acme MD (1.0)");
+
+    // Missing productName falls back to the same default App.tsx uses.
+    assert_eq!(window_title(None, "0.3.19"), "Lattice MD (0.3.19)");
+
+    // Empty / whitespace-only productName is treated as absent, not as a
+    // caption of " MD ()".
+    assert_eq!(window_title(Some(""), "0.3.19"), "Lattice MD (0.3.19)");
+    assert_eq!(window_title(Some("   "), "0.3.19"), "Lattice MD (0.3.19)");
+
+    // Surrounding whitespace is trimmed before the suffix is appended.
+    assert_eq!(window_title(Some("  lattice  "), "0.3.19"), "lattice MD (0.3.19)");
+
+    // The suffix is applied exactly once, by this function alone -- callers
+    // must not pre-append it.
+    assert_eq!(window_title(Some("lattice"), "0.3.19").matches(" MD").count(), 1);
+}
+// test_window_title END ***************************************************
+
+//**************************************************************************
 // test_parse_launch_args
 //**************************************************************************
 #[test]
