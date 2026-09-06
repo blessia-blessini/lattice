@@ -8,6 +8,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FEAT: Add MSIX packaging manifest for the Microsoft Store
 - CHORE: update dependencies
 - FEAT: Mirror Windows installers to the release site under bin-hex/
 - bump version to 0.3.19

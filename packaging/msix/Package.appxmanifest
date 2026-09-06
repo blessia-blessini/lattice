@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  MSIX manifest for the Microsoft Store submission of lattice-md.
+
+  Identity/Name and Identity/Publisher are ASSIGNED BY THE STORE and must
+  match Partner Center exactly (Product management > Product identity), or
+  the upload is rejected. Do not "tidy" them.
+
+  Version must be 4-part with Revision = 0, and must be raised for every
+  Store submission (the Store rejects a re-upload of the same version).
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap uap3 rescap">
+
+  <Identity
+    Name="Blessia.lattice-md"
+    Publisher="CN=E88B3AC8-AD63-44BD-BDA6-22A1419A6C7B"
+    Version="0.3.19.0"
+    ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>lattice-md</DisplayName>
+    <PublisherDisplayName>Blessia</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+    <Description>Lattice is a fast, local-first Markdown editor. It collects no personal data.</Description>
+  </Properties>
+
+  <Dependencies>
+    <!-- 10.0.17763.0 = Windows 10 1809, the practical floor for full-trust MSIX. -->
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22621.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-us" />
+  </Resources>
+
+  <Applications>
+    <!--
+      EntryPoint="Windows.FullTrustApplication" is what makes this a packaged
+      Win32 app (TrustLevel mediumIL): it runs OUTSIDE the AppContainer and
+      keeps normal user-level file access, so no broadFileSystemAccess is
+      needed and the existing tauri fs scope ($HOME/**) works unchanged.
+    -->
+    <Application Id="Lattice"
+                 Executable="lattice.exe"
+                 EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="lattice-md"
+        Description="A fast, local-first Markdown editor."
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile
+          Square71x71Logo="Assets\Square71x71Logo.png"
+          Square310x310Logo="Assets\Square310x310Logo.png" />
+      </uap:VisualElements>
+
+      <Extensions>
+        <!-- Declarative .md / .markdown association, replacing the NSIS one. -->
+        <uap3:Extension Category="windows.fileTypeAssociation">
+          <uap3:FileTypeAssociation Name="markdown">
+            <uap:SupportedFileTypes>
+              <uap:FileType>.md</uap:FileType>
+              <uap:FileType>.markdown</uap:FileType>
+            </uap:SupportedFileTypes>
+            <uap:Logo>Assets\StoreLogo.png</uap:Logo>
+            <uap:DisplayName>Markdown File</uap:DisplayName>
+          </uap3:FileTypeAssociation>
+        </uap3:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <!-- Required for every Medium IL (full-trust) packaged desktop app.
+         Restricted capability: needs a justification on the Store
+         "Submission options" page. -->
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>
