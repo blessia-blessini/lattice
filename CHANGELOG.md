@@ -8,6 +8,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: update dependencies
 - FEAT: Mirror Windows installers to the release site under bin-hex/
 - bump version to 0.3.19
 - CHORE: Publish the checksum manifest as SHA256SUMS.txt
