@@ -10,7 +10,6 @@ Edit the section for your next version **before** pushing the release tag like v
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
 - FEAT: Build an unsigned MSIX in build-release.ps1
----
 
 ## v0.3.20
 
