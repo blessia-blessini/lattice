@@ -2,6 +2,12 @@
 _md-samples/**/*.*
 _md-samples/*
 
+
+Package.appxmanifest
+Assets/**/*.*
+Assets/*
+Assets
+
 # Generated Docs
 docs/gen/**/*.*
 docs/gen/
@@ -88,3 +94,4 @@ e2e_single.md
 e2e_multi_b.md
 e2e_shutdown.txt
 docs/demo/Untitled.txt
+dist-msix.msix

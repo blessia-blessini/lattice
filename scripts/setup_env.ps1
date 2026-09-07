@@ -24,6 +24,10 @@ Write-Host "=========================================="
 Write-Host " Lattice Environment Setup (Windows)"
 Write-Host "=========================================="
 
+Write-Host " INSTALL SIGNING winappcli"
+Write-Host "=========================================="
+winget install microsoft.winappcli --source winget
+
 # 1. Check Node.js
 $nodeVersion = 0
 if (Get-Command "node" -ErrorAction SilentlyContinue) {

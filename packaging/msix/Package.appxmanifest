@@ -54,9 +54,14 @@
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">
-        <uap:DefaultTile
-          Square71x71Logo="Assets\Square71x71Logo.png"
-          Square310x310Logo="Assets\Square310x310Logo.png" />
+        <!--
+          Square310x310Logo is NOT declared: the schema requires
+          Wide310x150Logo alongside it, and no wide asset exists in
+          src-tauri/icons. makeappx rejects the pair with error 80080204.
+          To get the large Start tile back, add a 310x150 asset and declare
+          both attributes together.
+        -->
+        <uap:DefaultTile Square71x71Logo="Assets\Square71x71Logo.png" />
       </uap:VisualElements>
 
       <Extensions>

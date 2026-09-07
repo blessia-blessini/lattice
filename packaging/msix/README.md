@@ -7,11 +7,11 @@ code-signing certificate** on this route.
 
 From Partner Center > lattice-md > Product management > Product identity:
 
-| Field | Value |
-|:--|:--|
-| `Package/Identity/Name` | `Blessia.lattice-md` |
-| `Package/Identity/Publisher` | `CN=E88B3AC8-AD63-44BD-BDA6-22A1419A6C7B` |
-| `Package/Properties/PublisherDisplayName` | `Blessia` |
+| Field                                     | Value                                     |
+| :---------------------------------------- | :---------------------------------------- |
+| `Package/Identity/Name`                   | `Blessia.lattice-md`                      |
+| `Package/Identity/Publisher`              | `CN=E88B3AC8-AD63-44BD-BDA6-22A1419A6C7B` |
+| `Package/Properties/PublisherDisplayName` | `Blessia`                                 |
 
 `Package.appxmanifest` in this folder already carries them. If the upload is
 rejected for an identity mismatch, re-read the page above — do not guess.
@@ -27,29 +27,99 @@ the Store rejects a re-upload of a version it has already seen.
 
 ## Build (Windows, PowerShell)
 
+`winapp init` is **interactive** (it prompts for name, publisher, extensions)
+and is therefore unusable here: everything it would ask has a fixed answer
+already, and an interactive step cannot run in CI. Skip it. `init` only
+scaffolds a stub manifest and an `Assets/` folder -- both of which this repo
+can produce deterministically.
+
+Pack with `makeappx` from the Windows SDK, which is non-interactive and is
+already present on GitHub's `windows-latest` runners. Note the rename: inside
+the package the manifest must be called `AppxManifest.xml`.
+
 ```powershell
-winget install microsoft.winappcli --source winget
-
 cd <repo>
-winapp init                                    # creates Assets/ (keep it)
-copy /Y packaging\msix\Package.appxmanifest .  # overwrite the generated stub
-
-# tile assets referenced by the manifest
-copy /Y src-tauri\icons\StoreLogo.png          Assets\
-copy /Y src-tauri\icons\Square44x44Logo.png    Assets\
-copy /Y src-tauri\icons\Square71x71Logo.png    Assets\
-copy /Y src-tauri\icons\Square150x150Logo.png  Assets\
-copy /Y src-tauri\icons\Square310x310Logo.png  Assets\
 
 npm run tauri -- build
-mkdir dist-msix
-copy /Y src-tauri\target\release\lattice.exe dist-msix\
 
-# Local test signing only. The subject MUST equal Identity/Publisher above;
-# the Store replaces this signature, so its self-signed-ness does not matter.
-winapp cert generate --if-exists skip
-winapp pack .\dist-msix --cert .\devcert.pfx
+# Assemble the package payload
+$pkg = "dist-msix"
+Remove-Item -Recurse -Force $pkg -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Path "$pkg\Assets" | Out-Null
+
+Copy-Item packaging\msix\Package.appxmanifest "$pkg\AppxManifest.xml"
+Copy-Item src-tauri\target\release\lattice.exe $pkg
+
+foreach ($i in "StoreLogo","Square44x44Logo","Square71x71Logo",
+               "Square150x150Logo") {
+  Copy-Item "src-tauri\icons\$i.png" "$pkg\Assets\"
+}
+
+# Unsigned package -- this is the one that goes to the Store.
+makeappx pack /d $pkg /p lattice-md.msix
 ```
+
+If `makeappx` is not on PATH it ships with the Windows SDK, at
+`C:\Program Files (x86)\Windows Kits\10\bin\<version>\x64\makeappx.exe`.
+
+### Optional: a signed copy for local install testing
+
+`Add-AppxPackage` refuses a package Windows does not trust, so testing
+locally needs a self-signed cert whose subject equals `Identity/Publisher`.
+Sign a **copy** -- never the one you upload.
+
+```powershell
+Copy-Item lattice-md.msix lattice-md-devtest.msix
+
+$cert = New-SelfSignedCertificate -Type Custom `
+  -Subject "CN=E88B3AC8-AD63-44BD-BDA6-22A1419A6C7B" `
+  -KeyUsage DigitalSignature -FriendlyName "lattice-md MSIX dev" `
+  -CertStoreLocation "Cert:\CurrentUser\My" `
+  -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}")
+
+$pw = Read-Host -AsSecureString "PFX password"
+Export-PfxCertificate -Cert "Cert:\CurrentUser\My\$($cert.Thumbprint)" `
+  -FilePath .\devcert.pfx -Password $pw
+
+signtool sign /fd SHA256 /f .\devcert.pfx /p <password> lattice-md-devtest.msix
+```
+
+Trust it once (elevated), install, and check that a `.md` from Documents
+opens:
+
+```powershell
+Import-Certificate -FilePath .\devcert.cer -CertStoreLocation Cert:\LocalMachine\TrustedPeople
+Add-AppxPackage .\lattice-md-devtest.msix
+```
+
+`devcert.pfx` and `*-devtest.msix` belong in `.gitignore`.
+
+## Signing: the Store package must be UNSIGNED
+
+Per Microsoft's package requirements:
+
+> Your MSIX and AppX packages don't have to be signed with a certificate
+> rooted in a trusted certificate authority when submitting to the Microsoft
+> Store. The Microsoft Store will automatically re-sign your MSIX/AppX
+> packages with a Microsoft certificate during the publishing process after
+> your app passes certification.
+
+And Microsoft support is explicit that self-signing before submission
+*causes* validation failures (publisher mismatch against what the Store
+expects). So:
+
+- **Uploaded package: unsigned.** `makeappx pack /d dist-msix /p lattice-md.msix`
+  produces an unsigned package. (Check `winapp pack --help` for an unsigned
+  option before reaching for makeappx.)
+- **Locally installed package: signed with `devcert.pfx`**, only because
+  `Add-AppxPackage` refuses a package Windows does not trust. This cert never
+  leaves the machine and is unrelated to the Store, to Entra/Azure, and to the
+  developer account.
+- Add `devcert.pfx` to `.gitignore`.
+
+The MSI/EXE case is the opposite, and is why the first submission failed:
+the Store does **not** re-sign Win32 installers, so those must be
+Authenticode-signed by a CA-rooted certificate before submission.
 
 ## Test before uploading
 

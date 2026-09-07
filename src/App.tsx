@@ -60,8 +60,8 @@ import { StaticRuntime } from "@services/StaticRuntime";
 
 // Brand suffix appended to productName in every user-visible caption.
 // MUST stay in sync with APP_NAME_SUFFIX in src-tauri/src/lib.rs.
-const APP_NAME_SUFFIX = " MD";
-const APP_NAME = (tauriConfig.productName || "Lattice") + APP_NAME_SUFFIX;
+const APP_NAME_SUFFIX = "-md";
+const APP_NAME = (tauriConfig.productName || "lattice") + APP_NAME_SUFFIX;
 
 // Rehype plugin: copy each element's source line number from its mdast position
 // onto a data-source-line attribute, used by dual-view scroll sync.
