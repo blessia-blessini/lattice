@@ -95,3 +95,4 @@ e2e_multi_b.md
 e2e_shutdown.txt
 docs/demo/Untitled.txt
 dist-msix.msix
+dist-msix/AppxManifest.xml

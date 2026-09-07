@@ -8,6 +8,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FEAT: Build an unsigned MSIX in build-release.ps1
 - FEAT: First submit to Windows/MS store
 - FIX: Derive the window caption from productName instead of a literal
 - FEAT: Add MSIX packaging manifest for the Microsoft Store
