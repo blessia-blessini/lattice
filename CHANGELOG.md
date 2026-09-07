@@ -4,10 +4,29 @@ All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
 
-## v0.3.19
+
+## v0.3.21
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FEAT: Build an unsigned MSIX in build-release.ps1
+---
+
+## v0.3.20
+
+### Changes
+- FEAT: Build an unsigned MSIX in build-release.ps1
+- FEAT: First submit to Windows/MS store
+- FIX: Derive the window caption from productName instead of a literal
+- FEAT: Add MSIX packaging manifest for the Microsoft Store
+- CHORE: update dependencies
+---
+
+## v0.3.19
+
+### Changes
+  
+- FEAT: Build an unsigned MSIX in build-release.ps1
 - FEAT: First submit to Windows/MS store
 - FIX: Derive the window caption from productName instead of a literal
 - FEAT: Add MSIX packaging manifest for the Microsoft Store

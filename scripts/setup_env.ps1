@@ -76,6 +76,9 @@ if ($LASTEXITCODE -ne 0) {
 
 npx tauri icon ./public/lattice.svg
 
+# These are needed only for Windows / MS Store
+npx tauri icon ./public/lattice.svg -p 300 -p 1080
+
 
 Write-Host " ==>> BUILDING THE UTILs"
 Push-Location .\utils\buildno-gen

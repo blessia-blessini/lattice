@@ -170,6 +170,11 @@ echo "*** END of NPM ***********************"
 echo "**** ICONS *****************************"
 echo "[INFO] Setting up icons"
 npx tauri icon ./public/lattice.svg
+
+# These are needed only for Windows / MS Store
+# Still we build them here to be equivalent
+npx tauri icon ./public/lattice.svg -p 300 -p 1080
+
 echo "*** END of ICON setup *****************"
 
 
