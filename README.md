@@ -74,7 +74,11 @@ The lack of native graphycal support is compensated by:
 
 ### FOR USERS
 
-Download the latest stable release for your platform from our **[Releases Page](https://github.com/blessia-blessini/lattice/releases)**.
+**Windows** — install from the Microsoft Store (recommended: signed package, automatic updates):
+
+<a href="https://get.microsoft.com/installer/download/9pm3gb09941t?referrer=appbadge" target="_self"><picture><source media="(prefers-color-scheme: dark)" srcset="https://get.microsoft.com/images/en-us%20light.svg"><img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200" style="width:200px;max-width:100%;height:auto" alt="Download Lattice from the Microsoft Store"/></picture></a>
+
+**All platforms** (Windows, macOS, Linux, Android) — download the latest stable release for your platform from our **[Releases Page](https://github.com/blessia-blessini/lattice/releases)**.
 
 ### FOR DEVELOPERS
 Lattice is built with **Tauri v2**, **Rust**, and **React**.
