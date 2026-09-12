@@ -837,6 +837,27 @@ jobs:
         SCAN_TARGETS="$RUNNER_TEMP/scan-targets.tsv"
         : > "$SCAN_TARGETS"
 
+        # Microsoft Store badge. The Store listing (product 9PM3GB09941T) always
+        # serves the current published version, so the markup is version-
+        # independent and identical on every release page.
+        # Three things this markup has to survive:
+        #   1. printf -- the badge image URLs contain "%20", which printf would
+        #      eat as a conversion spec. It is ALWAYS passed as an ARGUMENT to
+        #      '%s\n', never as the format string.
+        #   2. the release-site stylesheet -- Lattice-Releases/index.html sets
+        #      "#content img { width: 100% }", which beats the width attribute.
+        #      The inline style pins the badge to its intended 200px.
+        #   3. light/dark -- <picture> serves Microsoft's white badge to dark
+        #      readers and the dark badge otherwise. It follows the OS setting
+        #      (prefers-color-scheme), which is also what the release page's
+        #      theme button initialises from.
+        MS_STORE_BADGE='<a href="https://get.microsoft.com/installer/download/9pm3gb09941t?referrer=appbadge" target="_self">'
+        MS_STORE_BADGE+='<picture>'
+        MS_STORE_BADGE+='   <source media="(prefers-color-scheme: dark)" srcset="https://get.microsoft.com/images/en-us%20light.svg">'
+        MS_STORE_BADGE+='   <img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200" '
+        MS_STORE_BADGE+='    style="width:200px;max-width:100%;height:auto;display:inline-block" alt="Download Lattice from the Microsoft Store"/>'
+        MS_STORE_BADGE+='</picture></a>'
+
         # Fetch asset download URLs from the GitHub Release API
         ASSETS_JSON=$(gh api repos/"${{ github.repository }}"/releases/tags/${VERSION} \
           --jq '.assets[] | [.name, .browser_download_url, .size] | @tsv')
@@ -852,6 +873,13 @@ jobs:
         printf '%s\n' "**Released:** ${DATE}" >> "$OUT"
         printf '%s\n' "$( [ -f release-notes.md ] && cat release-notes.md )" >> "$OUT"
         printf '%s\n' "## Download Lattice"                  >> "$OUT"
+        printf '%s\n' ""                                     >> "$OUT"
+        printf '%s\n' "**Windows users: install from the Microsoft Store**" >> "$OUT"
+        printf '%s\n' ""                                     >> "$OUT"
+        printf '%s\n' "$MS_STORE_BADGE"                      >> "$OUT"
+        printf '%s\n' ""                                     >> "$OUT"
+        printf '%s\n' "Or download a package directly:"      >> "$OUT"
+        printf '%s\n' ""                                     >> "$OUT"
         printf '%s\n' "| File | Install on | Size |"         >> "$OUT"
         printf '%s\n' "|:-----|:-----------|-----:|"         >> "$OUT"
 

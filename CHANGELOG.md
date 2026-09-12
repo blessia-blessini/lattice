@@ -9,6 +9,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FEAT: Add windows build batch in build page
 - CHORE: Added MS Store badge to README
 - Update CHANGELOG.md
 - FEAT: Build an unsigned MSIX in build-release.ps1
