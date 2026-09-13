@@ -53,7 +53,11 @@ function Install-AppxIfNeeded {
 if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
     Write-Host "[INFO] winget not found -- attempting to install App Installer (Microsoft ships an arm64 build too)."
     try {
-        $arch = if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") { "arm64" } else { "x64" }
+        # RuntimeInformation.OSArchitecture reflects the actual OS, unlike
+        # $env:PROCESSOR_ARCHITECTURE which reflects the CALLING PROCESS and
+        # is wrong whenever pwsh itself is running under x64 emulation.
+        $arch = if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq
+                    [System.Runtime.InteropServices.Architecture]::Arm64) { "arm64" } else { "x64" }
         $tmp  = "$env:TEMP\winget-bootstrap"
         New-Item -ItemType Directory -Force -Path $tmp | Out-Null
 
@@ -263,6 +267,12 @@ Write-Host "  **************************************"
 Write-Host "  [INFO] Considering to Set up Android project ... "
 Write-Host "  **************************************"
 
+# RuntimeInformation.OSArchitecture reflects the actual OS, unlike
+# $env:PROCESSOR_ARCHITECTURE which reflects the CALLING PROCESS and is
+# wrong whenever pwsh itself is running under x64 emulation.
+$isArm64Windows = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq
+    [System.Runtime.InteropServices.Architecture]::Arm64
+
 if (-not (Get-Command "java" -ErrorAction SilentlyContinue)) {
     Write-Host ".  [INFO] IF you plan to build android version please install "
     Write-Host "            Java and call this script again; it is required for Android development."
@@ -270,21 +280,22 @@ if (-not (Get-Command "java" -ErrorAction SilentlyContinue)) {
     Write-Host ".           normally executing 'npm run tauri android init' will do."
     Write-Host ".  [INFO] Skipping Android project initialization."
 }
+elseif (Test-Path "src-tauri/gen/android") {
+    Write-Host ".  [INFO] Android project already initialized. Skipping init."
+}
+elseif ($isArm64Windows) {
+    Write-Host ".  [INFO] windows-11-arm: skipping 'npm run tauri android init' -- not set up on this runner."
+}
 else {
-    if (Test-Path "src-tauri/gen/android") {
-        Write-Host ".  [INFO] Android project already initialized. Skipping init."
-    }
-    else {
-        Write-Host ".  ***************************************"
-        Write-Host ".  [INFO] Setup the android project files  ..."
-        Write-Host ".    for now all is generated so we prefer"
-        Write-Host ".    to not keep it in version control    "
-        Write-Host ".    THIS IS FAST: it does not build      "
-        Write-Host ".    Just initializes a few folders so we do it at init"
-        Write-Host ".    even if the build is strictly desktop"
-        Write-Host ".  ***************************************"
-        npm run tauri android init
-    }
+    Write-Host ".  ***************************************"
+    Write-Host ".  [INFO] Setup the android project files  ..."
+    Write-Host ".    for now all is generated so we prefer"
+    Write-Host ".    to not keep it in version control    "
+    Write-Host ".    THIS IS FAST: it does not build      "
+    Write-Host ".    Just initializes a few folders so we do it at init"
+    Write-Host ".    even if the build is strictly desktop"
+    Write-Host ".  ***************************************"
+    npm run tauri android init
 }
 
 Write-Host "==========================================================================="
