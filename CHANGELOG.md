@@ -8,6 +8,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- fixed a typo on release page
 - FIX: Put the Microsoft Store URL on its own line
 - FIX: Skip Android project init outright on windows-11-arm
 - FIX: Don't abort winget bootstrap on a harmless VCLibs version conflict
