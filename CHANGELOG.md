@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: bumped version to v0.3.23
 - CHORE: Publish the Windows MSIX bundle in the release table
 
 ---
