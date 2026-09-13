@@ -3,11 +3,18 @@
 All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
+## v0.3.23
+
+### Changes
+  <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: Publish the Windows MSIX bundle in the release table
+
+---
+
 
 ## v0.3.22
 
 ### Changes
-  <!-- INSERT BULLETS UNDER THIS LINE -->
 - FIX: Win Bundle build had wrong versioning
 - Merged Local and Remote Branches
 - fixed a typo on release page
@@ -26,7 +33,6 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.21
 
 ### Changes
-  <!-- INSERT BULLETS UNDER THIS LINE -->
 - FEAT: Add windows build batch in build page
 - CHORE: Added MS Store badge to README
 - Update CHANGELOG.md
