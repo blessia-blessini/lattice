@@ -4,6 +4,13 @@ All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
 
+## v0.3.22
+
+### Changes
+  <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: bumped version to v0.3.22
+
+---
 
 ## v0.3.21
 
