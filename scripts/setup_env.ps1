@@ -26,7 +26,50 @@ Write-Host "=========================================="
 
 Write-Host " INSTALL SIGNING winappcli"
 Write-Host "=========================================="
-winget install microsoft.winappcli --source winget
+# winappcli is only needed for the local dev workflows in
+# packaging/msix/README.md (winapp cert install / winapp pack); CI
+# packaging (scripts/build-msix.ps1) uses makeappx directly and does not
+# need it. winget/App Installer is preinstalled on windows-latest but NOT
+# on the windows-11-arm runner, so a missing winget is a soft warning here.
+if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
+    Write-Host "[INFO] winget not found -- attempting to install App Installer (Microsoft ships an arm64 build too)."
+    try {
+        $arch = if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") { "arm64" } else { "x64" }
+        $tmp  = "$env:TEMP\winget-bootstrap"
+        New-Item -ItemType Directory -Force -Path $tmp | Out-Null
+
+        # winget's own runtime dependencies, matched to the host architecture.
+        Invoke-WebRequest -Uri "https://aka.ms/Microsoft.VCLibs.$arch.14.00.Desktop.appx" `
+            -OutFile "$tmp\VCLibs.appx"
+        Invoke-WebRequest -Uri "https://github.com/microsoft/microsoft-ui-xaml/releases/download/v2.8.6/Microsoft.UI.Xaml.2.8.$arch.appx" `
+            -OutFile "$tmp\UI.Xaml.appx"
+        # aka.ms/getwinget always redirects to the latest msixbundle, which
+        # packs x86/x64/arm64 together -- Add-AppxPackage picks the right one.
+        Invoke-WebRequest -Uri "https://aka.ms/getwinget" -OutFile "$tmp\winget.msixbundle"
+
+        Add-AppxPackage -Path "$tmp\VCLibs.appx" -ErrorAction Stop
+        Add-AppxPackage -Path "$tmp\UI.Xaml.appx" -ErrorAction Stop
+        Add-AppxPackage -Path "$tmp\winget.msixbundle" -ErrorAction Stop
+
+        # Add-AppxPackage doesn't refresh the current process's PATH.
+        $wingetLinks = "$env:LOCALAPPDATA\Microsoft\WindowsApps"
+        if (($env:PATH -split ';') -notcontains $wingetLinks) { $env:PATH += ";$wingetLinks" }
+    }
+    catch {
+        Write-Host "[WARN] Could not install winget ($_)." -ForegroundColor Yellow
+    }
+}
+
+# winappcli is only needed for the local dev workflows in
+# packaging/msix/README.md (winapp cert install / winapp pack); CI
+# packaging (scripts/build-msix.ps1) uses makeappx directly and does not
+# need it, so a still-missing winget here is a soft warning, not a failure.
+if (Get-Command "winget" -ErrorAction SilentlyContinue) {
+    winget install microsoft.winappcli --source winget
+}
+else {
+    Write-Host "[WARN] winget unavailable -- skipping winappcli install."
+}
 
 # 1. Check Node.js
 $nodeVersion = 0
