@@ -8,6 +8,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FEAT: Added Windws arm build
 - CHORE: Extract MSIX packaging into shared script, build it in CI
 - CHORE: bumped version to v0.3.22
 

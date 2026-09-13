@@ -142,5 +142,23 @@ Then drag the `.msix` onto the Packages page of the MSIX product.
   packaged apps and a self-updating Store app fails certification.
 - **`runFullTrust`** is a restricted capability: write a justification on the
   Store "Submission options" page ("packaged Win32 desktop application").
-- **ARM64** is not built yet. Once it is, produce a `.msixbundle` (x64 +
-  arm64) rather than two separate submissions.
+
+## Multi-architecture (x64 + arm64) bundling
+
+`scripts/build-msix.ps1 -Arch <x64|arm64>` packages one architecture at a
+time (`ProcessorArchitecture` is the only field that differs between them;
+Identity Name/Publisher/Version stay identical). `scripts/build-msix-bundle.ps1`
+combines whatever single-arch `.msix` files it finds
+(`dist-msix-x64.msix`, `dist-msix-arm64.msix`) into one `lattice-md.msixbundle`
+— submit the bundle, not the individual packages, so the Store serves each
+device the architecture it needs from one product listing.
+
+CI builds both in the `build-and-test` matrix (`windows-desktop` → x64,
+`windows-arm-desktop` → arm64) and bundles them in `package-msix-bundle`.
+`windows-arm-desktop` is currently held out of the matrix in the `setup` job
+(no `windows-11-arm` free runner when this was written); free Windows-on-Arm
+GitHub-hosted runners are available now for public repos, so lifting that
+hold only requires removing the `jq` filter in `setup` and pointing its
+`os` at `windows-11-arm` instead of cross-compiling on `windows-latest`.
+Until then, the bundle job packages x64 alone — a single-package bundle is
+valid and installable.

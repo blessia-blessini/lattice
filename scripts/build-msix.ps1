@@ -32,16 +32,30 @@
 # build-release.ps1 (local release builds) and buildAndTest.yml (CI),
 # so the packaging logic never has to be kept in sync in two places.
 #
-# Prerequisite: `npm run tauri build` has already produced
-# src-tauri\target\release\lattice.exe -- this script does not build it.
+# Prerequisite: `npm run tauri build` (with -Arch arm64: the aarch64-pc-windows-msvc
+# target) has already produced the platform's lattice.exe -- this script does
+# not build it.
 #
 # winapp init is deliberately NOT used: it is interactive, and everything
 # it would ask is already fixed in packaging/msix/Package.appxmanifest.
+#
+# -Arch selects the processor architecture: x64 (default) or arm64. Each
+# architecture is packaged as its own single-arch .msix; see
+# build-msix-bundle.ps1 to combine them into one .msixbundle for the Store.
+param(
+    [ValidateSet("x64", "arm64")]
+    [string]$Arch = "x64"
+)
 
-$msixDir  = "dist-msix"
-$msixOut  = "dist-msix.msix"
+$exePaths = @{
+    "x64"   = "src-tauri\target\release\lattice.exe"
+    "arm64" = "src-tauri\target\aarch64-pc-windows-msvc\release\lattice.exe"
+}
+
+$msixDir  = "dist-msix-$Arch"
+$msixOut  = "dist-msix-$Arch.msix"
 $manifest = "packaging\msix\Package.appxmanifest"
-$exe      = "src-tauri\target\release\lattice.exe"
+$exe      = $exePaths[$Arch]
 
 # makeappx ships with the Windows SDK and is on PATH on GitHub's
 # windows-latest runners; fall back to the newest installed SDK.
@@ -77,7 +91,9 @@ else {
 
     # Keep Identity/Version in step with tauri.conf.json: MSIX wants a
     # 4-part version whose Revision is 0, and the Store rejects a
-    # re-upload of a version it has already seen.
+    # re-upload of a version it has already seen. ProcessorArchitecture must
+    # match the packaged exe -- a bundle's packages are told apart by this
+    # attribute alone (Name/Publisher/Version are identical across arches).
     $cfgVersion = (Get-Content "src-tauri\tauri.conf.json" -Raw | ConvertFrom-Json).version
     $parts = @($cfgVersion -split '\.')
     while ($parts.Count -lt 3) { $parts += '0' }
@@ -88,11 +104,12 @@ else {
     $identity = $mx.DocumentElement.SelectSingleNode("*[local-name()='Identity']")
     if (-not $identity) { throw "No <Identity> element in $manifest" }
     $identity.SetAttribute("Version", $msixVersion)
+    $identity.SetAttribute("ProcessorArchitecture", $Arch)
     $mx.Save($xmlPath)
-    Write-Output "MSIX Identity/Version set to $msixVersion"
+    Write-Output "MSIX Identity/Version set to $msixVersion ($Arch)"
 
     Remove-Item $msixOut -ErrorAction SilentlyContinue
     & $makeappx pack /d $msixDir /p $msixOut /o
     if ($LASTEXITCODE -ne 0) { throw "makeappx pack failed ($LASTEXITCODE)" }
-    Write-Output "Unsigned MSIX written to $msixOut -- upload this one to Partner Center."
+    Write-Output "Unsigned MSIX written to $msixOut -- combine with build-msix-bundle.ps1 or upload directly to Partner Center."
 }

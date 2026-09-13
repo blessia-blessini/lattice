@@ -96,3 +96,6 @@ e2e_shutdown.txt
 docs/demo/Untitled.txt
 dist-msix.msix
 dist-msix/AppxManifest.xml
+dist-msix-x64.msix
+dist-msix-x64/
+scripts/build-msix-bundle.ps1

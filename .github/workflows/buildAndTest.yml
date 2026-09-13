@@ -381,15 +381,20 @@ jobs:
     - name: 355. Package MSIX (Windows)
       if: matrix.config.platform == 'windows-desktop' || matrix.config.platform == 'windows-arm-desktop'
       shell: pwsh
-      run: .\scripts\build-msix.ps1
+      run: |
+        $arch = "${{ matrix.config.platform == 'windows-arm-desktop' && 'arm64' || 'x64' }}"
+        .\scripts\build-msix.ps1 -Arch $arch
 
     - name: 356. Upload MSIX Artifact (Windows)
-      if: matrix.config.platform == 'windows-desktop'
+      if: matrix.config.platform == 'windows-desktop' || matrix.config.platform == 'windows-arm-desktop'
       uses: actions/upload-artifact@v7
       id: a-msix
       with:
-        name: MSIX-${{ steps.build-no-gen.outputs.BUILD_NO }}
-        path: dist-msix.msix
+        # Distinct per platform (BUILD_NO alone isn't guaranteed unique
+        # across parallel matrix legs); the bundle job downloads both by
+        # the shared "MSIX-UNSIGNED-" prefix with merge-multiple.
+        name: MSIX-UNSIGNED-${{ matrix.config.platform }}-${{ steps.build-no-gen.outputs.BUILD_NO }}
+        path: dist-msix-*.msix
         if-no-files-found: warn
 
     - name: 350.2 Build App (iOS)
@@ -512,7 +517,60 @@ jobs:
 
   ################################################################################################################################
   ################################################################################################################################
-  # JOB 3: PUBLISH TO RELEASE SITE  (tag vX.X.X builds only)
+  # JOB 3: PACKAGE MSIX BUNDLE (tag vX.X.X builds only, for Store submission)
+  ################################################################################################################################
+  package-msix-bundle:
+    needs: build-and-test
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+    steps:
+    - name: 100. Checkout
+      uses: actions/checkout@v6
+
+    ################################################################
+    # 356.1 / Download every per-architecture MSIX built above
+    ################################################################
+    - name: 356.1. Download MSIX Artifacts
+      uses: actions/download-artifact@v6
+      with:
+        pattern: MSIX-UNSIGNED-*
+        path: .
+        merge-multiple: true
+
+    ################################################################
+    # 356.2 / Combine into one .msixbundle (whatever architectures
+    #         are present -- see build-msix-bundle.ps1 for the
+    #         single-architecture fallback while windows-arm-desktop
+    #         is on hold in the setup job's matrix filter).
+    ################################################################
+    - name: 356.2. Build MSIX Bundle
+      shell: pwsh
+      run: .\scripts\build-msix-bundle.ps1
+
+    - name: 356.3. Upload MSIX Bundle Artifact
+      uses: actions/upload-artifact@v7
+      id: a-msix-bundle
+      with:
+        name: MSIX-BUNDLE-${{ github.ref_name }}
+        path: lattice-md.msixbundle
+        if-no-files-found: warn
+
+    ################################################################
+    # 356.4 / Summary link -- manual fallback if/when auto-submission
+    #         to Partner Center exists and fails: download this
+    #         artifact and drag it onto the Store product's Packages
+    #         page by hand, same as today's manual submission flow.
+    ################################################################
+    - name: 356.4. Summary Page Update
+      shell: bash
+      run: |
+        echo "### MSIX BUNDLE (Microsoft Store submission)" >> $GITHUB_STEP_SUMMARY
+        echo " - Download: ${{ steps.a-msix-bundle.outputs.artifact-url }}" >> $GITHUB_STEP_SUMMARY
+        echo " - Manual fallback: if Store submission is ever automated and it fails, download this bundle and upload it by hand on the Packages page of the lattice-md product in Partner Center." >> $GITHUB_STEP_SUMMARY
+
+  ################################################################################################################################
+  ################################################################################################################################
+  # JOB 4: PUBLISH TO RELEASE SITE  (tag vX.X.X builds only)
   ################################################################################################################################
   publish-release-site:
     needs: build-and-test
