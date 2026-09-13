@@ -189,9 +189,8 @@ jobs:
         echo "Selected Target Logic: $TARGET"
 
         # First remove completely temporary "on-hold" - SAVES ACTION TIME
-        echo "*** Removing temporary on-hold platform: windows-arm-desktop ***"
-        CONST_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform != "windows-arm-desktop")]')
-
+        # echo "*** Removing temporary on-hold platform: windows-arm-desktop ***"
+        # CONST_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform != "windows-arm-desktop")]')
 
         # 3. Filter JSON using jq
         #    We construct a jq select query based on the TARGET
