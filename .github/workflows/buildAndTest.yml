@@ -375,6 +375,23 @@ jobs:
         LATTICEBUILD_NO: ${{ startsWith(github.ref, 'refs/tags/') && format('{0} · {1}-{2}', github.ref_name, matrix.config.platform, steps.build-no-gen.outputs.BUILD_NO) || format('{0}-{1}', matrix.config.platform, steps.build-no-gen.outputs.BUILD_NO) }}
       run: npm run tauri ${{ matrix.config.bldprefix }} build -- ${{ matrix.config.args }}
 
+    ################################################################
+    # 355 / Package MSIX (Windows desktop, for the Microsoft Store)
+    ################################################################
+    - name: 355. Package MSIX (Windows)
+      if: matrix.config.platform == 'windows-desktop' || matrix.config.platform == 'windows-arm-desktop'
+      shell: pwsh
+      run: .\scripts\build-msix.ps1
+
+    - name: 356. Upload MSIX Artifact (Windows)
+      if: matrix.config.platform == 'windows-desktop'
+      uses: actions/upload-artifact@v7
+      id: a-msix
+      with:
+        name: MSIX-${{ steps.build-no-gen.outputs.BUILD_NO }}
+        path: dist-msix.msix
+        if-no-files-found: warn
+
     - name: 350.2 Build App (iOS)
       if: matrix.config.platform == 'ios'
       env:
