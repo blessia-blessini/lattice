@@ -968,6 +968,7 @@ jobs:
             *_aarch64.dmg)         platform='<span class="material-icons">laptop_mac</span> macOS — Apple Silicon (ARM64)' ;;
             *_x64.dmg)             platform='<span class="material-icons">laptop_mac</span> macOS — Intel (x86-64)' ;;
             *_x64-setup.exe)       platform='<span class="material-icons">window</span> Windows — Intel / AMD (x86-64)' ;;
+            *_arm64-setup.exe)     platform='<span class="material-icons">window</span> Windows — ARM64' ;;
             *_aarch64-setup.exe)   platform='<span class="material-icons">window</span> Windows — ARM64' ;;
             *_amd64.AppImage)      platform='<span class="material-icons">terminal</span> Linux — x86-64 (AppImage)' ;;
             *_amd64.deb)           platform='<span class="material-icons">terminal</span> Linux — x86-64 (Debian / Ubuntu)' ;;
