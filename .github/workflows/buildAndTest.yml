@@ -928,6 +928,10 @@ jobs:
         MS_STORE_BADGE+='    style="width:200px;max-width:100%;height:auto;display:inline-block" alt="Download Lattice from the Microsoft Store"/>'
         MS_STORE_BADGE+='</picture></a>'
 
+        # Plain-text Store URL, for readers whose client drops the badge image
+        MS_STORE_LINK='<p>With a browser, just jump to:<br>'
+        MS_STORE_LINK+='<a href="https://apps.microsoft.com/detail/9pm3gb09941t">https://apps.microsoft.com/detail/9pm3gb09941t</a></p>'
+
         # Fetch asset download URLs from the GitHub Release API
         ASSETS_JSON=$(gh api repos/"${{ github.repository }}"/releases/tags/${VERSION} \
           --jq '.assets[] | [.name, .browser_download_url, .size] | @tsv')
@@ -947,6 +951,8 @@ jobs:
         printf '%s\n' "**Windows users: install from the Microsoft Store**" >> "$OUT"
         printf '%s\n' ""                                     >> "$OUT"
         printf '%s\n' "$MS_STORE_BADGE"                      >> "$OUT"
+        printf '%s\n' ""                                     >> "$OUT"
+        printf '%s\n' "$MS_STORE_LINK"                       >> "$OUT"
         printf '%s\n' ""                                     >> "$OUT"
         printf '%s\n' "Or download a package directly:"      >> "$OUT"
         printf '%s\n' ""                                     >> "$OUT"
