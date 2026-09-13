@@ -30,7 +30,26 @@ Write-Host "=========================================="
 # packaging/msix/README.md (winapp cert install / winapp pack); CI
 # packaging (scripts/build-msix.ps1) uses makeappx directly and does not
 # need it. winget/App Installer is preinstalled on windows-latest but NOT
-# on the windows-11-arm runner, so a missing winget is a soft warning here.
+# on the windows-11-arm runner, so we bootstrap it there; any failure
+# along the way is a soft warning, never a build failure.
+function Install-AppxIfNeeded {
+    param([string]$Path, [string]$Label)
+    try {
+        Add-AppxPackage -Path $Path -ErrorAction Stop
+    }
+    catch {
+        # 0x80073D06 = "a higher version is already installed" -- harmless,
+        # the dependency is already satisfied. Anything else is a real
+        # problem but still shouldn't fail the whole environment setup.
+        if ($_.Exception.HResult -eq 0x80073D06 -or "$_" -match '0x80073D06') {
+            Write-Host "[INFO] $Label already satisfied by a newer version."
+        }
+        else {
+            Write-Host "[WARN] $Label install failed ($_)." -ForegroundColor Yellow
+        }
+    }
+}
+
 if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
     Write-Host "[INFO] winget not found -- attempting to install App Installer (Microsoft ships an arm64 build too)."
     try {
@@ -47,23 +66,19 @@ if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
         # packs x86/x64/arm64 together -- Add-AppxPackage picks the right one.
         Invoke-WebRequest -Uri "https://aka.ms/getwinget" -OutFile "$tmp\winget.msixbundle"
 
-        Add-AppxPackage -Path "$tmp\VCLibs.appx" -ErrorAction Stop
-        Add-AppxPackage -Path "$tmp\UI.Xaml.appx" -ErrorAction Stop
-        Add-AppxPackage -Path "$tmp\winget.msixbundle" -ErrorAction Stop
+        Install-AppxIfNeeded -Path "$tmp\VCLibs.appx" -Label "VCLibs"
+        Install-AppxIfNeeded -Path "$tmp\UI.Xaml.appx" -Label "UI.Xaml"
+        Install-AppxIfNeeded -Path "$tmp\winget.msixbundle" -Label "winget"
 
         # Add-AppxPackage doesn't refresh the current process's PATH.
         $wingetLinks = "$env:LOCALAPPDATA\Microsoft\WindowsApps"
         if (($env:PATH -split ';') -notcontains $wingetLinks) { $env:PATH += ";$wingetLinks" }
     }
     catch {
-        Write-Host "[WARN] Could not install winget ($_)." -ForegroundColor Yellow
+        Write-Host "[WARN] Could not download winget bootstrap files ($_)." -ForegroundColor Yellow
     }
 }
 
-# winappcli is only needed for the local dev workflows in
-# packaging/msix/README.md (winapp cert install / winapp pack); CI
-# packaging (scripts/build-msix.ps1) uses makeappx directly and does not
-# need it, so a still-missing winget here is a soft warning, not a failure.
 if (Get-Command "winget" -ErrorAction SilentlyContinue) {
     winget install microsoft.winappcli --source winget
 }

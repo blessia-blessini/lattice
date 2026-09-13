@@ -8,6 +8,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: Don't abort winget bootstrap on a harmless VCLibs version conflict
 - CHORE: install winget on windows arm to be equivelent
 - FEAT: Build and test windows-arm-desktop natively on windows-11-arm
 - FIX: make sure arm for windows is built
