@@ -8,6 +8,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: Win Bundle build had wrong versioning
 - Merged Local and Remote Branches
 - fixed a typo on release page
 - FIX: Put the Microsoft Store URL on its own line

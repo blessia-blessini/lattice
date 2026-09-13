@@ -72,7 +72,18 @@ foreach ($pkg in $packages) {
     Copy-Item -Path $pkg -Destination $bundleDir -Force
 }
 
+# Without /bv, makeappx defaults the BUNDLE's own version to the current UTC
+# date/time (<year>.<month day>.<hour minute>.0) -- NOT the payload packages'
+# version, even when every payload package already agrees on one. That
+# produced a Store-visible version like 2026.913.1327.0 instead of the real
+# app version. Stamp /bv explicitly from the same tauri.conf.json version
+# build-msix.ps1 already put in each payload package.
+$cfgVersion = (Get-Content "src-tauri\tauri.conf.json" -Raw | ConvertFrom-Json).version
+$parts = @($cfgVersion -split '\.')
+while ($parts.Count -lt 3) { $parts += '0' }
+$bundleVersion = "{0}.{1}.{2}.0" -f $parts[0], $parts[1], $parts[2]
+
 Remove-Item $bundleOut -ErrorAction SilentlyContinue
-& $makeappx bundle /d $bundleDir /p $bundleOut
+& $makeappx bundle /d $bundleDir /p $bundleOut /bv $bundleVersion
 if ($LASTEXITCODE -ne 0) { throw "makeappx bundle failed ($LASTEXITCODE)" }
-Write-Output "Unsigned MSIX bundle written to $bundleOut ($($packages.Count) architecture(s)) -- upload this one to Partner Center."
+Write-Output "Unsigned MSIX bundle written to $bundleOut, version $bundleVersion ($($packages.Count) architecture(s)) -- upload this one to Partner Center."
