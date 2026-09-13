@@ -78,8 +78,6 @@ jobs:
       run: |
         # 1. Define the Master Matrix as a JSON String
         #    (We use a compact JSON structure here)
-        #    TODO: Add "windows-arm-desktop" to the matrix
-        #       should be >> runs-on: windows-11-arm
         CONST_JSON='[
           {
             "os": "windows-latest",
@@ -92,13 +90,13 @@ jobs:
             "upload_path2": ""
           },
           {
-            "os": "windows-latest",
+            "os": "windows-11-arm",
             "platform": "windows-arm-desktop",
             "bldprefix": "",
             "mobile_build": "",
-            "args": "--target aarch64-pc-windows-msvc",
+            "args": "",
             "download_name": "Windows-ARM64(and AppleSilicon)-Desktop-App",
-            "upload_path1": "src-tauri/target/aarch64-pc-windows-msvc/release/bundle/nsis/*.exe",
+            "upload_path1": "src-tauri/target/release/bundle/nsis/*.exe",
             "upload_path2": ""
           },
           {
@@ -187,10 +185,6 @@ jobs:
         fi
 
         echo "Selected Target Logic: $TARGET"
-
-        # First remove completely temporary "on-hold" - SAVES ACTION TIME
-        # echo "*** Removing temporary on-hold platform: windows-arm-desktop ***"
-        # CONST_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform != "windows-arm-desktop")]')
 
         # 3. Filter JSON using jq
         #    We construct a jq select query based on the TARGET
@@ -327,9 +321,9 @@ jobs:
         echo "BUILD_NO=$BUILD_NO" >> $GITHUB_OUTPUT
 
     # Cross compilation
-    - name: 153. Setup Rust Targets (Windows ARM64)
-      if: matrix.config.platform == 'windows-arm-desktop'
-      run: rustup target add aarch64-pc-windows-msvc
+    # windows-arm-desktop is NOT cross-compiled: it runs natively on the
+    # windows-11-arm runner, whose default host target is already
+    # aarch64-pc-windows-msvc, so no extra rustup target is needed.
     - name: 154. Setup Rust Targets (macOS ARM64)
       if: matrix.config.platform == 'macos-arm64'
       run: rustup target add aarch64-apple-darwin
@@ -410,7 +404,9 @@ jobs:
 
     - name: 370.2 Run Frontend AND Backend Tests (React/Tauri)
       # TODO: Consider uncommenting for now we are saving some action minutes by not running tests on mobile
-      if: matrix.config.platform != 'ios' && matrix.config.platform != 'windows-arm-desktop' # && matrix.config.platform != 'android' # see comment in 350.2
+      # windows-arm-desktop now runs natively on windows-11-arm, so its tests
+      # actually execute (a cross-compiled binary could never run here to be tested).
+      if: matrix.config.platform != 'ios' # && matrix.config.platform != 'android' # see comment in 350.2
       shell: bash
       env:
         LATTICEBUILD_NO: TSTFrontEnd-${{matrix.config.platform}}-${{ steps.build-no-gen.outputs.BUILD_NO }}

@@ -32,33 +32,31 @@
 # build-release.ps1 (local release builds) and buildAndTest.yml (CI),
 # so the packaging logic never has to be kept in sync in two places.
 #
-# Prerequisite: `npm run tauri build` (with -Arch arm64: the aarch64-pc-windows-msvc
-# target) has already produced the platform's lattice.exe -- this script does
-# not build it.
+# Prerequisite: `npm run tauri build` has already produced
+# src-tauri\target\release\lattice.exe -- this script does not build it.
+# Both x64 and arm64 land at this same path: arm64 is built NATIVELY on a
+# windows-11-arm runner (not cross-compiled), so there is no target-triple
+# subfolder to account for.
 #
 # winapp init is deliberately NOT used: it is interactive, and everything
 # it would ask is already fixed in packaging/msix/Package.appxmanifest.
 #
-# -Arch selects the processor architecture: x64 (default) or arm64. Each
-# architecture is packaged as its own single-arch .msix; see
-# build-msix-bundle.ps1 to combine them into one .msixbundle for the Store.
+# -Arch selects the processor architecture stamped into the manifest: x64
+# (default) or arm64. Each architecture is packaged as its own single-arch
+# .msix; see build-msix-bundle.ps1 to combine them into one .msixbundle.
 param(
     [ValidateSet("x64", "arm64")]
     [string]$Arch = "x64"
 )
 
-$exePaths = @{
-    "x64"   = "src-tauri\target\release\lattice.exe"
-    "arm64" = "src-tauri\target\aarch64-pc-windows-msvc\release\lattice.exe"
-}
-
 $msixDir  = "dist-msix-$Arch"
 $msixOut  = "dist-msix-$Arch.msix"
 $manifest = "packaging\msix\Package.appxmanifest"
-$exe      = $exePaths[$Arch]
+$exe      = "src-tauri\target\release\lattice.exe"
 
 # makeappx ships with the Windows SDK and is on PATH on GitHub's
-# windows-latest runners; fall back to the newest installed SDK.
+# windows-latest and windows-11-arm runners; fall back to the newest
+# installed SDK.
 $makeappx = (Get-Command makeappx.exe -ErrorAction SilentlyContinue)?.Source
 if (-not $makeappx) {
     $kits = Join-Path ${env:ProgramFiles(x86)} "Windows Kits\10\bin"

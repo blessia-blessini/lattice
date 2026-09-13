@@ -153,12 +153,13 @@ combines whatever single-arch `.msix` files it finds
 — submit the bundle, not the individual packages, so the Store serves each
 device the architecture it needs from one product listing.
 
-CI builds both in the `build-and-test` matrix (`windows-desktop` → x64,
-`windows-arm-desktop` → arm64) and bundles them in `package-msix-bundle`.
-`windows-arm-desktop` is currently held out of the matrix in the `setup` job
-(no `windows-11-arm` free runner when this was written); free Windows-on-Arm
-GitHub-hosted runners are available now for public repos, so lifting that
-hold only requires removing the `jq` filter in `setup` and pointing its
-`os` at `windows-11-arm` instead of cross-compiling on `windows-latest`.
-Until then, the bundle job packages x64 alone — a single-package bundle is
+CI builds both in the `build-and-test` matrix (`windows-desktop` → x64 on
+`windows-latest`, `windows-arm-desktop` → arm64 **natively** on
+`windows-11-arm`, a free GitHub-hosted runner for public repos) and bundles
+them in `package-msix-bundle`. arm64 is NOT cross-compiled: a
+cross-compiled binary can be packaged but never executed on the x64 build
+host, so it could never actually be tested (see step 370.2) — running
+natively on `windows-11-arm` closes that gap. If that runner is ever
+unavailable again, the bundle job still packages x64 alone — a
+single-package bundle is
 valid and installable.
