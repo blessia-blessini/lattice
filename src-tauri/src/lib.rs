@@ -38,6 +38,7 @@ use base64::{Engine as _, engine::general_purpose};
 static M_PATH: Mutex<String> = Mutex::new(String::new());
 
 pub mod e2e;
+mod export_html;
 pub mod file_state;
 pub mod settings;
 mod tabify;
@@ -319,6 +320,24 @@ fn configure_desktop_window<R: tauri::Runtime, M: tauri::Manager<R>>(
 /// file was opened. Attaches a `Destroyed` listener so `FileTrackerState` is
 /// cleaned up when the window closes.
 fn build_window_with_file(app: &tauri::AppHandle, path: Option<String>) -> Result<(), String> {
+    build_window_with_file_ex(app, path, false).map(|_window| ())
+}
+
+//******************************************************************************
+// build_window_with_file_ex
+//******************************************************************************
+/// Full implementation behind `build_window_with_file`. Adds `export`: when
+/// `true`, the window is built invisible and `__LATTICE_INIT_DATA__` carries
+/// `exportHtml: true`, which tells the frontend (see `App.tsx`'s `checkLaunch`)
+/// to render the document, wait for its preview to settle, and hand the
+/// resulting HTML back via the `export_html_ready` command instead of showing
+/// itself. Returns the built window so the caller (see `export_html.rs`) can
+/// await that round-trip and close it afterwards.
+fn build_window_with_file_ex(
+    app: &tauri::AppHandle,
+    path: Option<String>,
+    export: bool,
+) -> Result<tauri::WebviewWindow, String> {
     let label = generate_new_window_label();
 
     // Read productName before the builder borrows `app`.
@@ -331,6 +350,9 @@ fn build_window_with_file(app: &tauri::AppHandle, path: Option<String>) -> Resul
     #[cfg(desktop)]
     {
         builder = configure_desktop_window(builder, product_name);
+        if export {
+            builder = builder.visible(false);
+        }
     }
 
     let path_str = path.clone().unwrap_or_default();
@@ -361,6 +383,7 @@ fn build_window_with_file(app: &tauri::AppHandle, path: Option<String>) -> Resul
         "content": content,
         "hash": hash,
         "path": path_str,
+        "exportHtml": export,
     });
     let script = format!("window.__LATTICE_INIT_DATA__ = {};", payload);
     builder = builder.initialization_script(&script);
@@ -380,9 +403,9 @@ fn build_window_with_file(app: &tauri::AppHandle, path: Option<String>) -> Resul
     });
 
     info!("build_window_with_file: window '{}' created.", label);
-    Ok(())
+    Ok(window)
 }
-// build_window_with_file END **********************************************
+// build_window_with_file_ex END *******************************************
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test-only modules (stripped from every production build)
@@ -1054,8 +1077,10 @@ pub fn run() {
         .manage(file_state::FileTrackerState {
             files: Arc::new(Mutex::new(HashMap::new())),
         })
+        .manage(export_html::ExportState::default())
         .invoke_handler(tauri::generate_handler![
             calc_base_path,
+            export_html::export_html_ready,
             settings::load_settings,
             settings::save_settings,
             file_state::read_text_file,
@@ -1085,9 +1110,50 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app_handle, event| {
+            exit_with_requested_code(&event);
             platform::handle_run_event(app_handle, event);
         });
 } // run END *******************************************************************
+
+//******************************************************************************
+// exit_with_requested_code
+//******************************************************************************
+/// IMPL-LTTCE-XPT-00004 — Tauri's wry runtime, on `AppHandle::exit(code)`, sets
+/// `ControlFlow::Exit` but never threads `code` through to the OS process exit
+/// status — the event loop always exits 0 unless something calls
+/// `std::process::exit` itself. `--export-html` (REQ-LTTCE-XPT-00003) needs a
+/// non-zero status on failure for the invoking script to detect it, so this
+/// does that call directly whenever a non-zero code was actually requested.
+///
+/// A `code` of `0`/`None` is left to Tauri's own (already-correct) default
+/// exit path, so ordinary window-close shutdown is unaffected.
+fn exit_with_requested_code(event: &tauri::RunEvent) {
+    if let Some(code) = nonzero_exit_code_requested(event) {
+        std::process::exit(code);
+    }
+}
+// exit_with_requested_code END ************************************************
+
+//******************************************************************************
+// nonzero_exit_code_requested
+//******************************************************************************
+/// Pure decision behind `exit_with_requested_code`, split out so the branching
+/// itself is inspectable in isolation. **Not** unit-tested: constructing a
+/// `RunEvent::ExitRequested` requires `tauri::ExitRequestApi`, whose only
+/// field is a private `mpsc::Sender` with no public constructor exposed by
+/// the `tauri` crate — there is no way to build one from outside it. Verified
+/// manually instead: `lattice --export-html <missing-file>` before this
+/// function existed exited `0`; after, it exits `1` (see the memory note this
+/// change adds).
+fn nonzero_exit_code_requested(event: &tauri::RunEvent) -> Option<i32> {
+    match event {
+        tauri::RunEvent::ExitRequested {
+            code: Some(code), ..
+        } if *code != 0 => Some(*code),
+        _ => None,
+    }
+}
+// nonzero_exit_code_requested END ***********************************************
 
 //******************************************************************************
 // setup_handler
@@ -1137,6 +1203,18 @@ fn setup_handler(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
                 }
             }
         });
+    }
+
+    if platform::cli_args::wants_export_html() {
+        let paths = platform::cli_args::collect_file_paths();
+        if paths.is_empty() {
+            error!("--export-html given with no file paths — nothing to export.");
+            app.handle().exit(1);
+            return Ok(());
+        }
+        let handle = app.handle().clone();
+        tauri::async_runtime::spawn(export_html::run_export(handle, paths));
+        return Ok(());
     }
 
     platform::open_windows_on_startup(app)

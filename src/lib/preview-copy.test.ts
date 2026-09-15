@@ -25,7 +25,14 @@
 // transform that carries Mermaid diagrams into pasted HTML.
 
 import { describe, it, expect } from 'vitest';
-import { buildCopyHtml, fragmentHasDiagram, substituteDiagrams, DIAGRAM_PNG_ATTR } from './preview-copy';
+import {
+    buildCopyHtml,
+    buildExportHtml,
+    fragmentHasDiagram,
+    substituteDiagrams,
+    waitForDiagramsSettled,
+    DIAGRAM_PNG_ATTR,
+} from './preview-copy';
 
 const PNG = 'data:image/png;base64,AAAA';
 
@@ -37,6 +44,14 @@ const fragmentOf = (html: string): DocumentFragment => {
     const template = document.createElement('template');
     template.innerHTML = html;
     return template.content;
+};
+
+// buildExportHtml/waitForDiagramsSettled walk a live root element (the
+// preview body), not a detached selection fragment — this builds that.
+const elementOf = (html: string): HTMLElement => {
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    return div;
 };
 
 const diagram = (png = PNG, extra = '') =>
@@ -135,5 +150,72 @@ describe('preview copy — HTML for the clipboard', () => {
         expect(html).toContain('<h2>Title</h2>');
         expect(html).toContain('<li>one</li>');
         expect(html).toContain('<li>two</li>');
+    });
+});
+
+// UTST for REQ-LTTCE-XPT-00001 — the whole-document export used by
+// `lattice --export-html`.
+describe('preview copy — HTML for CLI export', () => {
+
+    it('serialises a diagram-free document unmodified (unlike buildCopyHtml, never null)', () => {
+        const html = buildExportHtml(elementOf('<p>plain text</p>'));
+        expect(html).toBe('<p>plain text</p>');
+    });
+
+    it('substitutes a diagram exactly as the clipboard copy does', () => {
+        const html = buildExportHtml(elementOf(`<p>before</p>${diagram()}<p>after</p>`));
+        expect(html).toContain('<p>before</p>');
+        expect(html).toContain(`<img src="${PNG}"`);
+        expect(html).toContain('<p>after</p>');
+        expect(html).not.toContain('<svg');
+    });
+
+    it('does not mutate the live root it was passed', () => {
+        const root = elementOf(diagram());
+        buildExportHtml(root);
+        expect(root.querySelector('svg')).not.toBeNull();
+        expect(root.querySelector('img')).toBeNull();
+    });
+});
+
+describe('preview copy — waiting for diagrams to settle', () => {
+
+    it('resolves immediately when there is no diagram', async () => {
+        const start = Date.now();
+        await waitForDiagramsSettled(elementOf('<p>plain text</p>'), 500);
+        expect(Date.now() - start).toBeLessThan(400);
+    });
+
+    it('resolves immediately once every diagram already has a cached PNG', async () => {
+        const start = Date.now();
+        await waitForDiagramsSettled(elementOf(`${diagram()}${diagram('data:image/png;base64,BBBB')}`), 500);
+        expect(Date.now() - start).toBeLessThan(400);
+    });
+
+    it('resolves immediately for a diagram that failed to render', async () => {
+        const root = elementOf('<div class="mermaid"><pre class="error">boom</pre></div>');
+        const start = Date.now();
+        await waitForDiagramsSettled(root, 500);
+        expect(Date.now() - start).toBeLessThan(400);
+    });
+
+    it('gives up after the timeout rather than hanging forever', async () => {
+        // The <svg> has no cached PNG and no .error — never settles.
+        const root = elementOf('<div class="mermaid"><svg></svg></div>');
+        const start = Date.now();
+        await waitForDiagramsSettled(root, 250);
+        expect(Date.now() - start).toBeGreaterThanOrEqual(200);
+    });
+
+    it('resolves once a still-rendering diagram later gets its PNG', async () => {
+        const root = elementOf('<div class="mermaid"><svg></svg></div>');
+        const container = root.querySelector('.mermaid')!;
+        setTimeout(() => container.setAttribute(DIAGRAM_PNG_ATTR, PNG), 150);
+
+        const start = Date.now();
+        await waitForDiagramsSettled(root, 5000);
+        const elapsed = Date.now() - start;
+        expect(elapsed).toBeGreaterThanOrEqual(100);
+        expect(elapsed).toBeLessThan(5000);
     });
 });

@@ -54,7 +54,7 @@ import tauriConfig from '../src-tauri/tauri.conf.json';
 import { resolveRelativePath, isDocumentLink } from './lib/link-utils';
 import { toSourceRange, findInnermostBlockIndex, isBlockTag } from './lib/cursor-block';
 import { PREVIEW_THEME_COLORS } from './lib/preview-theme';
-import { buildCopyHtml } from './lib/preview-copy';
+import { buildCopyHtml, buildExportHtml, waitForDiagramsSettled } from './lib/preview-copy';
 
 import { StaticRuntime } from "@services/StaticRuntime";
 
@@ -1078,6 +1078,22 @@ function App() {
             // Strict Enforce
             await enforceVaultPath(initData.path);
             FileSystem.watchFile(initData.path);
+          }
+
+          // IMPL-LTTCE-XPT-00002 — REQ-LTTCE-XPT-00001 — headless `--export-html` launch: this window
+          // was built invisible (see build_window_with_file_ex in lib.rs)
+          // solely to render `initData.path`'s preview and hand the resulting
+          // HTML back to Rust, which writes it to disk and closes the window.
+          // No editor UI is shown and this window never becomes interactive.
+          if (initData.exportHtml) {
+            try {
+              await waitForDiagramsSettled(previewBodyRef.current!);
+              const html = previewBodyRef.current ? buildExportHtml(previewBodyRef.current) : '';
+              await invoke('export_html_ready', { html });
+            } catch (e) {
+              console.error("HTML export failed:", e);
+              await invoke('export_html_ready', { html: '' }).catch(() => {});
+            }
           }
         } catch (e) {
           console.error("Direct Push Init Failed:", e);

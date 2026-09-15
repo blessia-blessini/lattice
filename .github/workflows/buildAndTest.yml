@@ -523,9 +523,9 @@ jobs:
       uses: actions/checkout@v6
 
     ################################################################
-    # 356.1 / Download every per-architecture MSIX built above
+    # 357.1 / Download every per-architecture MSIX built above
     ################################################################
-    - name: 356.1. Download MSIX Artifacts
+    - name: 357.1. Download MSIX Artifacts
       uses: actions/download-artifact@v6
       with:
         pattern: MSIX-UNSIGNED-*
@@ -533,30 +533,33 @@ jobs:
         merge-multiple: true
 
     ################################################################
-    # 356.2 / Combine into one .msixbundle (whatever architectures
+    # 357.2 / Combine into one .msixbundle (whatever architectures
     #         are present -- see build-msix-bundle.ps1 for the
     #         single-architecture fallback while windows-arm-desktop
     #         is on hold in the setup job's matrix filter).
     ################################################################
-    - name: 356.2. Build MSIX Bundle
+    - name: 357.2. Build MSIX Bundle
       shell: pwsh
       run: .\scripts\build-msix-bundle.ps1
 
-    - name: 356.3. Upload MSIX Bundle Artifact
+    - name: 357.3. Upload MSIX Bundle Artifact
       uses: actions/upload-artifact@v7
       id: a-msix-bundle
       with:
-        name: MSIX-BUNDLE-${{ github.ref_name }}
+        # "DOWNLOAD-" prefix: publish-release-site's step 901 downloads every
+        # DOWNLOAD-* artifact and step 903 collects it into staging/, so this
+        # bundle rides the same path onto the GitHub Release as the installers.
+        name: DOWNLOAD-msix-bundle-${{ github.ref_name }}
         path: lattice-md.msixbundle
         if-no-files-found: warn
 
     ################################################################
-    # 356.4 / Summary link -- manual fallback if/when auto-submission
+    # 357.4 / Summary link -- manual fallback if/when auto-submission
     #         to Partner Center exists and fails: download this
     #         artifact and drag it onto the Store product's Packages
     #         page by hand, same as today's manual submission flow.
     ################################################################
-    - name: 356.4. Summary Page Update
+    - name: 357.4. Summary Page Update
       shell: bash
       run: |
         echo "### MSIX BUNDLE (Microsoft Store submission)" >> $GITHUB_STEP_SUMMARY
@@ -568,7 +571,7 @@ jobs:
   # JOB 4: PUBLISH TO RELEASE SITE  (tag vX.X.X builds only)
   ################################################################################################################################
   publish-release-site:
-    needs: build-and-test
+    needs: [build-and-test, package-msix-bundle]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
@@ -684,7 +687,7 @@ jobs:
           \( -name "*.exe" -o -name "*.dmg" \
              -o -name "*.AppImage" -o -name "*.deb" \
              -o -name "*.apk" -o -name "*.aab" \
-             -o -name "*.ipa" \) \
+             -o -name "*.ipa" -o -name "*.msixbundle" \) \
           -exec cp {} staging/ \;
         echo "--- Collected files ---"
         ls -lh staging/
@@ -970,6 +973,7 @@ jobs:
             *_x64-setup.exe)       platform='<span class="material-icons">window</span> Windows — Intel / AMD (x86-64)' ;;
             *_arm64-setup.exe)     platform='<span class="material-icons">window</span> Windows — ARM64' ;;
             *_aarch64-setup.exe)   platform='<span class="material-icons">window</span> Windows — ARM64' ;;
+            *.msixbundle)          platform='<span class="material-icons">window</span> Windows — Store bundle (.msixbundle, sideload)' ;;
             *_amd64.AppImage)      platform='<span class="material-icons">terminal</span> Linux — x86-64 (AppImage)' ;;
             *_amd64.deb)           platform='<span class="material-icons">terminal</span> Linux — x86-64 (Debian / Ubuntu)' ;;
             *.apk)                 platform='<span class="material-icons">android</span> Android — Universal' ;;

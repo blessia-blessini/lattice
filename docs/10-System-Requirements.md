@@ -631,6 +631,43 @@ production failed — the copy SHALL proceed unmodified rather than being blocke
 expectation; degrading to today's behaviour is always better than making the user wait or lose the copy.
 
 
+## Chapter XPT — Headless CLI HTML Export
+
+Scripting and automation (a build step, a batch conversion, mailing a note) need Lattice's rendered
+preview as a standalone file, without a person opening a window and using Copy. The `lattice` binary
+already accepts file paths as CLI arguments to open on launch (Chapter — CLI file association); this
+chapter adds a flag that instead renders each file's preview and saves it as HTML, then exits.
+
+<!--REQ-LTTCE-XPT-00001-->
+**REQ-LTTCE-XPT-00001** — Launching `lattice` with `--export-html <path> [<path> ...]` SHALL, for each
+path in order: render that file's Markdown preview exactly as the interactive preview pane would
+(including substituting each rendered diagram for its raster image, per REQ-LTTCE-MRC-00001/00002, and
+every other preview rendering rule), then write that rendered HTML to disk. No editor window SHALL be
+shown to the user during this mode.
+
+*Rationale*: "as though copy/pasting from the preview pane" is the product's own working definition of
+faithful output — reusing that rendering path (rather than a second, independent Markdown→HTML
+converter) is the only way the exported file and an interactive copy cannot drift apart.
+
+<!--REQ-LTTCE-XPT-00002-->
+**REQ-LTTCE-XPT-00002** — The output file for a given input path SHALL be saved alongside it, named by
+replacing (or, if absent, adding) the input's extension with `.html`, and SHALL overwrite an existing
+file at that path without prompting.
+
+*Rationale*: matches the predictable, scriptable behaviour of a CLI conversion tool; the user driving an
+explicit export already intends the result to exist at that name.
+
+<!--REQ-LTTCE-XPT-00003-->
+**REQ-LTTCE-XPT-00003** — When `--export-html` is given with no file paths, or a given file cannot be
+read or rendered within a bounded time, Lattice SHALL log the failure and continue with the remaining
+paths (if any) rather than hanging; the process SHALL exit with a non-zero status if any path failed to
+export.
+
+*Rationale*: a batch export over many files must not let one bad or slow file (a missing diagram
+dependency, a huge document) block every file after it, while still giving the invoking script a
+detectable failure signal.
+
+
 ## Chapter FWT — File Watching and External Reload
 
 Lattice watches the open file so a change made by another program (a `git checkout`, a sync client, a

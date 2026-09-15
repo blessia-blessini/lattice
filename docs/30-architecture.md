@@ -1268,6 +1268,106 @@ needs a manual paste check per platform and per theme.
 
 ---
 
+## Feature: Headless CLI HTML Export
+
+<!--ARCH-LTTCE-XPT-00001-->
+
+### Overview
+
+Covers Chapter XPT of the requirements. `lattice --export-html <path> ...` needs the exact HTML an
+interactive Copy from the preview pane would produce — diagrams already substituted for their PNG, per
+`ARCH-LTTCE-MRC-00001` above. That rendering only exists in the WebView (Mermaid, syntax highlighting,
+the `remark`/`rehype` pipeline), so this feature does not reimplement a Markdown→HTML converter in Rust;
+it drives the real renderer through an invisible window and hands the result back over IPC.
+
+```
+lattice --export-html a.md b.md
+        │
+        ▼ (setup_handler, before any visible window is built)
+Rust: cli_args::wants_export_html() → export_html::run_export(paths)
+        │  for each path, sequentially:
+        ▼
+  build_window_with_file_ex(path, export=true)   invisible window,
+        │                                        __LATTICE_INIT_DATA__.exportHtml = true
+        ▼
+  App.tsx checkLaunch(): Direct Push loads the file → normal preview render starts
+        │
+        ▼
+  waitForDiagramsSettled(previewBodyRef)   poll until every .mermaid has its
+        │                                  cached PNG (or failed) — same signal
+        │                                  Mermaid.tsx writes for copy (IMPL-LTTCE-MRC-00001)
+        ▼
+  buildExportHtml(previewBodyRef)   same substitution as buildCopyHtml, generalised
+        │                            to the whole document (not gated on "has a diagram")
+        ▼
+  invoke('export_html_ready', { html })
+        │
+        ▼ (Rust)
+  oneshot channel resolves → std::fs::write(<path>.html) → window.close() → next path
+```
+
+### Why a real (invisible) window, not a second renderer
+
+Rejected: parsing Markdown to HTML directly in Rust (or Node) for this mode. It would need its own
+Mermaid rasteriser and its own reimplementation of every preview rendering rule (inline highlight styling
+per `ARCH-LTTCE-CPY-00001`, syntax highlighting) — a second renderer that could silently drift from what
+the interactive preview actually shows, defeating the "as though copy/pasting from the preview pane"
+requirement at its source. Driving the same WebView the interactive app uses, just without showing its
+window, is slower per file but structurally cannot drift.
+
+### Rust — `export_html.rs` + `lib.rs`
+
+`build_window_with_file` (the existing Direct Push window builder shared by every startup path — CLI
+association, `RunEvent::Opened` on macOS, `open_new_window`) is split into a thin wrapper plus
+`build_window_with_file_ex(app, path, export: bool)`, which additionally makes the window invisible
+(`.visible(false)`) and adds `exportHtml: <bool>` to the injected payload when `export` is `true`. Every
+existing call site is unaffected — `export` defaults to `false` through the wrapper.
+
+`ExportState` (managed Tauri state) holds at most one pending `tokio::sync::oneshot::Sender<String>` —
+files are exported strictly one at a time, so there is never ambiguity about which window's HTML a
+`export_html_ready` call belongs to. `run_export` awaits each file's sender with a bounded
+`tokio::time::timeout` (REQ-LTTCE-XPT-00003): a stuck or slow file is logged and skipped rather than
+hanging every file after it, the window is always closed whether the file succeeded or not, and the
+process exits with a non-zero status if anything failed.
+
+**A Tauri runtime gap, found while verifying this feature.** `AppHandle::exit(code)` (tauri 2.11.5,
+`tauri-runtime-wry`) sets `ControlFlow::Exit` on `RequestExit(code)` but never threads `code` through to
+`std::process::exit` — the OS-level exit status is always `0` regardless of what was requested, unless
+the `.run()` callback does that itself. `run()`'s `exit_with_requested_code` now does exactly that on
+`RunEvent::ExitRequested { code: Some(code), .. }` with a nonzero `code`; ordinary shutdown (`code` `0`
+or `None`) is untouched. Discovered because `--export-html` on a missing file exited `0` before this fix,
+which would have made REQ-LTTCE-XPT-00003's failure signal silently unusable for every caller of
+`lattice`'s CLI, not only this feature.
+
+### Frontend — `App.tsx` + `lib/preview-copy.ts`
+
+`checkLaunch`'s existing Direct Push branch (unmodified for the ordinary launch path) gains one
+additional step when `initData.exportHtml` is set: wait for the preview to settle, serialise it, hand it
+back, done — no editor UI is shown or becomes interactive in this mode.
+
+- `waitForDiagramsSettled` (`lib/preview-copy.ts`) polls `.mermaid` containers under the preview root
+  until each one either carries `DIAGRAM_PNG_ATTR` (`Mermaid.tsx`'s idle-callback cache, `ARCH-LTTCE-
+  MRC-00001`) or has failed (`pre.error`), giving up after a bounded timeout rather than hanging on a
+  diagram that never settles.
+- `buildExportHtml` reuses `substituteDiagrams` — the exact function `buildCopyHtml` uses for a clipboard
+  selection — but over the *whole* preview body and unconditionally (`buildCopyHtml` returns `null` for a
+  diagram-free selection by design, per `REQ-LTTCE-MRC-00003`; a whole-document export has no such
+  opt-in gate).
+
+### Verification
+
+`export_html.rs`'s `export_output_path` (pure, no Tauri types) is unit-tested for the extension-swap rule
+of REQ-LTTCE-XPT-00002. `cli_args.rs` gained a test for `wants_export_html`. `preview-copy.test.ts` covers
+`buildExportHtml` (diagram-free passthrough, substitution, non-mutation of the live root) and
+`waitForDiagramsSettled` (immediate resolution, the timeout, and resolving once a deferred PNG lands).
+
+The end-to-end round trip — invisible window build, IPC hand-back, file write, process exit code — is
+**not** covered by an automated test: it needs a real WebView and a real process exit, which the Rust unit
+harness and jsdom-based frontend suite cannot provide. Verified manually instead (see the memory note this
+change adds); a future E2E harness extension is the natural place for it.
+
+---
+
 ## Feature: File Watching and External Reload
 
 <!--ARCH-LTTCE-FWT-00001-->

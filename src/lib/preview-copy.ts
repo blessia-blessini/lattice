@@ -137,3 +137,55 @@ export function buildCopyHtml(fragment: DocumentFragment): string | null {
     host.appendChild(fragment);
     return host.innerHTML;
 } // buildCopyHtml END *********************************************************
+
+
+//******************************************************************************
+// waitForDiagramsSettled
+//******************************************************************************
+/**
+ * IMPL-LTTCE-XPT-00001 — REQ-LTTCE-XPT-00001 — resolves once every diagram container currently under
+ * `root` has either produced its cached PNG (see `Mermaid.tsx`'s
+ * `DIAGRAM_PNG_ATTR` write, deferred to an idle callback) or failed to render
+ * (an `.error` block in its place), so the export below never fires while a
+ * diagram is still an unrasterised `<svg>`.
+ *
+ * Polls rather than listening for an event because the PNG write is a plain
+ * DOM attribute set from `Mermaid.tsx`, not an event this module can hook.
+ * Gives up after `timeoutMs` and resolves anyway — a slow or stuck diagram
+ * must not hang a CLI export forever; the caller gets whatever rendered.
+ */
+export async function waitForDiagramsSettled(root: Element, timeoutMs = 8000): Promise<void> {
+    const settled = () =>
+        Array.from(root.querySelectorAll('.mermaid')).every(
+            (el) => el.hasAttribute(DIAGRAM_PNG_ATTR) || el.querySelector('pre.error') !== null,
+        );
+
+    const start = Date.now();
+    while (!settled() && Date.now() - start < timeoutMs) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+} // waitForDiagramsSettled END ************************************************
+
+
+//******************************************************************************
+// buildExportHtml
+//******************************************************************************
+/**
+ * REQ-LTTCE-XPT-00001 — serialises the *whole* rendered preview (`root`,
+ * normally the `.preview-pane__body` node) to the same HTML a clipboard copy
+ * of the whole document would carry: diagrams substituted for their cached
+ * PNG exactly as `buildCopyHtml` does for a selection, everything else
+ * (inline highlight styling per REQ-LTTCE-CPY-00001, syntax highlighting,
+ * tables) left as the WebView rendered it.
+ *
+ * Unlike `buildCopyHtml`, this never returns `null` for a diagram-free
+ * document — a whole-document export is always wanted, where a clipboard
+ * interception is deliberately opt-in (REQ-LTTCE-MRC-00003).
+ */
+export function buildExportHtml(root: Element): string {
+    const clone = root.cloneNode(true) as HTMLElement;
+    const fragment = clone.ownerDocument.createDocumentFragment();
+    fragment.appendChild(clone);
+    substituteDiagrams(fragment);
+    return clone.innerHTML;
+} // buildExportHtml END *******************************************************
