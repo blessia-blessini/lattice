@@ -203,29 +203,25 @@ fi
 
 # Step B: Locate the binary that cargo-llvm-cov just built and ensure it exists at
 # target/debug/lattice (the path that lattice_bin() in the harness falls back to).
-# cargo-llvm-cov's binary output location varies by version and host config:
-#   - target/llvm-cov/debug/lattice  (clean CI build — cargo-llvm-cov sets CARGO_TARGET_DIR)
-#   - target/debug/lattice           (warm-cache local build — binary already present)
-# We search both paths, then fall back to a find, and copy to target/debug/ if needed.
-# Copying is safe: the copy has the same build-ID as the original registered binary,
-# so profraw files from harness subprocesses still map correctly in `cargo llvm-cov report`.
+# cargo-llvm-cov's binary output location varies by version and host config — observed
+# so far: target/llvm-cov/debug/, target/llvm-cov-target/debug/, and (warm-cache, binary
+# already present from a previous run) target/debug/ itself. A fixed priority order
+# silently picks a STALE target/debug/lattice left over from an unrelated earlier build
+# when the real output lands somewhere the priority list doesn't know about yet (seen
+# 2026-09-16 on Windows: cargo-llvm-cov used llvm-cov-target, the list only knew
+# llvm-cov, so the harness ran a day-old binary and every scenario failed to signal
+# startup). Picking the NEWEST candidate by mtime is immune to that whole class of bug —
+# no path list to keep in sync.
 echo "  [1c-locate] Locating E2E binary (cargo-llvm-cov output dir varies by platform)..."
 # Binary name differs on Windows (.exe suffix).
 case "$(uname -s)" in
     MINGW*|MSYS*|CYGWIN*) _BIN="lattice.exe" ;;
     *) _BIN="lattice" ;;
 esac
-_LLVM_BIN="$(pwd)/target/llvm-cov/debug/$_BIN"
 _DBG_BIN="$(pwd)/target/debug/$_BIN"
-if [ -f "$_LLVM_BIN" ]; then
-    _FOUND="$_LLVM_BIN"
-elif [ -f "$_DBG_BIN" ]; then
-    _FOUND="$_DBG_BIN"
-else
-    # Unexpected layout — search the whole target tree (excludes examples and .d files)
-    _FOUND=$(find "$(pwd)/target" -name "$_BIN" -type f \
-        ! -path "*/examples/*" ! -name "*.d" 2>/dev/null | head -1)
-fi
+_FOUND=$(find "$(pwd)/target" -name "$_BIN" -type f \
+    ! -path "*/examples/*" ! -name "*.d" 2>/dev/null \
+    -exec ls -t {} + 2>/dev/null | head -1)
 if [ -z "$_FOUND" ]; then
     echo "ERROR: E2E binary not found anywhere in target/ after Step A!"
     find "$(pwd)/target" -maxdepth 5 -name "lattice*" 2>/dev/null | head -20 || true
@@ -296,20 +292,15 @@ elif [ "$(uname)" == "Darwin" ]; then
     # bundle, then set LATTICE_E2E_BIN so the harness's lattice_bin() picks up the
     # bundled binary instead of the bare one in target/.
     #
-    # NOTE: $_LLVM_BIN / $_DBG_BIN were set by the 1c-locate step above.
+    # NOTE: $_DBG_BIN was set by the 1c-locate step above, and the locate step already
+    # copied the freshest instrumented binary there — always the right source to bundle.
     echo "  [1c-bundle] Creating minimal .app bundle for macOS WKWebView XPC..."
     _E2E_APP="/tmp/LatticeE2E.app"
     rm -rf "$_E2E_APP"
     mkdir -p "$_E2E_APP/Contents/MacOS"
 
-    # Pick the coverage-instrumented binary (CI path first, warm-cache fallback).
-    if [ -f "$_LLVM_BIN" ]; then
-        _BUNDLE_SRC="$_LLVM_BIN"
-    else
-        _BUNDLE_SRC="$_DBG_BIN"
-    fi
-    cp "$_BUNDLE_SRC" "$_E2E_APP/Contents/MacOS/lattice"
-    echo "  [1c-bundle]   binary source : $_BUNDLE_SRC"
+    cp "$_DBG_BIN" "$_E2E_APP/Contents/MacOS/lattice"
+    echo "  [1c-bundle]   binary source : $_DBG_BIN"
 
     # Info.plist — CFBundleIdentifier MUST match tauri.conf.json "identifier" field
     # so that Tauri's internal bundle-ID checks (used by some plugin APIs) don't fail.

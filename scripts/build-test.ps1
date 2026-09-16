@@ -206,22 +206,20 @@ try {
 
         # Step B: Locate the binary that cargo-llvm-cov just built and ensure it exists at
         # target\debug\lattice.exe (the fallback path that lattice_bin() uses in the harness).
-        # cargo-llvm-cov's binary output location varies by version and host config:
-        #   - target\llvm-cov\debug\lattice.exe  (clean CI — cargo-llvm-cov sets CARGO_TARGET_DIR)
-        #   - target\debug\lattice.exe           (warm-cache — binary already present)
+        # cargo-llvm-cov's binary output location varies by version and host config —
+        # observed so far: target\llvm-cov\debug\, target\llvm-cov-target\debug\, and
+        # (warm-cache, binary already present from a previous run) target\debug\ itself.
+        # A fixed priority order silently picks a STALE target\debug\lattice.exe left over
+        # from an unrelated earlier build when the real output lands somewhere the priority
+        # list doesn't know about yet (seen 2026-09-16: cargo-llvm-cov used
+        # llvm-cov-target, the list only knew llvm-cov, so the harness ran a day-old binary
+        # and every scenario failed to signal startup). Picking the NEWEST candidate by
+        # write time is immune to that whole class of bug — no path list to keep in sync.
         Write-Output "  [1c-locate] Locating E2E binary (cargo-llvm-cov output dir varies by platform)..."
-        $llvmBin  = "target\llvm-cov\debug\lattice.exe"
         $debugBin = "target\debug\lattice.exe"
-        if (Test-Path $llvmBin) {
-            $foundBin = $llvmBin
-        } elseif (Test-Path $debugBin) {
-            $foundBin = $debugBin
-        } else {
-            # Unexpected layout — search the whole target tree
-            $foundBin = Get-ChildItem -Path "target" -Recurse -Filter "lattice.exe" `
-                | Where-Object { $_.FullName -notmatch "\\examples\\" } `
-                | Select-Object -First 1 -ExpandProperty FullName
-        }
+        $candidates = Get-ChildItem -Path "target" -Recurse -Filter "lattice.exe" -ErrorAction SilentlyContinue `
+            | Where-Object { $_.FullName -notmatch "\\examples\\" }
+        $foundBin = $candidates | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1 -ExpandProperty FullName
         if (-not $foundBin) {
             Write-Output "ERROR: E2E binary not found anywhere in target\ after Step A!"
             Get-ChildItem -Path "target" -Recurse -Filter "lattice*" -ErrorAction SilentlyContinue `
