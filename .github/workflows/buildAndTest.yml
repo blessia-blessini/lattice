@@ -350,9 +350,17 @@ jobs:
     ################################################################
     # 250 / Setup Android: SDK and Project
     ################################################################
+    # `packages` MUST be set explicitly. The action's own default is
+    # 'tools platform-tools', and the legacy 'tools' package no longer exists in
+    # Google's SDK repository (superseded by cmdline-tools). sdkmanager then warns
+    # "Failed to find package 'tools'" and exits 1, failing this step — which is
+    # what broke the v0.3.25 tag build. Requesting only platform-tools avoids the
+    # dead package; cmdline-tools itself is installed by the action.
     - name: 250. Setup Android SDK
       if: matrix.config.platform == 'android'
       uses: android-actions/setup-android@v4
+      with:
+        packages: 'platform-tools'
 
     - name: 251. Initialize Android Project
       if: matrix.config.platform == 'android'
