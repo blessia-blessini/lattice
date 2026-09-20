@@ -38,7 +38,7 @@ use base64::{Engine as _, engine::general_purpose};
 static M_PATH: Mutex<String> = Mutex::new(String::new());
 
 pub mod e2e;
-mod export_html;
+mod export;
 pub mod file_state;
 pub mod settings;
 mod tabify;
@@ -320,23 +320,24 @@ fn configure_desktop_window<R: tauri::Runtime, M: tauri::Manager<R>>(
 /// file was opened. Attaches a `Destroyed` listener so `FileTrackerState` is
 /// cleaned up when the window closes.
 fn build_window_with_file(app: &tauri::AppHandle, path: Option<String>) -> Result<(), String> {
-    build_window_with_file_ex(app, path, false).map(|_window| ())
+    build_window_with_file_ex(app, path, None).map(|_window| ())
 }
 
 //******************************************************************************
 // build_window_with_file_ex
 //******************************************************************************
 /// Full implementation behind `build_window_with_file`. Adds `export`: when
-/// `true`, the window is built invisible and `__LATTICE_INIT_DATA__` carries
-/// `exportHtml: true`, which tells the frontend (see `App.tsx`'s `checkLaunch`)
-/// to render the document, wait for its preview to settle, and hand the
-/// resulting HTML back via the `export_html_ready` command instead of showing
-/// itself. Returns the built window so the caller (see `export_html.rs`) can
-/// await that round-trip and close it afterwards.
+/// `Some(format)`, the window is built invisible and `__LATTICE_INIT_DATA__`
+/// carries `exportFormat: "html" | "pdf"`, which tells the frontend (see
+/// `App.tsx`'s `checkLaunch`) to render the document, wait for its preview to
+/// settle, and signal back via the `export_ready` command instead of showing
+/// itself. Returns the built window so the caller (see `export.rs`) can await
+/// that round-trip — and, for a PDF, print the settled window — before
+/// closing it.
 fn build_window_with_file_ex(
     app: &tauri::AppHandle,
     path: Option<String>,
-    export: bool,
+    export: Option<export::ExportFormat>,
 ) -> Result<tauri::WebviewWindow, String> {
     let label = generate_new_window_label();
 
@@ -350,7 +351,7 @@ fn build_window_with_file_ex(
     #[cfg(desktop)]
     {
         builder = configure_desktop_window(builder, product_name);
-        if export {
+        if export.is_some() {
             builder = builder.visible(false);
         }
     }
@@ -383,7 +384,7 @@ fn build_window_with_file_ex(
         "content": content,
         "hash": hash,
         "path": path_str,
-        "exportHtml": export,
+        "exportFormat": export.map(|f| f.as_str()),
     });
     let script = format!("window.__LATTICE_INIT_DATA__ = {};", payload);
     builder = builder.initialization_script(&script);
@@ -1077,10 +1078,10 @@ pub fn run() {
         .manage(file_state::FileTrackerState {
             files: Arc::new(Mutex::new(HashMap::new())),
         })
-        .manage(export_html::ExportState::default())
+        .manage(export::ExportState::default())
         .invoke_handler(tauri::generate_handler![
             calc_base_path,
-            export_html::export_html_ready,
+            export::export_ready,
             settings::load_settings,
             settings::save_settings,
             file_state::read_text_file,
@@ -1205,15 +1206,18 @@ fn setup_handler(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
         });
     }
 
-    if platform::cli_args::wants_export_html() {
+    if let Some(format) = platform::cli_args::requested_export_format() {
         let paths = platform::cli_args::collect_file_paths();
         if paths.is_empty() {
-            error!("--export-html given with no file paths — nothing to export.");
+            error!(
+                "{} given with no file paths — nothing to export.",
+                format.flag()
+            );
             app.handle().exit(1);
             return Ok(());
         }
         let handle = app.handle().clone();
-        tauri::async_runtime::spawn(export_html::run_export(handle, paths));
+        tauri::async_runtime::spawn(export::run_export(handle, paths, format));
         return Ok(());
     }
 

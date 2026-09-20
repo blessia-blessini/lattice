@@ -1268,7 +1268,7 @@ needs a manual paste check per platform and per theme.
 
 ---
 
-## Feature: Headless CLI HTML Export
+## Feature: Headless CLI Export (HTML and PDF)
 
 <!--ARCH-LTTCE-XPT-00001-->
 
@@ -1281,29 +1281,35 @@ the `remark`/`rehype` pipeline), so this feature does not reimplement a Markdown
 it drives the real renderer through an invisible window and hands the result back over IPC.
 
 ```
-lattice --export-html a.md b.md
+lattice --export-html a.md b.md          lattice --export-pdf a.md b.md
         │
         ▼ (setup_handler, before any visible window is built)
-Rust: cli_args::wants_export_html() → export_html::run_export(paths)
+Rust: cli_args::requested_export_format() → export::run_export(paths, format)
         │  for each path, sequentially:
         ▼
-  build_window_with_file_ex(path, export=true)   invisible window,
-        │                                        __LATTICE_INIT_DATA__.exportHtml = true
+  build_window_with_file_ex(path, Some(format))   invisible window,
+        │                              __LATTICE_INIT_DATA__.exportFormat = "html" | "pdf"
         ▼
   App.tsx checkLaunch(): Direct Push loads the file → normal preview render starts
-        │
+        │                (pdf only: setViewMode(preview) + applyPrintStyle — see below)
         ▼
   waitForDiagramsSettled(previewBodyRef)   poll until every .mermaid has its
         │                                  cached PNG (or failed) — same signal
         │                                  Mermaid.tsx writes for copy (IMPL-LTTCE-MRC-00001)
-        ▼
-  buildExportHtml(previewBodyRef)   same substitution as buildCopyHtml, generalised
-        │                            to the whole document (not gated on "has a diagram")
-        ▼
-  invoke('export_html_ready', { html })
-        │
-        ▼ (Rust)
-  oneshot channel resolves → std::fs::write(<path>.html) → window.close() → next path
+        ├──────────── html ────────────┐              ├──────────── pdf ────────────┐
+        ▼                              │              ▼                             │
+  buildExportHtml(previewBodyRef)      │        (nothing to serialise —              │
+   same substitution as buildCopyHtml, │         the document itself is the output)  │
+   generalised to the whole document   │                                             │
+        ▼                              │              ▼                              │
+  invoke('export_ready',{html})        │        invoke('export_ready',{html:null})   │
+        ▼ (Rust)                       │              ▼ (Rust)                       │
+  std::fs::write(<path>.html)          │        platform::print_to_pdf(window,        │
+        │                              │          <path>.pdf) → host WebView         │
+        │                              │          paginates and writes               │
+        └──────────────┬───────────────┘──────────────┬──────────────────────────────┘
+                       ▼
+             window.close() → next path
 ```
 
 ### Why a real (invisible) window, not a second renderer
@@ -1315,17 +1321,29 @@ the interactive preview actually shows, defeating the "as though copy/pasting fr
 requirement at its source. Driving the same WebView the interactive app uses, just without showing its
 window, is slower per file but structurally cannot drift.
 
-### Rust — `export_html.rs` + `lib.rs`
+### Rust — `export.rs` + `lib.rs`
 
 `build_window_with_file` (the existing Direct Push window builder shared by every startup path — CLI
 association, `RunEvent::Opened` on macOS, `open_new_window`) is split into a thin wrapper plus
-`build_window_with_file_ex(app, path, export: bool)`, which additionally makes the window invisible
-(`.visible(false)`) and adds `exportHtml: <bool>` to the injected payload when `export` is `true`. Every
-existing call site is unaffected — `export` defaults to `false` through the wrapper.
+`build_window_with_file_ex(app, path, export: Option<ExportFormat>)`, which additionally makes the
+window invisible (`.visible(false)`) and adds `exportFormat: "html" | "pdf"` to the injected payload
+when `export` is `Some`. Every existing call site is unaffected — `export` is `None` through the
+wrapper.
 
-`ExportState` (managed Tauri state) holds at most one pending `tokio::sync::oneshot::Sender<String>` —
-files are exported strictly one at a time, so there is never ambiguity about which window's HTML a
-`export_html_ready` call belongs to. `run_export` awaits each file's sender with a bounded
+`ExportFormat` is the single source of truth for everything that differs between the two modes: the
+CLI flag, the output extension, and the token the frontend switches on. `cli_args.rs` derives its flag
+scan from `ExportFormat::ALL` rather than repeating the strings, so a third format cannot be half-added
+(a unit test walks `ALL` and asserts the round trip).
+
+`ExportState` (managed Tauri state) holds at most one pending
+`oneshot::Sender<Result<Option<String>, String>>` — files are exported strictly one at a time, so there
+is never ambiguity about which window an `export_ready` call belongs to. The payload says what the
+*frontend* has to report: `Ok(Some(html))` for an HTML export, `Ok(None)` for a PDF export (settled,
+nothing to hand over — Rust prints it), `Err(message)` when the frontend could not render at all. That
+last arm is new: the HTML path previously signalled failure by handing back an empty string, which Rust
+could only log as "produced no HTML"; the reason now survives the IPC hop.
+
+`run_export` awaits each file's sender with a bounded
 `tokio::time::timeout` (REQ-LTTCE-XPT-00003): a stuck or slow file is logged and skipped rather than
 hanging every file after it, the window is always closed whether the file succeeded or not, and the
 process exits with a non-zero status if anything failed.
@@ -1342,8 +1360,9 @@ which would have made REQ-LTTCE-XPT-00003's failure signal silently unusable for
 ### Frontend — `App.tsx` + `lib/preview-copy.ts`
 
 `checkLaunch`'s existing Direct Push branch (unmodified for the ordinary launch path) gains one
-additional step when `initData.exportHtml` is set: wait for the preview to settle, serialise it, hand it
-back, done — no editor UI is shown or becomes interactive in this mode.
+additional step when `initData.exportFormat` is set: wait for the preview to settle, then either
+serialise it (`html`) or simply signal that it has settled (`pdf`) — no editor UI is shown or becomes
+interactive in either mode.
 
 - `waitForDiagramsSettled` (`lib/preview-copy.ts`) polls `.mermaid` containers under the preview root
   until each one either carries `DIAGRAM_PNG_ATTR` (`Mermaid.tsx`'s idle-callback cache, `ARCH-LTTCE-
@@ -1354,17 +1373,109 @@ back, done — no editor UI is shown or becomes interactive in this mode.
   diagram-free selection by design, per `REQ-LTTCE-MRC-00003`; a whole-document export has no such
   opt-in gate).
 
+### PDF — the host WebView is the PDF writer
+
+<!--ARCH-LTTCE-XPT-00002-->
+
+Covers REQ-LTTCE-XPT-00004..00006. The same "do not build a second renderer" argument that shaped the
+HTML path decides the PDF path too, and more sharply: pagination, widow/orphan handling, page breaks
+inside tables and code blocks, `@page` margin boxes — all of it already exists, correct and tested, in
+the engine rendering the preview. A Rust HTML-to-PDF crate would be a second layout engine, and none of
+them implement enough modern CSS to reproduce the preview; the export would visibly differ from what
+Ctrl-P produces on the same file, which is exactly the drift REQ-LTTCE-XPT-00004 exists to forbid.
+
+So `--export-pdf` reuses the whole HTML pipeline up to "the preview has settled", and then asks the
+host WebView to print *that same live document*:
+
+| Platform | API                                               | Result                       |
+| :------- | :------------------------------------------------ | :--------------------------- |
+| Windows  | `ICoreWebView2_7::PrintToPdf`                     | WebView2 writes the file     |
+| Linux    | `WebKitPrintOperation` + GTK `output-uri` / `output-file-format` | WebKitGTK writes the file |
+| macOS    | `WKWebView createPDFWithConfiguration:completionHandler:` | hands back `NSData`; Rust writes it |
+
+**Selection is a manifest concern, as everywhere else in `platform/`.** `print_to_pdf` is a new method
+on the existing `Platform` trait in `platform/mod.rs`; `build.rs` already copies exactly one
+`impls/<os>.rs` into `$OUT_DIR/platform_impl.rs`, so no source file gains a `#[cfg(target_os)]` and the
+off-target code is never compiled. The three host crates (`webview2-com` + `windows`, `webkit2gtk` +
+`gtk` + `glib`, `objc2` + `objc2-web-kit` + `block2`) are declared under per-target dependency tables
+in `src-tauri/Cargo.toml`, pinned to the versions wry already resolves — each was previously in the
+graph transitively, so nothing new enters the build.
+
+`Platform::print_to_pdf` carries a **default implementation** that refuses with a bounded, logged
+error. That is deliberately what the Android and iOS stubs get: neither has a verified print-to-PDF
+path, and REQ-LTTCE-XPT-00006's last sentence requires "this platform cannot" to be a loud failure
+rather than a silent success. It also means the mobile stubs did not have to be touched to add the
+method.
+
+Every host API here reports completion through a callback, and each has more than one way to finish
+(setup error before the callback is registered, success callback, failure callback). `PdfDone` —
+one small `Arc<Mutex<Option<Sender>>>` in `platform/mod.rs` — makes "whichever happens first wins, the
+rest are ignored" a single shared rule instead of three hand-rolled guards, and bridges the
+`oneshot::Sender` (consumed on send) into the `Fn` closures these APIs require. `export.rs` awaits it
+under `PDF_PRINT_TIMEOUT`, so a print that never reports still fails that one file rather than the run.
+
+### Frontend — what `beforeprint` would have done
+
+The host print APIs write the file directly; **none of them fire a `beforeprint` event**. But two of
+Lattice's print rules are runtime values, not static CSS — the `@page @top-center` running header
+carries the file name, and the body point size is scaled from an 11 pt baseline by the live zoom — and
+those were injected by `App.tsx`'s `beforeprint` handler. Left alone, `--export-pdf` would silently
+produce headerless, unzoomed pages that an interactive Ctrl-P on the same file does not.
+
+That runtime half therefore moved out of the handler into `lib/print-style.ts`
+(`buildPrintStyleCss` / `applyPrintStyle` / `removePrintStyle`), which both callers now use: the
+interactive `beforeprint`/`afterprint` pair, and the export path, which calls `applyPrintStyle`
+explicitly before signalling settled. One definition, so the two cannot diverge — and, being pure
+string/DOM work, it is directly unit-testable, which the inline handler was not.
+
+The export path additionally forces `setViewMode(preview)`. The print stylesheet picks which pane
+reaches the page from `data-view-mode`, and `edit` would put raw Markdown source on the paper; an
+export always means the rendered document, so the mode is forced rather than inherited from whatever
+the user's saved settings happen to be.
+
 ### Verification
 
-`export_html.rs`'s `export_output_path` (pure, no Tauri types) is unit-tested for the extension-swap rule
-of REQ-LTTCE-XPT-00002. `cli_args.rs` gained a test for `wants_export_html`. `preview-copy.test.ts` covers
+`export.rs`'s pure, Tauri-free logic is unit-tested: `export_output_path` for the extension-swap rule of
+REQ-LTTCE-XPT-00002 *and* REQ-LTTCE-XPT-00005 (including that the two formats of one source cannot
+collide), `ExportFormat::from_flag` for flag recognition and near-miss rejection, and `write_html` for
+the empty/absent-document refusal and the silent-overwrite rule. `cli_args.rs` tests
+`export_format_in` over synthetic argv — every flag, no flag, near misses (`--export`, `-export-pdf`,
+`--export-pdf=x`, wrong case), and which flag wins when both are given. `platform/mod.rs` tests
+`PdfDone`: first result wins, later ones ignored, failures forwarded verbatim, no panic when the
+receiver is already gone.
+
+On the frontend, `print-style.test.ts` covers the extracted print stylesheet (header text, zoom
+scaling, CSS-string escaping of a Windows path with quotes in it, the non-finite-zoom guard,
+idempotent apply, no-op remove). `App.test.tsx` covers the launch branch itself: an ordinary launch
+never signals, `html` hands back a string with no error, `pdf` hands back `null` html with no error
+*and* applies the print style *and* forces the preview view mode, and a failed hand-back is retried
+with the reason rather than an empty document. `preview-copy.test.ts` continues to cover
 `buildExportHtml` (diagram-free passthrough, substitution, non-mutation of the live root) and
 `waitForDiagramsSettled` (immediate resolution, the timeout, and resolving once a deferred PNG lands).
 
-The end-to-end round trip — invisible window build, IPC hand-back, file write, process exit code — is
-**not** covered by an automated test: it needs a real WebView and a real process exit, which the Rust unit
-harness and jsdom-based frontend suite cannot provide. Verified manually instead (see the memory note this
-change adds); a future E2E harness extension is the natural place for it.
+**What is not covered, and why.** The end-to-end round trip — invisible window build, IPC hand-back,
+file write, process exit code — needs a real WebView and a real process exit, which the Rust unit
+harness and the jsdom-based frontend suite cannot provide. For the PDF path this gap is wider than for
+HTML, because the part that actually produces the bytes is host code behind an FFI callback:
+
+- The **Windows** backend is verified by hand end to end (2026-09-20, WebView2 on Windows 11): a
+  14 KB demo exports to a 17-page `%PDF-1.4` with no window shown; a missing path exits `1` naming
+  the file; no paths exits `1`; a mixed batch exports the good file and still exits `1`;
+  `--export-html` is unchanged. Note that WebView2 is being asked to print a window built
+  `visible(false)` — it works, but that is the behaviour most likely to differ between host versions.
+
+  That hand-run found a real defect the unit tests could not: an unreadable input produced a blank
+  PDF and exited `0`. `build_window_with_file_ex` deliberately tolerates an unreadable path (an empty
+  window beats no window when a file is deleted between the OS event and the launch) — correct
+  interactively, wrong for an export, which must fail. `export.rs` now refuses up front via
+  `ensure_readable`, before any window is built, for both formats.
+- The **Linux** and **macOS** backends are compile-verified by the CI matrix only
+  (`.github/workflows/buildAndTest.yml` builds linux, macos-arm64 and macos-intel); no one on this
+  project can run them by hand today, and they are explicitly *unverified at runtime*.
+- The **Android/iOS** default refusal is by construction, not by test.
+
+A future E2E harness extension — assert a non-zero-length `%PDF-` file appears next to the input and
+that the process exits `0` — is the natural place to close this, on every platform at once.
 
 ---
 

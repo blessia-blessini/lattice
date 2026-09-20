@@ -140,6 +140,16 @@ once, and launches it directly per scenario (< 5 s startup, no npm at runtime).
 | `cli_multi_path` | startup with two file arguments | process alive 5 s |
 | `conflict_detection` | conflict detection and resolution | `conflict_success.txt` |
 
+**Known gap — headless export (`--export-html` / `--export-pdf`).** No scenario covers the export
+modes yet. Their pure logic is unit-tested on both sides (`export.rs`, `cli_args.rs`,
+`platform/mod.rs`, `print-style.test.ts`, `App.test.tsx` — see `src-tauri/src/export.trace-cov.md`),
+but the round trip that produces a file — invisible window, IPC hand-back, host print, process exit
+code — needs a real WebView and a real process exit, so it is verified by hand today. The PDF backends
+widen this gap: Windows is exercised by hand, Linux and macOS are compile-verified by the CI matrix
+only. The natural closure is one E2E scenario per format that asserts an output file appears beside
+the input (`%PDF-` magic for the PDF) and that the process exits `0` — it would cover every platform
+in the matrix at once.
+
 #### `is_e2e_tst_build()` — compile-time constant
 `src/e2e.rs` provides a `const fn` that returns `false` in every production
 build (dead-code eliminated by the compiler) and `true` when compiled with

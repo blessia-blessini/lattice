@@ -631,12 +631,21 @@ production failed — the copy SHALL proceed unmodified rather than being blocke
 expectation; degrading to today's behaviour is always better than making the user wait or lose the copy.
 
 
-## Chapter XPT — Headless CLI HTML Export
+## Chapter XPT — Headless CLI Export (HTML and PDF)
 
 Scripting and automation (a build step, a batch conversion, mailing a note) need Lattice's rendered
-preview as a standalone file, without a person opening a window and using Copy. The `lattice` binary
-already accepts file paths as CLI arguments to open on launch (Chapter — CLI file association); this
-chapter adds a flag that instead renders each file's preview and saves it as HTML, then exits.
+preview as a standalone file, without a person opening a window and using Copy or Ctrl-P. The
+`lattice` binary already accepts file paths as CLI arguments to open on launch (Chapter — CLI file
+association); this chapter adds flags that instead render each file's preview, save it, and exit.
+
+Two output formats are covered. They are deliberately one feature with one shape — same flag
+grammar, same batch semantics, same output-naming rule, same failure signal — so that learning one
+teaches the other:
+
+| Flag             | Output                              | Requirements                |
+| :--------------- | :---------------------------------- | :-------------------------- |
+| `--export-html`  | the rendered preview as HTML        | XPT-00001 … 00003           |
+| `--export-pdf`   | the rendered preview as a paginated PDF | XPT-00004 … 00006       |
 
 <!--REQ-LTTCE-XPT-00001-->
 **REQ-LTTCE-XPT-00001** — Launching `lattice` with `--export-html <path> [<path> ...]` SHALL, for each
@@ -666,6 +675,41 @@ export.
 *Rationale*: a batch export over many files must not let one bad or slow file (a missing diagram
 dependency, a huge document) block every file after it, while still giving the invoking script a
 detectable failure signal.
+
+<!--REQ-LTTCE-XPT-00004-->
+**REQ-LTTCE-XPT-00004** — Launching `lattice` with `--export-pdf <path> [<path> ...]` SHALL, for each
+path in order: render that file's Markdown preview exactly as REQ-LTTCE-XPT-00001 requires for HTML,
+then write that rendered document to disk as a paginated PDF. The pagination, page header and type
+sizing SHALL be those an interactive print of the same document produces — same print stylesheet,
+same running file-name header, same zoom-scaled body size. No editor window and no print dialog
+SHALL be shown to the user during this mode.
+
+*Rationale*: the same argument as REQ-LTTCE-XPT-00001, one step further. "As though the user pressed
+Ctrl-P and chose Save as PDF" is the product's working definition of a faithful printed page, so the
+export must go through that same rendering and pagination rather than a second, independent one —
+otherwise the file a script produces and the file a person produces from the same document drift
+apart, silently and unprovably.
+
+<!--REQ-LTTCE-XPT-00005-->
+**REQ-LTTCE-XPT-00005** — The output file for a given input path SHALL be saved alongside it, named by
+replacing (or, if absent, adding) the input's extension with `.pdf`, and SHALL overwrite an existing
+file at that path without prompting.
+
+*Rationale*: identical in spirit and in wording to REQ-LTTCE-XPT-00002 — the two export modes must not
+require the caller to learn two different naming rules, and the differing extension is what keeps an
+HTML and a PDF export of the same source from overwriting each other.
+
+<!--REQ-LTTCE-XPT-00006-->
+**REQ-LTTCE-XPT-00006** — When `--export-pdf` is given with no file paths, or a given file cannot be
+read, rendered, or written as a PDF within a bounded time, Lattice SHALL log the failure and continue
+with the remaining paths (if any) rather than hanging; the process SHALL exit with a non-zero status
+if any path failed to export. Where the host platform offers no supported way to produce a PDF,
+Lattice SHALL report that explicitly as such a failure rather than exiting successfully with no
+output.
+
+*Rationale*: the batch-robustness argument of REQ-LTTCE-XPT-00003, plus one case HTML does not have.
+Producing a PDF depends on a host facility that may be absent; a script must be able to tell "this
+platform cannot" from "this file failed", and neither may look like success.
 
 
 ## Chapter FWT — File Watching and External Reload

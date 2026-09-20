@@ -896,6 +896,127 @@ describe('App — keyboard shortcuts', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Headless CLI export launch (--export-html / --export-pdf)
+// REQ-LTTCE-XPT-00001, REQ-LTTCE-XPT-00003, REQ-LTTCE-XPT-00004
+// ---------------------------------------------------------------------------
+describe('App — headless export launch', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        sessionStorage.clear();
+        localStorage.clear();
+        delete (window as any).__LATTICE_INIT_DATA__;
+        document.title = '';
+        document.getElementById('lattice-print-dynamic')?.remove();
+        vi.mocked(TauriCore.invoke).mockImplementation(makeInvokeMock());
+    });
+
+    const readyCalls = () =>
+        vi.mocked(TauriCore.invoke).mock.calls.filter(c => c[0] === 'export_ready');
+
+    it('an ordinary launch never signals export_ready', async () => {
+        (window as any).__LATTICE_INIT_DATA__ = { path: '/vault/a.md', content: '# Hi' };
+        render(<App />);
+        await waitFor(() => expect(document.title).toContain('a.md'));
+
+        expect(readyCalls()).toHaveLength(0);
+    });
+
+    it('exportFormat "html" hands the rendered preview back', async () => {
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/a.md', content: '# Hi', exportFormat: 'html',
+        };
+        render(<App />);
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(1));
+        const [, args] = readyCalls()[0] as [string, any];
+        // The *contract* is what is asserted here: a string document and no
+        // error. Its content is not — the preview pipeline does not produce
+        // markup under jsdom (no layout, no real Markdown render), so the
+        // fidelity of the serialised HTML is covered by preview-copy.test.ts
+        // against a hand-built DOM instead.
+        expect(typeof args.html).toBe('string');
+        expect(args.error).toBeNull();
+    });
+
+    it('exportFormat "pdf" signals settled without any HTML', async () => {
+        // The PDF is produced by the host WebView from this very window, so
+        // there is nothing for the frontend to hand over but the signal.
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/a.md', content: '# Hi', exportFormat: 'pdf',
+        };
+        render(<App />);
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(1));
+        const [, args] = readyCalls()[0] as [string, any];
+        expect(args.html).toBeNull();
+        expect(args.error).toBeNull();
+    });
+
+    it('exportFormat "pdf" applies the print style, which beforeprint never will', async () => {
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/my-note.md', content: '# Hi', exportFormat: 'pdf',
+        };
+        render(<App />);
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(1));
+        const style = document.getElementById('lattice-print-dynamic');
+        expect(style).not.toBeNull();
+        expect(style!.textContent).toContain('my-note.md');
+    });
+
+    it('exportFormat "pdf" forces the preview view so raw Markdown never reaches the page', async () => {
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/a.md', content: '# Hi', exportFormat: 'pdf',
+        };
+        const { container } = render(<App />);
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(1));
+        const main = container.querySelector('.main-content');
+        expect(main?.getAttribute('data-view-mode')).toBe('preview');
+    });
+
+    it('exportFormat "html" leaves the view mode alone', async () => {
+        // Only the PDF path depends on which pane the print CSS keeps; the
+        // HTML path serialises the preview DOM directly.
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/a.md', content: '# Hi', exportFormat: 'html',
+        };
+        const { container } = render(<App />);
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(1));
+        const main = container.querySelector('.main-content');
+        expect(main?.getAttribute('data-view-mode')).toBe('edit');
+    });
+
+    it('reports the reason instead of a silent empty document (REQ-LTTCE-XPT-00003)', async () => {
+        // Drive the failure through the real path: the first hand-back fails,
+        // which is exactly what the inner catch exists for. The retry must
+        // carry the reason so Rust can log why this file did not export,
+        // rather than an empty string Rust would have to guess at.
+        const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const base = makeInvokeMock();
+        let firstReady = true;
+        vi.mocked(TauriCore.invoke).mockImplementation((cmd: string, args: any) => {
+            if (cmd === 'export_ready' && firstReady) {
+                firstReady = false;
+                return Promise.reject(new Error('ipc exploded'));
+            }
+            return base(cmd, args);
+        });
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/a.md', content: '# Hi', exportFormat: 'html',
+        };
+        render(<App />);
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(2));
+        const [, args] = readyCalls()[1] as [string, any];
+        expect(args.html).toBeNull();
+        expect(args.error).toContain('ipc exploded');
+        err.mockRestore();
+    });
+});
+
+// ---------------------------------------------------------------------------
 // Print event handlers (lines 935-957)
 // ---------------------------------------------------------------------------
 describe('App — print event handlers', () => {

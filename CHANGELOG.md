@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 cd sr 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FEAT: Add --export-pdf headless CLI export
 - fix: android build
 - FIX: Locate the freshest E2E binary instead of a fixed path priority
 - FEAT: HTML Export with CLI
