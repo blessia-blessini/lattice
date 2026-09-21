@@ -75,6 +75,11 @@ tokio = { version = "1", features = ["sync", "time"] }
 # only so `platform/impls/<os>.rs` can call the host print API. Versions are
 # pinned to what wry 0.55 / tauri 2.11 already resolve to, so no second copy of
 # any of them is introduced.
+#
+# One exception, macOS only: objc2-web-kit's "WKPDFConfiguration" feature adds
+# objc2-javascript-core and objc2-security to the lock file. Both are objc2
+# binding crates from the same family and neither reaches a Windows or Linux
+# build, but they ARE new to the graph — see docs/30-architecture.md.
 
 [target.'cfg(target_os = "windows")'.dependencies]
 webview2-com = "0.38"

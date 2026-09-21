@@ -320,7 +320,7 @@ fn configure_desktop_window<R: tauri::Runtime, M: tauri::Manager<R>>(
 /// file was opened. Attaches a `Destroyed` listener so `FileTrackerState` is
 /// cleaned up when the window closes.
 fn build_window_with_file(app: &tauri::AppHandle, path: Option<String>) -> Result<(), String> {
-    build_window_with_file_ex(app, path, None).map(|_window| ())
+    build_window_with_file_ex(app, generate_new_window_label(), path, None).map(|_window| ())
 }
 
 //******************************************************************************
@@ -334,13 +334,17 @@ fn build_window_with_file(app: &tauri::AppHandle, path: Option<String>) -> Resul
 /// itself. Returns the built window so the caller (see `export.rs`) can await
 /// that round-trip — and, for a PDF, print the settled window — before
 /// closing it.
+///
+/// `label` is supplied by the caller rather than generated here: the export
+/// path must bind its completion channel to the window label *before* the
+/// window can signal anything (see `Pending` in `export.rs`). Ordinary
+/// callers pass `generate_new_window_label()` and are otherwise unaffected.
 fn build_window_with_file_ex(
     app: &tauri::AppHandle,
+    label: String,
     path: Option<String>,
     export: Option<export::ExportFormat>,
 ) -> Result<tauri::WebviewWindow, String> {
-    let label = generate_new_window_label();
-
     // Read productName before the builder borrows `app`.
     #[cfg(desktop)]
     let product_name = app_product_name(app);

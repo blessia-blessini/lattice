@@ -1335,9 +1335,19 @@ CLI flag, the output extension, and the token the frontend switches on. `cli_arg
 scan from `ExportFormat::ALL` rather than repeating the strings, so a third format cannot be half-added
 (a unit test walks `ALL` and asserts the round trip).
 
-`ExportState` (managed Tauri state) holds at most one pending
-`oneshot::Sender<Result<Option<String>, String>>` — files are exported strictly one at a time, so there
-is never ambiguity about which window an `export_ready` call belongs to. The payload says what the
+`ExportState` (managed Tauri state) holds at most one pending export: a
+`oneshot::Sender<Result<Option<String>, String>>` **plus the label of the one window allowed to
+complete it**.
+
+That label is not bookkeeping. Files are exported one at a time, which is *not* on its own enough to
+say which window an `export_ready` belongs to: closing a window does not discard a signal its
+renderer has already begun sending, so a file that hit `EXPORT_TIMEOUT` can emit `export_ready` after
+the *next* file has installed its own sender — handing file N+1 the document of file N, saved under
+file N+1's name, while file N+1's genuine completion is dropped as "nothing pending". Silent
+wrong-content, not a crash. `export_ready` therefore takes `tauri::Window`, compares `window.label()`
+against the pending label (`is_expected_sender`, pure and unit-tested), and discards plus logs
+anything else. The label is generated *before* the window is built and handed to
+`build_window_with_file_ex`, so the binding exists before the window can say anything. The payload says what the
 *frontend* has to report: `Ok(Some(html))` for an HTML export, `Ok(None)` for a PDF export (settled,
 nothing to hand over — Rust prints it), `Err(message)` when the frontend could not render at all. That
 last arm is new: the HTML path previously signalled failure by handing back an empty string, which Rust
@@ -1396,10 +1406,16 @@ host WebView to print *that same live document*:
 **Selection is a manifest concern, as everywhere else in `platform/`.** `print_to_pdf` is a new method
 on the existing `Platform` trait in `platform/mod.rs`; `build.rs` already copies exactly one
 `impls/<os>.rs` into `$OUT_DIR/platform_impl.rs`, so no source file gains a `#[cfg(target_os)]` and the
-off-target code is never compiled. The three host crates (`webview2-com` + `windows`, `webkit2gtk` +
-`gtk` + `glib`, `objc2` + `objc2-web-kit` + `block2`) are declared under per-target dependency tables
-in `src-tauri/Cargo.toml`, pinned to the versions wry already resolves — each was previously in the
-graph transitively, so nothing new enters the build.
+off-target code is never compiled. The host crates (`webview2-com` + `windows`, `webkit2gtk` + `gtk` +
+`glib`, `objc2` + `objc2-web-kit` + `block2`) are declared under per-target dependency tables in
+`src-tauri/Cargo.toml`, pinned to the versions wry already resolves, so no second copy of any of them
+enters the graph.
+
+**Two crates are genuinely new, and only on macOS.** Enabling `objc2-web-kit`'s `WKPDFConfiguration`
+feature pulls in `objc2-javascript-core` and `objc2-security` — both `objc2` binding crates from the
+same family, both macOS/iOS-only, neither reaching a Windows or Linux build. That is a real (if
+small) widening of the dependency graph and is recorded here rather than glossed as "nothing new":
+the project rule is to minimise dependencies *and* to report them accurately when one is added.
 
 `Platform::print_to_pdf` carries a **default implementation** that refuses with a bounded, logged
 error. That is deliberately what the Android and iOS stubs get: neither has a verified print-to-PDF
@@ -1428,10 +1444,35 @@ interactive `beforeprint`/`afterprint` pair, and the export path, which calls `a
 explicitly before signalling settled. One definition, so the two cannot diverge — and, being pure
 string/DOM work, it is directly unit-testable, which the inline handler was not.
 
-The export path additionally forces `setViewMode(preview)`. The print stylesheet picks which pane
-reaches the page from `data-view-mode`, and `edit` would put raw Markdown source on the paper; an
-export always means the rendered document, so the mode is forced rather than inherited from whatever
-the user's saved settings happen to be.
+The export path additionally forces the preview view. The print stylesheet picks which pane reaches
+the page from `data-view-mode`, and `edit` — the startup default — would put raw Markdown source on
+the paper; an export always means the rendered document, so the mode is forced rather than inherited
+from whatever the user's saved settings happen to be.
+
+**It is forced with `flushSync`, and that detail is the whole fix.** `waitForDiagramsSettled`
+evaluates its predicate before its first `await`, so a document with no diagrams settles *without
+ever yielding to the browser*. A plain `setViewMode` only schedules a commit, so on that path
+nothing guarantees the DOM carries `data-view-mode="preview"` by the time the signal is sent — the
+code was relying on the renderer winning a race against an IPC hop. `flushSync` commits it before
+the signal can be sent. A guard then re-reads the committed attribute and fails the file loudly if
+it somehow did not take: per REQ-LTTCE-XPT-00006 a wrong-looking PDF reported as success is worse
+than a file that failed.
+
+**How far the defect actually reached, measured rather than assumed.** Under jsdom the ordering is
+deterministically wrong: reverting `flushSync` makes the regression test read `edit` at the instant
+of the signal, every run. On the real Windows host it did *not* manifest — exporting the same
+diagram-free file with and without `flushSync` produced PDFs differing in exactly six bytes, all of
+them inside the `CreationDate` — because the IPC round trip to Rust plus WebView2's print setup is
+far slower than React's scheduler. So this was a latent race on Windows, not observable damage, and
+the fix removes the timing dependence rather than repairing broken output. It is recorded this way
+deliberately: the other hosts run this same code on different schedulers and have never been
+executed at all.
+
+It was found in review, not by the tests, because the only document exercised by hand
+(`docs/demo/demo.md`) contains five Mermaid diagrams — so the settle loop always yielded and always
+gave React its commit. `App.test.tsx` now samples `data-view-mode` *at the instant of the signal*
+rather than afterwards (a `waitFor` assertion passes on a value that only arrives later, which is
+exactly how the defect hid), and does it on deliberately diagram-free content.
 
 ### Verification
 
@@ -1440,16 +1481,20 @@ REQ-LTTCE-XPT-00002 *and* REQ-LTTCE-XPT-00005 (including that the two formats of
 collide), `ExportFormat::from_flag` for flag recognition and near-miss rejection, and `write_html` for
 the empty/absent-document refusal and the silent-overwrite rule. `cli_args.rs` tests
 `export_format_in` over synthetic argv — every flag, no flag, near misses (`--export`, `-export-pdf`,
-`--export-pdf=x`, wrong case), and which flag wins when both are given. `platform/mod.rs` tests
-`PdfDone`: first result wins, later ones ignored, failures forwarded verbatim, no panic when the
-receiver is already gone.
+`--export-pdf=x`, wrong case), and which flag wins when both are given. `is_expected_sender` covers
+the stray-signal guard: the expected window accepted, a different window rejected, every window
+rejected once the slot is empty, and no prefix or case leniency (so `lattice-1-window` cannot be
+completed by `lattice-10-window`). `platform/mod.rs` tests `PdfDone`: first result wins, later ones
+ignored, failures forwarded verbatim, no panic when the receiver is already gone.
 
 On the frontend, `print-style.test.ts` covers the extracted print stylesheet (header text, zoom
 scaling, CSS-string escaping of a Windows path with quotes in it, the non-finite-zoom guard,
 idempotent apply, no-op remove). `App.test.tsx` covers the launch branch itself: an ordinary launch
 never signals, `html` hands back a string with no error, `pdf` hands back `null` html with no error
-*and* applies the print style *and* forces the preview view mode, and a failed hand-back is retried
-with the reason rather than an empty document. `preview-copy.test.ts` continues to cover
+*and* applies the print style *and* forces the preview view mode, that the preview mode is committed
+to the DOM **before** the signal is sent on diagram-free content (the regression above — verified to
+fail when the fix is reverted), that a diagram-free export still succeeds, and that a failed
+hand-back is retried with the reason rather than an empty document. `preview-copy.test.ts` continues to cover
 `buildExportHtml` (diagram-free passthrough, substitution, non-mutation of the live root) and
 `waitForDiagramsSettled` (immediate resolution, the timeout, and resolving once a deferred PNG lands).
 

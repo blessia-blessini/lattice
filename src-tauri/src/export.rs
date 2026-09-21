@@ -92,9 +92,25 @@ impl ExportFormat {
 /// frontend itself failed to render.
 type ReadySender = tokio::sync::oneshot::Sender<Result<Option<String>, String>>;
 
+/// The single in-flight export: which window is allowed to complete it, and
+/// the channel that completion travels down.
+///
+/// The label is not decoration. Closing a window does not silently discard a
+/// signal its renderer has already started sending, so a file that timed out
+/// can still emit `export_ready` *after* the next file has installed its own
+/// sender — handing file N+1 the document of file N, under file N+1's name,
+/// while file N+1's real completion is dropped as "nothing pending". Binding
+/// the sender to one window label makes that signal identifiable and
+/// discardable instead of silently authoritative.
+struct Pending {
+    /// Label of the one window whose `export_ready` may complete this export.
+    window_label: String,
+    tx: ReadySender,
+}
+
 #[derive(Default)]
 pub struct ExportState {
-    pending: Mutex<Option<ReadySender>>,
+    pending: Mutex<Option<Pending>>,
 }
 
 /// How long to wait for one file's preview to render and settle before
@@ -109,6 +125,19 @@ const EXPORT_TIMEOUT: Duration = Duration::from_secs(20);
 const PDF_PRINT_TIMEOUT: Duration = Duration::from_secs(30);
 
 //**************************************************************
+// is_expected_sender
+//**************************************************************
+/// Whether a signal from `caller_label` may complete the export currently
+/// waiting on `expected_label`.
+///
+/// Pure and host-testable — the whole correlation rule in one place, so the
+/// "wrong window" case can be asserted without a WebView.
+fn is_expected_sender(expected_label: Option<&str>, caller_label: &str) -> bool {
+    expected_label == Some(caller_label)
+}
+// is_expected_sender END ****************************************
+
+//**************************************************************
 // export_ready
 //**************************************************************
 /// Tauri command — the frontend's signal that the preview for the file
@@ -116,17 +145,43 @@ const PDF_PRINT_TIMEOUT: Duration = Duration::from_secs(30);
 ///
 /// `html` carries the serialised preview for an HTML export and is absent for
 /// a PDF export; `error` is set instead when the frontend could not render.
-/// A no-op if nothing is pending, which only happens if the wait in
-/// `export_one` already timed out and moved on.
+///
+/// Signals from any window other than the one this export is waiting on are
+/// **discarded and logged** rather than accepted: see `Pending`. A signal
+/// arriving with nothing pending is likewise a no-op, which happens when the
+/// wait in `export_one` already timed out and moved on.
 #[tauri::command]
-pub fn export_ready(state: tauri::State<ExportState>, html: Option<String>, error: Option<String>) {
-    if let Some(tx) = state.pending.lock().unwrap().take() {
-        let payload = match error {
-            Some(msg) => Err(msg),
-            None => Ok(html),
-        };
-        let _ = tx.send(payload);
+pub fn export_ready(
+    window: tauri::Window,
+    state: tauri::State<ExportState>,
+    html: Option<String>,
+    error: Option<String>,
+) {
+    let caller = window.label();
+    let mut slot = state.pending.lock().unwrap();
+
+    if !is_expected_sender(slot.as_ref().map(|p| p.window_label.as_str()), caller) {
+        match slot.as_ref() {
+            Some(p) => error!(
+                "export_ready from window '{}' ignored — this export belongs to '{}' \
+                 (a timed-out window finishing late?)",
+                caller, p.window_label
+            ),
+            None => info!(
+                "export_ready from window '{}' ignored — no export is in flight",
+                caller
+            ),
+        }
+        return;
     }
+
+    // Unwrap is sound: is_expected_sender only matches a `Some` slot.
+    let pending = slot.take().expect("pending checked by is_expected_sender");
+    let payload = match error {
+        Some(msg) => Err(msg),
+        None => Ok(html),
+    };
+    let _ = pending.tx.send(payload);
 }
 // export_ready END **********************************************
 
@@ -182,19 +237,30 @@ async fn export_one(
 ) -> Result<PathBuf, String> {
     ensure_readable(path)?;
 
+    // The label is generated *before* the window exists so the sender can be
+    // bound to it up front. Installing the sender first and learning the
+    // label afterwards would leave a gap in which a signal could not be
+    // attributed to anything.
+    let label = crate::generate_new_window_label();
+
     let (tx, rx) = tokio::sync::oneshot::channel();
     {
         let state: tauri::State<ExportState> = app.state();
-        *state.pending.lock().unwrap() = Some(tx);
+        *state.pending.lock().unwrap() = Some(Pending {
+            window_label: label.clone(),
+            tx,
+        });
     }
 
-    let window = crate::build_window_with_file_ex(app, Some(path.to_string()), Some(format))?;
+    let window =
+        crate::build_window_with_file_ex(app, label, Some(path.to_string()), Some(format))?;
 
     let settled = tokio::time::timeout(EXPORT_TIMEOUT, rx).await;
 
-    // Whatever happens next, stop tracking a sender for this window —
-    // otherwise a late, stray export_ready from it (if any) would race the
-    // next file's pending sender.
+    // Whatever happens next, stop tracking a sender for this window. This
+    // alone does not make a late signal harmless — the next file installs its
+    // own sender moments later, and a stray signal would find *that* one. It
+    // is `Pending::window_label`, checked in `export_ready`, that rejects it.
     let clear_pending = || {
         let state: tauri::State<ExportState> = app.state();
         *state.pending.lock().unwrap() = None;
@@ -400,6 +466,41 @@ mod tests {
             assert!(!names.contains(&f.as_str()), "duplicate format name");
             names.push(f.as_str());
         }
+    }
+
+    //**************************************************************
+    // is_expected_sender — the stray-signal guard
+    //**************************************************************
+
+    #[test]
+    fn accepts_the_window_this_export_is_waiting_on() {
+        assert!(is_expected_sender(Some("lattice-7-window"), "lattice-7-window"));
+    }
+
+    #[test]
+    fn rejects_a_different_window() {
+        // The regression this guard exists for: file N times out, its window
+        // is closed but its renderer still emits export_ready, and by then
+        // file N+1 has installed its own sender. Accepting that signal would
+        // write file N's document under file N+1's name and then drop file
+        // N+1's real completion.
+        assert!(!is_expected_sender(Some("lattice-7-window"), "lattice-8-window"));
+    }
+
+    #[test]
+    fn rejects_every_window_when_nothing_is_pending() {
+        // After a timeout has cleared the slot, no window may complete it.
+        assert!(!is_expected_sender(None, "lattice-7-window"));
+        assert!(!is_expected_sender(None, ""));
+    }
+
+    #[test]
+    fn label_match_is_exact() {
+        // Defensive: no prefix/substring leniency, or "lattice-1-window"
+        // would be completable by "lattice-10-window".
+        assert!(!is_expected_sender(Some("lattice-1-window"), "lattice-10-window"));
+        assert!(!is_expected_sender(Some("lattice-10-window"), "lattice-1-window"));
+        assert!(!is_expected_sender(Some("lattice-1-window"), "Lattice-1-Window"));
     }
 
     #[test]

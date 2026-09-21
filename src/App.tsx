@@ -55,6 +55,7 @@ import { resolveRelativePath, isDocumentLink } from './lib/link-utils';
 import { toSourceRange, findInnermostBlockIndex, isBlockTag } from './lib/cursor-block';
 import { PREVIEW_THEME_COLORS } from './lib/preview-theme';
 import { buildCopyHtml, buildExportHtml, waitForDiagramsSettled } from './lib/preview-copy';
+import { flushSync } from 'react-dom';
 import { applyPrintStyle, removePrintStyle } from './lib/print-style';
 
 import { StaticRuntime } from "@services/StaticRuntime";
@@ -1098,22 +1099,47 @@ function App() {
             try {
               if (exportFormat === 'pdf') {
                 // The print CSS picks which pane reaches the page from
-                // data-view-mode, and 'edit' would put raw Markdown there.
-                // An export always wants the rendered preview, so the mode is
-                // forced rather than inherited from the saved settings.
-                setViewMode(VIEW_PREVIEW);
-                // The host print API never fires `beforeprint`, so the running
-                // header and zoom sizing must be applied explicitly here.
+                // data-view-mode, and 'edit' would put raw Markdown source
+                // there.  An export always wants the rendered preview.
+                //
+                // flushSync, not a bare setViewMode: the signal below can be
+                // reached without ever yielding to the browser (a document
+                // with no diagrams settles synchronously), so an ordinary
+                // state update is not guaranteed to have reached the DOM
+                // before the host printer reads it.  flushSync commits it
+                // now.  Legal here — this runs in an async continuation, not
+                // during render or a lifecycle body.
+                flushSync(() => setViewMode(VIEW_PREVIEW));
+
+                // Defensive: if the commit did not take, fail loudly rather
+                // than printing the editor view.  A wrong-looking PDF that
+                // reports success is worse than a file that failed
+                // (REQ-LTTCE-XPT-00006).
+                const main = mainContentRef.current;
+                if (main?.getAttribute('data-view-mode') !== VIEW_PREVIEW) {
+                  throw new Error(
+                    'preview view mode did not take effect — refusing to print the editor view',
+                  );
+                }
+
+                // The host print API never fires `beforeprint`, so the
+                // running header and zoom sizing must be applied explicitly.
                 applyPrintStyle(document, initData.path, m_fontSize);
               }
 
-              await waitForDiagramsSettled(previewBodyRef.current!);
+              // Read the preview root once, after any view-mode change, and
+              // refuse rather than serialise a document that is not mounted.
+              const previewRoot = previewBodyRef.current;
+              if (!previewRoot) {
+                throw new Error('preview root is not mounted — nothing to export');
+              }
+
+              await waitForDiagramsSettled(previewRoot);
 
               if (exportFormat === 'pdf') {
                 await invoke('export_ready', { html: null, error: null });
               } else {
-                const html = previewBodyRef.current ? buildExportHtml(previewBodyRef.current) : '';
-                await invoke('export_ready', { html, error: null });
+                await invoke('export_ready', { html: buildExportHtml(previewRoot), error: null });
               }
             } catch (e) {
               console.error("Export failed:", e);

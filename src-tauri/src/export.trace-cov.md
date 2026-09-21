@@ -34,8 +34,8 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 
 | Anchor                | Unit / automatic tests                                                        |
 | :-------------------- | :---------------------------------------------------------------------------- |
-| IMPL-LTTCE-XPT-00002  | `src/App.test.tsx` — *App — headless export launch* (6 cases)                  |
-| IMPL-LTTCE-XPT-00003  | `src-tauri/src/export.rs` `mod tests`; `platform/cli_args.rs` `mod tests`      |
+| IMPL-LTTCE-XPT-00002  | `src/App.test.tsx` — *App — headless export launch* (9 cases, incl. the signal-ordering regression) |
+| IMPL-LTTCE-XPT-00003  | `src-tauri/src/export.rs` `mod tests` (18 cases, incl. `is_expected_sender`); `platform/cli_args.rs` `mod tests` |
 | IMPL-LTTCE-XPT-00004  | not unit-testable — needs a real process exit (see ARCH-LTTCE-XPT-00001)       |
 | IMPL-LTTCE-XPT-00005  | `platform/mod.rs` `mod tests` (`PdfDone`); host backends: CI compile only      |
 | IMPL-LTTCE-XPT-00006  | `src/lib/print-style.test.ts` (13 cases)                                       |

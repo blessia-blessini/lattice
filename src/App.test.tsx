@@ -975,6 +975,53 @@ describe('App — headless export launch', () => {
         expect(main?.getAttribute('data-view-mode')).toBe('preview');
     });
 
+    it('the preview view is committed to the DOM *before* the ready signal, not after', async () => {
+        // Regression (found in review, 2026-09-20). The previous code called
+        // setViewMode and then awaited waitForDiagramsSettled, which for a
+        // document with no diagrams returns without ever yielding — so the
+        // signal could reach Rust while the DOM still said data-view-mode
+        // 'edit', and the host printer would paginate the *editor* pane, raw
+        // Markdown and all.
+        //
+        // Asserting the attribute after the fact is not enough: waitFor would
+        // happily pass on a value that only arrived later. The ordering is
+        // what matters, so the mode is sampled at the instant of the signal.
+        let modeAtSignal: string | null | undefined = 'NEVER SIGNALLED';
+        const base = makeInvokeMock();
+        vi.mocked(TauriCore.invoke).mockImplementation((cmd: string, args: any) => {
+            if (cmd === 'export_ready') {
+                modeAtSignal = document
+                    .querySelector('.main-content')
+                    ?.getAttribute('data-view-mode');
+            }
+            return base(cmd, args);
+        });
+
+        // Deliberately diagram-free content — this is the path that settles
+        // synchronously and therefore never yields to React.
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/plain.md', content: '# No diagrams here', exportFormat: 'pdf',
+        };
+        render(<App />);
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(1));
+        expect(modeAtSignal).toBe('preview');
+    });
+
+    it('a diagram-free pdf export still reports success', async () => {
+        // Guards the loud view-mode check added alongside the fix above: it
+        // must not turn the ordinary no-diagram export into a failure.
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/plain.md', content: '# No diagrams here', exportFormat: 'pdf',
+        };
+        render(<App />);
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(1));
+        const [, args] = readyCalls()[0] as [string, any];
+        expect(args.error).toBeNull();
+        expect(args.html).toBeNull();
+    });
+
     it('exportFormat "html" leaves the view mode alone', async () => {
         // Only the PDF path depends on which pane the print CSS keeps; the
         // HTML path serialises the preview DOM directly.
