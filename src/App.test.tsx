@@ -43,6 +43,26 @@ vi.mock('@tauri-apps/plugin-opener', () => ({
   openUrl: vi.fn().mockResolvedValue(undefined),
 }));
 
+// Pass-through spy on the preview-copy helpers.  The real implementations are
+// kept — only the root element each one is handed is recorded, so a test can
+// assert *which* DOM node the headless export drove (see the StrictMode
+// regression in 'App — headless export launch').
+export const g_exportRoots: { settled: Element[]; built: Element[] } = { settled: [], built: [] };
+vi.mock('./lib/preview-copy', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('./lib/preview-copy')>();
+    return {
+        ...actual,
+        waitForDiagramsSettled: (root: Element, timeoutMs?: number) => {
+            g_exportRoots.settled.push(root);
+            return actual.waitForDiagramsSettled(root, timeoutMs as any);
+        },
+        buildExportHtml: (root: Element) => {
+            g_exportRoots.built.push(root);
+            return actual.buildExportHtml(root);
+        },
+    };
+});
+
 // Mock mermaid so Mermaid component tests don't break in JSDOM
 vi.mock('mermaid', () => ({
   default: {
@@ -973,6 +993,43 @@ describe('App — headless export launch', () => {
         await waitFor(() => expect(readyCalls()).toHaveLength(1));
         const main = container.querySelector('.main-content');
         expect(main?.getAttribute('data-view-mode')).toBe('preview');
+    });
+
+    it('drives the *live* DOM under React.StrictMode, and signals exactly once', async () => {
+        // Regression (found in review, 2026-09-22). The claim under test: the
+        // launchDone guard makes the second StrictMode effect pass bail out,
+        // so the export is driven by the first pass — and if that pass had
+        // captured a DOM node that StrictMode then threw away, Mermaid would
+        // render into the live tree while the export waited on a detached one
+        // and timed out.
+        //
+        // It does not: StrictMode re-runs effects on the *same* mounted host
+        // nodes, and the root is read after the awaits anyway.  Asserted
+        // directly rather than argued — the element handed to the export
+        // helpers must be the one in the live document.
+        g_exportRoots.settled.length = 0;
+        g_exportRoots.built.length = 0;
+
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/a.md', content: '# Hi', exportFormat: 'html',
+        };
+        const { container } = render(
+            <React.StrictMode>
+                <App />
+            </React.StrictMode>
+        );
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(1));
+        const [, args] = readyCalls()[0] as [string, any];
+        expect(args.error).toBeNull();
+
+        // One export attempt only — the guard must not produce a second.
+        expect(g_exportRoots.settled).toHaveLength(1);
+
+        const root = g_exportRoots.settled[0];
+        expect(root.isConnected).toBe(true);
+        expect(root).toBe(container.querySelector('.preview-pane__body'));
+        expect(g_exportRoots.built[0]).toBe(root);
     });
 
     it('the preview view is committed to the DOM *before* the ready signal, not after', async () => {
