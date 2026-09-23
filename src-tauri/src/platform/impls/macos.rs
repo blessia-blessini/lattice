@@ -104,4 +104,84 @@ impl Platform for PlatformImpl {
         }
     }
     // handle_run_event END ******************************************************
+
+    //**************************************************************************
+    // print_to_pdf (macos)
+    //**************************************************************************
+    /// IMPL-LTTCE-XPT-00005 — prints the settled document with WKWebView's own
+    /// `createPDFWithConfiguration:completionHandler:`, i.e. the exact layout
+    /// engine that rendered the preview. A `nil` configuration means "the
+    /// whole document", which is what a whole-file export wants.
+    fn print_to_pdf(
+        &self,
+        window: &tauri::WebviewWindow,
+        out_path: std::path::PathBuf,
+        done: tokio::sync::oneshot::Sender<Result<(), String>>,
+    ) {
+        let done = PdfDone::new(done);
+        let on_main = std::sync::Arc::clone(&done);
+        let dispatch = window.with_webview(move |webview| {
+            // SAFETY: `inner()` is the live WKWebView owned by the window this
+            // closure was dispatched to, and `with_webview` runs it on the
+            // main thread — the only thread WebKit may be touched from.
+            let wk: &objc2_web_kit::WKWebView =
+                unsafe { &*(webview.inner() as *const objc2_web_kit::WKWebView) };
+            macos_print_to_pdf(wk, &out_path, &on_main);
+        });
+        if let Err(e) = dispatch {
+            done.finish(Err(format!("cannot reach the WKWebView: {}", e)));
+        }
+    }
+    // print_to_pdf (macos) END **************************************************
 }
+
+//******************************************************************************
+// macos_print_to_pdf
+//******************************************************************************
+/// The Cocoa half of the macOS print: ask WebKit for the document as PDF data
+/// and write it out ourselves — unlike WebView2 and WebKitGTK, WKWebView hands
+/// back bytes rather than writing a file, so the write (and its errors) are
+/// this function's job.
+fn macos_print_to_pdf(
+    webview: &objc2_web_kit::WKWebView,
+    out_path: &std::path::Path,
+    done: &std::sync::Arc<PdfDone>,
+) {
+    use objc2_foundation::{NSData, NSError};
+
+    let on_done = std::sync::Arc::clone(done);
+    let target = out_path.to_path_buf();
+
+    let handler = block2::RcBlock::new(move |data: *mut NSData, error: *mut NSError| {
+        if !error.is_null() {
+            // SAFETY: non-null NSError owned by the caller for the duration
+            // of this callback.
+            let message = unsafe { &*error }.localizedDescription().to_string();
+            on_done.finish(Err(format!("WKWebView could not produce a PDF: {}", message)));
+            return;
+        }
+        if data.is_null() {
+            on_done.finish(Err("WKWebView returned no PDF data".to_string()));
+            return;
+        }
+        // SAFETY: as above — non-null NSData valid for this callback.
+        let bytes = unsafe { &*data }.to_vec();
+        if bytes.is_empty() {
+            on_done.finish(Err("WKWebView returned an empty PDF".to_string()));
+            return;
+        }
+        match std::fs::write(&target, bytes) {
+            Ok(()) => on_done.finish(Ok(())),
+            Err(e) => on_done.finish(Err(format!(
+                "cannot write '{}': {}",
+                target.display(),
+                e
+            ))),
+        }
+    });
+
+    // SAFETY: called on the main thread (see the caller); `None` configuration
+    // is documented as "snapshot the entire document".
+    unsafe { webview.createPDFWithConfiguration_completionHandler(None, &handler) };
+}
+// macos_print_to_pdf END ******************************************************

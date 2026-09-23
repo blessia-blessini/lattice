@@ -23,7 +23,7 @@
 
 [package]
 name = "lattice"
-version = "0.3.25"
+version = "0.3.26"
 description = "A Markdown Editor that respects standards"
 authors = ["Blessia Blessini"]
 edition = "2024"
@@ -64,9 +64,37 @@ tauri-plugin-log = "2"
 dirs = "6.0.0"
 chrono = "0.4.44"
 # Already pulled in transitively by tauri's async runtime; named directly here
-# only for the `sync`/`time` primitives export_html.rs needs (oneshot channel,
+# only for the `sync`/`time` primitives export.rs needs (oneshot channel,
 # timeout) — no new runtime is introduced.
 tokio = { version = "1", features = ["sync", "time"] }
+
+# ── Host print-to-PDF backends (`--export-pdf`, IMPL-LTTCE-XPT-00005) ─────────
+# Per DRY-and-Variants.md, the variant is selected *here*, in the manifest —
+# never with #[cfg(target_os)] in source. Each of these crates is already in
+# the dependency graph via wry/tauri (see Cargo.lock); they are named directly
+# only so `platform/impls/<os>.rs` can call the host print API. Versions are
+# pinned to what wry 0.55 / tauri 2.11 already resolve to, so no second copy of
+# any of them is introduced.
+#
+# One exception, macOS only: objc2-web-kit's "WKPDFConfiguration" feature adds
+# objc2-javascript-core and objc2-security to the lock file. Both are objc2
+# binding crates from the same family and neither reaches a Windows or Linux
+# build, but they ARE new to the graph — see docs/30-architecture.md.
+
+[target.'cfg(target_os = "windows")'.dependencies]
+webview2-com = "0.38"
+windows = { version = "0.61", features = ["Win32_Foundation"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+webkit2gtk = "2.0"
+gtk = "0.18"
+glib = "0.18"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-foundation = { version = "0.3", features = ["NSData", "NSError", "NSString"] }
+objc2-web-kit = { version = "0.3", features = ["WKWebView", "WKPDFConfiguration"] }
+block2 = "0.6"
 
 [dev-dependencies]
 tempfile = "3.24.0"

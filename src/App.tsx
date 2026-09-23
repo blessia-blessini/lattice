@@ -55,6 +55,8 @@ import { resolveRelativePath, isDocumentLink } from './lib/link-utils';
 import { toSourceRange, findInnermostBlockIndex, isBlockTag } from './lib/cursor-block';
 import { PREVIEW_THEME_COLORS } from './lib/preview-theme';
 import { buildCopyHtml, buildExportHtml, waitForDiagramsSettled } from './lib/preview-copy';
+import { flushSync } from 'react-dom';
+import { applyPrintStyle, removePrintStyle } from './lib/print-style';
 
 import { StaticRuntime } from "@services/StaticRuntime";
 
@@ -1080,19 +1082,71 @@ function App() {
             FileSystem.watchFile(initData.path);
           }
 
-          // IMPL-LTTCE-XPT-00002 — REQ-LTTCE-XPT-00001 — headless `--export-html` launch: this window
-          // was built invisible (see build_window_with_file_ex in lib.rs)
-          // solely to render `initData.path`'s preview and hand the resulting
-          // HTML back to Rust, which writes it to disk and closes the window.
-          // No editor UI is shown and this window never becomes interactive.
-          if (initData.exportHtml) {
+          // IMPL-LTTCE-XPT-00002 — REQ-LTTCE-XPT-00001 / 00004 — headless
+          // `--export-html` / `--export-pdf` launch: this window was built
+          // invisible (see build_window_with_file_ex in lib.rs) solely to
+          // render `initData.path`'s preview.  No editor UI is shown and this
+          // window never becomes interactive.
+          //
+          //   html -> serialise the settled preview and hand it back; Rust
+          //           writes the file.
+          //   pdf  -> hand back nothing but the "settled" signal; Rust then
+          //           prints this very window through the host WebView
+          //           (IMPL-LTTCE-XPT-00005), so both formats come from one
+          //           renderer and cannot drift apart.
+          const exportFormat: string | null = initData.exportFormat ?? null;
+          if (exportFormat) {
             try {
-              await waitForDiagramsSettled(previewBodyRef.current!);
-              const html = previewBodyRef.current ? buildExportHtml(previewBodyRef.current) : '';
-              await invoke('export_html_ready', { html });
+              if (exportFormat === 'pdf') {
+                // The print CSS picks which pane reaches the page from
+                // data-view-mode, and 'edit' would put raw Markdown source
+                // there.  An export always wants the rendered preview.
+                //
+                // flushSync, not a bare setViewMode: the signal below can be
+                // reached without ever yielding to the browser (a document
+                // with no diagrams settles synchronously), so an ordinary
+                // state update is not guaranteed to have reached the DOM
+                // before the host printer reads it.  flushSync commits it
+                // now.  Legal here — this runs in an async continuation, not
+                // during render or a lifecycle body.
+                flushSync(() => setViewMode(VIEW_PREVIEW));
+
+                // Defensive: if the commit did not take, fail loudly rather
+                // than printing the editor view.  A wrong-looking PDF that
+                // reports success is worse than a file that failed
+                // (REQ-LTTCE-XPT-00006).
+                const main = mainContentRef.current;
+                if (main?.getAttribute('data-view-mode') !== VIEW_PREVIEW) {
+                  throw new Error(
+                    'preview view mode did not take effect — refusing to print the editor view',
+                  );
+                }
+
+                // The host print API never fires `beforeprint`, so the
+                // running header and zoom sizing must be applied explicitly.
+                applyPrintStyle(document, initData.path, m_fontSize);
+              }
+
+              // Read the preview root once, after any view-mode change, and
+              // refuse rather than serialise a document that is not mounted.
+              const previewRoot = previewBodyRef.current;
+              if (!previewRoot) {
+                throw new Error('preview root is not mounted — nothing to export');
+              }
+
+              await waitForDiagramsSettled(previewRoot);
+
+              if (exportFormat === 'pdf') {
+                await invoke('export_ready', { html: null, error: null });
+              } else {
+                await invoke('export_ready', { html: buildExportHtml(previewRoot), error: null });
+              }
             } catch (e) {
-              console.error("HTML export failed:", e);
-              await invoke('export_html_ready', { html: '' }).catch(() => {});
+              console.error("Export failed:", e);
+              // Report the reason rather than an empty document, so Rust can
+              // log why this path failed (REQ-LTTCE-XPT-00003) instead of
+              // guessing at an empty string.
+              await invoke('export_ready', { html: null, error: String(e) }).catch(() => {});
             }
           }
         } catch (e) {
@@ -1324,35 +1378,19 @@ function App() {
     };
     window.addEventListener('wheel', handleWheel, { passive: false });
 
+    // Strip " - lattice (...)" from the title and inject the runtime half of
+    // the print stylesheet (running header + zoom-scaled point size).  Both
+    // live in lib/print-style.ts because the headless `--export-pdf` path
+    // needs exactly the same treatment and never fires `beforeprint`.
     const handleBeforePrint = () => {
-      // Strip " - lattice (...)" from title for clean printing
-      const fileName = m_currentFilePath
-        ? m_currentFilePath.split(/[\\/]/).pop() || "Untitled"
-        : "Untitled";
-      document.title = fileName;
-
-      // Inject @page @top-center with the file name so it appears as a
-      // running header on every printed page.  We write it as a <style>
-      // tag rather than a static rule because the value is only known at
-      // runtime.  Escape backslashes and double-quotes for CSS string safety.
-      const esc = fileName.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-      // Scale the print body font from an 11 pt baseline using the current
-      // zoom level so Ctrl-P / Save-as-PDF honours the +/- zoom setting.
-      const printPt = ((11 * m_fontSize) / 100).toFixed(2);
-      const style = document.createElement('style');
-      style.id = 'lattice-print-dynamic';
-      const pageCss = '@page {\n  @top-center {\n    content: "' + esc + '";\n    font-size: 9pt;\n    font-family: Arial, Helvetica, sans-serif;\n    color: #555;\n  }\n}\n';
-      const zoomCss = '.preview-pane, .preview-pane__body, .markdown-body { font-size: ' + printPt + 'pt !important; }\n'
-        + '.cm-content, .cm-line { font-size: ' + printPt + 'pt !important; }';
-      style.textContent = pageCss + zoomCss;
-      document.head.appendChild(style);
+      applyPrintStyle(document, m_currentFilePath, m_fontSize);
     };
 
     const handleAfterPrint = () => {
       // Restore full title
       setWindowTitle(m_currentFilePath, m_isDirty);
       // Remove the dynamically injected print header style
-      document.getElementById('lattice-print-dynamic')?.remove();
+      removePrintStyle(document);
     };
 
     window.addEventListener('beforeprint', handleBeforePrint);

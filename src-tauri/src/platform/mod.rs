@@ -56,6 +56,39 @@ pub(crate) trait Platform {
 
     /// Called for every `RunEvent` from the Tauri event loop.
     fn handle_run_event(&self, app: &tauri::AppHandle, event: tauri::RunEvent);
+
+    //**************************************************************
+    // Platform::print_to_pdf
+    //**************************************************************
+    /// Prints `window`'s *current* document to a PDF file at `out_path`,
+    /// reporting the outcome through `done`.
+    ///
+    /// IMPL-LTTCE-XPT-00005 — the paginating is done by the host WebView that
+    /// already rendered the preview (WebView2 on Windows, WebKitGTK on Linux,
+    /// WKWebView on macOS), so `--export-pdf` cannot drift from what
+    /// `--export-html` and an interactive Ctrl-P produce.
+    ///
+    /// Asynchronous by construction: every host API here completes through a
+    /// callback, so implementations return immediately and send on `done`
+    /// later, exactly once. Use [`PdfDone`] to get that "exactly once" for
+    /// free on both the success and the setup-failure path.
+    ///
+    /// The default implementation refuses. It is what the mobile stubs get:
+    /// Android and iOS have no verified print-to-PDF path here, and a loud,
+    /// bounded refusal is the honest answer (see `.claude/rules/mobile.md`).
+    fn print_to_pdf(
+        &self,
+        window: &tauri::WebviewWindow,
+        out_path: std::path::PathBuf,
+        done: tokio::sync::oneshot::Sender<Result<(), String>>,
+    ) {
+        let _ = window;
+        let _ = done.send(Err(format!(
+            "PDF export is not supported on this platform (wanted '{}')",
+            out_path.display()
+        )));
+    }
+    // Platform::print_to_pdf END ********************************
 }
 
 // ── Platform implementation — injected by build.rs ──────────────────────────
@@ -81,4 +114,125 @@ pub(crate) fn open_windows_on_startup(
 
 pub(crate) fn handle_run_event(app: &tauri::AppHandle, event: tauri::RunEvent) {
     PlatformImpl.handle_run_event(app, event);
+}
+
+//******************************************************************************
+// print_to_pdf
+//******************************************************************************
+/// Forwards to the selected platform implementation. See
+/// [`Platform::print_to_pdf`].
+pub(crate) fn print_to_pdf(
+    window: &tauri::WebviewWindow,
+    out_path: std::path::PathBuf,
+    done: tokio::sync::oneshot::Sender<Result<(), String>>,
+) {
+    PlatformImpl.print_to_pdf(window, out_path, done);
+}
+// print_to_pdf END ************************************************************
+
+
+//******************************************************************************
+// PdfDone
+//******************************************************************************
+/// A one-shot completion sink shared by every platform's `print_to_pdf`.
+///
+/// The host print APIs all report through callbacks, and each of them has more
+/// than one way to finish: a setup error before the callback is ever
+/// registered, a success callback, a failure callback. `PdfDone` makes
+/// "whichever happens first wins, the rest are ignored" the single, shared
+/// rule instead of three near-identical hand-rolled guards (DRY), and keeps a
+/// `oneshot::Sender` — which consumes itself on `send` — usable from the `Fn`
+/// (not `FnOnce`) closures those APIs require.
+pub(crate) struct PdfDone(
+    std::sync::Mutex<Option<tokio::sync::oneshot::Sender<Result<(), String>>>>,
+);
+
+#[allow(dead_code)] // Only the desktop impls use it; mobile takes the default.
+impl PdfDone {
+    /// Wraps `tx` so it can be cloned into several callbacks.
+    pub(crate) fn new(
+        tx: tokio::sync::oneshot::Sender<Result<(), String>>,
+    ) -> std::sync::Arc<Self> {
+        std::sync::Arc::new(PdfDone(std::sync::Mutex::new(Some(tx))))
+    }
+
+    /// Reports `result` if nothing has been reported yet; otherwise a no-op.
+    ///
+    /// A poisoned lock is treated as "already reported" rather than
+    /// propagated: a panicking print callback must not also panic the caller
+    /// awaiting the result — the bounded timeout in `export.rs` covers it.
+    pub(crate) fn finish(&self, result: Result<(), String>) {
+        if let Ok(mut slot) = self.0.lock()
+            && let Some(tx) = slot.take()
+        {
+            let _ = tx.send(result);
+        }
+    }
+}
+// PdfDone END *****************************************************************
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    //**************************************************************
+    // PdfDone
+    //**************************************************************
+    // `try_recv` is used rather than `.await` so these stay plain `#[test]`s:
+    // the value is already in the channel by the time it is read, and no
+    // async runtime (nor a tokio "macros"/"rt" dev-dependency) is needed.
+
+    #[test]
+    fn pdf_done_forwards_the_first_result() {
+        let (tx, mut rx) = tokio::sync::oneshot::channel();
+        let done = PdfDone::new(tx);
+        done.finish(Ok(()));
+        assert_eq!(rx.try_recv(), Ok(Ok(())));
+    }
+
+    #[test]
+    fn pdf_done_ignores_every_result_after_the_first() {
+        // A host API that reports both "finished" and "failed" must not be
+        // able to turn a completed export into an error, or panic on a
+        // sender that has already been consumed.
+        let (tx, mut rx) = tokio::sync::oneshot::channel();
+        let done = PdfDone::new(tx);
+        done.finish(Ok(()));
+        done.finish(Err("late failure".to_string()));
+        done.finish(Err("later still".to_string()));
+        assert_eq!(rx.try_recv(), Ok(Ok(())));
+    }
+
+    #[test]
+    fn pdf_done_forwards_a_failure_verbatim() {
+        let (tx, mut rx) = tokio::sync::oneshot::channel();
+        let done = PdfDone::new(tx);
+        done.finish(Err("boom".to_string()));
+        assert_eq!(rx.try_recv(), Ok(Err("boom".to_string())));
+    }
+
+    #[test]
+    fn pdf_done_never_panics_when_the_receiver_is_gone() {
+        // export.rs drops the receiver on timeout; a late callback must not
+        // take the process down with it.
+        let (tx, rx) = tokio::sync::oneshot::channel();
+        let done = PdfDone::new(tx);
+        drop(rx);
+        done.finish(Ok(()));
+    }
+
+    #[test]
+    fn pdf_done_is_shareable_across_callbacks() {
+        // The host APIs need the sink in more than one closure at once; that
+        // is the whole reason it is an Arc rather than a moved sender.
+        let (tx, mut rx) = tokio::sync::oneshot::channel();
+        let done = PdfDone::new(tx);
+        let a = done.clone();
+        let b = done.clone();
+        drop(done);
+        b.finish(Err("setup failed".to_string()));
+        a.finish(Ok(()));
+        assert_eq!(rx.try_recv(), Ok(Err("setup failed".to_string())));
+    }
 }

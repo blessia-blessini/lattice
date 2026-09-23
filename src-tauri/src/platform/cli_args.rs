@@ -3,6 +3,7 @@
 // Copyright (C) 2026 Owner of blessini.com (a.k.a Blessia)
 // See LICENCE file in GitHUB root folder of the repository.
 
+use crate::export::ExportFormat;
 
 /// Collects non-flag command-line arguments as file paths.
 ///
@@ -27,21 +28,39 @@ pub fn collect_file_paths() -> Vec<String> {
     paths
 }
 
-/// The flag that switches the process into headless HTML-export mode.
-pub const EXPORT_HTML_FLAG: &str = "--export-html";
+//**************************************************************
+// export_format_in
+//**************************************************************
+/// The headless export format requested by `args`, or `None` for an ordinary
+/// interactive launch.
+///
+/// Pure over its input so the flag-scanning rule itself is host-testable —
+/// `requested_export_format` is the thin `std::env::args()` wrapper around it.
+/// The first recognised export flag wins; a second one is ignored rather than
+/// silently overriding the first, so `--export-html --export-pdf a.md` exports
+/// HTML instead of quietly doing something the caller did not ask for.
+pub fn export_format_in<I, S>(args: I) -> Option<ExportFormat>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
+{
+    args.into_iter()
+        .find_map(|a| ExportFormat::from_flag(a.as_ref()))
+}
+// export_format_in END ******************************************
 
 //**************************************************************
-// wants_export_html
+// requested_export_format
 //**************************************************************
-/// Whether the process was launched with the headless export flag
-/// (`--export-html`), scanning the real `std::env::args()`.
+/// Whether the process was launched with a headless export flag
+/// (`--export-html` / `--export-pdf`), scanning the real `std::env::args()`.
 ///
 /// Non-flag arguments alongside it (collected separately via
 /// `collect_file_paths`) are the files to export.
-pub fn wants_export_html() -> bool {
-    std::env::args().any(|a| a == EXPORT_HTML_FLAG)
+pub fn requested_export_format() -> Option<ExportFormat> {
+    export_format_in(std::env::args())
 }
-// wants_export_html END *****************************************
+// requested_export_format END ***********************************
 
 #[cfg(test)]
 mod tests {
@@ -58,15 +77,54 @@ mod tests {
 
     #[test]
     fn export_flag_absent_in_test_binary() {
-        // The test runner never passes --export-html, so this must read false
+        // The test runner never passes an export flag, so this must read None
         // rather than panic — proves the scan itself is well-formed.
-        assert!(!wants_export_html());
+        assert!(requested_export_format().is_none());
     }
 
     #[test]
-    fn export_flag_constant_matches_collect_file_paths_skip_rule() {
-        // collect_file_paths() skips anything starting with '-', so the flag
-        // constant must never leak into the collected file-path list.
-        assert!(EXPORT_HTML_FLAG.starts_with('-'));
+    fn recognises_each_export_flag() {
+        for f in ExportFormat::ALL {
+            let argv = ["lattice", f.flag(), "notes.md"];
+            assert_eq!(export_format_in(argv), Some(f));
+        }
+    }
+
+    #[test]
+    fn no_flag_means_interactive_launch() {
+        assert_eq!(export_format_in(["lattice", "notes.md"]), None);
+        assert_eq!(export_format_in(["lattice"]), None);
+        assert_eq!(export_format_in(Vec::<&str>::new()), None);
+    }
+
+    #[test]
+    fn near_miss_flags_do_not_trigger_an_export() {
+        // Defensive: only the exact flags switch the process into a mode that
+        // never shows a window.
+        assert_eq!(export_format_in(["lattice", "--export"]), None);
+        assert_eq!(export_format_in(["lattice", "--export-pdf=a.pdf"]), None);
+        assert_eq!(export_format_in(["lattice", "-export-pdf"]), None);
+        assert_eq!(export_format_in(["lattice", "--EXPORT-PDF"]), None);
+    }
+
+    #[test]
+    fn first_export_flag_wins_when_both_are_given() {
+        assert_eq!(
+            export_format_in(["lattice", "--export-html", "--export-pdf", "a.md"]),
+            Some(ExportFormat::Html)
+        );
+        assert_eq!(
+            export_format_in(["lattice", "--export-pdf", "--export-html", "a.md"]),
+            Some(ExportFormat::Pdf)
+        );
+    }
+
+    #[test]
+    fn export_flags_never_leak_into_collected_file_paths() {
+        // collect_file_paths() skips anything starting with '-'; assert the
+        // flag constants keep honouring that contract.
+        for f in ExportFormat::ALL {
+            assert!(f.flag().starts_with('-'));
+        }
     }
 }

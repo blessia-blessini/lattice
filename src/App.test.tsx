@@ -43,6 +43,26 @@ vi.mock('@tauri-apps/plugin-opener', () => ({
   openUrl: vi.fn().mockResolvedValue(undefined),
 }));
 
+// Pass-through spy on the preview-copy helpers.  The real implementations are
+// kept — only the root element each one is handed is recorded, so a test can
+// assert *which* DOM node the headless export drove (see the StrictMode
+// regression in 'App — headless export launch').
+export const g_exportRoots: { settled: Element[]; built: Element[] } = { settled: [], built: [] };
+vi.mock('./lib/preview-copy', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('./lib/preview-copy')>();
+    return {
+        ...actual,
+        waitForDiagramsSettled: (root: Element, timeoutMs?: number) => {
+            g_exportRoots.settled.push(root);
+            return actual.waitForDiagramsSettled(root, timeoutMs as any);
+        },
+        buildExportHtml: (root: Element) => {
+            g_exportRoots.built.push(root);
+            return actual.buildExportHtml(root);
+        },
+    };
+});
+
 // Mock mermaid so Mermaid component tests don't break in JSDOM
 vi.mock('mermaid', () => ({
   default: {
@@ -892,6 +912,211 @@ describe('App — keyboard shortcuts', () => {
     it('unrelated keys are ignored (no crash)', async () => {
         await renderReady();
         fireEvent.keyDown(window, { key: 'a', ctrlKey: false });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Headless CLI export launch (--export-html / --export-pdf)
+// REQ-LTTCE-XPT-00001, REQ-LTTCE-XPT-00003, REQ-LTTCE-XPT-00004
+// ---------------------------------------------------------------------------
+describe('App — headless export launch', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        sessionStorage.clear();
+        localStorage.clear();
+        delete (window as any).__LATTICE_INIT_DATA__;
+        document.title = '';
+        document.getElementById('lattice-print-dynamic')?.remove();
+        vi.mocked(TauriCore.invoke).mockImplementation(makeInvokeMock());
+    });
+
+    const readyCalls = () =>
+        vi.mocked(TauriCore.invoke).mock.calls.filter(c => c[0] === 'export_ready');
+
+    it('an ordinary launch never signals export_ready', async () => {
+        (window as any).__LATTICE_INIT_DATA__ = { path: '/vault/a.md', content: '# Hi' };
+        render(<App />);
+        await waitFor(() => expect(document.title).toContain('a.md'));
+
+        expect(readyCalls()).toHaveLength(0);
+    });
+
+    it('exportFormat "html" hands the rendered preview back', async () => {
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/a.md', content: '# Hi', exportFormat: 'html',
+        };
+        render(<App />);
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(1));
+        const [, args] = readyCalls()[0] as [string, any];
+        // The *contract* is what is asserted here: a string document and no
+        // error. Its content is not — the preview pipeline does not produce
+        // markup under jsdom (no layout, no real Markdown render), so the
+        // fidelity of the serialised HTML is covered by preview-copy.test.ts
+        // against a hand-built DOM instead.
+        expect(typeof args.html).toBe('string');
+        expect(args.error).toBeNull();
+    });
+
+    it('exportFormat "pdf" signals settled without any HTML', async () => {
+        // The PDF is produced by the host WebView from this very window, so
+        // there is nothing for the frontend to hand over but the signal.
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/a.md', content: '# Hi', exportFormat: 'pdf',
+        };
+        render(<App />);
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(1));
+        const [, args] = readyCalls()[0] as [string, any];
+        expect(args.html).toBeNull();
+        expect(args.error).toBeNull();
+    });
+
+    it('exportFormat "pdf" applies the print style, which beforeprint never will', async () => {
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/my-note.md', content: '# Hi', exportFormat: 'pdf',
+        };
+        render(<App />);
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(1));
+        const style = document.getElementById('lattice-print-dynamic');
+        expect(style).not.toBeNull();
+        expect(style!.textContent).toContain('my-note.md');
+    });
+
+    it('exportFormat "pdf" forces the preview view so raw Markdown never reaches the page', async () => {
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/a.md', content: '# Hi', exportFormat: 'pdf',
+        };
+        const { container } = render(<App />);
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(1));
+        const main = container.querySelector('.main-content');
+        expect(main?.getAttribute('data-view-mode')).toBe('preview');
+    });
+
+    it('drives the *live* DOM under React.StrictMode, and signals exactly once', async () => {
+        // Regression (found in review, 2026-09-22). The claim under test: the
+        // launchDone guard makes the second StrictMode effect pass bail out,
+        // so the export is driven by the first pass — and if that pass had
+        // captured a DOM node that StrictMode then threw away, Mermaid would
+        // render into the live tree while the export waited on a detached one
+        // and timed out.
+        //
+        // It does not: StrictMode re-runs effects on the *same* mounted host
+        // nodes, and the root is read after the awaits anyway.  Asserted
+        // directly rather than argued — the element handed to the export
+        // helpers must be the one in the live document.
+        g_exportRoots.settled.length = 0;
+        g_exportRoots.built.length = 0;
+
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/a.md', content: '# Hi', exportFormat: 'html',
+        };
+        const { container } = render(
+            <React.StrictMode>
+                <App />
+            </React.StrictMode>
+        );
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(1));
+        const [, args] = readyCalls()[0] as [string, any];
+        expect(args.error).toBeNull();
+
+        // One export attempt only — the guard must not produce a second.
+        expect(g_exportRoots.settled).toHaveLength(1);
+
+        const root = g_exportRoots.settled[0];
+        expect(root.isConnected).toBe(true);
+        expect(root).toBe(container.querySelector('.preview-pane__body'));
+        expect(g_exportRoots.built[0]).toBe(root);
+    });
+
+    it('the preview view is committed to the DOM *before* the ready signal, not after', async () => {
+        // Regression (found in review, 2026-09-20). The previous code called
+        // setViewMode and then awaited waitForDiagramsSettled, which for a
+        // document with no diagrams returns without ever yielding — so the
+        // signal could reach Rust while the DOM still said data-view-mode
+        // 'edit', and the host printer would paginate the *editor* pane, raw
+        // Markdown and all.
+        //
+        // Asserting the attribute after the fact is not enough: waitFor would
+        // happily pass on a value that only arrived later. The ordering is
+        // what matters, so the mode is sampled at the instant of the signal.
+        let modeAtSignal: string | null | undefined = 'NEVER SIGNALLED';
+        const base = makeInvokeMock();
+        vi.mocked(TauriCore.invoke).mockImplementation((cmd: string, args: any) => {
+            if (cmd === 'export_ready') {
+                modeAtSignal = document
+                    .querySelector('.main-content')
+                    ?.getAttribute('data-view-mode');
+            }
+            return base(cmd, args);
+        });
+
+        // Deliberately diagram-free content — this is the path that settles
+        // synchronously and therefore never yields to React.
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/plain.md', content: '# No diagrams here', exportFormat: 'pdf',
+        };
+        render(<App />);
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(1));
+        expect(modeAtSignal).toBe('preview');
+    });
+
+    it('a diagram-free pdf export still reports success', async () => {
+        // Guards the loud view-mode check added alongside the fix above: it
+        // must not turn the ordinary no-diagram export into a failure.
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/plain.md', content: '# No diagrams here', exportFormat: 'pdf',
+        };
+        render(<App />);
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(1));
+        const [, args] = readyCalls()[0] as [string, any];
+        expect(args.error).toBeNull();
+        expect(args.html).toBeNull();
+    });
+
+    it('exportFormat "html" leaves the view mode alone', async () => {
+        // Only the PDF path depends on which pane the print CSS keeps; the
+        // HTML path serialises the preview DOM directly.
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/a.md', content: '# Hi', exportFormat: 'html',
+        };
+        const { container } = render(<App />);
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(1));
+        const main = container.querySelector('.main-content');
+        expect(main?.getAttribute('data-view-mode')).toBe('edit');
+    });
+
+    it('reports the reason instead of a silent empty document (REQ-LTTCE-XPT-00003)', async () => {
+        // Drive the failure through the real path: the first hand-back fails,
+        // which is exactly what the inner catch exists for. The retry must
+        // carry the reason so Rust can log why this file did not export,
+        // rather than an empty string Rust would have to guess at.
+        const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const base = makeInvokeMock();
+        let firstReady = true;
+        vi.mocked(TauriCore.invoke).mockImplementation((cmd: string, args: any) => {
+            if (cmd === 'export_ready' && firstReady) {
+                firstReady = false;
+                return Promise.reject(new Error('ipc exploded'));
+            }
+            return base(cmd, args);
+        });
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/a.md', content: '# Hi', exportFormat: 'html',
+        };
+        render(<App />);
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(2));
+        const [, args] = readyCalls()[1] as [string, any];
+        expect(args.html).toBeNull();
+        expect(args.error).toContain('ipc exploded');
+        err.mockRestore();
     });
 });
 

@@ -3,10 +3,31 @@
 All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
+
+
+## v0.3.27
+
+### Changes
+  <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: Merge Squash on main branch to prep v0.3.26
+- CHORE: Prep v0.3.26
+---
+
+
+## v0.3.26
+
+### Changes
+- FEAT: Add --export-pdf headless CLI export
+- FIX: race conditions in last FEAT update
+---
+
+
 ## v0.3.25
 cd sr 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- TEST: Prove headless export drives the live DOM under StrictMode
+- FEAT: Add --export-pdf headless CLI export
 - fix: android build
 - FIX: Locate the freshest E2E binary instead of a fixed path priority
 - FEAT: HTML Export with CLI
