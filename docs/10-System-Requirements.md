@@ -719,6 +719,25 @@ produce the PDF.
 printer through its CUPS backend before it would honour the file output already requested, so a machine with no printer failed with "Printer not found" and produced nothing. Printer-less machines
 are not an edge case: every CI runner is one, and so is any desktop or server that only ever exports documents. A user who has never owned a printer must still be able to export a PDF.
 
+<!--REQ-LTTCE-XPT-00008-->
+**REQ-LTTCE-XPT-00008** — The time allowed for a document's preview to render during an export SHALL
+be sufficient for a **cold** start: the first export performed by a process SHALL be given a longer
+render budget than the exports that follow it in the same process. A correct render SHALL NOT be
+abandoned because the machine, the application or its WebView had not been used yet.
+
+*Rationale*: only the first export pays for paging the executable and the WebView's frameworks in,
+constructing the process's first WebView, and parsing the frontend bundle. Measured on a macOS arm64
+CI runner (2026-09-26): application launch alone took 4 s cold against 1 s warm, and a cold render of
+`docs/demo/demo.md` — five Mermaid diagrams and KaTeX — exceeded a 20 s budget, while the *warm*
+render of the same document by the same binary completed in 17 s, inside that budget by three
+seconds. The user who meets the cold case is the most ordinary one there is: install Lattice, export a
+document. A budget a correct render can miss because nothing was warm yet is not a safety net, it is a
+source of false failure. The budget's purpose is to bound a render that will never finish — the wait
+itself ends on the frontend's settled signal, not on the clock, so a generous bound costs a healthy
+export nothing. The reported error SHALL state the budget that elapsed, so "too slow" can be told
+apart from "too tight".
+
+
 
 ## Chapter FWT — File Watching and External Reload
 

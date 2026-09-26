@@ -9,6 +9,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: Give the first export a cold-start render budget; stop testing debug builds
 - FIX: Make the export check's directory scans deterministic
 - FIX: Act on the cycle-1 review of the CI export fixes
 - copy paste now works in terminal

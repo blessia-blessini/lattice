@@ -1358,6 +1358,24 @@ could only log as "produced no HTML"; the reason now survives the IPC hop.
 hanging every file after it, the window is always closed whether the file succeeded or not, and the
 process exits with a non-zero status if anything failed.
 
+**The bound is two values, not one (REQ-LTTCE-XPT-00008).** `render_timeout(is_first_export)` returns
+`FIRST_RENDER_TIMEOUT` (90 s) for the first file of a run and `RENDER_TIMEOUT` (45 s) for the rest.
+Only the first export pays cold-start cost — paging the executable and the WebView frameworks in,
+constructing the process's first WebView, parsing the frontend bundle — and on a macOS arm64 CI
+runner that was the difference between a 4 s and a 1 s launch, and between missing and meeting the
+old 20 s budget on a document whose *warm* render took 17 s. "First" comes from `enumerate()` in the
+loop rather than a flag, so the policy needs no mutable state, and `render_timeout` is pure and
+unit-tested without a WebView.
+
+Widening these is close to free, which is the point worth keeping in mind if they are ever revisited:
+the wait ends on the frontend's `export_ready` signal, never on the clock, so a healthy export
+finishes the moment it is ready no matter how large the bound. The bound exists only to decide when a
+render is declared wedged. Two consequences are recorded so they are not rediscovered: the timeout
+message names the elapsed budget (so "too slow" and "too tight" can be told apart in a CI log), and
+`RUN_TIMEOUT` in `examples/export_demo.rs` — the harness's own kill switch — must stay above
+`FIRST_RENDER_TIMEOUT + PDF_PRINT_TIMEOUT` plus startup, or the harness kills a run the app would have
+completed. It was 120 s and is now 300 s for exactly that reason.
+
 **A Tauri runtime gap, found while verifying this feature.** `AppHandle::exit(code)` (tauri 2.11.5,
 `tauri-runtime-wry`) sets `ControlFlow::Exit` on `RequestExit(code)` but never threads `code` through to
 `std::process::exit` — the OS-level exit status is always `0` regardless of what was requested, unless

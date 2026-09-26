@@ -56,11 +56,14 @@ const MIN_PDF_BYTES: usize = 20_000;
 
 /// How long one export run may take before it is killed and failed.
 ///
-/// Comfortably above the app's own budget — `EXPORT_TIMEOUT` (20 s) plus
-/// `PDF_PRINT_TIMEOUT` (30 s) in `src/export.rs`, plus WebView startup — so a
-/// slow CI runner is never failed for being slow; this only catches a process
+/// Must stay comfortably above the app's own budget, or this harness kills a
+/// run the app would have completed and reports it as a hang. That budget is
+/// `FIRST_RENDER_TIMEOUT` (90 s) plus `PDF_PRINT_TIMEOUT` (30 s) in
+/// `src/export.rs`, plus process and WebView startup: 120 s were *below* the
+/// worst legitimate case once the render budget grew, so this is 300 s. A slow
+/// CI runner must never be failed for being slow; this only catches a process
 /// that is not going to exit at all.
-const RUN_TIMEOUT: Duration = Duration::from_secs(120);
+const RUN_TIMEOUT: Duration = Duration::from_secs(300);
 
 /// Number of Mermaid blocks in `docs/demo/demo.md`. Asserting the exact count
 /// reached the output turns a silently half-rendered export into a failure.
@@ -89,6 +92,45 @@ fn binary_name() -> &'static str {
 }
 // binary_name END **********************************************
 
+/// Architectures a Rust target triple can start with — see [`is_target_triple`].
+const TARGET_ARCHS: [&str; 12] = [
+    "aarch64",
+    "arm",
+    "armv7",
+    "i586",
+    "i686",
+    "loongarch64",
+    "powerpc64",
+    "riscv64gc",
+    "s390x",
+    "thumbv7neon",
+    "universal",
+    "x86_64",
+];
+
+//**************************************************************
+// is_target_triple
+//**************************************************************
+/// Whether a directory name under `target/` is a Rust target triple.
+///
+/// **Not** merely "a directory with a `release/` or `debug/` inside": cargo and
+/// its subcommands keep their own build trees next to the triples, and
+/// `cargo-llvm-cov` uses `target/llvm-cov-target/`, which has exactly that
+/// shape. Treating it as a build root made the android CI leg pick up the
+/// coverage-**instrumented debug** binary and time out twice (2026-09-26) on a
+/// leg whose `export_mode` is `skip` — a build that cannot meet the app's
+/// render budget under any circumstances, so the failure was manufactured.
+///
+/// Matching the first component against known architectures rejects that while
+/// still needing no change for a new triple.
+fn is_target_triple(name: &str) -> bool {
+    name.split('-')
+        .next()
+        .is_some_and(|arch| TARGET_ARCHS.contains(&arch))
+}
+// is_target_triple END *****************************************
+
+
 //**************************************************************
 // build_dirs
 //**************************************************************
@@ -97,14 +139,18 @@ fn binary_name() -> &'static str {
 /// `src-tauri/target` for a native build, plus `src-tauri/target/<triple>` for
 /// a cross build: `--target aarch64-apple-darwin` moves the whole `release/`
 /// subtree one level down, which is why the macOS legs find nothing where a
-/// native build leaves it. Sub-directories are discovered rather than listed,
-/// so a new target triple needs no change here — and they are taken in sorted
-/// order, so a tree holding two cross-builds always picks the same one.
+/// native build leaves it. Triples are discovered rather than listed, so a new
+/// one needs no change here — and they are taken in sorted order, so a tree
+/// holding two cross-builds always picks the same one.
 fn build_dirs(root: &Path) -> Vec<PathBuf> {
     let target = root.join("src-tauri").join("target");
     let mut dirs = vec![target.clone()];
     for dir in sorted_paths(&target) {
-        if dir.join("release").is_dir() || dir.join("debug").is_dir() {
+        let is_triple = dir
+            .file_name()
+            .and_then(|n| n.to_str())
+            .is_some_and(is_target_triple);
+        if is_triple && (dir.join("release").is_dir() || dir.join("debug").is_dir()) {
             dirs.push(dir);
         }
     }
@@ -234,6 +280,40 @@ fn app_binary_in(dir: &Path) -> Option<PathBuf> {
 
 
 //**************************************************************
+// stage_demo
+//**************************************************************
+/// Copies `demo.md` and its assets into `dir`, returning the staged source.
+///
+/// Export writes its output beside the input, so the demo is staged in a
+/// scratch directory rather than exported in place: the working tree stays
+/// clean, and a stale artefact from an earlier run cannot be mistaken for this
+/// run's output — `dir` is recreated empty every time.
+fn stage_demo(demo: &Path, dir: &Path) -> Result<PathBuf, String> {
+    let _ = fs::remove_dir_all(dir);
+    fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
+
+    let source = dir.join("demo.md");
+    fs::copy(demo, &source)
+        .map_err(|e| format!("cannot copy demo.md into {}: {e}", dir.display()))?;
+
+    // demo.md references images from demo_assets/; copy them so the preview
+    // renders the same document the release page shows.
+    let assets_src = demo.with_file_name("demo_assets");
+    if assets_src.is_dir() {
+        let assets_dest = dir.join("demo_assets");
+        let _ = fs::create_dir_all(&assets_dest);
+        for asset in sorted_paths(&assets_src).into_iter().filter(|p| p.is_file()) {
+            if let Some(name) = asset.file_name() {
+                let _ = fs::copy(&asset, assets_dest.join(name));
+            }
+        }
+    }
+    Ok(source)
+}
+// stage_demo END ***********************************************
+
+
+//**************************************************************
 // sorted_paths
 //**************************************************************
 /// Entries of `dir` in a deterministic order; empty when it cannot be read.
@@ -266,12 +346,19 @@ fn sorted_paths(dir: &Path) -> Vec<PathBuf> {
 ///    the check closer to reality — it exercises the shipped container.
 /// 2. **macOS — an un-deleted `.app`.** Present when `app` is among
 ///    `bundle.targets`, or for a `--no-bundle`-style build.
-/// 3. **The bare release binary**, then the debug one, for a local tree where
-///    only those exist. On macOS this is a last resort that is expected to
+/// 3. **The bare release binary.** On macOS this is a last resort expected to
 ///    fail: macOS 14+ refuses to start WKWebView's
 ///    `com.apple.WebKit.WebContent` XPC service for a host without a `.app`
 ///    carrying a `CFBundleIdentifier`, so it renders nothing and the export
 ///    times out — a loud failure, which is better than "no binary found".
+///
+/// **`target/debug/` is deliberately NOT searched.** A debug build boots the
+/// frontend but is far too slow for the app's own 20 s `EXPORT_TIMEOUT`, and a
+/// coverage-instrumented one is slower still, so testing either manufactures a
+/// failure that says nothing about the export path. A clear skip ("build a
+/// release first") is worth more than a red leg with a misleading cause. A leg
+/// that genuinely requires an export sets `LATTICE_EXPORT_REQUIRED=1` and still
+/// fails loudly when no release build exists, so nothing is silently skipped.
 fn locate_binary(root: &Path) -> Option<(PathBuf, Option<MountedDmg>)> {
     // An empty value is "not set": a GitHub Actions expression that selects a
     // path only for some matrix legs yields "" on the others, and treating
@@ -319,8 +406,7 @@ fn locate_binary(root: &Path) -> Option<(PathBuf, Option<MountedDmg>)> {
     }
 
     dirs.iter()
-        .flat_map(|d| [d.join("release"), d.join("debug")])
-        .map(|d| d.join(binary_name()))
+        .map(|d| d.join("release").join(binary_name()))
         .find(|p| p.exists())
         .map(|p| (p, None))
 }
@@ -664,7 +750,7 @@ fn run() -> i32 {
         Some(found) => found,
         None => {
             let msg = format!(
-                "no lattice binary found under src-tauri/target/[<triple>/]{{release,debug}}/{}{}",
+                "no RELEASE lattice binary found under src-tauri/target/[<triple>/]release/{}{}",
                 binary_name(),
                 if cfg!(target_os = "macos") { " and no .dmg to mount" } else { "" }
             );
@@ -673,7 +759,9 @@ fn run() -> i32 {
                 return 1;
             }
             println!("[SKIP] {msg}");
-            println!("       Build one first, or set LATTICE_EXPORT_BIN.");
+            println!("       A debug build is not usable here — it cannot render inside the");
+            println!("       app's own export timeout. Run `npm run tauri build`, or set");
+            println!("       LATTICE_EXPORT_BIN to a release binary.");
             return 0;
         }
     };
@@ -682,32 +770,19 @@ fn run() -> i32 {
     println!("[INFO] Binary    : {}", bin.display());
     println!("[INFO] Label     : {}", args.label);
 
-    // Export writes its output beside the input, so the demo is copied into a
-    // scratch directory first: the working tree stays clean and a stale
-    // artefact from an earlier run cannot be mistaken for this run's output.
     let scratch = root.join("src-tauri").join("target").join("export-demo");
-    let _ = fs::remove_dir_all(&scratch);
-    if let Err(e) = fs::create_dir_all(&scratch) {
-        eprintln!("[ERROR] cannot create {}: {e}", scratch.display());
-        return 1;
-    }
-    let source = scratch.join("demo.md");
-    if let Err(e) = fs::copy(&demo, &source) {
-        eprintln!("[ERROR] cannot copy demo.md into {}: {e}", scratch.display());
-        return 1;
-    }
-    // demo.md references images from demo_assets/; copy them so the preview
-    // renders the same document the release page shows.
-    let assets_src = demo.with_file_name("demo_assets");
-    if assets_src.is_dir() {
-        let assets_dest = scratch.join("demo_assets");
-        let _ = fs::create_dir_all(&assets_dest);
-        if let Ok(entries) = fs::read_dir(&assets_src) {
-            for entry in entries.flatten().filter(|e| e.path().is_file()) {
-                let _ = fs::copy(entry.path(), assets_dest.join(entry.file_name()));
-            }
+    let source = match stage_demo(&demo, &scratch) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("[ERROR] {e}");
+            return 1;
         }
-    }
+    };
+
+    // No warm-up run here, deliberately. A warm-up would hide the cold start
+    // from the graded scenarios — and the cold start is precisely what a user
+    // does: install, then export. REQ-LTTCE-XPT-00008 makes the app tolerate it,
+    // so the first scenario below is left to prove that on the real artefact.
 
     let mut all_pass = true;
     let mut produced: Vec<(PathBuf, &str)> = Vec::new();
