@@ -9,6 +9,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: Bump lattice version to 0.3.27
 - CHORE: Merge Squash on main branch to prep v0.3.26
 - CHORE: Prep v0.3.26
 ---
