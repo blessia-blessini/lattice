@@ -36,13 +36,27 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 | :-------------------- | :---------------------------------------------------------------------------- |
 | IMPL-LTTCE-XPT-00002  | `src/App.test.tsx` — *App — headless export launch* (9 cases, incl. the signal-ordering regression) |
 | IMPL-LTTCE-XPT-00003  | `src-tauri/src/export.rs` `mod tests` (18 cases, incl. `is_expected_sender`); `platform/cli_args.rs` `mod tests` |
-| IMPL-LTTCE-XPT-00004  | not unit-testable — needs a real process exit (see ARCH-LTTCE-XPT-00001)       |
-| IMPL-LTTCE-XPT-00005  | `platform/mod.rs` `mod tests` (`PdfDone`); host backends: CI compile only      |
+| IMPL-LTTCE-XPT-00004  | ITST-LTTCE-XPT-00010 — `src-tauri/examples/export_demo.rs` (`export-html`, `export-pdf`, `missing-input`); not unit-testable, needs a real process exit (see ARCH-LTTCE-XPT-00001) |
+| IMPL-LTTCE-XPT-00005  | `platform/mod.rs` `mod tests` (`PdfDone`); host backends: ITST-LTTCE-XPT-00010 per desktop platform |
 | IMPL-LTTCE-XPT-00006  | `src/lib/print-style.test.ts` (13 cases)                                       |
 
-**Runtime verification status of IMPL-LTTCE-XPT-00005** — the host print backends cannot be reached by
-either test harness (they are FFI callbacks into WebView2 / WebKitGTK / WKWebView):
+## Integration test
 
-- Windows — compiles locally, exercised by hand.
-- Linux, macOS — compile-verified by the CI build matrix only; **unverified at runtime**.
+- ITST-LTTCE-XPT-00010 **covers** IMPL-LTTCE-XPT-00003, IMPL-LTTCE-XPT-00004, IMPL-LTTCE-XPT-00005
+
+`src-tauri/examples/export_demo.rs` — the headless round trip on `docs/demo/demo.md`: both formats
+produce a correct file beside the input and exit `0`, an unreadable input exits `1` and writes
+nothing. Run as step 1d of `build-test.ps1` / `build-test.sh` and on **every desktop leg** of the CI
+matrix (see `docs/60-test-strategy.md`).
+
+**Runtime verification status of IMPL-LTTCE-XPT-00005** — the host print backends are FFI callbacks
+into WebView2 / WebKitGTK / WKWebView, so neither unit tests nor the E2E harness can reach them.
+ITST-LTTCE-XPT-00010 reaches them by running the real binary:
+
+- Windows — verified by hand, and now by ITST-LTTCE-XPT-00010 on the `windows-desktop` and
+  `windows-arm-desktop` legs.
+- Linux, macOS — ITST-LTTCE-XPT-00010 executes them for the first time on the `linux-desktop`,
+  `macos-arm64` and `macos-intel` legs. Until a tagged build has actually gone green on those legs,
+  treat them as **unproven rather than verified** — the check exists to produce that evidence, and
+  a failure there is a real finding, not a flaky test.
 - Android, iOS — the `Platform::print_to_pdf` default refusal applies; no device test exists.

@@ -259,6 +259,34 @@ try {
     }
     Write-Output "****************************************************"
 
+    #**************************************************************
+    # Invoke-ExportCheck
+    #**************************************************************
+    # 1d. CLI Export Check (docs/demo/demo.md -> .html + .pdf)
+    #
+    # ITST-LTTCE-XPT-00010. Unlike the E2E harness above, this runs on every
+    # desktop OS: an export opens an invisible window, writes a file and exits
+    # by itself, so there is no GUI to drive headlessly.
+    #
+    # The assertions live in src-tauri\examples\export_demo.rs — one Rust
+    # implementation shared with build-test.sh and CI step 375, rather than
+    # the same checks written twice in two shell dialects (DRY-and-Variants.md).
+    #
+    # LATTICE_EXPORT_OUT, when set by CI, also copies the passing output out
+    # for publishing on the release page.
+    Write-Output "****************************************************"
+    Write-Output "Running CLI Export Check..."
+    $exportArgs = @()
+    if ($env:LATTICE_EXPORT_OUT)   { $exportArgs += '--out';   $exportArgs += $env:LATTICE_EXPORT_OUT }
+    if ($env:LATTICE_EXPORT_LABEL) { $exportArgs += '--label'; $exportArgs += $env:LATTICE_EXPORT_LABEL }
+    cargo run --example export_demo -- @exportArgs
+    if ($LASTEXITCODE -ne 0) {
+        Write-Output "CLI Export Check failed!"
+        exit $LASTEXITCODE
+    }
+    Write-Output "****************************************************"
+    # Invoke-ExportCheck END ***************************************
+
     Write-Output "****************************************************"
     Write-Output "Gather and print all data in an output table ..."
     Write-Output "Print on console this is done later once again after"

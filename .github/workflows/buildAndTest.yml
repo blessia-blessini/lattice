@@ -82,6 +82,7 @@ jobs:
           {
             "os": "windows-latest",
             "platform": "windows-desktop",
+            "export_mode": "required",
             "bldprefix": "",
             "mobile_build": "",
             "args": "",
@@ -92,6 +93,7 @@ jobs:
           {
             "os": "windows-11-arm",
             "platform": "windows-arm-desktop",
+            "export_mode": "required",
             "bldprefix": "",
             "mobile_build": "",
             "args": "",
@@ -102,6 +104,7 @@ jobs:
           {
             "os": "macos-latest",
             "platform": "macos-arm64",
+            "export_mode": "required",
             "bldprefix": "",
             "mobile_build": "",
             "args": "--target aarch64-apple-darwin",
@@ -112,6 +115,7 @@ jobs:
           {
             "os": "macos-latest",
             "platform": "macos-intel",
+            "export_mode": "optional",
             "bldprefix": "",
             "mobile_build": "",
             "args": "--target x86_64-apple-darwin",
@@ -122,6 +126,7 @@ jobs:
           {
             "os": "ubuntu-latest",
             "platform": "linux-desktop",
+            "export_mode": "required",
             "bldprefix": "",
             "mobile_build": "",
             "args": "",
@@ -132,6 +137,7 @@ jobs:
           {
             "os": "ubuntu-latest",
             "platform": "android",
+            "export_mode": "skip",
             "bldprefix": "android",
             "mobile_build": "-Ax",
             "args": "",
@@ -142,6 +148,7 @@ jobs:
           {
             "os": "macos-latest",
             "platform": "ios",
+            "export_mode": "skip",
             "bldprefix": "ios",
             "mobile_build": "-Ax",
             "args": "ios",
@@ -420,11 +427,68 @@ jobs:
         LATTICEBUILD_NO: TSTFrontEnd-${{matrix.config.platform}}-${{ steps.build-no-gen.outputs.BUILD_NO }}
         RUSTFLAGS: "--cfg integration_test"
         RUST_BACKTRACE: 1
+        # --- CLI export check (build-test step 1d) ------------------------
+        # Runs on every DESKTOP leg and publishes that leg's own demo.html /
+        # demo.pdf, so the release page can show what each platform's own
+        # WebView produces rather than one platform's output standing in for
+        # all of them.
+        #
+        # Per-leg strictness comes from the matrix field `export_mode`:
+        #
+        #   required — the leg MUST produce both documents; a failure is a
+        #              real finding about that platform's export path.
+        #   optional — best effort: publish if it works, never fail the build.
+        #   skip     — no desktop binary exists on this leg at all.
+        #
+        # `macos-intel` is deliberately `optional`: it cross-builds
+        # x86_64-apple-darwin on an arm64 `macos-latest` runner, so *executing*
+        # the result needs Rosetta 2, which the arm64 runner image does not
+        # guarantee. A binary that cannot start on the host is not a defect in
+        # print_to_pdf, and must not be reported as one. Every other desktop
+        # leg runs a binary built for its own architecture.
+        LATTICE_EXPORT_OUT: ${{ github.workspace }}/demo-export
+        LATTICE_EXPORT_LABEL: ${{ matrix.config.platform }}
+        LATTICE_EXPORT_REQUIRED: ${{ matrix.config.export_mode == 'required' && '1' || '0' }}
+        # The macOS legs cross-build into a target-triple directory, and a
+        # bare binary cannot start WKWebView's WebContent XPC service — only
+        # the .app bundle can. Point the check straight at it. Every other
+        # leg leaves this empty and the default search finds target/release/.
+        LATTICE_EXPORT_BIN: >-
+          ${{ matrix.config.platform == 'macos-arm64'
+              && format('{0}/src-tauri/target/aarch64-apple-darwin/release/bundle/macos/lattice.app/Contents/MacOS/lattice', github.workspace)
+           || matrix.config.platform == 'macos-intel'
+              && format('{0}/src-tauri/target/x86_64-apple-darwin/release/bundle/macos/lattice.app/Contents/MacOS/lattice', github.workspace)
+           || '' }}
       # Frontend tests use jsdom, so they can theoretically run anywhere node is.
       # But usually we run them on standard desktop runners.
       # Note: 'npm install/ci' was done in step 150/151.
       run: |
         ./scripts/build-test.sh
+
+    ################################################################
+    # 375 / Upload this leg's Lattice-generated demo documents
+    #       Produced by the CLI export check inside step 370.2
+    #       (build-test step 1d -> examples/export_demo.rs --out).
+    #
+    #       One artifact per DESKTOP leg, each holding demo-<platform>.html
+    #       and demo-<platform>.pdf. Step 905 downloads them all by the
+    #       shared "DEMO-EXPORT-" prefix and publishes every one, so the
+    #       release page shows each platform's own rendering side by side.
+    #
+    #       if-no-files-found follows the leg's `export_mode`: `error` on a
+    #       required leg, so an empty directory fails where the cause is
+    #       visible instead of silently dropping a platform from the release
+    #       page; `warn` on an optional leg, which is allowed to produce
+    #       nothing (see the Rosetta note on macos-intel in step 370.2).
+    ################################################################
+    - name: 375. Upload Lattice-generated demo documents
+      if: matrix.config.export_mode != 'skip'
+      uses: actions/upload-artifact@v7
+      id: a-demo-export
+      with:
+        name: DEMO-EXPORT-${{ matrix.config.platform }}
+        path: demo-export/
+        if-no-files-found: ${{ matrix.config.export_mode == 'required' && 'error' || 'warn' }}
 
     ################################################################
     # 380 / Generate Documentation (Linux Only)
@@ -670,6 +734,20 @@ jobs:
       with:
         name: COVERAGE
         path: coverage-html
+
+    ################################################################
+    # 901.6 / Download the Lattice-generated demo documents
+    #         One DEMO-EXPORT-<platform> artifact per desktop leg (step
+    #         375). merge-multiple flattens them into one directory: the
+    #         file names already carry the platform, so nothing collides
+    #         and step 905 can simply glob what arrived.
+    ################################################################
+    - name: 901.6. Download Lattice-generated demo documents
+      uses: actions/download-artifact@v8
+      with:
+        pattern: DEMO-EXPORT-*
+        path: demo-export
+        merge-multiple: true
 
     ################################################################
     # 902 / Checkout lattice-docs-releases
@@ -1075,24 +1153,77 @@ jobs:
             "" >> "$OUT"
 
           printf '%s\n\n' "### A document named \`demo.md\`" "" >> "$OUT"
-          printf '%s\n' "Here is a PDF that Lattice generated as a print-out." "" >> "$OUT"
-          printf '%s\n' "Please scroll down to see how Lattice looks on Windows." "" >> "$OUT"
+          printf '%s\n' "- Only for reference, as [rendered by GitHub](${BLOB_BASE}/docs/demo/demo.md)" >> "$OUT"
+          printf '%s\n' "- The plaintext that you would actually edit: [Raw .md](${RAW_BASE}/docs/demo/demo.md)" >> "$OUT"
+          printf '%s\n' "" >> "$OUT"
 
-          # PDF — embed an inline viewer if demo.md.pdf was shipped alongside demo.md.
-          # pdf-viewer.html (PDF.js, Apache 2.0) lives in Lattice-Releases/ and accepts
-          # a ?file=<encoded-url> parameter pointing to the raw PDF on GitHub.
-          if [ -f "$DEMO_SRC/demo.md.pdf" ]; then
-            PDF_RAW="${RAW_BASE}/docs/demo/demo.md.pdf"
-            # URL-encode the full PDF URL so it is safe as a query parameter value.
-            PDF_ENC=$(jq -rn --arg str "$PDF_RAW" '$str | @uri') # URL encoding
-            # Emit an iframe — marked.js passes raw HTML through, so this renders inline.
-            printf '<iframe src="pdf-viewer.html?file=%s" width="100%%" style="border:none;border-radius:4px;margin:12px 0;display:block;min-height:70vh"></iframe>\n\n' \
-              "$PDF_ENC" >> "$OUT"
-            printf -- '- Download [Lattice-generated PDF](%s)\n' "$PDF_RAW" >> "$OUT"
+          # ── What Lattice itself produced from that file ────────────────
+          # Every desktop build in this run exported docs/demo/demo.md with
+          # its OWN `--export-html` / `--export-pdf`, on its own OS, through
+          # its own WebView (step 375). They are published side by side
+          # rather than merged: the whole point is that a reader can see
+          # what THEIR platform's build actually renders, and that a
+          # regression on one platform is visible instead of hidden behind
+          # another platform's output.
+          #
+          # The files are whatever step 901.6 downloaded — the loop is over
+          # what actually arrived, so a platform dropped from the build
+          # matrix disappears from the page by itself, with no list here to
+          # keep in sync.
+          GEN_SRC="demo-export"
+          if compgen -G "$GEN_SRC/demo-*.pdf" > /dev/null || compgen -G "$GEN_SRC/demo-*.html" > /dev/null; then
+            GEN_DEST="$DEMO_DEST/generated"
+            mkdir -p "$GEN_DEST"
+            cp -f "$GEN_SRC"/demo-* "$GEN_DEST/"
+            GEN_RAW="${RAW_BASE}/docs/demo/generated"
+
+            printf '%s\n' "### Generated by Lattice itself" "" >> "$OUT"
+            printf '%s\n' \
+              "Each desktop build in this release exported \`demo.md\` on its own operating" \
+              "system, through that platform's own WebView. Nothing below was produced by" \
+              "hand or by a converter — it is the output of the same \`--export-html\` and" \
+              "\`--export-pdf\` commands you can run yourself:" \
+              "" >> "$OUT"
+            printf '%s\n' '```sh' "lattice --export-html demo.md" "lattice --export-pdf demo.md" '```' "" >> "$OUT"
+
+            # Iterate the PDFs; the matching HTML is linked alongside each.
+            # Sorted so the page order is stable release to release.
+            for pdf in $(ls "$GEN_SRC"/demo-*.pdf 2>/dev/null | sort); do
+              base=$(basename "$pdf" .pdf)          # demo-<platform>
+              plat="${base#demo-}"                  # <platform>
+
+              # Human-readable heading. Mirrors the download-table labels
+              # above; an unknown platform still gets a usable heading
+              # rather than being skipped.
+              case "$plat" in
+                windows-desktop)     nice='<span class="material-icons">window</span> Windows — Intel / AMD (x86-64)' ;;
+                windows-arm-desktop) nice='<span class="material-icons">window</span> Windows — ARM64' ;;
+                macos-arm64)         nice='<span class="material-icons">laptop_mac</span> macOS — Apple Silicon (ARM64)' ;;
+                macos-intel)         nice='<span class="material-icons">laptop_mac</span> macOS — Intel (x86-64)' ;;
+                linux-desktop)       nice='<span class="material-icons">terminal</span> Linux — x86-64' ;;
+                *)                   nice="$plat" ;;
+              esac
+
+              printf '%s\n\n' "#### $nice" >> "$OUT"
+
+              PDF_RAW="${GEN_RAW}/${base}.pdf"
+              # URL-encode the full PDF URL so it is safe as a query parameter value.
+              PDF_ENC=$(jq -rn --arg str "$PDF_RAW" '$str | @uri')
+              # pdf-viewer.html (PDF.js, Apache 2.0) lives in Lattice-Releases/
+              # and accepts ?file=<encoded-url>. Emit an iframe — marked.js
+              # passes raw HTML through, so this renders inline.
+              printf '<iframe src="pdf-viewer.html?file=%s" width="100%%" style="border:none;border-radius:4px;margin:12px 0;display:block;min-height:70vh"></iframe>\n\n' \
+                "$PDF_ENC" >> "$OUT"
+
+              printf -- '- Download [Lattice-generated PDF](%s)\n' "$PDF_RAW" >> "$OUT"
+              if [ -f "$GEN_SRC/${base}.html" ]; then
+                printf -- '- Open the [Lattice-generated HTML](%s/%s.html)\n' "$GEN_RAW" "$base" >> "$OUT"
+              fi
+              printf '%s\n' "" >> "$OUT"
+            done
+          else
+            echo "::warning::No Lattice-generated demo documents were downloaded — the release page will not show them."
           fi
-
-          printf -- '- Only for reference, as [rendered by GitHub](%s/docs/demo/demo.md)\n' "$BLOB_BASE" >> "$OUT"
-          printf -- '- The plaintext that you would actually edit: [Raw .md](%s/docs/demo/demo.md)\n' "$RAW_BASE"  >> "$OUT"
 
           printf '\n' >> "$OUT"
           # Embed screenshots from demo_assets/ inline — left-aligned, full pixel quality.

@@ -140,15 +140,40 @@ once, and launches it directly per scenario (< 5 s startup, no npm at runtime).
 | `cli_multi_path` | startup with two file arguments | process alive 5 s |
 | `conflict_detection` | conflict detection and resolution | `conflict_success.txt` |
 
-**Known gap — headless export (`--export-html` / `--export-pdf`).** No scenario covers the export
-modes yet. Their pure logic is unit-tested on both sides (`export.rs`, `cli_args.rs`,
-`platform/mod.rs`, `print-style.test.ts`, `App.test.tsx` — see `src-tauri/src/export.trace-cov.md`),
-but the round trip that produces a file — invisible window, IPC hand-back, host print, process exit
-code — needs a real WebView and a real process exit, so it is verified by hand today. The PDF backends
-widen this gap: Windows is exercised by hand, Linux and macOS are compile-verified by the CI matrix
-only. The natural closure is one E2E scenario per format that asserts an output file appears beside
-the input (`%PDF-` magic for the PDF) and that the process exits `0` — it would cover every platform
-in the matrix at once.
+### CLI export check — `examples/export_demo.rs` (ITST-LTTCE-XPT-00010)
+
+Covers the headless export modes (`--export-html` / `--export-pdf`) end to end: the round trip
+that produces a file — invisible window, IPC hand-back, host print, process exit code. Their pure
+logic is unit-tested on both sides (`export.rs`, `cli_args.rs`, `platform/mod.rs`,
+`print-style.test.ts`, `App.test.tsx` — see `src-tauri/src/export.trace-cov.md`); only running the
+binary proves those parts are actually wired together.
+
+This is a **separate example, not an E2E harness scenario**, and the distinction is the point.
+The harness drives a visible, long-lived GUI through signal files, which is why `build-test.sh`
+gates it to Windows. An export is the opposite shape — it opens an invisible window, writes a file
+and exits by itself — so there is nothing to drive headlessly and it runs on **every desktop leg
+of the CI matrix**. That is what finally executes the Linux and macOS `print_to_pdf` backends,
+which were previously compile-verified only.
+
+| Scenario | Asserts |
+|:---------|:--------|
+| `export-html` | exit `0`; `demo.html` beside the input; contains the H1 text, `data-source-line` (the rendered preview, not raw source), `<table`, `katex`, and one rasterised PNG per Mermaid block |
+| `export-pdf`  | exit `0`; `demo.pdf` beside the input; starts with the `%PDF-` magic number and is not a stub |
+| `missing-input` | an unreadable path exits `1` and writes no output file (the `ensure_readable` defect) |
+
+Run by `build-test.ps1` / `build-test.sh` as step **1d**, and by CI inside step 370.2. With
+`--out <dir> --label <platform>` it also copies the passing pair out; CI step 375 uploads that as
+`DEMO-EXPORT-<platform>` and step 905 publishes every platform's pair on the release page, so each
+desktop build's own rendering of `demo.md` is visible side by side.
+
+Two traps this check is built around, both found by running it:
+
+- **A binary that does not recognise the flag never exits.** An unknown argument is taken for a
+  file path, which opens an ordinary editor window and waits for a human. The check kills and fails
+  the run after a timeout rather than hanging the suite.
+- **Only `npm run tauri build` produces a testable release binary.** A plain
+  `cargo build --release` omits Tauri's `custom-protocol` feature, so the embedded assets are never
+  served, no frontend JS runs, and every export times out with no other symptom.
 
 #### `is_e2e_tst_build()` — compile-time constant
 `src/e2e.rs` provides a `const fn` that returns `false` in every production

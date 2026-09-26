@@ -93,6 +93,7 @@ RUST_OUT_UNIT=$(mktemp)
 RUST_OUT_WIRING=$(mktemp)
 RUST_OUT_FILEOPEN=$(mktemp)
 RUST_OUT_E2E=$(mktemp)
+RUST_OUT_EXPORT=$(mktemp)
 RUST_OUT_COV=$(mktemp)
 
 # 1a. Run Backend Unit Tests (Rust)
@@ -136,6 +137,55 @@ if [ $FILE_OPEN_RESULT -ne 0 ]; then
     echo "Integration tests (file_open_tests) failed!"
     exit $FILE_OPEN_RESULT
 fi
+
+#**************************************************************
+# gui_run
+#**************************************************************
+# Runs "$@" in an environment where a WebView can actually start.
+#
+# Extracted so the E2E harness (1c) and the CLI export check (1d) share ONE
+# copy of these settings instead of drifting apart (DRY-and-Variants.md).
+# A pass-through everywhere except headless Linux.
+#
+# WebKitGTK headless CI fixes (Ubuntu 24.04 / Noble):
+#
+#   WEBKIT_FORCE_SANDBOX=0          — disables WebKitGTK's bubblewrap sandbox.
+#   WEBKIT_DISABLE_COMPOSITING_MODE=1 — disables GPU compositing; falls back to
+#                                       software rendering (no GPU on CI).
+#   WEBKIT_DISABLE_DMABUF_RENDERER=1  — WebKit 2.42+ introduced a DMA-BUF renderer
+#                                       that requires a GPU; disable it on CI.
+#   GDK_BACKEND=x11                 — Ubuntu 24.04 defaults GTK to Wayland when
+#                                       possible; no Wayland compositor runs on CI so
+#                                       GTK may error or hang.  Force X11 to use the
+#                                       Xvfb display xvfb-run provides.
+#   NO_AT_BRIDGE=1                  — suppresses AT-SPI accessibility bus errors.
+#   RUST_LOG=error                  — surface Rust-level errors (otherwise the app
+#                                       runs completely silently).
+#   --server-args="-screen 0 1280x1024x24" — 24-bit colour depth; some WebKit
+#                                       versions reject the default 8-bit xvfb screen.
+#
+# Ubuntu 24.04 AppArmor fix:
+#   Noble sets kernel.apparmor_restrict_unprivileged_userns=1 by default, blocking
+#   unprivileged user namespaces system-wide.  bwrap (bubblewrap) needs user
+#   namespaces even when WEBKIT_FORCE_SANDBOX=0 is set, because bwrap runs before
+#   WebKitGTK can bypass it.  Relaxing this sysctl restores the namespace permission.
+#   (sudo is available passwordless on all GitHub Actions Linux runners.)
+gui_run() {
+    if [ "$(uname)" == "Linux" ] && command -v xvfb-run >/dev/null 2>&1; then
+        sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 2>/dev/null || true
+        GDK_BACKEND=x11 \
+        WEBKIT_FORCE_SANDBOX=0 \
+        WEBKIT_DISABLE_COMPOSITING_MODE=1 \
+        WEBKIT_DISABLE_DMABUF_RENDERER=1 \
+        NO_AT_BRIDGE=1 \
+        RUST_LOG=error \
+        xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24" "$@"
+    else
+        "$@"
+    fi
+}
+# gui_run END **************************************************
+
 
 # 1c. E2E Desktop Harness
 # Step 1: build the instrumented Lattice binary (frontend must already be built).
@@ -243,39 +293,10 @@ fi
 export LLVM_PROFILE_FILE="$COVERAGE_DIR/e2e_%p.profraw"
 
 echo "  [1c-run] Running E2E harness scenarios..."
-if [ "$(uname)" == "Linux" ] && command -v xvfb-run >/dev/null 2>&1; then
-    # WebKitGTK headless CI fixes (Ubuntu 24.04 / Noble):
-    #
-    #   WEBKIT_FORCE_SANDBOX=0          — disables WebKitGTK's bubblewrap sandbox.
-    #   WEBKIT_DISABLE_COMPOSITING_MODE=1 — disables GPU compositing; falls back to
-    #                                       software rendering (no GPU on CI).
-    #   WEBKIT_DISABLE_DMABUF_RENDERER=1  — WebKit 2.42+ introduced a DMA-BUF renderer
-    #                                       that requires a GPU; disable it on CI.
-    #   GDK_BACKEND=x11                 — Ubuntu 24.04 defaults GTK to Wayland when
-    #                                       possible; no Wayland compositor runs on CI so
-    #                                       GTK may error or hang.  Force X11 to use the
-    #                                       Xvfb display xvfb-run provides.
-    #   NO_AT_BRIDGE=1                  — suppresses AT-SPI accessibility bus errors.
-    #   RUST_LOG=error                  — surface Rust-level errors in the harness log
-    #                                       (otherwise the app runs completely silently).
-    #   --server-args="-screen 0 1280x1024x24" — 24-bit colour depth; some WebKit
-    #                                       versions reject the default 8-bit xvfb screen.
-    #
-    # Ubuntu 24.04 AppArmor fix:
-    #   Noble sets kernel.apparmor_restrict_unprivileged_userns=1 by default, blocking
-    #   unprivileged user namespaces system-wide.  bwrap (bubblewrap) needs user
-    #   namespaces even when WEBKIT_FORCE_SANDBOX=0 is set, because bwrap runs before
-    #   WebKitGTK can bypass it.  Relaxing this sysctl restores the namespace permission.
-    #   (sudo is available passwordless on all GitHub Actions Linux runners.)
-    sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 2>/dev/null || true
-    GDK_BACKEND=x11 \
-    WEBKIT_FORCE_SANDBOX=0 \
-    WEBKIT_DISABLE_COMPOSITING_MODE=1 \
-    WEBKIT_DISABLE_DMABUF_RENDERER=1 \
-    NO_AT_BRIDGE=1 \
-    RUST_LOG=error \
-    xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24" \
-        cargo run --example e2e_harness 2>&1 | tee "$RUST_OUT_E2E"
+if [ "$(uname)" == "Linux" ]; then
+    # The whole WebKitGTK/xvfb environment now lives in gui_run() above, so
+    # the export check (1d) starts its WebView exactly the same way.
+    gui_run cargo run --example e2e_harness 2>&1 | tee "$RUST_OUT_E2E"
 elif [ "$(uname)" == "Darwin" ]; then
     # macOS CI fix: wrap the binary in a minimal .app bundle so WKWebView works.
     #
@@ -345,6 +366,38 @@ else
     echo "Skipping E2E Desktop Harness — runs on Windows only (see scripts/build-test.sh)."
 fi
 
+# 1d. CLI Export Check (docs/demo/demo.md -> .html + .pdf)
+# ITST-LTTCE-XPT-00010. Unlike 1c this runs on EVERY desktop OS: an export
+# opens an invisible window, writes a file and exits by itself, so there is no
+# GUI to drive headlessly. That is what finally executes the Linux and macOS
+# print_to_pdf backends, which until now were only ever compiled.
+#
+# The assertions live in src-tauri/examples/export_demo.rs — one Rust
+# implementation shared with build-test.ps1 and CI step 375, rather than the
+# same checks written twice in two shell dialects (DRY-and-Variants.md).
+#
+# LATTICE_EXPORT_OUT, when set by CI, also copies the passing output out for
+# publishing on the release page.
+echo "****************************************************"
+echo "Running CLI Export Check..."
+pushd src-tauri || exit
+_EXPORT_ARGS=()
+if [ -n "${LATTICE_EXPORT_OUT}" ]; then
+    _EXPORT_ARGS+=(--out "$LATTICE_EXPORT_OUT")
+fi
+if [ -n "${LATTICE_EXPORT_LABEL}" ]; then
+    _EXPORT_ARGS+=(--label "$LATTICE_EXPORT_LABEL")
+fi
+gui_run cargo run --example export_demo -- "${_EXPORT_ARGS[@]}" 2>&1 | tee "$RUST_OUT_EXPORT"
+EXPORT_RESULT=${PIPESTATUS[0]}
+popd || exit
+
+if [ $EXPORT_RESULT -ne 0 ]; then
+    echo "CLI Export Check failed!"
+    exit $EXPORT_RESULT
+fi
+echo "****************************************************"
+
 pushd src-tauri || exit
   echo "****************************************************"
   echo "Gather and print all data in an output table ..."
@@ -368,7 +421,8 @@ if [ -n "${GITHUB_STEP_SUMMARY}" ]; then
       "test|Unit (lib)|$RUST_OUT_UNIT" \
       "test|Integration — wiring|$RUST_OUT_WIRING" \
       "test|Integration — file_open|$RUST_OUT_FILEOPEN" \
-      "bin|E2E — conflict reproducer|$RUST_OUT_E2E"; do
+      "bin|E2E — conflict reproducer|$RUST_OUT_E2E" \
+      "bin|CLI export — demo.md|$RUST_OUT_EXPORT"; do
     kind="${entry%%|*}";  rest="${entry#*|}"
     label="${rest%%|*}";  file="${rest##*|}"
     if [ "$kind" = "test" ]; then
@@ -387,7 +441,8 @@ if [ -n "${GITHUB_STEP_SUMMARY}" ]; then
   echo '```' >> "$GITHUB_STEP_SUMMARY"
 fi
 
-rm -f "$RUST_OUT_UNIT" "$RUST_OUT_WIRING" "$RUST_OUT_FILEOPEN" "$RUST_OUT_E2E" "$RUST_OUT_COV"
+rm -f "$RUST_OUT_UNIT" "$RUST_OUT_WIRING" "$RUST_OUT_FILEOPEN" "$RUST_OUT_E2E" \
+      "$RUST_OUT_EXPORT" "$RUST_OUT_COV"
 
 # 2. Run Frontend Tests Run Later with Coverage
 # echo "Running Frontend Tests..."
