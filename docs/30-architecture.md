@@ -1287,15 +1287,18 @@ lattice --export-html a.md b.md          lattice --export-pdf a.md b.md
 Rust: cli_args::requested_export_format() → export::run_export(paths, format)
         │  for each path, sequentially:
         ▼
-  build_window_with_file_ex(path, Some(format))   invisible window,
+  build_window_with_file_ex(path, Some(ExportLaunch))   invisible window,
         │                              __LATTICE_INIT_DATA__.exportFormat = "html" | "pdf"
+        │                              __LATTICE_INIT_DATA__.exportSettleMs = render budget − 10 s
         ▼
   App.tsx checkLaunch(): Direct Push loads the file → normal preview render starts
         │                (pdf only: setViewMode(preview) + applyPrintStyle — see below)
         ▼
-  waitForDiagramsSettled(previewBodyRef)   poll until every .mermaid has its
-        │                                  cached PNG (or failed) — same signal
+  waitForDiagramsSettled(previewBodyRef,   poll until every .mermaid has its
+        │          exportSettleMs)         cached PNG (or failed) — same signal
         │                                  Mermaid.tsx writes for copy (IMPL-LTTCE-MRC-00001)
+        │                                  still pending at the budget → export_ready({error}),
+        │                                  never a partial document (REQ-LTTCE-XPT-00009)
         ├──────────── html ────────────┐              ├──────────── pdf ────────────┐
         ▼                              │              ▼                             │
   buildExportHtml(previewBodyRef)      │        (nothing to serialise —              │
@@ -1375,6 +1378,26 @@ message names the elapsed budget (so "too slow" and "too tight" can be told apar
 `RUN_TIMEOUT` in `examples/export_demo.rs` — the harness's own kill switch — must stay above
 `FIRST_RENDER_TIMEOUT + PDF_PRINT_TIMEOUT` plus startup, or the harness kills a run the app would have
 completed. It was 120 s and is now 300 s for exactly that reason.
+
+**One bound, owned by Rust, and a timeout is never a success (REQ-LTTCE-XPT-00009).** The frontend's
+wait for diagrams (`waitForDiagramsSettled`) is itself bounded — a stuck diagram must not hang the
+window — and that bound used to be its own hard-coded 8 s. When the render budget above was raised
+to 90 s, the 8 s clock silently became the real limit, and because the wait *resolved as though
+settled* when it ran out, a cold macOS Intel render that took ~9 s exported 2 of its 5 diagrams and
+exited 0. Two rules now close that off:
+
+- The settle budget is **derived, not set**: `settle_budget(render_timeout(..))` is the render budget
+  less `SETTLE_MARGIN`, handed to the frontend as `__LATTICE_INIT_DATA__.exportSettleMs` via
+  `ExportLaunch`. The margin is 10 s because Rust's clock starts when the window is built, while the
+  frontend's starts only after it has booted and loaded the file (~3 s cold on a macOS CI runner). Raising the render budget raises it with it. The margin makes the frontend give up
+  first, because only the frontend can say *which* diagrams are missing; Rust's own timeout remains
+  as the backstop for a renderer that never answers at all.
+- The wait **reports** rather than resolves: it returns `{ pending, total }`, and
+  `describeUnsettledDiagrams` turns any `pending > 0` into an error ("3 of 5 diagram(s) had not
+  finished rendering after 80s — refusing to export an incomplete document"), which `App.tsx` throws
+  into the existing `export_ready({ error })` path. Rust logs it and fails that file exactly as it
+  would any other render failure. A diagram that fails to render (a Mermaid syntax error) still
+  counts as settled — its error block *is* what the preview shows.
 
 **A Tauri runtime gap, found while verifying this feature.** `AppHandle::exit(code)` (tauri 2.11.5,
 `tauri-runtime-wry`) sets `ControlFlow::Exit` on `RequestExit(code)` but never threads `code` through to

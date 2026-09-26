@@ -40,5 +40,8 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - IMPL-LTTCE-SEL-00004 **covers** ARCH-LTTCE-SEL-00001
 - IMPL-LTTCE-XPT-00002 **covers** REQ-LTTCE-XPT-00001
 - IMPL-LTTCE-XPT-00002 **covers** REQ-LTTCE-XPT-00004
+- IMPL-LTTCE-XPT-00002 **covers** REQ-LTTCE-XPT-00009  (waits with Rust's `exportSettleMs`; an
+  unsettled diagram fails the export through `export_ready({ error })`) — UTST: `src/App.test.tsx`,
+  *App — headless export launch* (budget pass-through; html and pdf incomplete-document cases)
 - IMPL-LTTCE-XPT-00002 **covers** ARCH-LTTCE-XPT-00001
 - IMPL-LTTCE-XPT-00002 **covers** ARCH-LTTCE-XPT-00002

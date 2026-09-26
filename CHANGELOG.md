@@ -9,6 +9,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: Fail an export whose diagrams have not rendered; derive the diagram wait from the render budget
 - FIX: Link the generated demo HTML through the site, not raw.githubusercontent
 - FIX: Give the first export a cold-start render budget; stop testing debug builds
 - FIX: Make the export check's directory scans deterministic

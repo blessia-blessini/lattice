@@ -54,7 +54,13 @@ import tauriConfig from '../src-tauri/tauri.conf.json';
 import { resolveRelativePath, isDocumentLink } from './lib/link-utils';
 import { toSourceRange, findInnermostBlockIndex, isBlockTag } from './lib/cursor-block';
 import { PREVIEW_THEME_COLORS } from './lib/preview-theme';
-import { buildCopyHtml, buildExportHtml, waitForDiagramsSettled } from './lib/preview-copy';
+import {
+  buildCopyHtml,
+  buildExportHtml,
+  describeUnsettledDiagrams,
+  resolveSettleTimeout,
+  waitForDiagramsSettled,
+} from './lib/preview-copy';
 import { flushSync } from 'react-dom';
 import { applyPrintStyle, removePrintStyle } from './lib/print-style';
 
@@ -1134,7 +1140,20 @@ function App() {
                 throw new Error('preview root is not mounted — nothing to export');
               }
 
-              await waitForDiagramsSettled(previewRoot);
+              // The settle budget comes from Rust (derived from the render
+              // budget of REQ-LTTCE-XPT-00008), so the two bounds cannot drift
+              // apart again: a separate, shorter frontend clock is what once
+              // cut a cold export off at 8 s while Rust would have waited 90.
+              // A timeout is a failure, never a partial success
+              // (REQ-LTTCE-XPT-00009).
+              const settleMs = resolveSettleTimeout(initData.exportSettleMs);
+              const unsettled = describeUnsettledDiagrams(
+                await waitForDiagramsSettled(previewRoot, settleMs),
+                settleMs,
+              );
+              if (unsettled) {
+                throw new Error(unsettled);
+              }
 
               if (exportFormat === 'pdf') {
                 await invoke('export_ready', { html: null, error: null });

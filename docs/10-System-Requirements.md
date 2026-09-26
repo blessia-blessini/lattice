@@ -646,6 +646,7 @@ teaches the other:
 | :--------------- | :---------------------------------- | :-------------------------- |
 | `--export-html`  | the rendered preview as HTML        | XPT-00001 … 00003           |
 | `--export-pdf`   | the rendered preview as a paginated PDF | XPT-00004 … 00006       |
+| both             | printer-free PDF, render budget, no partial output | XPT-00007 … 00009 |
 
 <!--REQ-LTTCE-XPT-00001-->
 **REQ-LTTCE-XPT-00001** — Launching `lattice` with `--export-html <path> [<path> ...]` SHALL, for each
@@ -736,6 +737,22 @@ source of false failure. The budget's purpose is to bound a render that will nev
 itself ends on the frontend's settled signal, not on the clock, so a generous bound costs a healthy
 export nothing. The reported error SHALL state the budget that elapsed, so "too slow" can be told
 apart from "too tight".
+
+<!--REQ-LTTCE-XPT-00009-->
+**REQ-LTTCE-XPT-00009** — An export SHALL NOT write an output file for a document whose diagrams
+have not all finished rendering (each one either rasterised or shown as a render error). Such a
+document SHALL be treated as a failed path under REQ-LTTCE-XPT-00003 / REQ-LTTCE-XPT-00006 — logged,
+skipped, non-zero exit — and the reported error SHALL state how many diagrams were still unrendered,
+out of how many, and the budget that elapsed. The time the export waits for diagrams SHALL be
+derived from the render budget of REQ-LTTCE-XPT-00008, not set independently of it.
+
+*Rationale*: a partially rendered document that reports success is the worst outcome an export can
+have — worse than a failure, because nothing tells the user or the invoking script that the file is
+wrong. It happened (CI, macOS Intel, 2026-09-26): the render budget had been raised to 90 s for a
+cold start, but the wait for diagrams still ran on a separate, fixed 8 s clock. The cold render took
+about 9 s, the diagram wait gave up at 8, and the export wrote a file with 2 of its 5 diagrams and
+exited 0. Two bounds on one wait will drift apart the next time either is changed; one bound,
+derived in one place, cannot.
 
 
 

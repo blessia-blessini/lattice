@@ -31,6 +31,9 @@ import {
     fragmentHasDiagram,
     substituteDiagrams,
     waitForDiagramsSettled,
+    describeUnsettledDiagrams,
+    resolveSettleTimeout,
+    DEFAULT_SETTLE_TIMEOUT_MS,
     DIAGRAM_PNG_ATTR,
 } from './preview-copy';
 
@@ -207,15 +210,63 @@ describe('preview copy — waiting for diagrams to settle', () => {
         expect(Date.now() - start).toBeGreaterThanOrEqual(200);
     });
 
+    it('reports a timeout as still-pending diagrams, not as settled (REQ-LTTCE-XPT-00009)', async () => {
+        // Regression (CI run 36260972990, 2026-09-26): the wait used to resolve
+        // void on timeout, indistinguishable from success, so the export wrote
+        // 2 of 5 diagrams and reported success. The result must say so.
+        const root = elementOf(
+            `${diagram()}<div class="mermaid"><svg></svg></div>`
+            + `<div class="mermaid"><pre class="error">boom</pre></div>`
+            + `<div class="mermaid"><svg></svg></div>`,
+        );
+        const result = await waitForDiagramsSettled(root, 250);
+        expect(result).toEqual({ pending: 2, total: 4 });
+    });
+
+    it('reports nothing pending once every diagram settled', async () => {
+        const result = await waitForDiagramsSettled(elementOf(`${diagram()}${diagram()}`), 500);
+        expect(result).toEqual({ pending: 0, total: 2 });
+    });
+
+    it('reports an empty document as settled with zero diagrams', async () => {
+        const result = await waitForDiagramsSettled(elementOf('<p>plain text</p>'), 500);
+        expect(result).toEqual({ pending: 0, total: 0 });
+    });
+
     it('resolves once a still-rendering diagram later gets its PNG', async () => {
         const root = elementOf('<div class="mermaid"><svg></svg></div>');
         const container = root.querySelector('.mermaid')!;
         setTimeout(() => container.setAttribute(DIAGRAM_PNG_ATTR, PNG), 150);
 
         const start = Date.now();
-        await waitForDiagramsSettled(root, 5000);
+        const result = await waitForDiagramsSettled(root, 5000);
         const elapsed = Date.now() - start;
         expect(elapsed).toBeGreaterThanOrEqual(100);
         expect(elapsed).toBeLessThan(5000);
+        expect(result.pending).toBe(0);
+    });
+});
+
+// UTST for REQ-LTTCE-XPT-00009 — an export whose diagrams did not all settle
+// must fail with a message that names what was missing and the elapsed budget.
+describe('preview copy — unsettled diagrams are an export failure', () => {
+
+    it('returns null when every diagram settled', () => {
+        expect(describeUnsettledDiagrams({ pending: 0, total: 5 }, 40_000)).toBeNull();
+        expect(describeUnsettledDiagrams({ pending: 0, total: 0 }, 40_000)).toBeNull();
+    });
+
+    it('names the missing count, the total and the budget in seconds', () => {
+        const msg = describeUnsettledDiagrams({ pending: 3, total: 5 }, 85_000);
+        expect(msg).toContain('3 of 5');
+        expect(msg).toContain('85s');
+        expect(msg).toContain('incomplete');
+    });
+
+    it('accepts the budget Rust sends and falls back for anything else', () => {
+        expect(resolveSettleTimeout(40_000)).toBe(40_000);
+        for (const bad of [undefined, null, 0, -1, NaN, Infinity, '40000', {}]) {
+            expect(resolveSettleTimeout(bad)).toBe(DEFAULT_SETTLE_TIMEOUT_MS);
+        }
     });
 });

@@ -23,6 +23,9 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - IMPL-LTTCE-XPT-00003 **covers** REQ-LTTCE-XPT-00006  (bounded `PDF_PRINT_TIMEOUT`, per-file failure)
 - IMPL-LTTCE-XPT-00003 **covers** REQ-LTTCE-XPT-00008  (`render_timeout(is_first_export)`: 90 s for
   the first export of a process, 45 s after; the elapsed budget is named in the timeout message)
+- IMPL-LTTCE-XPT-00003 **covers** REQ-LTTCE-XPT-00009  (`settle_budget(render_timeout(..))` handed
+  to the frontend as `exportSettleMs` via `ExportLaunch` / `build_window_with_file_ex`; one derived
+  bound instead of a separate frontend clock)
 - IMPL-LTTCE-XPT-00004 **covers** REQ-LTTCE-XPT-00006  (non-zero process exit code)
 - IMPL-LTTCE-XPT-00005 **covers** REQ-LTTCE-XPT-00004  (host-WebView print backends)
 - IMPL-LTTCE-XPT-00005 **covers** REQ-LTTCE-XPT-00006  (unsupported platform reported as a failure)
@@ -38,8 +41,8 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 
 | Anchor                | Unit / automatic tests                                                        |
 | :-------------------- | :---------------------------------------------------------------------------- |
-| IMPL-LTTCE-XPT-00002  | `src/App.test.tsx` — *App — headless export launch* (9 cases, incl. the signal-ordering regression) |
-| IMPL-LTTCE-XPT-00003  | `src-tauri/src/export.rs` `mod tests` (20 cases, incl. `is_expected_sender` and the two REQ-LTTCE-XPT-00008 budget cases, one of which guards the numbers against being tightened back to where a correct render fails); `platform/cli_args.rs` `mod tests` |
+| IMPL-LTTCE-XPT-00002  | `src/App.test.tsx` — *App — headless export launch* (12 cases, incl. the signal-ordering regression and the three REQ-LTTCE-XPT-00009 cases) |
+| IMPL-LTTCE-XPT-00003  | `src-tauri/src/export.rs` `mod tests` (24 cases, incl. `is_expected_sender`, the two REQ-LTTCE-XPT-00008 budget cases, one of which guards the numbers against being tightened back to where a correct render fails, and four REQ-LTTCE-XPT-00009 `settle_budget` / `ExportLaunch` cases); `platform/cli_args.rs` `mod tests` |
 | IMPL-LTTCE-XPT-00004  | ITST-LTTCE-XPT-00010 — `src-tauri/examples/export_demo.rs` (`export-html`, `export-pdf`, `missing-input`); not unit-testable, needs a real process exit (see ARCH-LTTCE-XPT-00001) |
 | IMPL-LTTCE-XPT-00005  | `platform/mod.rs` `mod tests` (`PdfDone`); `platform/impls/linux.rs` `mod linux_print_tests` (4 cases — printer-name resolution incl. the localized and blank-override cases, REQ-LTTCE-XPT-00007; pure, no environment mutation; compiled and run on the Linux leg only); host backends: ITST-LTTCE-XPT-00010 per desktop platform |
 | IMPL-LTTCE-XPT-00006  | `src/lib/print-style.test.ts` (13 cases)                                       |
@@ -47,6 +50,10 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 ## Integration test
 
 - ITST-LTTCE-XPT-00010 **covers** IMPL-LTTCE-XPT-00003, IMPL-LTTCE-XPT-00004, IMPL-LTTCE-XPT-00005
+- ITST-LTTCE-XPT-00010 **covers** REQ-LTTCE-XPT-00009 end to end: `export-html` asserts one `<img>`
+  per Mermaid block of `docs/demo/demo.md`. It is the check that caught the partial export on the
+  macos-intel leg (run 36260972990); after the fix a too-slow render fails the export by name instead
+  of writing a file with missing diagrams.
 
 `src-tauri/examples/export_demo.rs` — the headless round trip on `docs/demo/demo.md`: both formats
 produce a correct file beside the input and exit `0`, an unreadable input exits `1` and writes
