@@ -39,7 +39,7 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 | IMPL-LTTCE-XPT-00002  | `src/App.test.tsx` — *App — headless export launch* (9 cases, incl. the signal-ordering regression) |
 | IMPL-LTTCE-XPT-00003  | `src-tauri/src/export.rs` `mod tests` (18 cases, incl. `is_expected_sender`); `platform/cli_args.rs` `mod tests` |
 | IMPL-LTTCE-XPT-00004  | ITST-LTTCE-XPT-00010 — `src-tauri/examples/export_demo.rs` (`export-html`, `export-pdf`, `missing-input`); not unit-testable, needs a real process exit (see ARCH-LTTCE-XPT-00001) |
-| IMPL-LTTCE-XPT-00005  | `platform/mod.rs` `mod tests` (`PdfDone`); `platform/impls/linux.rs` `mod linux_print_tests` (5 cases — printer naming and backend forcing, REQ-LTTCE-XPT-00007; compiled and run on the Linux leg only); host backends: ITST-LTTCE-XPT-00010 per desktop platform |
+| IMPL-LTTCE-XPT-00005  | `platform/mod.rs` `mod tests` (`PdfDone`); `platform/impls/linux.rs` `mod linux_print_tests` (4 cases — printer-name resolution incl. the localized and blank-override cases, REQ-LTTCE-XPT-00007; pure, no environment mutation; compiled and run on the Linux leg only); host backends: ITST-LTTCE-XPT-00010 per desktop platform |
 | IMPL-LTTCE-XPT-00006  | `src/lib/print-style.test.ts` (13 cases)                                       |
 
 ## Integration test

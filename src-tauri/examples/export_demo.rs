@@ -125,16 +125,30 @@ fn build_dirs(root: &Path) -> Vec<PathBuf> {
 /// must still release it. That is why `main` funnels every exit through
 /// `run()` returning a code instead of calling `std::process::exit` from the
 /// middle of the check — `exit` does not run destructors.
+///
+/// The mount point is a fresh temporary directory, never a fixed path inside
+/// `target/`: a run killed before `Drop` (Ctrl-C, a CI timeout) leaves the
+/// volume attached, and a fixed path would then fail every later run with
+/// "Resource busy". A unique path per run cannot collide with a leftover, and
+/// keeps a live mount out of the way of `cargo clean`.
+///
+/// Field order matters: the struct's own `Drop` runs before its fields are
+/// dropped, so the volume is detached before `TempDir` removes the directory.
 struct MountedDmg {
     mount_point: PathBuf,
+    /// Owns the mount-point directory; removed once `Drop` has detached.
+    _dir: tempfile::TempDir,
 }
 
 impl Drop for MountedDmg {
     fn drop(&mut self) {
+        // `-force` because macOS indexing daemons (`mds`, `mdworker`) routinely
+        // open a freshly attached volume; a polite detach loses that race and
+        // fails with "Resource busy", leaving the volume attached.
         let status = Command::new("hdiutil")
             .arg("detach")
             .arg(&self.mount_point)
-            .arg("-quiet")
+            .args(["-force", "-quiet"])
             .status();
         match status {
             Ok(s) if s.success() => {}
@@ -153,19 +167,22 @@ impl Drop for MountedDmg {
 //**************************************************************
 // attach_dmg
 //**************************************************************
-/// Attaches `dmg` read-only at a private mount point and returns the guard.
+/// Attaches `dmg` read-only at a fresh temporary mount point.
 ///
 /// `-mountpoint` is given explicitly so the mount point is known without
 /// parsing `hdiutil`'s output, and `-nobrowse` keeps the volume out of Finder.
-fn attach_dmg(dmg: &Path, mount_point: &Path) -> Result<MountedDmg, String> {
-    fs::create_dir_all(mount_point)
-        .map_err(|e| format!("cannot create {}: {e}", mount_point.display()))?;
+fn attach_dmg(dmg: &Path) -> Result<MountedDmg, String> {
+    let dir = tempfile::Builder::new()
+        .prefix("lattice-export-dmg-")
+        .tempdir()
+        .map_err(|e| format!("cannot create a mount point: {e}"))?;
+    let mount_point = dir.path().to_path_buf();
 
     let output = Command::new("hdiutil")
         .arg("attach")
         .arg(dmg)
         .args(["-nobrowse", "-readonly", "-noverify", "-mountpoint"])
-        .arg(mount_point)
+        .arg(&mount_point)
         .output()
         .map_err(|e| format!("cannot run hdiutil: {e}"))?;
 
@@ -176,7 +193,7 @@ fn attach_dmg(dmg: &Path, mount_point: &Path) -> Result<MountedDmg, String> {
             String::from_utf8_lossy(&output.stderr).trim()
         ));
     }
-    Ok(MountedDmg { mount_point: mount_point.to_path_buf() })
+    Ok(MountedDmg { mount_point, _dir: dir })
 }
 // attach_dmg END ***********************************************
 
@@ -265,11 +282,10 @@ fn locate_binary(root: &Path) -> Option<(PathBuf, Option<MountedDmg>)> {
             for entry in entries.flatten() {
                 let dmg = entry.path();
                 if dmg.extension().is_some_and(|e| e == "dmg") {
-                    let mount_point = dir.join("export-demo-dmg");
-                    match attach_dmg(&dmg, &mount_point) {
+                    match attach_dmg(&dmg) {
                         Ok(guard) => {
                             println!("[INFO] Mounted   : {}", dmg.display());
-                            if let Some(bin) = app_binary_in(&mount_point) {
+                            if let Some(bin) = app_binary_in(&guard.mount_point) {
                                 return Some((bin, Some(guard)));
                             }
                             eprintln!(
@@ -716,7 +732,7 @@ fn run() -> i32 {
     println!("[TEST RESULT] FAILED (CLI export)");
     1
 }
-// main END *****************************************************
+// run END *****************************************************
 
 
 //**************************************************************

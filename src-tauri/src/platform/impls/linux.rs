@@ -81,7 +81,7 @@ fn linux_print_to_pdf(
         }
     };
 
-    force_gtk_file_print_backend();
+    use_gtk_file_print_backend();
 
     let settings = gtk::PrintSettings::new();
     settings.set("output-uri", Some(uri.as_str()));
@@ -122,20 +122,22 @@ fn linux_print_to_pdf(
 // linux_print_to_pdf END ******************************************************
 
 //******************************************************************************
-// GTK_PRINT_BACKENDS / LATTICE_GTK_PRINTER
+// Print backend constants
 //******************************************************************************
-/// Environment variable through which GTK is told which print backends to load.
-const GTK_PRINT_BACKENDS: &str = "GTK_PRINT_BACKENDS";
-/// The only backend Lattice needs: the one that writes a file.
+/// The only GTK print backend Lattice needs: the one that writes a file.
 const GTK_FILE_BACKEND: &str = "file";
-/// Escape hatch for the localized printer name — see [`file_printer_name`].
+/// gettext domain GTK 3 registers its own strings under.
+const GTK_TEXT_DOMAIN: &str = "gtk30";
+/// The untranslated name GTK's file print backend gives its printer, i.e. the
+/// exact msgid passed to `_()` in GTK 3's `gtkprintbackendfile.c`.
+const FILE_PRINTER_MSGID: &str = "Print to File";
+/// Escape hatch for the printer name — see [`file_printer_name`].
 const PRINTER_NAME_OVERRIDE: &str = "LATTICE_GTK_PRINTER";
-/// The name GTK's file print backend gives its printer in the C locale.
-const DEFAULT_FILE_PRINTER: &str = "Print to File";
+// Print backend constants END *************************************************
 
 
 //******************************************************************************
-// force_gtk_file_print_backend
+// use_gtk_file_print_backend
 //******************************************************************************
 /// Restricts GTK to its file print backend for this process.
 ///
@@ -145,21 +147,47 @@ const DEFAULT_FILE_PRINTER: &str = "Print to File";
 /// only from `export.rs`, which always writes a file — so narrowing the backend
 /// costs no feature and removes the dependency on a configured printer.
 ///
-/// An existing value is respected: someone who set it deliberately outranks us.
-fn force_gtk_file_print_backend() {
-    if std::env::var_os(GTK_PRINT_BACKENDS).is_some() {
-        return;
-    }
-    // SAFETY: `set_var` is unsound only when another thread reads the
-    // environment concurrently. This runs on the GTK main thread inside
-    // `with_webview`, before the first `PrintOperation` of the process exists,
-    // which is when GTK first loads its print backends; no Lattice thread reads
-    // the environment at that point.
-    unsafe {
-        std::env::set_var(GTK_PRINT_BACKENDS, GTK_FILE_BACKEND);
+/// Set on GTK's own settings object rather than through the `GTK_PRINT_BACKENDS`
+/// environment variable. Two reasons, both load-bearing:
+///
+/// * `std::env::set_var` would be undefined behaviour here. Tokio workers, the
+///   `notify` file-watcher thread and glib's own pools are all running by the
+///   time an export starts, and POSIX `setenv` mutates the global `environ`
+///   with no synchronisation against a concurrent `getenv`.
+/// * The environment variable is not ours to defer to. A desktop environment
+///   that sets `GTK_PRINT_BACKENDS=cups` would leave the file backend unloaded,
+///   its printer non-existent, and every export failing — the exact bug this is
+///   fixing. The setting is therefore applied unconditionally.
+fn use_gtk_file_print_backend() {
+    use gtk::prelude::GtkSettingsExt;
+
+    if let Some(settings) = gtk::Settings::default() {
+        settings.set_gtk_print_backends(Some(GTK_FILE_BACKEND));
     }
 }
-// force_gtk_file_print_backend END ********************************************
+// use_gtk_file_print_backend END **********************************************
+
+
+//******************************************************************************
+// resolve_printer_name
+//******************************************************************************
+/// Chooses the printer name from an explicit override and a translated name.
+///
+/// Split out from [`file_printer_name`] so the decision is a pure function of
+/// its inputs and can be unit-tested without any test touching the process
+/// environment — which no test may do while other tests run in parallel
+/// threads, and which no amount of local locking would make safe.
+///
+/// An empty or blank override counts as "not set", never as a nameless printer:
+/// a CI expression that selects a value only on some legs yields `""` on the
+/// rest, and handing that to GTK would fail where no override was intended.
+fn resolve_printer_name(override_value: Option<&str>, translated: &str) -> String {
+    match override_value {
+        Some(name) if !name.trim().is_empty() => name.to_string(),
+        _ => translated.to_string(),
+    }
+}
+// resolve_printer_name END ****************************************************
 
 
 //******************************************************************************
@@ -167,18 +195,23 @@ fn force_gtk_file_print_backend() {
 //******************************************************************************
 /// Name of the printer to hand GTK, i.e. the one the file backend provides.
 ///
-/// KNOWN LIMITATION — GTK names that printer with a *translated* string
-/// ("Print to File" in the C locale, "In Datei drucken" under a German one), and
-/// gtk-rs 0.18 exposes no safe printer enumeration to look it up, so the name
-/// cannot be discovered without unsafe FFI into `gtk_enumerate_printers`. The C
-/// name is therefore used by default — correct in CI and on any host running a
-/// C/English locale — and `LATTICE_GTK_PRINTER` overrides it, so a localized
-/// host can be corrected without a rebuild.
+/// GTK names that printer with a **translated** string — "Print to File" in a C
+/// or English locale, "In Datei drucken" under a German one — and gtk-rs 0.18
+/// binds no printer enumeration at all (there is no `gtk::Printer`), so the
+/// name cannot be read back from GTK without unsafe FFI into
+/// `gtk_enumerate_printers`.
+///
+/// Instead the same translation GTK itself used is asked of gettext directly,
+/// through GTK's own text domain. That makes the name correct in every locale
+/// with no unsafe code, and it degrades exactly right: with no catalogue
+/// installed gettext returns the msgid unchanged, which is the C-locale name.
+///
+/// `LATTICE_GTK_PRINTER` still overrides it, for a host whose GTK translation
+/// somehow does not match what its print backend registered.
 fn file_printer_name() -> String {
-    match std::env::var(PRINTER_NAME_OVERRIDE) {
-        Ok(name) if !name.trim().is_empty() => name,
-        _ => DEFAULT_FILE_PRINTER.to_string(),
-    }
+    let translated = glib::dgettext(Some(GTK_TEXT_DOMAIN), FILE_PRINTER_MSGID);
+    let override_value = std::env::var(PRINTER_NAME_OVERRIDE).ok();
+    resolve_printer_name(override_value.as_deref(), translated.as_str())
 }
 // file_printer_name END *******************************************************
 
@@ -190,93 +223,58 @@ fn file_printer_name() -> String {
 mod linux_print_tests {
     use super::*;
 
-    /// These tests read and write *process-global* environment variables, so
-    /// they must not run concurrently with each other — cargo runs tests in
-    /// parallel threads by default. One mutex around every body serializes
-    /// them without pulling in a test-only dependency.
-    static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
-
-    /// Held for the body of each test. `unwrap_or_else` takes the guard even
-    /// after another test panicked while holding it, so one failure does not
-    /// cascade into poisoned-mutex failures in the rest.
-    fn env_guard() -> std::sync::MutexGuard<'static, ()> {
-        ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner())
-    }
-
     //**************************************************************
-    // file_printer_name_defaults_to_the_c_locale_name
+    // the_translated_name_is_used_when_no_override_is_given
     //**************************************************************
+    /// Whatever gettext returned for GTK's own msgid is what GTK is handed.
     #[test]
-    fn file_printer_name_defaults_to_the_c_locale_name() {
-        let _lock = env_guard();
-        // SAFETY: single-threaded test, see force_gtk_file_print_backend.
-        unsafe { std::env::remove_var(PRINTER_NAME_OVERRIDE) };
-        assert_eq!(file_printer_name(), DEFAULT_FILE_PRINTER);
-    }
-    // file_printer_name_defaults_to_the_c_locale_name END **********
-
-
-    //**************************************************************
-    // file_printer_name_honours_the_override
-    //**************************************************************
-    #[test]
-    fn file_printer_name_honours_the_override() {
-        let _lock = env_guard();
-        // SAFETY: single-threaded test, see force_gtk_file_print_backend.
-        unsafe { std::env::set_var(PRINTER_NAME_OVERRIDE, "In Datei drucken") };
-        assert_eq!(file_printer_name(), "In Datei drucken");
-        unsafe { std::env::remove_var(PRINTER_NAME_OVERRIDE) };
-    }
-    // file_printer_name_honours_the_override END *******************
-
-
-    //**************************************************************
-    // file_printer_name_ignores_a_blank_override
-    //**************************************************************
-    /// An empty variable is "unset", not "a printer with no name": a CI
-    /// expression that selects a value only on some legs yields "" on the rest,
-    /// and handing that to GTK would fail where no override was intended.
-    #[test]
-    fn file_printer_name_ignores_a_blank_override() {
-        let _lock = env_guard();
-        // SAFETY: single-threaded test, see force_gtk_file_print_backend.
-        unsafe { std::env::set_var(PRINTER_NAME_OVERRIDE, "   ") };
-        assert_eq!(file_printer_name(), DEFAULT_FILE_PRINTER);
-        unsafe { std::env::remove_var(PRINTER_NAME_OVERRIDE) };
-    }
-    // file_printer_name_ignores_a_blank_override END ***************
-
-
-    //**************************************************************
-    // backend_forcing_respects_an_existing_value
-    //**************************************************************
-    #[test]
-    fn backend_forcing_respects_an_existing_value() {
-        let _lock = env_guard();
-        // SAFETY: single-threaded test, see force_gtk_file_print_backend.
-        unsafe { std::env::set_var(GTK_PRINT_BACKENDS, "cups") };
-        force_gtk_file_print_backend();
-        assert_eq!(std::env::var(GTK_PRINT_BACKENDS).as_deref(), Ok("cups"));
-        unsafe { std::env::remove_var(GTK_PRINT_BACKENDS) };
-    }
-    // backend_forcing_respects_an_existing_value END ***************
-
-
-    //**************************************************************
-    // backend_forcing_sets_the_file_backend_when_unset
-    //**************************************************************
-    #[test]
-    fn backend_forcing_sets_the_file_backend_when_unset() {
-        let _lock = env_guard();
-        // SAFETY: single-threaded test, see force_gtk_file_print_backend.
-        unsafe { std::env::remove_var(GTK_PRINT_BACKENDS) };
-        force_gtk_file_print_backend();
+    fn the_translated_name_is_used_when_no_override_is_given() {
         assert_eq!(
-            std::env::var(GTK_PRINT_BACKENDS).as_deref(),
-            Ok(GTK_FILE_BACKEND)
+            resolve_printer_name(None, "In Datei drucken"),
+            "In Datei drucken"
         );
-        unsafe { std::env::remove_var(GTK_PRINT_BACKENDS) };
     }
-    // backend_forcing_sets_the_file_backend_when_unset END *********
+    // the_translated_name_is_used_when_no_override_is_given END ****
+
+
+    //**************************************************************
+    // an_override_wins_over_the_translation
+    //**************************************************************
+    #[test]
+    fn an_override_wins_over_the_translation() {
+        assert_eq!(
+            resolve_printer_name(Some("Imprimer dans un fichier"), FILE_PRINTER_MSGID),
+            "Imprimer dans un fichier"
+        );
+    }
+    // an_override_wins_over_the_translation END ********************
+
+
+    //**************************************************************
+    // a_blank_override_is_treated_as_unset
+    //**************************************************************
+    #[test]
+    fn a_blank_override_is_treated_as_unset() {
+        for blank in ["", "   ", "\t"] {
+            assert_eq!(
+                resolve_printer_name(Some(blank), FILE_PRINTER_MSGID),
+                FILE_PRINTER_MSGID,
+                "a blank override must fall back to the translated name"
+            );
+        }
+    }
+    // a_blank_override_is_treated_as_unset END *********************
+
+
+    //**************************************************************
+    // an_untranslated_domain_yields_the_c_locale_name
+    //**************************************************************
+    /// gettext returns the msgid unchanged when no catalogue is installed, so
+    /// the no-translation case must still produce a usable printer name.
+    #[test]
+    fn an_untranslated_domain_yields_the_c_locale_name() {
+        assert_eq!(resolve_printer_name(None, FILE_PRINTER_MSGID), "Print to File");
+    }
+    // an_untranslated_domain_yields_the_c_locale_name END **********
 }
 // tests (linux print settings) END ********************************************

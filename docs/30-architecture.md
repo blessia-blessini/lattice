@@ -1422,13 +1422,24 @@ the project rule is to minimise dependencies *and* to report them accurately whe
 no printer named in the settings, GTK resolves the host's default printer through its CUPS backend
 first — so a host with no printer fails with "Printer not found" and writes nothing, which is how the
 Linux CI leg found this. `impls/linux.rs` therefore restricts the process to GTK's **file** print
-backend (`GTK_PRINT_BACKENDS=file`, set only if the environment does not already choose) and names
-that backend's printer in the settings. Narrowing the backend costs no feature: `print_to_pdf` is
-reached only from `export.rs`, which always writes a file, and Lattice has no print-to-paper feature
-at all. The one wrinkle is that GTK *translates* that printer's name, and gtk-rs 0.18 exposes no safe
-printer enumeration to discover it, so the C-locale name is used by default and `LATTICE_GTK_PRINTER`
-overrides it — enough for CI and for an English host, with an escape hatch elsewhere. Discovering the
-name properly needs unsafe FFI into `gtk_enumerate_printers`, which is deliberately not done here.
+backend and names that backend's printer in the settings. Narrowing the backend costs no feature:
+`print_to_pdf` is reached only from `export.rs`, which always writes a file, and Lattice has no
+print-to-paper feature at all.
+
+Two details are deliberate and were both review findings on the first attempt:
+
+- **The backend is selected on `gtk::Settings`, not through `GTK_PRINT_BACKENDS`.** Setting the
+  environment variable would be undefined behaviour — by the time an export runs, tokio workers, the
+  `notify` watcher thread and glib's pools are live, and POSIX `setenv` mutates the global `environ`
+  with no synchronisation against a concurrent `getenv`. It would also be wrong to *defer* to an
+  inherited value: a desktop setting `GTK_PRINT_BACKENDS=cups` would leave the file backend unloaded
+  and reintroduce the very failure. The GTK setting is applied unconditionally instead.
+- **The printer's name is resolved through gettext, not hard-coded.** GTK translates that name, and
+  gtk-rs 0.18 binds no printer enumeration (there is no `gtk::Printer`), so it cannot be read back
+  without unsafe FFI into `gtk_enumerate_printers`. Asking `glib::dgettext` for the same msgid in
+  GTK's own `gtk30` domain returns exactly the string GTK registered, in any locale, with no unsafe
+  code — and with no catalogue installed gettext returns the msgid, which is the C-locale name.
+  `LATTICE_GTK_PRINTER` remains as an override.
 
 `Platform::print_to_pdf` carries a **default implementation** that refuses with a bounded, logged
 error. That is deliberately what the Android and iOS stubs get: neither has a verified print-to-PDF
