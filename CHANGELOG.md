@@ -9,6 +9,7 @@ Edit the section for your next version **before** pushing the release tag like v
 
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- copy paste now works in terminal
 - FIX: Make the CLI export check find the macOS build and PDF export work without a printer
 - TEST: Add CLI export check and publish per-platform demo documents
 - CHORE: Bump lattice version to 0.3.27
