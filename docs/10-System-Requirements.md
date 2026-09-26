@@ -711,6 +711,14 @@ output.
 Producing a PDF depends on a host facility that may be absent; a script must be able to tell "this
 platform cannot" from "this file failed", and neither may look like success.
 
+<!--REQ-LTTCE-XPT-00007-->
+**REQ-LTTCE-XPT-00007** — PDF export SHALL NOT require a printer to be configured on the host. On a host with no printer, and with no print queue or print service reachable, `--export-pdf` SHALL still
+produce the PDF.
+
+*Rationale*: the PDF is written to a file; a printer never enters into it. Depending on one was an implementation accident of driving the host's print pipeline — on Linux, GTK resolved the *default*
+printer through its CUPS backend before it would honour the file output already requested, so a machine with no printer failed with "Printer not found" and produced nothing. Printer-less machines
+are not an edge case: every CI runner is one, and so is any desktop or server that only ever exports documents. A user who has never owned a printer must still be able to export a PDF.
+
 
 ## Chapter FWT — File Watching and External Reload
 

@@ -1417,6 +1417,19 @@ same family, both macOS/iOS-only, neither reaching a Windows or Linux build. Tha
 small) widening of the dependency graph and is recorded here rather than glossed as "nothing new":
 the project rule is to minimise dependencies *and* to report them accurately when one is added.
 
+**Linux needs a named printer, and it must be the file one (REQ-LTTCE-XPT-00007).** GTK's
+`output-uri` / `output-file-format` settings say *where* the output goes, not *who* produces it. With
+no printer named in the settings, GTK resolves the host's default printer through its CUPS backend
+first — so a host with no printer fails with "Printer not found" and writes nothing, which is how the
+Linux CI leg found this. `impls/linux.rs` therefore restricts the process to GTK's **file** print
+backend (`GTK_PRINT_BACKENDS=file`, set only if the environment does not already choose) and names
+that backend's printer in the settings. Narrowing the backend costs no feature: `print_to_pdf` is
+reached only from `export.rs`, which always writes a file, and Lattice has no print-to-paper feature
+at all. The one wrinkle is that GTK *translates* that printer's name, and gtk-rs 0.18 exposes no safe
+printer enumeration to discover it, so the C-locale name is used by default and `LATTICE_GTK_PRINTER`
+overrides it — enough for CI and for an English host, with an escape hatch elsewhere. Discovering the
+name properly needs unsafe FFI into `gtk_enumerate_printers`, which is deliberately not done here.
+
 `Platform::print_to_pdf` carries a **default implementation** that refuses with a bounded, logged
 error. That is deliberately what the Android and iOS stubs get: neither has a verified print-to-PDF
 path, and REQ-LTTCE-XPT-00006's last sentence requires "this platform cannot" to be a loud failure

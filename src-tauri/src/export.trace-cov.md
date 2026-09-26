@@ -25,6 +25,8 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - IMPL-LTTCE-XPT-00005 **covers** REQ-LTTCE-XPT-00004  (host-WebView print backends)
 - IMPL-LTTCE-XPT-00005 **covers** REQ-LTTCE-XPT-00006  (unsupported platform reported as a failure)
 - IMPL-LTTCE-XPT-00005 **covers** ARCH-LTTCE-XPT-00002
+- IMPL-LTTCE-XPT-00005 **covers** REQ-LTTCE-XPT-00007  (Linux: GTK file print backend + named printer,
+  so no configured printer is needed; Windows and macOS never involved one)
 - IMPL-LTTCE-XPT-00006 **covers** REQ-LTTCE-XPT-00004  (shared print stylesheet, `lib/print-style.ts`)
 - IMPL-LTTCE-XPT-00006 **covers** ARCH-LTTCE-XPT-00002
 
@@ -37,7 +39,7 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 | IMPL-LTTCE-XPT-00002  | `src/App.test.tsx` — *App — headless export launch* (9 cases, incl. the signal-ordering regression) |
 | IMPL-LTTCE-XPT-00003  | `src-tauri/src/export.rs` `mod tests` (18 cases, incl. `is_expected_sender`); `platform/cli_args.rs` `mod tests` |
 | IMPL-LTTCE-XPT-00004  | ITST-LTTCE-XPT-00010 — `src-tauri/examples/export_demo.rs` (`export-html`, `export-pdf`, `missing-input`); not unit-testable, needs a real process exit (see ARCH-LTTCE-XPT-00001) |
-| IMPL-LTTCE-XPT-00005  | `platform/mod.rs` `mod tests` (`PdfDone`); host backends: ITST-LTTCE-XPT-00010 per desktop platform |
+| IMPL-LTTCE-XPT-00005  | `platform/mod.rs` `mod tests` (`PdfDone`); `platform/impls/linux.rs` `mod linux_print_tests` (5 cases — printer naming and backend forcing, REQ-LTTCE-XPT-00007; compiled and run on the Linux leg only); host backends: ITST-LTTCE-XPT-00010 per desktop platform |
 | IMPL-LTTCE-XPT-00006  | `src/lib/print-style.test.ts` (13 cases)                                       |
 
 ## Integration test
@@ -55,8 +57,14 @@ ITST-LTTCE-XPT-00010 reaches them by running the real binary:
 
 - Windows — verified by hand, and now by ITST-LTTCE-XPT-00010 on the `windows-desktop` and
   `windows-arm-desktop` legs.
-- Linux, macOS — ITST-LTTCE-XPT-00010 executes them for the first time on the `linux-desktop`,
-  `macos-arm64` and `macos-intel` legs. Until a tagged build has actually gone green on those legs,
-  treat them as **unproven rather than verified** — the check exists to produce that evidence, and
-  a failure there is a real finding, not a flaky test.
+- Linux — ITST-LTTCE-XPT-00010 executed it for the first time on 2026-09-26 and it FAILED, exactly as
+  the paragraph above predicted: `WebKitGTK print failed: Printer not found`, because the settings
+  named no printer and the runner has none. Fixed by REQ-LTTCE-XPT-00007 (file print backend + named
+  printer). Still **unproven rather than verified**: the fix itself has not yet gone green on that leg,
+  and it cannot be exercised on a Windows development machine at all, since `impls/linux.rs` is not
+  compiled there.
+- macOS — ITST-LTTCE-XPT-00010 did not reach the backend on 2026-09-26: it found no binary, because
+  Tauri deletes `bundle/macos/*.app` once the DMG is written. The check now mounts the DMG and runs the
+  `.app` inside it, so it tests what a user downloads; **unproven** until that leg goes green.
+
 - Android, iOS — the `Platform::print_to_pdf` default refusal applies; no device test exists.

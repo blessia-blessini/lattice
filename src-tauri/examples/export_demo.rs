@@ -90,22 +90,158 @@ fn binary_name() -> &'static str {
 // binary_name END **********************************************
 
 //**************************************************************
+// build_dirs
+//**************************************************************
+/// Every directory that may hold a build of this tree, outermost first.
+///
+/// `src-tauri/target` for a native build, plus `src-tauri/target/<triple>` for
+/// a cross build: `--target aarch64-apple-darwin` moves the whole `release/`
+/// subtree one level down, which is why the macOS legs find nothing where a
+/// native build leaves it. Sub-directories are discovered rather than listed,
+/// so a new target triple needs no change here.
+fn build_dirs(root: &Path) -> Vec<PathBuf> {
+    let target = root.join("src-tauri").join("target");
+    let mut dirs = vec![target.clone()];
+    if let Ok(entries) = fs::read_dir(&target) {
+        for entry in entries.flatten() {
+            let dir = entry.path();
+            if dir.join("release").is_dir() || dir.join("debug").is_dir() {
+                dirs.push(dir);
+            }
+        }
+    }
+    dirs
+}
+// build_dirs END ***********************************************
+
+
+//**************************************************************
+// MountedDmg
+//**************************************************************
+/// A DMG attached for the duration of the check, detached on drop.
+///
+/// `Drop` is the whole point: a mount that outlives the run leaves a volume
+/// attached on the developer's machine, and every failure path of this check
+/// must still release it. That is why `main` funnels every exit through
+/// `run()` returning a code instead of calling `std::process::exit` from the
+/// middle of the check — `exit` does not run destructors.
+struct MountedDmg {
+    mount_point: PathBuf,
+}
+
+impl Drop for MountedDmg {
+    fn drop(&mut self) {
+        let status = Command::new("hdiutil")
+            .arg("detach")
+            .arg(&self.mount_point)
+            .arg("-quiet")
+            .status();
+        match status {
+            Ok(s) if s.success() => {}
+            // Never panic in a destructor, and never fail the check over
+            // cleanup: the exports have already been judged by this point.
+            _ => eprintln!(
+                "[WARN] could not detach {} — detach it manually",
+                self.mount_point.display()
+            ),
+        }
+    }
+}
+// MountedDmg END ***********************************************
+
+
+//**************************************************************
+// attach_dmg
+//**************************************************************
+/// Attaches `dmg` read-only at a private mount point and returns the guard.
+///
+/// `-mountpoint` is given explicitly so the mount point is known without
+/// parsing `hdiutil`'s output, and `-nobrowse` keeps the volume out of Finder.
+fn attach_dmg(dmg: &Path, mount_point: &Path) -> Result<MountedDmg, String> {
+    fs::create_dir_all(mount_point)
+        .map_err(|e| format!("cannot create {}: {e}", mount_point.display()))?;
+
+    let output = Command::new("hdiutil")
+        .arg("attach")
+        .arg(dmg)
+        .args(["-nobrowse", "-readonly", "-noverify", "-mountpoint"])
+        .arg(mount_point)
+        .output()
+        .map_err(|e| format!("cannot run hdiutil: {e}"))?;
+
+    if !output.status.success() {
+        return Err(format!(
+            "hdiutil attach {} failed: {}",
+            dmg.display(),
+            String::from_utf8_lossy(&output.stderr).trim()
+        ));
+    }
+    Ok(MountedDmg { mount_point: mount_point.to_path_buf() })
+}
+// attach_dmg END ***********************************************
+
+
+//**************************************************************
+// app_binary_in
+//**************************************************************
+/// The executable inside the first `.app` directly under `dir`, if any.
+///
+/// Matching on the `.app` extension rather than on `lattice.app` means a
+/// `productName` change cannot silently downgrade this to a path that does not
+/// exist. The executable inside is named after the bundle, not after the
+/// crate, so it is derived from the bundle name.
+fn app_binary_in(dir: &Path) -> Option<PathBuf> {
+    for entry in fs::read_dir(dir).ok()?.flatten() {
+        let app = entry.path();
+        if app.extension().is_some_and(|e| e == "app") {
+            let macos = app.join("Contents").join("MacOS");
+            // The bundle's own stem first (lattice.app -> MacOS/lattice), then
+            // whatever single executable the bundle carries.
+            if let Some(stem) = app.file_stem() {
+                let named = macos.join(stem);
+                if named.is_file() {
+                    return Some(named);
+                }
+            }
+            if let Ok(entries) = fs::read_dir(&macos) {
+                for exe in entries.flatten() {
+                    if exe.path().is_file() {
+                        return Some(exe.path());
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+// app_binary_in END ********************************************
+
+
+//**************************************************************
 // locate_binary
 //**************************************************************
 /// The Lattice binary to exercise, or `None` when this tree has none built.
 ///
-/// Release first: in CI the bundle build (step 350) runs before the tests, so
-/// `target/release/` holds exactly the binary users will get — the one whose
-/// export output is worth publishing. The debug fallback is for a local run
-/// where only the E2E build exists.
+/// Returns the guard for any DMG it had to attach alongside the path: the
+/// caller must hold it for as long as the binary is used.
 ///
-/// On macOS the *bundled* binary is preferred over both. macOS 14+ refuses to
-/// start WKWebView's `com.apple.WebKit.WebContent` XPC service for a host
-/// without a `.app` bundle carrying a `CFBundleIdentifier`, so a bare
-/// `target/release/lattice` renders nothing and every export times out. This
-/// is the same constraint `build-test.sh` works around for the E2E harness by
-/// synthesising a bundle; here the real bundle already exists next to it.
-fn locate_binary(root: &Path) -> Option<PathBuf> {
+/// Order, closest to what a user runs first:
+///
+/// 1. **macOS — the DMG.** The DMG is the file a user downloads, and on macOS
+///    it is also the *only* artefact that survives: Tauri's dmg bundler treats
+///    `bundle/macos/lattice.app` as an intermediate and deletes it once the
+///    DMG is written (`Cleaning …/lattice.app` in the build log). Testing the
+///    mounted DMG therefore both fixes the missing-binary failure and moves
+///    the check closer to reality — it exercises the shipped container.
+/// 2. **macOS — an un-deleted `.app`.** Present when `app` is among
+///    `bundle.targets`, or for a `--no-bundle`-style build.
+/// 3. **The bare release binary**, then the debug one, for a local tree where
+///    only those exist. On macOS this is a last resort that is expected to
+///    fail: macOS 14+ refuses to start WKWebView's
+///    `com.apple.WebKit.WebContent` XPC service for a host without a `.app`
+///    carrying a `CFBundleIdentifier`, so it renders nothing and the export
+///    times out — a loud failure, which is better than "no binary found".
+fn locate_binary(root: &Path) -> Option<(PathBuf, Option<MountedDmg>)> {
     // An empty value is "not set": a GitHub Actions expression that selects a
     // path only for some matrix legs yields "" on the others, and treating
     // that as a real path would print a warning on every one of them.
@@ -113,37 +249,52 @@ fn locate_binary(root: &Path) -> Option<PathBuf> {
         Ok(explicit) if !explicit.is_empty() => {
             let p = PathBuf::from(&explicit);
             if p.exists() {
-                return Some(p);
+                return Some((p, None));
             }
             eprintln!("[WARN] LATTICE_EXPORT_BIN={explicit} does not exist; falling back");
         }
         _ => {}
     }
 
-    let target = root.join("src-tauri").join("target");
+    let dirs = build_dirs(root);
 
     if cfg!(target_os = "macos") {
-        // Any .app under the bundle dir — matching on the extension rather
-        // than on "lattice.app" so a productName change cannot silently
-        // downgrade this to the bare-binary path that cannot render.
-        let bundles = target.join("release").join("bundle").join("macos");
-        if let Ok(entries) = fs::read_dir(&bundles) {
+        for dir in &dirs {
+            let dmgs = dir.join("release").join("bundle").join("dmg");
+            let Ok(entries) = fs::read_dir(&dmgs) else { continue };
             for entry in entries.flatten() {
-                let app = entry.path();
-                if app.extension().is_some_and(|e| e == "app") {
-                    let inner = app.join("Contents").join("MacOS").join("lattice");
-                    if inner.exists() {
-                        return Some(inner);
+                let dmg = entry.path();
+                if dmg.extension().is_some_and(|e| e == "dmg") {
+                    let mount_point = dir.join("export-demo-dmg");
+                    match attach_dmg(&dmg, &mount_point) {
+                        Ok(guard) => {
+                            println!("[INFO] Mounted   : {}", dmg.display());
+                            if let Some(bin) = app_binary_in(&mount_point) {
+                                return Some((bin, Some(guard)));
+                            }
+                            eprintln!(
+                                "[WARN] no .app with an executable inside {}; falling back",
+                                dmg.display()
+                            );
+                        }
+                        Err(e) => eprintln!("[WARN] {e}; falling back"),
                     }
                 }
             }
         }
+
+        for dir in &dirs {
+            if let Some(bin) = app_binary_in(&dir.join("release").join("bundle").join("macos")) {
+                return Some((bin, None));
+            }
+        }
     }
 
-    [target.join("release"), target.join("debug")]
-        .into_iter()
+    dirs.iter()
+        .flat_map(|d| [d.join("release"), d.join("debug")])
         .map(|d| d.join(binary_name()))
         .find(|p| p.exists())
+        .map(|p| (p, None))
 }
 // locate_binary END ********************************************
 
@@ -447,9 +598,14 @@ fn publish(out_dir: &Path, label: &str, produced: &[(PathBuf, &str)]) -> Result<
 // publish END **************************************************
 
 //**************************************************************
-// main
+// run
 //**************************************************************
-fn main() {
+/// The whole check, returning the process exit code.
+///
+/// Every exit is a `return` rather than `std::process::exit` so that the
+/// `MountedDmg` guard is dropped — and the DMG detached — on every path,
+/// including the failing ones. `exit` skips destructors.
+fn run() -> i32 {
     println!("══════════════════════════════════════════════════════");
     println!("  Lattice CLI Export Check (docs/demo/demo.md)");
     println!("══════════════════════════════════════════════════════");
@@ -459,7 +615,7 @@ fn main() {
         Err(e) => {
             eprintln!("[ERROR] {e}");
             eprintln!("usage: cargo run --example export_demo -- [--out <dir>] [--label <name>]");
-            std::process::exit(2);
+            return 2;
         }
     };
 
@@ -467,27 +623,30 @@ fn main() {
     let demo = root.join("docs").join("demo").join("demo.md");
     if !demo.exists() {
         eprintln!("[ERROR] demo document not found: {}", demo.display());
-        std::process::exit(1);
+        return 1;
     }
 
     // A missing binary is a skip locally and a failure in CI — a tree that
     // has never been built must not fail the suite, but a CI leg that
     // silently exported nothing must not report success either.
     let required = std::env::var("LATTICE_EXPORT_REQUIRED").as_deref() == Ok("1");
-    let bin = match locate_binary(&root) {
-        Some(b) => b,
+    // `_dmg` is named, not `_`: binding it to `_` would drop the guard here and
+    // detach the volume before the binary inside it is ever run.
+    let (bin, _dmg) = match locate_binary(&root) {
+        Some(found) => found,
         None => {
             let msg = format!(
-                "no lattice binary found at src-tauri/target/{{release,debug}}/{}",
-                binary_name()
+                "no lattice binary found under src-tauri/target/[<triple>/]{{release,debug}}/{}{}",
+                binary_name(),
+                if cfg!(target_os = "macos") { " and no .dmg to mount" } else { "" }
             );
             if required {
                 eprintln!("[ERROR] {msg} (LATTICE_EXPORT_REQUIRED=1)");
-                std::process::exit(1);
+                return 1;
             }
             println!("[SKIP] {msg}");
             println!("       Build one first, or set LATTICE_EXPORT_BIN.");
-            std::process::exit(0);
+            return 0;
         }
     };
 
@@ -502,12 +661,12 @@ fn main() {
     let _ = fs::remove_dir_all(&scratch);
     if let Err(e) = fs::create_dir_all(&scratch) {
         eprintln!("[ERROR] cannot create {}: {e}", scratch.display());
-        std::process::exit(1);
+        return 1;
     }
     let source = scratch.join("demo.md");
     if let Err(e) = fs::copy(&demo, &source) {
         eprintln!("[ERROR] cannot copy demo.md into {}: {e}", scratch.display());
-        std::process::exit(1);
+        return 1;
     }
     // demo.md references images from demo_assets/; copy them so the preview
     // renders the same document the release page shows.
@@ -552,9 +711,20 @@ fn main() {
     println!("\n══════════════════════════════════════════════════════");
     if all_pass {
         println!("[TEST RESULT] PASSED (CLI export)");
-        std::process::exit(0);
+        return 0;
     }
     println!("[TEST RESULT] FAILED (CLI export)");
-    std::process::exit(1);
+    1
+}
+// main END *****************************************************
+
+
+//**************************************************************
+// main
+//**************************************************************
+/// Thin wrapper: all work is in `run()` so its destructors — notably the
+/// `MountedDmg` detach — run before the process exits.
+fn main() {
+    std::process::exit(run());
 }
 // main END *****************************************************

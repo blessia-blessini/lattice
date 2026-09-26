@@ -449,16 +449,13 @@ jobs:
         LATTICE_EXPORT_OUT: ${{ github.workspace }}/demo-export
         LATTICE_EXPORT_LABEL: ${{ matrix.config.platform }}
         LATTICE_EXPORT_REQUIRED: ${{ matrix.config.export_mode == 'required' && '1' || '0' }}
-        # The macOS legs cross-build into a target-triple directory, and a
-        # bare binary cannot start WKWebView's WebContent XPC service — only
-        # the .app bundle can. Point the check straight at it. Every other
-        # leg leaves this empty and the default search finds target/release/.
-        LATTICE_EXPORT_BIN: >-
-          ${{ matrix.config.platform == 'macos-arm64'
-              && format('{0}/src-tauri/target/aarch64-apple-darwin/release/bundle/macos/lattice.app/Contents/MacOS/lattice', github.workspace)
-           || matrix.config.platform == 'macos-intel'
-              && format('{0}/src-tauri/target/x86_64-apple-darwin/release/bundle/macos/lattice.app/Contents/MacOS/lattice', github.workspace)
-           || '' }}
+        # No LATTICE_EXPORT_BIN. The check locates the build itself, including
+        # the cross-build's target/<triple>/release/ tree. On macOS it mounts
+        # the .dmg and runs the .app inside it — the artefact a user actually
+        # downloads, and the only one that survives the build: the dmg bundler
+        # deletes bundle/macos/*.app once the DMG is written ("Cleaning
+        # .../lattice.app" in the step-350 log), which is what made this check
+        # fail with "no lattice binary found" on 2026-09-26.
       # Frontend tests use jsdom, so they can theoretically run anywhere node is.
       # But usually we run them on standard desktop runners.
       # Note: 'npm install/ci' was done in step 150/151.
