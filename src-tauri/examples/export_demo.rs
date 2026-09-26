@@ -98,16 +98,14 @@ fn binary_name() -> &'static str {
 /// a cross build: `--target aarch64-apple-darwin` moves the whole `release/`
 /// subtree one level down, which is why the macOS legs find nothing where a
 /// native build leaves it. Sub-directories are discovered rather than listed,
-/// so a new target triple needs no change here.
+/// so a new target triple needs no change here — and they are taken in sorted
+/// order, so a tree holding two cross-builds always picks the same one.
 fn build_dirs(root: &Path) -> Vec<PathBuf> {
     let target = root.join("src-tauri").join("target");
     let mut dirs = vec![target.clone()];
-    if let Ok(entries) = fs::read_dir(&target) {
-        for entry in entries.flatten() {
-            let dir = entry.path();
-            if dir.join("release").is_dir() || dir.join("debug").is_dir() {
-                dirs.push(dir);
-            }
+    for dir in sorted_paths(&target) {
+        if dir.join("release").is_dir() || dir.join("debug").is_dir() {
+            dirs.push(dir);
         }
     }
     dirs
@@ -207,9 +205,14 @@ fn attach_dmg(dmg: &Path) -> Result<MountedDmg, String> {
 /// `productName` change cannot silently downgrade this to a path that does not
 /// exist. The executable inside is named after the bundle, not after the
 /// crate, so it is derived from the bundle name.
+///
+/// Both directory scans are **sorted by name**. `read_dir` order is
+/// unspecified — filesystem-dependent — so an unsorted scan would pick an
+/// arbitrary bundle where several exist, and an arbitrary executable from a
+/// bundle carrying more than one. Sorting makes the choice the same on every
+/// run and every machine, which is what makes a failure reproducible.
 fn app_binary_in(dir: &Path) -> Option<PathBuf> {
-    for entry in fs::read_dir(dir).ok()?.flatten() {
-        let app = entry.path();
+    for app in sorted_paths(dir) {
         if app.extension().is_some_and(|e| e == "app") {
             let macos = app.join("Contents").join("MacOS");
             // The bundle's own stem first (lattice.app -> MacOS/lattice), then
@@ -220,18 +223,29 @@ fn app_binary_in(dir: &Path) -> Option<PathBuf> {
                     return Some(named);
                 }
             }
-            if let Ok(entries) = fs::read_dir(&macos) {
-                for exe in entries.flatten() {
-                    if exe.path().is_file() {
-                        return Some(exe.path());
-                    }
-                }
+            if let Some(exe) = sorted_paths(&macos).into_iter().find(|p| p.is_file()) {
+                return Some(exe);
             }
         }
     }
     None
 }
 // app_binary_in END ********************************************
+
+
+//**************************************************************
+// sorted_paths
+//**************************************************************
+/// Entries of `dir` in a deterministic order; empty when it cannot be read.
+fn sorted_paths(dir: &Path) -> Vec<PathBuf> {
+    let mut paths: Vec<PathBuf> = match fs::read_dir(dir) {
+        Ok(entries) => entries.flatten().map(|e| e.path()).collect(),
+        Err(_) => return Vec::new(),
+    };
+    paths.sort();
+    paths
+}
+// sorted_paths END *********************************************
 
 
 //**************************************************************
@@ -278,9 +292,7 @@ fn locate_binary(root: &Path) -> Option<(PathBuf, Option<MountedDmg>)> {
     if cfg!(target_os = "macos") {
         for dir in &dirs {
             let dmgs = dir.join("release").join("bundle").join("dmg");
-            let Ok(entries) = fs::read_dir(&dmgs) else { continue };
-            for entry in entries.flatten() {
-                let dmg = entry.path();
+            for dmg in sorted_paths(&dmgs) {
                 if dmg.extension().is_some_and(|e| e == "dmg") {
                     match attach_dmg(&dmg) {
                         Ok(guard) => {

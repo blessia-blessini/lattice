@@ -57,6 +57,10 @@ ITST-LTTCE-XPT-00010 reaches them by running the real binary:
 
 - Windows — verified by hand, and now by ITST-LTTCE-XPT-00010 on the `windows-desktop` and
   `windows-arm-desktop` legs.
+- Linux — the gtk/glib calls in the fix were checked against the crate APIs by two independent
+  review models (`GtkSettingsExt`, `Settings::default() -> Option<Settings>`,
+  `dgettext(Option<&str>, &str) -> GString`), but the file has still never been **compiled**: it is
+  not built on Windows at all. Confidence, not proof.
 - Linux — ITST-LTTCE-XPT-00010 executed it for the first time on 2026-09-26 and it FAILED, exactly as
   the paragraph above predicted: `WebKitGTK print failed: Printer not found`, because the settings
   named no printer and the runner has none. Fixed by REQ-LTTCE-XPT-00007 (file print backend + named
