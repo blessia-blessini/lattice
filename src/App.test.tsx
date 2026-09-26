@@ -963,7 +963,7 @@ describe('App — headless export launch', () => {
     it.each(['html', 'pdf'])(
         'exportFormat "%s" fails instead of exporting an incomplete document (REQ-LTTCE-XPT-00009)',
         async (format) => {
-            // Regression (CI run 36260972990, 2026-09-26): 2 of 5 diagrams had
+            // Regression (CI run 36260972990, 2026-09-26): at most 2 of 4 diagrams had
             // rendered when the wait gave up, and the export still reported
             // success. It must hand back an error and no document.
             const err = vi.spyOn(console, 'error').mockImplementation(() => {});

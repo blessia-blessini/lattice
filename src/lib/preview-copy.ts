@@ -166,7 +166,7 @@ export interface DiagramSettleResult {
  * Gives up after `timeoutMs` so a stuck diagram cannot hang a CLI export
  * forever — but *reports* how many were still pending rather than resolving
  * as though all were done. Treating a timeout as success is what let an
- * export write 2 of 5 diagrams and exit 0 (REQ-LTTCE-XPT-00009); the caller
+ * export write at most 2 of 4 diagrams and exit 0 (REQ-LTTCE-XPT-00009); the caller
  * decides, via `describeUnsettledDiagrams`, that such a result is a failure.
  */
 export async function waitForDiagramsSettled(

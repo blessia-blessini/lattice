@@ -213,7 +213,7 @@ describe('preview copy — waiting for diagrams to settle', () => {
     it('reports a timeout as still-pending diagrams, not as settled (REQ-LTTCE-XPT-00009)', async () => {
         // Regression (CI run 36260972990, 2026-09-26): the wait used to resolve
         // void on timeout, indistinguishable from success, so the export wrote
-        // 2 of 5 diagrams and reported success. The result must say so.
+        // at most 2 of 4 diagrams and reported success. The result must say so.
         const root = elementOf(
             `${diagram()}<div class="mermaid"><svg></svg></div>`
             + `<div class="mermaid"><pre class="error">boom</pre></div>`

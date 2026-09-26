@@ -48,7 +48,7 @@ const EXIT_OK: i32 = 0;
 const EXIT_FAIL: i32 = 1;
 
 /// Lower bounds that separate "a real document" from a blank or truncated one.
-/// `demo.md` is ~14 KB of Markdown with tables, KaTeX and five Mermaid
+/// `demo.md` is ~14 KB of Markdown with tables, KaTeX and four Mermaid
 /// diagrams, so both outputs are far larger than these in practice; the
 /// numbers only have to exclude an empty or stub file.
 const MIN_HTML_BYTES: usize = 10_000;
@@ -65,9 +65,14 @@ const MIN_PDF_BYTES: usize = 20_000;
 /// that is not going to exit at all.
 const RUN_TIMEOUT: Duration = Duration::from_secs(300);
 
-/// Number of Mermaid blocks in `docs/demo/demo.md`. Asserting the exact count
-/// reached the output turns a silently half-rendered export into a failure.
-const DEMO_MERMAID_BLOCKS: usize = 5;
+/// The `alt` text `substituteDiagrams` (`src/lib/preview-copy.ts`,
+/// `DIAGRAM_ALT`) gives every rasterised diagram. It is what tells a diagram's
+/// `<img>` apart from an ordinary embedded picture: both are
+/// `data:image/png` URIs, and counting those instead is how this check once
+/// accepted an export with a diagram missing (`demo.md` has 4 diagrams *and*
+/// 2 pictures, and the old threshold was "at least 5 PNGs"). Mirrors a TS
+/// constant this harness cannot import; if one changes, change both.
+const DIAGRAM_IMG_ALT: &str = "alt=\"Mermaid diagram\"";
 
 //**************************************************************
 // repo_root
@@ -560,17 +565,64 @@ fn check_html(path: &Path) -> Vec<String> {
         problems.push("HTML contains no KaTeX markup — the demo's math did not render".into());
     }
 
-    let diagrams = html.matches("data:image/png").count();
-    if diagrams < DEMO_MERMAID_BLOCKS {
-        problems.push(format!(
-            "HTML carries {diagrams} rasterised diagram(s), expected {DEMO_MERMAID_BLOCKS} — \
-             the export fired before Mermaid settled"
-        ));
+    // The expected count comes from the staged source beside the output
+    // (`<dir>/demo.md` → `<dir>/demo.html`), not from a constant that has to be
+    // kept in step with the document by hand — it was, once, and was wrong.
+    let source = path.with_extension("md");
+    match fs::read_to_string(&source) {
+        Ok(md) => problems.extend(check_diagrams(&html, count_mermaid_fences(&md))),
+        Err(e) => problems.push(format!("cannot read staged source {}: {e}", source.display())),
     }
 
     problems
 }
 // check_html END ***********************************************
+
+
+//**************************************************************
+// count_mermaid_fences
+//**************************************************************
+/// Number of ```` ```mermaid ```` fences opening a line in `markdown` — the
+/// diagrams the preview will render. An inline mention inside a sentence, as
+/// demo.md's prose has, does not start a line and is not counted.
+fn count_mermaid_fences(markdown: &str) -> usize {
+    markdown
+        .lines()
+        .filter(|l| l.trim_start().starts_with("```mermaid"))
+        .count()
+}
+// count_mermaid_fences END *************************************
+
+
+//**************************************************************
+// check_diagrams
+//**************************************************************
+/// REQ-LTTCE-XPT-00001 / 00009 — every diagram in the source reached the HTML
+/// as a rasterised `<img>`, and none was left behind as a live `.mermaid`
+/// container (the shape of an export that fired before the diagram settled).
+/// Pure, so the counting rule is unit-tested without an app binary.
+fn check_diagrams(html: &str, expected: usize) -> Vec<String> {
+    let mut problems = Vec::new();
+    if expected == 0 {
+        problems.push("staged demo.md has no ```mermaid block — the check would prove nothing".into());
+        return problems;
+    }
+    let diagrams = html.matches(DIAGRAM_IMG_ALT).count();
+    if diagrams != expected {
+        problems.push(format!(
+            "HTML carries {diagrams} rasterised diagram(s), expected {expected} — \
+             the export fired before Mermaid settled"
+        ));
+    }
+    let unsettled = html.matches("class=\"mermaid\"").count();
+    if unsettled > 0 {
+        problems.push(format!(
+            "HTML still contains {unsettled} un-rasterised .mermaid container(s)"
+        ));
+    }
+    problems
+}
+// check_diagrams END *******************************************
 
 //**************************************************************
 // check_pdf
@@ -831,3 +883,59 @@ fn main() {
     std::process::exit(run());
 }
 // main END *****************************************************
+
+
+//**************************************************************
+// tests
+//**************************************************************
+/// Run with `cargo test --example export_demo`. The harness itself runs on
+/// every desktop CI leg; these pin the counting rule that decides whether it
+/// passes, which is the part that was once wrong.
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const DIAGRAM: &str = r#"<img src="data:image/png;base64,AA" alt="Mermaid diagram" width="10">"#;
+    const PICTURE: &str = r#"<img alt="Image" src="data:image/png;base64,BB">"#;
+
+    #[test]
+    fn counts_only_fences_that_open_a_line() {
+        let md = "Lattice renders ` ```mermaid ``` ` inline.\n\n```mermaid\ngraph LR\n```\n\n  ```mermaid\npie\n```\n```rust\nfn x(){}\n```\n";
+        assert_eq!(count_mermaid_fences(md), 2);
+    }
+
+    #[test]
+    fn the_real_demo_document_has_four_diagrams() {
+        let md = fs::read_to_string(repo_root().join("docs").join("demo").join("demo.md")).unwrap();
+        assert_eq!(count_mermaid_fences(&md), 4);
+    }
+
+    #[test]
+    fn a_complete_export_passes() {
+        let html = format!("{DIAGRAM}{DIAGRAM}{PICTURE}{PICTURE}");
+        assert!(check_diagrams(&html, 2).is_empty());
+    }
+
+    #[test]
+    fn embedded_pictures_do_not_stand_in_for_missing_diagrams() {
+        // Regression: 1 diagram + 2 pictures is 3 PNGs, which the old
+        // "count every data:image/png" rule would have accepted for 2 diagrams.
+        let html = format!("{DIAGRAM}{PICTURE}{PICTURE}");
+        let problems = check_diagrams(&html, 2);
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert!(problems[0].contains("1 rasterised diagram(s), expected 2"));
+    }
+
+    #[test]
+    fn a_leftover_mermaid_container_is_reported() {
+        let html = format!("{DIAGRAM}<div class=\"mermaid\"><svg></svg></div>");
+        let problems = check_diagrams(&html, 2);
+        assert!(problems.iter().any(|p| p.contains("un-rasterised")), "{problems:?}");
+    }
+
+    #[test]
+    fn a_source_without_diagrams_cannot_pass_vacuously() {
+        assert_eq!(check_diagrams("", 0).len(), 1);
+    }
+}
+// tests END ****************************************************

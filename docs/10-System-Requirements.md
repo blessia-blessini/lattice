@@ -729,7 +729,7 @@ abandoned because the machine, the application or its WebView had not been used 
 *Rationale*: only the first export pays for paging the executable and the WebView's frameworks in,
 constructing the process's first WebView, and parsing the frontend bundle. Measured on a macOS arm64
 CI runner (2026-09-26): application launch alone took 4 s cold against 1 s warm, and a cold render of
-`docs/demo/demo.md` — five Mermaid diagrams and KaTeX — exceeded a 20 s budget, while the *warm*
+`docs/demo/demo.md` — four Mermaid diagrams and KaTeX — exceeded a 20 s budget, while the *warm*
 render of the same document by the same binary completed in 17 s, inside that budget by three
 seconds. The user who meets the cold case is the most ordinary one there is: install Lattice, export a
 document. A budget a correct render can miss because nothing was warm yet is not a safety net, it is a
@@ -750,7 +750,7 @@ derived from the render budget of REQ-LTTCE-XPT-00008, not set independently of 
 have — worse than a failure, because nothing tells the user or the invoking script that the file is
 wrong. It happened (CI, macOS Intel, 2026-09-26): the render budget had been raised to 90 s for a
 cold start, but the wait for diagrams still ran on a separate, fixed 8 s clock. The cold render took
-about 9 s, the diagram wait gave up at 8, and the export wrote a file with 2 of its 5 diagrams and
+about 9 s, the diagram wait gave up at 8, and the export wrote a file with at most 2 of its 4 diagrams and
 exited 0. Two bounds on one wait will drift apart the next time either is changed; one bound,
 derived in one place, cannot.
 

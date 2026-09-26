@@ -149,7 +149,7 @@ pub struct ExportState {
 /// WKWebView / WebKitGTK / WebView2 instance of the process is constructed, and
 /// the frontend bundle is parsed and executed for the first time. Measured on a
 /// macOS arm64 CI runner on 2026-09-26: app launch alone took 4 s cold against
-/// 1 s warm, and the cold render of `docs/demo/demo.md` (five Mermaid diagrams,
+/// 1 s warm, and the cold render of `docs/demo/demo.md` (four Mermaid diagrams,
 /// KaTeX) exceeded a 20 s budget while the warm render of the same document in
 /// the same binary needed 17 s — inside the old limit by three seconds. A
 /// budget that a correct render can miss because the machine was cold is not a
@@ -729,7 +729,7 @@ mod tests {
     //**************************************************************
     /// Regression (CI run 36260972990, macos-intel, 2026-09-26): the frontend
     /// waited a fixed 8 s while Rust allowed 90 s, so a cold render that took
-    /// ~9 s was exported with 2 of its 5 diagrams. The settle budget must scale
+    /// ~9 s was exported with at most 2 of its 4 diagrams. The settle budget must scale
     /// with the render budget and stay well clear of that old clock.
     #[test]
     fn settle_budget_is_not_the_old_8s_clock() {

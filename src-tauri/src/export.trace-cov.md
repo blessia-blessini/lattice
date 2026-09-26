@@ -50,10 +50,14 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 ## Integration test
 
 - ITST-LTTCE-XPT-00010 **covers** IMPL-LTTCE-XPT-00003, IMPL-LTTCE-XPT-00004, IMPL-LTTCE-XPT-00005
-- ITST-LTTCE-XPT-00010 **covers** REQ-LTTCE-XPT-00009 end to end: `export-html` asserts one `<img>`
-  per Mermaid block of `docs/demo/demo.md`. It is the check that caught the partial export on the
-  macos-intel leg (run 36260972990); after the fix a too-slow render fails the export by name instead
-  of writing a file with missing diagrams.
+- ITST-LTTCE-XPT-00010 **covers** REQ-LTTCE-XPT-00009 end to end: `export-html` asserts exactly one
+  `alt="Mermaid diagram"` `<img>` per ```` ```mermaid ```` fence of the staged `demo.md` (counted from
+  the source, not a constant) and no leftover `.mermaid` container. It caught the partial export on
+  the macos-intel leg (run 36260972990) — though with a wrong rule: it counted every
+  `data:image/png` against a hard-coded 5, while demo.md has 4 diagrams *and* 2 embedded pictures, so
+  it would have passed an export missing one diagram, and its "2" in that run meant at most 2
+  diagrams, most likely 0. Fixed in cycle 1 of the review; the counting rule has its own unit tests
+  (`cargo test --example export_demo`, 6 cases), run by `build-test.ps1` / `.sh` before the check.
 
 `src-tauri/examples/export_demo.rs` — the headless round trip on `docs/demo/demo.md`: both formats
 produce a correct file beside the input and exit `0`, an unreadable input exits `1` and writes

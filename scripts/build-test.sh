@@ -388,6 +388,13 @@ fi
 if [ -n "${LATTICE_EXPORT_LABEL}" ]; then
     _EXPORT_ARGS+=(--label "$LATTICE_EXPORT_LABEL")
 fi
+# The check's own counting rules first: a wrong rule once let an export with a
+# diagram missing pass (REQ-LTTCE-XPT-00009).
+if ! cargo test --example export_demo; then
+    echo "CLI Export Check unit tests failed!"
+    popd || exit
+    exit 1
+fi
 gui_run cargo run --example export_demo -- "${_EXPORT_ARGS[@]}" 2>&1 | tee "$RUST_OUT_EXPORT"
 EXPORT_RESULT=${PIPESTATUS[0]}
 popd || exit

@@ -1383,7 +1383,7 @@ completed. It was 120 s and is now 300 s for exactly that reason.
 wait for diagrams (`waitForDiagramsSettled`) is itself bounded — a stuck diagram must not hang the
 window — and that bound used to be its own hard-coded 8 s. When the render budget above was raised
 to 90 s, the 8 s clock silently became the real limit, and because the wait *resolved as though
-settled* when it ran out, a cold macOS Intel render that took ~9 s exported 2 of its 5 diagrams and
+settled* when it ran out, a cold macOS Intel render that took ~9 s exported at most 2 of its 4 diagrams and
 exited 0. Two rules now close that off:
 
 - The settle budget is **derived, not set**: `settle_budget(render_timeout(..))` is the render budget
@@ -1534,7 +1534,7 @@ deliberately: the other hosts run this same code on different schedulers and hav
 executed at all.
 
 It was found in review, not by the tests, because the only document exercised by hand
-(`docs/demo/demo.md`) contains five Mermaid diagrams — so the settle loop always yielded and always
+(`docs/demo/demo.md`) contains four Mermaid diagrams — so the settle loop always yielded and always
 gave React its commit. `App.test.tsx` now samples `data-view-mode` *at the instant of the signal*
 rather than afterwards (a `waitFor` assertion passes on a value that only arrives later, which is
 exactly how the defect hid), and does it on deliberately diagram-free content.

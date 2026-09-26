@@ -279,6 +279,13 @@ try {
     $exportArgs = @()
     if ($env:LATTICE_EXPORT_OUT)   { $exportArgs += '--out';   $exportArgs += $env:LATTICE_EXPORT_OUT }
     if ($env:LATTICE_EXPORT_LABEL) { $exportArgs += '--label'; $exportArgs += $env:LATTICE_EXPORT_LABEL }
+    # The check's own counting rules first: a wrong rule once let an export
+    # with a diagram missing pass (REQ-LTTCE-XPT-00009).
+    cargo test --example export_demo
+    if ($LASTEXITCODE -ne 0) {
+        Write-Output "CLI Export Check unit tests failed!"
+        exit $LASTEXITCODE
+    }
     cargo run --example export_demo -- @exportArgs
     if ($LASTEXITCODE -ne 0) {
         Write-Output "CLI Export Check failed!"
