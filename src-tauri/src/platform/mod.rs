@@ -68,6 +68,12 @@ pub(crate) trait Platform {
     /// WKWebView on macOS), so `--export-pdf` cannot drift from what
     /// `--export-html` and an interactive Ctrl-P produce.
     ///
+    /// Every implementation lays the document out on `paper`, portrait, with
+    /// [`crate::paper::PAGE_MARGIN_MM`] on each side (REQ-LTTCE-XPT-00011 /
+    /// REQ-LTTCE-XPT-00012), set explicitly through its host's page-setup API.
+    /// Host defaults differ (Letter vs A4, GTK's near-zero margins) and WebKit
+    /// ignores the CSS `@page` margin, so nothing may be left to them.
+    ///
     /// Asynchronous by construction: every host API here completes through a
     /// callback, so implementations return immediately and send on `done`
     /// later, exactly once. Use [`PdfDone`] to get that "exactly once" for
@@ -80,9 +86,10 @@ pub(crate) trait Platform {
         &self,
         window: &tauri::WebviewWindow,
         out_path: std::path::PathBuf,
+        paper: crate::paper::PaperSize,
         done: tokio::sync::oneshot::Sender<Result<(), String>>,
     ) {
-        let _ = window;
+        let _ = (window, paper);
         let _ = done.send(Err(format!(
             "PDF export is not supported on this platform (wanted '{}')",
             out_path.display()
@@ -124,9 +131,10 @@ pub(crate) fn handle_run_event(app: &tauri::AppHandle, event: tauri::RunEvent) {
 pub(crate) fn print_to_pdf(
     window: &tauri::WebviewWindow,
     out_path: std::path::PathBuf,
+    paper: crate::paper::PaperSize,
     done: tokio::sync::oneshot::Sender<Result<(), String>>,
 ) {
-    PlatformImpl.print_to_pdf(window, out_path, done);
+    PlatformImpl.print_to_pdf(window, out_path, paper, done);
 }
 // print_to_pdf END ************************************************************
 
@@ -172,9 +180,70 @@ impl PdfDone {
 // PdfDone END *****************************************************************
 
 
+//******************************************************************************
+// written_pdf_result
+//******************************************************************************
+/// The result to report once a host print API says it has finished: its own
+/// verdict (`host_ok`) *and* a non-empty file at `path`.
+///
+/// Shared by every desktop backend (DRY). A host's "finished" is not evidence
+/// that a file exists: a print operation can complete without writing, and an
+/// export that reports success with nothing on disk is the failure mode
+/// REQ-LTTCE-XPT-00006 forbids. Pure apart from the one `metadata` read, so it
+/// is tested on every host even though each backend runs on only one.
+pub(crate) fn written_pdf_result(host_ok: bool, path: &std::path::Path) -> Result<(), String> {
+    if !host_ok {
+        return Err("the host print operation reported a failure".to_string());
+    }
+    match std::fs::metadata(path) {
+        Ok(meta) if meta.len() > 0 => Ok(()),
+        Ok(_) => Err(format!("the PDF '{}' was written empty", path.display())),
+        Err(e) => Err(format!("no PDF was written to '{}': {}", path.display(), e)),
+    }
+}
+// written_pdf_result END ******************************************************
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    //**************************************************************
+    // written_pdf_result
+    //**************************************************************
+
+    #[test]
+    fn a_reported_success_with_a_non_empty_file_is_success() {
+        let dir = tempfile::tempdir().unwrap();
+        let pdf = dir.path().join("out.pdf");
+        std::fs::write(&pdf, b"%PDF-1.4").unwrap();
+        assert_eq!(written_pdf_result(true, &pdf), Ok(()));
+    }
+
+    #[test]
+    fn a_reported_success_without_a_file_is_a_failure() {
+        let dir = tempfile::tempdir().unwrap();
+        let err = written_pdf_result(true, &dir.path().join("never-written.pdf")).unwrap_err();
+        assert!(err.contains("no PDF was written"), "{err}");
+    }
+
+    #[test]
+    fn a_reported_success_with_an_empty_file_is_a_failure() {
+        let dir = tempfile::tempdir().unwrap();
+        let pdf = dir.path().join("empty.pdf");
+        std::fs::write(&pdf, b"").unwrap();
+        assert!(written_pdf_result(true, &pdf).unwrap_err().contains("empty"));
+    }
+
+    #[test]
+    fn a_reported_failure_wins_even_over_an_existing_file() {
+        // A stale file from an earlier run must not turn a failed print into a
+        // success.
+        let dir = tempfile::tempdir().unwrap();
+        let pdf = dir.path().join("stale.pdf");
+        std::fs::write(&pdf, b"%PDF-1.4").unwrap();
+        assert!(written_pdf_result(false, &pdf).unwrap_err().contains("reported a failure"));
+    }
 
     //**************************************************************
     // PdfDone

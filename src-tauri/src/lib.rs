@@ -40,6 +40,9 @@ static M_PATH: Mutex<String> = Mutex::new(String::new());
 pub mod e2e;
 mod export;
 pub mod file_state;
+// Public so the CLI export check (examples/export_demo.rs) asserts page sizes
+// against the same table the backends print with.
+pub mod paper;
 pub mod settings;
 mod tabify;
 mod vault_path;
@@ -1222,6 +1225,22 @@ fn setup_handler(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
     }
 
     if let Some(format) = platform::cli_args::requested_export_format() {
+        // REQ-LTTCE-XPT-00011: a bad `--paper` fails the whole run up front,
+        // before any window exists. HTML has no pages, so it never reads it.
+        // Checked before the paths: in `--paper notes.md` (value forgotten) the
+        // file is taken as the paper, and "unknown paper size 'notes.md'" names
+        // the actual mistake where "no file paths" would not.
+        let paper = match format {
+            export::ExportFormat::Pdf => match platform::cli_args::requested_paper_size() {
+                Ok(p) => p,
+                Err(e) => {
+                    error!("{} — nothing exported.", e);
+                    app.handle().exit(1);
+                    return Ok(());
+                }
+            },
+            export::ExportFormat::Html => paper::PaperSize::default(),
+        };
         let paths = platform::cli_args::collect_file_paths();
         if paths.is_empty() {
             error!(
@@ -1232,7 +1251,7 @@ fn setup_handler(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
             return Ok(());
         }
         let handle = app.handle().clone();
-        tauri::async_runtime::spawn(export::run_export(handle, paths, format));
+        tauri::async_runtime::spawn(export::run_export(handle, paths, format, paper));
         return Ok(());
     }
 

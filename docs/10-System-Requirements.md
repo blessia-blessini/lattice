@@ -647,6 +647,7 @@ teaches the other:
 | `--export-html`  | the rendered preview as HTML        | XPT-00001 … 00003           |
 | `--export-pdf`   | the rendered preview as a paginated PDF | XPT-00004 … 00006       |
 | both             | printer-free PDF, render budget, no partial output, no dependence on timers | XPT-00007 … 00010 |
+| `--export-pdf`   | paper chosen with `--paper`; the same page on every platform | XPT-00011 … 00012 |
 
 <!--REQ-LTTCE-XPT-00001-->
 **REQ-LTTCE-XPT-00001** — Launching `lattice` with `--export-html <path> [<path> ...]` SHALL, for each
@@ -774,6 +775,35 @@ nothing in 90 s, and even the frontend's own 80 s deadline never reported — it
 in time either). Separately, a diagram whose rasterisation returned nothing carried neither a PNG nor
 an error block, so it could only ever end in a timeout. A wait that ends on events cannot be starved
 this way, and a failure that is known immediately is reported immediately.
+
+<!--REQ-LTTCE-XPT-00011-->
+**REQ-LTTCE-XPT-00011** — `--export-pdf` SHALL accept `--paper <name>` (also written `--paper=<name>`)
+anywhere on the command line, where `<name>` is `a4`, `a3` or `letter`, compared without regard to
+case. Every PDF of the run SHALL be laid out on that paper; without `--paper` the paper SHALL be A4.
+When `--paper` is given without a value, or with any other value, the run SHALL export nothing and
+exit with a non-zero code, logging an error that names the accepted values — before any window is
+opened. The value after `--paper` SHALL never be taken for a file to export. `--export-html` SHALL
+ignore `--paper`.
+
+*Rationale*: the paper is a property of the output a script asks for, and "whatever the host
+defaults to" gave US Letter on Windows and A4 on Linux for the same command (v0.3.28 release PDFs,
+2026-09-27). An unknown value fails loudly rather than falling back to the default: a script that
+asked for A3 and quietly received A4 would find out only on paper. A4 is the default as the
+international standard size.
+
+<!--REQ-LTTCE-XPT-00012-->
+**REQ-LTTCE-XPT-00012** — On every desktop platform a PDF export SHALL produce paginated portrait
+pages of exactly the requested paper size (REQ-LTTCE-XPT-00011), with a 2 cm margin on every side of
+every page — the margin of the print stylesheet. The page geometry SHALL NOT depend on the host
+WebView's defaults.
+
+*Rationale*: three hosts produced three different pages from one document. WebView2 used US Letter;
+WebKitGTK, which ignores the CSS `@page` margin, put the text within a few millimetres of the paper
+edge; and on macOS the export was a window-sized snapshot — a single 800 × 568 pt landscape page
+holding only what fitted in the window, which also broke the pagination REQ-LTTCE-XPT-00004
+requires. The running file-name header and "Page X of Y" footer are **not** covered here: they are CSS
+page-margin boxes, which WebKit (Linux, macOS) does not render at all — a platform limitation recorded
+in `30-architecture.md`, not a behaviour this requirement promises.
 
 
 

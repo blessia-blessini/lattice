@@ -1471,21 +1471,27 @@ host WebView to print *that same live document*:
 | :------- | :------------------------------------------------ | :--------------------------- |
 | Windows  | `ICoreWebView2_7::PrintToPdf`                     | WebView2 writes the file     |
 | Linux    | `WebKitPrintOperation` + GTK `output-uri` / `output-file-format` | WebKitGTK writes the file |
-| macOS    | `WKWebView createPDFWithConfiguration:completionHandler:` | hands back `NSData`; Rust writes it |
+| macOS    | `WKWebView printOperationWithPrintInfo:` + `NSPrintOperation` (save job, no panel) | AppKit writes the file |
+
+The macOS row originally used `createPDFWithConfiguration:completionHandler:`. That is a *snapshot*
+API, not a print: one page the size of the (invisible) window, no print stylesheet, no pagination. The
+v0.3.28 release shipped exactly that — a single 800 × 568 pt landscape page — and it was replaced by a
+real print operation (ARCH-LTTCE-XPT-00003).
 
 **Selection is a manifest concern, as everywhere else in `platform/`.** `print_to_pdf` is a new method
 on the existing `Platform` trait in `platform/mod.rs`; `build.rs` already copies exactly one
 `impls/<os>.rs` into `$OUT_DIR/platform_impl.rs`, so no source file gains a `#[cfg(target_os)]` and the
 off-target code is never compiled. The host crates (`webview2-com` + `windows`, `webkit2gtk` + `gtk` +
-`glib`, `objc2` + `objc2-web-kit` + `block2`) are declared under per-target dependency tables in
-`src-tauri/Cargo.toml`, pinned to the versions wry already resolves, so no second copy of any of them
-enters the graph.
+`glib`, `objc2` + `objc2-foundation` + `objc2-app-kit` + `objc2-web-kit`) are declared under
+per-target dependency tables in `src-tauri/Cargo.toml`, pinned to the versions wry already resolves,
+so no second copy of any of them enters the graph. Their versions must follow wry's after every
+dependency update: a stale Windows pin does not merely duplicate a crate, it breaks the build.
 
-**Two crates are genuinely new, and only on macOS.** Enabling `objc2-web-kit`'s `WKPDFConfiguration`
-feature pulls in `objc2-javascript-core` and `objc2-security` — both `objc2` binding crates from the
-same family, both macOS/iOS-only, neither reaching a Windows or Linux build. That is a real (if
-small) widening of the dependency graph and is recorded here rather than glossed as "nothing new":
-the project rule is to minimise dependencies *and* to report them accurately when one is added.
+**No crate is new to the graph.** The snapshot API once needed `objc2-web-kit`'s
+`WKPDFConfiguration` feature, recorded here at the time as widening the graph by
+`objc2-javascript-core` and `objc2-security`. The print operation needs only AppKit classes wry itself
+uses for its own `print()`; `block2` and that feature were dropped, and `cargo update -p lattice` then
+locked 0 new packages (2026-09-27). The two crates remain in the graph, through other dependents.
 
 **Linux needs a named printer, and it must be the file one (REQ-LTTCE-XPT-00007).** GTK's
 `output-uri` / `output-file-format` settings say *where* the output goes, not *who* produces it. With
@@ -1523,6 +1529,37 @@ one small `Arc<Mutex<Option<Sender>>>` in `platform/mod.rs` — makes "whichever
 rest are ignored" a single shared rule instead of three hand-rolled guards, and bridges the
 `oneshot::Sender` (consumed on send) into the `Fn` closures these APIs require. `export.rs` awaits it
 under `PDF_PRINT_TIMEOUT`, so a print that never reports still fails that one file rather than the run.
+
+### Page geometry — decided once, in Rust
+
+<!--ARCH-LTTCE-XPT-00003-->
+
+Covers REQ-LTTCE-XPT-00011 and REQ-LTTCE-XPT-00012. Left to themselves the three hosts produced three
+different pages from one document: WebView2 defaulted to US Letter, WebKitGTK to A4 with GTK's
+near-zero margins (it ignores the CSS `@page` margin entirely), and macOS took a window-sized snapshot.
+The page is therefore decided in one place and handed to every host explicitly:
+
+- **`src-tauri/src/paper.rs`** (IMPL-LTTCE-XPT-00007) — pure and host-tested. `PaperSize` (`a4`,
+  `a3`, `letter`; A4 the default) is the single table of names and sizes; `PAGE_MARGIN_MM` (20) mirrors
+  `@page { margin: 2cm }` in `App.css`; unit conversions give each host its own unit.
+- **`platform/cli_args.rs`** — `paper_size_in` reads `--paper <name>` / `--paper=<name>`;
+  `file_paths_in` skips every valued option's value (`VALUED_OPTIONS`), so a paper name is never taken
+  for a file. `setup_handler` validates the paper before anything else in a PDF run, so a bad value
+  exits 1 before any window exists.
+- **`Platform::print_to_pdf(window, out_path, paper, done)`** — each backend sets paper, portrait and
+  margins through its own page-setup API: WebView2 `ICoreWebView2PrintSettings` (inches), GTK
+  `GtkPageSetup` + `GtkPrintSettings` (millimetres), AppKit `NSPrintInfo` (points).
+- **`written_pdf_result`** (`platform/mod.rs`) — every backend reports success only when the host
+  says so *and* a non-empty file exists; a host's "finished" alone is not evidence of a file.
+
+The same routine is what an interactive "Export to PDF…" command must call, so that a script and a
+person exporting the same document get the same page.
+
+**Header and page numbers are Chromium-only.** The running file-name header and "Page X of Y" footer
+are CSS page-margin boxes (`@top-center`, `@bottom-center`). Per MDN's compatibility data, Chromium
+renders them (since 131); WebKit and Firefox do not. So Windows PDFs carry them and Linux and macOS
+PDFs do not — and neither does an interactive print on those platforms. This is recorded as a known
+limitation; closing it needs a different mechanism than CSS and has not been decided.
 
 ### Frontend — what `beforeprint` would have done
 
@@ -1579,7 +1616,12 @@ the empty/absent-document refusal and the silent-overwrite rule. `cli_args.rs` t
 the stray-signal guard: the expected window accepted, a different window rejected, every window
 rejected once the slot is empty, and no prefix or case leniency (so `lattice-1-window` cannot be
 completed by `lattice-10-window`). `platform/mod.rs` tests `PdfDone`: first result wins, later ones
-ignored, failures forwarded verbatim, no panic when the receiver is already gone.
+ignored, failures forwarded verbatim, no panic when the receiver is already gone — and
+`written_pdf_result`: success only with a non-empty file, a stale file never turning a reported
+failure into success. `paper.rs` pins every paper's size in each unit against the standards, the
+default, case-insensitive names and portrait orientation; `cli_args.rs` tests `paper_size_in` (both
+spellings, position, default, unknown and missing values, first-wins) and `file_paths_in` (a paper
+value is never a file path).
 
 On the frontend, `print-style.test.ts` covers the extracted print stylesheet (header text, zoom
 scaling, CSS-string escaping of a Windows path with quotes in it, the non-finite-zoom guard,
@@ -1608,13 +1650,17 @@ HTML, because the part that actually produces the bytes is host code behind an F
   window beats no window when a file is deleted between the OS event and the launch) — correct
   interactively, wrong for an export, which must fail. `export.rs` now refuses up front via
   `ensure_readable`, before any window is built, for both formats.
-- The **Linux** and **macOS** backends are compile-verified by the CI matrix only
-  (`.github/workflows/buildAndTest.yml` builds linux x86-64 and ARM64, macos-arm64 and macos-intel); no one on this
-  project can run them by hand today, and they are explicitly *unverified at runtime*.
+- The **Linux** and **macOS** backends run on every CI desktop leg through the CLI export check
+  (`examples/export_demo.rs`, ITST-LTTCE-XPT-00010, since 2026-09-26): the real binary exports
+  `docs/demo/demo.md`, and the check asserts exit codes, the `%PDF-` magic and — since 2026-09-27 —
+  the page size of the default (A4) and a `--paper a3` export, plus the refusal of an unknown paper.
+  The page-size assertion is what exposes a snapshot instead of a page, or a host default paper.
+- On 2026-09-27 the paper change was also run by hand: **Windows** (WebView2) and **Linux** (WebKitGTK
+  2.52 on Ubuntu 24.04 under WSL) each exported A4, A3 and Letter at the exact size with 2 cm margins,
+  and exited `1` with no file for `--paper a5` and a bare `--paper`. The **macOS** print-operation
+  backend was type-checked and linted on Windows (a stand-in C compiler satisfies one dependency's
+  build script; `cargo check` never links) — its runtime evidence is the CI export check alone.
 - The **Android/iOS** default refusal is by construction, not by test.
-
-A future E2E harness extension — assert a non-zero-length `%PDF-` file appears next to the input and
-that the process exits `0` — is the natural place to close this, on every platform at once.
 
 ---
 

@@ -33,17 +33,19 @@ impl Platform for PlatformImpl {
     /// IMPL-LTTCE-XPT-00005 — prints the settled document with WebKitGTK's own
     /// `WebKitPrintOperation`, i.e. the exact layout engine that rendered the
     /// preview, driven straight to a file through GTK's `output-uri` /
-    /// `output-file-format` print settings so no printer dialog is ever shown.
+    /// `output-file-format` print settings so no printer dialog is ever shown,
+    /// on the page `linux_page_setup` describes.
     fn print_to_pdf(
         &self,
         window: &tauri::WebviewWindow,
         out_path: std::path::PathBuf,
+        paper: crate::paper::PaperSize,
         done: tokio::sync::oneshot::Sender<Result<(), String>>,
     ) {
         let done = PdfDone::new(done);
         let on_main = std::sync::Arc::clone(&done);
         let dispatch = window.with_webview(move |webview| {
-            linux_print_to_pdf(&webview.inner(), &out_path, &on_main);
+            linux_print_to_pdf(&webview.inner(), &out_path, paper, &on_main);
         });
         if let Err(e) = dispatch {
             done.finish(Err(format!("cannot reach the WebKitGTK webview: {}", e)));
@@ -64,9 +66,9 @@ impl Platform for PlatformImpl {
 fn linux_print_to_pdf(
     webview: &webkit2gtk::WebView,
     out_path: &std::path::Path,
+    paper: crate::paper::PaperSize,
     done: &std::sync::Arc<PdfDone>,
 ) {
-    use gtk::prelude::*;
     use webkit2gtk::PrintOperationExt;
 
     let uri = match glib::filename_to_uri(out_path, None) {
@@ -93,8 +95,15 @@ fn linux_print_to_pdf(
     // lookup fails with "Printer not found" and the export produces nothing.
     settings.set_printer(&file_printer_name());
 
+    let page_setup = linux_page_setup(paper);
+    // The paper goes into the settings too: GTK hands the settings' paper to
+    // the file backend, the page setup's to the layout; they must agree.
+    settings.set_paper_size(&page_setup.paper_size());
+    settings.set_orientation(gtk::PageOrientation::Portrait);
+
     let operation = webkit2gtk::PrintOperation::new(webview);
     operation.set_print_settings(&settings);
+    operation.set_page_setup(&page_setup);
 
     // The operation must outlive `print()` — WebKit reports completion through
     // these signals long after this function returns. Each callback drops the
@@ -105,9 +114,11 @@ fn linux_print_to_pdf(
 
     let on_ok = std::sync::Arc::clone(done);
     let released = std::rc::Rc::clone(&keep_alive);
+    let target = out_path.to_path_buf();
     operation.connect_finished(move |_| {
         released.borrow_mut().take();
-        on_ok.finish(Ok(()));
+        // GTK emits "finished" after "failed" too; PdfDone keeps the first.
+        on_ok.finish(written_pdf_result(true, &target));
     });
 
     let on_err = std::sync::Arc::clone(done);
@@ -120,6 +131,37 @@ fn linux_print_to_pdf(
     operation.print();
 }
 // linux_print_to_pdf END ******************************************************
+
+
+//******************************************************************************
+// linux_page_setup
+//******************************************************************************
+/// The GTK page for `paper`: portrait, [`crate::paper::PAGE_MARGIN_MM`] on
+/// every side.
+///
+/// Without it WebKitGTK falls back to GTK's default page — near-zero margins —
+/// and, unlike Chromium, ignores the CSS `@page { margin: 2cm }` entirely: the
+/// text ran to within a few millimetres of the paper edge (seen in the
+/// v0.3.28 release PDFs). Paper names are GTK's own constants, not typed
+/// strings.
+fn linux_page_setup(paper: crate::paper::PaperSize) -> gtk::PageSetup {
+    use crate::paper::{PaperSize, PAGE_MARGIN_MM};
+
+    let name = match paper {
+        PaperSize::A4 => gtk::PAPER_NAME_A4,
+        PaperSize::A3 => gtk::PAPER_NAME_A3,
+        PaperSize::Letter => gtk::PAPER_NAME_LETTER,
+    };
+    let setup = gtk::PageSetup::new();
+    setup.set_paper_size(&gtk::PaperSize::new(Some(name.as_str())));
+    setup.set_orientation(gtk::PageOrientation::Portrait);
+    setup.set_top_margin(PAGE_MARGIN_MM, gtk::Unit::Mm);
+    setup.set_bottom_margin(PAGE_MARGIN_MM, gtk::Unit::Mm);
+    setup.set_left_margin(PAGE_MARGIN_MM, gtk::Unit::Mm);
+    setup.set_right_margin(PAGE_MARGIN_MM, gtk::Unit::Mm);
+    setup
+}
+// linux_page_setup END ********************************************************
 
 //******************************************************************************
 // Print backend constants

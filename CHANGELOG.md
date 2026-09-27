@@ -9,6 +9,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.29
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FEAT: Same PDF page on every host, with --paper a4|a3|letter
 - CHORE: Update dependencies
 - CHORE: Set version to 0.3.29
 - FIX: Install xdg-utils so the AppImage bundles on the ARM64 runner

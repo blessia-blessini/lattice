@@ -29,6 +29,7 @@
 //! Files are processed one at a time — `ExportState` holds at most one
 //! in-flight sender — so no window is ever left open behind another.
 
+use crate::paper::PaperSize;
 use log::{error, info};
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -297,14 +298,34 @@ fn settle_budget(render_budget: Duration) -> Duration {
 /// process — this mode never opens a visible window or an editor session.
 /// Exit code is `0` when every file exported, `1` if any failed, so the
 /// invoking shell can detect a partial run.
-pub async fn run_export(app: tauri::AppHandle, paths: Vec<String>, format: ExportFormat) {
+///
+/// `paper` is the page every PDF of the run is laid out on
+/// (REQ-LTTCE-XPT-00011); an HTML export ignores it.
+pub async fn run_export(
+    app: tauri::AppHandle,
+    paths: Vec<String>,
+    format: ExportFormat,
+    paper: PaperSize,
+) {
     let mut had_error = false;
+    if format == ExportFormat::Pdf {
+        // In points, the unit of a PDF's /MediaBox, so the log line can be
+        // checked against the output file directly.
+        let (w, h) = paper.size_points();
+        info!(
+            "export-pdf: paper {} ({:.0} x {:.0} pt), margins {:.0} pt",
+            paper.name(),
+            w,
+            h,
+            crate::paper::mm_to_points(crate::paper::PAGE_MARGIN_MM)
+        );
+    }
 
     // `enumerate` rather than a flag: whether this is the process's first export
     // is a property of the loop, so it needs no mutable state and stays obvious
     // at the call site (REQ-LTTCE-XPT-00008).
     for (index, path) in paths.into_iter().enumerate() {
-        match export_one(&app, &path, format, index == 0).await {
+        match export_one(&app, &path, format, paper, index == 0).await {
             Ok(out) => info!("export-{}: wrote '{}'", format.as_str(), out.display()),
             Err(e) => {
                 had_error = true;
@@ -327,6 +348,7 @@ async fn export_one(
     app: &tauri::AppHandle,
     path: &str,
     format: ExportFormat,
+    paper: PaperSize,
     is_first_export: bool,
 ) -> Result<PathBuf, String> {
     ensure_readable(path)?;
@@ -398,7 +420,7 @@ async fn export_one(
     // very thing being printed.
     let result = match format {
         ExportFormat::Html => write_html(&out_path, ready),
-        ExportFormat::Pdf => print_pdf(&window, &out_path).await,
+        ExportFormat::Pdf => print_pdf(&window, &out_path, paper).await,
     };
 
     let _ = window.close();
@@ -444,15 +466,16 @@ fn write_html(out_path: &std::path::Path, ready: Option<String>) -> Result<(), S
 //**************************************************************
 // print_pdf
 //**************************************************************
-/// Asks the host WebView to print the settled document to `out_path`, bounded
-/// by `PDF_PRINT_TIMEOUT` so a wedged print operation cannot hang the whole
-/// batch (REQ-LTTCE-XPT-00006).
+/// Asks the host WebView to print the settled document to `out_path` on
+/// `paper`, bounded by `PDF_PRINT_TIMEOUT` so a wedged print operation cannot
+/// hang the whole batch (REQ-LTTCE-XPT-00006).
 async fn print_pdf(
     window: &tauri::WebviewWindow,
     out_path: &std::path::Path,
+    paper: PaperSize,
 ) -> Result<(), String> {
     let (tx, rx) = tokio::sync::oneshot::channel();
-    crate::platform::print_to_pdf(window, out_path.to_path_buf(), tx);
+    crate::platform::print_to_pdf(window, out_path.to_path_buf(), paper, tx);
 
     match tokio::time::timeout(PDF_PRINT_TIMEOUT, rx).await {
         Ok(Ok(Ok(()))) => Ok(()),

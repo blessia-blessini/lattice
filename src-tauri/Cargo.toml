@@ -79,10 +79,11 @@ tokio = { version = "1", features = ["sync", "time"] }
 # hands platform_impl the NEWER ICoreWebView2 types, and the older crate's
 # Interface/Result cannot handle them (E0277/E0599, 2026-09-27).
 #
-# One exception, macOS only: objc2-web-kit's "WKPDFConfiguration" feature adds
-# objc2-javascript-core and objc2-security to the lock file. Both are objc2
-# binding crates from the same family and neither reaches a Windows or Linux
-# build, but they ARE new to the graph — see docs/30-architecture.md.
+# macOS prints through AppKit (NSPrintInfo / NSPrintOperation), like wry's own
+# print(), so objc2-app-kit is named with exactly the features used — all
+# already enabled in the graph by wry. It replaced block2 and objc2-web-kit's
+# "WKPDFConfiguration" feature, which served the snapshot API used before
+# (2026-09-27); `cargo update -p lattice` then locked 0 new packages.
 
 [target.'cfg(target_os = "windows")'.dependencies]
 webview2-com = "0.39"
@@ -95,9 +96,9 @@ glib = "0.18"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"
-objc2-foundation = { version = "0.3", features = ["NSData", "NSError", "NSString"] }
-objc2-web-kit = { version = "0.3", features = ["WKWebView", "WKPDFConfiguration"] }
-block2 = "0.6"
+objc2-foundation = { version = "0.3", features = ["NSDictionary", "NSGeometry", "NSObject", "NSString", "NSURL"] }
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSPrintInfo", "NSPrintOperation", "NSResponder", "NSView", "NSWindow"] }
+objc2-web-kit = { version = "0.3", features = ["WKWebView", "objc2-app-kit"] }
 
 [dev-dependencies]
 tempfile = "3.24.0"
