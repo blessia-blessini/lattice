@@ -204,6 +204,9 @@ pub(crate) fn written_pdf_result(host_ok: bool, path: &std::path::Path) -> Resul
 // written_pdf_result END ******************************************************
 
 
+//**************************************************************
+// tests
+//**************************************************************
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -305,3 +308,4 @@ mod tests {
         assert_eq!(rx.try_recv(), Ok(Err("setup failed".to_string())));
     }
 }
+// tests END *************************************************

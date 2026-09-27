@@ -143,6 +143,10 @@ pub fn requested_export_format() -> Option<ExportFormat> {
 }
 // requested_export_format END ***********************************
 
+
+//**************************************************************
+// tests
+//**************************************************************
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -315,3 +319,4 @@ mod tests {
         assert_eq!(requested_paper_size(), Ok(PaperSize::A4));
     }
 }
+// tests END *************************************************

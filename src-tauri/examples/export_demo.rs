@@ -61,6 +61,9 @@ const MIN_PDF_BYTES: usize = 20_000;
 /// while a wrong paper is off by 17 pt (A4 vs Letter) or more.
 const PAGE_SIZE_TOLERANCE_PT: f64 = 1.5;
 
+/// The six whitespace bytes of the PDF syntax (ISO 32000-1, 7.2.2).
+const PDF_WHITESPACE: &[u8] = b"\0\t\n\x0c\r ";
+
 /// How long one export run may take before it is killed and failed.
 ///
 /// Must stay comfortably above the app's own budget, or this harness kills a
@@ -678,9 +681,12 @@ fn pdf_page_size(bytes: &[u8]) -> Option<(f64, f64)> {
     const KEY: &[u8] = b"/MediaBox";
     let after = bytes.windows(KEY.len()).position(|w| w == KEY)? + KEY.len();
     let rest = &bytes[after..];
-    // The array follows the key directly, give or take whitespace; a '[' found
-    // further away belongs to something else.
-    let open = rest.iter().take(8).position(|&b| b == b'[')?;
+    // The array follows the key after PDF whitespace only, of any length; any
+    // other byte first means the key is not followed by its array.
+    let open = rest.iter().position(|b| !PDF_WHITESPACE.contains(b))?;
+    if rest[open] != b'[' {
+        return None;
+    }
     let close = open + rest[open..].iter().position(|&b| b == b']')?;
     let numbers: Vec<f64> = std::str::from_utf8(&rest[open + 1..close])
         .ok()?
@@ -1066,6 +1072,11 @@ mod tests {
         assert_eq!(pdf_page_size(b"/MediaBox[0 0 612 792]"), Some((612.0, 792.0)));
         let (w, h) = pdf_page_size(b"/MediaBox [ 0 0 594.96 841.92 ]").unwrap();
         assert!((w - 594.96).abs() < 1e-9 && (h - 841.92).abs() < 1e-9);
+        // Line breaks and indentation of any length before the array.
+        assert_eq!(
+            pdf_page_size(b"/MediaBox\r\n\t\t\t\t\t\t\t\t\t\t[0 0 842 1191]"),
+            Some((842.0, 1191.0))
+        );
     }
 
     #[test]

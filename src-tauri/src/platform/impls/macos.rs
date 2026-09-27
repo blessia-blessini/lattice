@@ -193,7 +193,10 @@ fn macos_print_to_pdf(
     // until the callback. Deliberately leaked rather than parked in a slot the
     // next export would overwrite: after a timeout, a late callback into a
     // freed delegate would crash the batch. One small object per exported file
-    // in a process that exits when the batch ends.
+    // in a process that exits when the batch ends. A future interactive
+    // "Export to PDF…" reusing this routine would leak the same one object per
+    // print — bounded by user clicks, not by document size — which is the
+    // price of never freeing it under a callback AppKit may still make.
     std::mem::forget(delegate);
 }
 // macos_print_to_pdf END ******************************************************

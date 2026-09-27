@@ -9,6 +9,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.29
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: Act on the cycle-1 review of the PDF page geometry
 - FEAT: Same PDF page on every host, with --paper a4|a3|letter
 - CHORE: Update dependencies
 - CHORE: Set version to 0.3.29
