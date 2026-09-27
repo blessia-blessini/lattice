@@ -9,6 +9,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.29
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: Note the upstream coverage bug on Windows ARM64
 - RELEASE v0.3.28: CLI for HTML and PDF export
 
 ---
