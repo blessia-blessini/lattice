@@ -314,20 +314,24 @@ jobs:
 
     ################################################################
     # 150 / Configure Environment (Script)
+    #       Android init is skipped on EVERY leg here: only the android
+    #       leg has an Android SDK, and it inits in step 251 after
+    #       installing one in step 250. Other runners may lack the SDK
+    #       (ubuntu-24.04-arm, windows-11-arm) and would fail the init.
     ################################################################
     - name: 150. Configure Environment (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
         # rem chmod +x .\setup_env.ps1
-        .\scripts\setup_env.ps1
+        .\scripts\setup_env.ps1 -SkipAndroidInit
 
     - name: 151. Configure Environment (Unix)
       if: runner.os != 'Windows'
       shell: bash
       run: |
         chmod +x ./scripts/setup_env.sh
-        ./scripts/setup_env.sh
+        ./scripts/setup_env.sh --skip-android-init
 
     - name: 152. calculate build number
       shell: bash

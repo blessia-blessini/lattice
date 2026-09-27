@@ -234,7 +234,11 @@ fi
 echo "  **************************************"
 echo "  [INFO] Considering to Set up Android project ... "
 echo "  **************************************"
-if ! command -v java >/dev/null 2>&1; then
+# --skip-android-init: CI passes it on every leg; the android leg inits in its own
+# step, after installing the SDK that runners of the other legs do not have.
+if [[ "$*" == *"--skip-android-init"* ]]; then
+    echo ".  [INFO] --skip-android-init given: skipping Android project initialization."
+elif ! command -v java >/dev/null 2>&1; then
   if [ "$OS" = "Linux" ]; then
     echo ".  [INFO] IF you plan to build android version please install "
     echo "            Java and call this script again required for Android development."
