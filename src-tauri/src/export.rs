@@ -29,6 +29,7 @@
 //! Files are processed one at a time — `ExportState` holds at most one
 //! in-flight sender — so no window is ever left open behind another.
 
+use crate::paper::PaperSize;
 use log::{error, info};
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -297,14 +298,34 @@ fn settle_budget(render_budget: Duration) -> Duration {
 /// process — this mode never opens a visible window or an editor session.
 /// Exit code is `0` when every file exported, `1` if any failed, so the
 /// invoking shell can detect a partial run.
-pub async fn run_export(app: tauri::AppHandle, paths: Vec<String>, format: ExportFormat) {
+///
+/// `paper` is the page every PDF of the run is laid out on
+/// (REQ-LTTCE-XPT-00011); an HTML export ignores it.
+pub async fn run_export(
+    app: tauri::AppHandle,
+    paths: Vec<String>,
+    format: ExportFormat,
+    paper: PaperSize,
+) {
     let mut had_error = false;
+    if format == ExportFormat::Pdf {
+        // In points, the unit of a PDF's /MediaBox, so the log line can be
+        // checked against the output file directly.
+        let (w, h) = paper.size_points();
+        info!(
+            "export-pdf: paper {} ({:.0} x {:.0} pt), margins {:.0} pt",
+            paper.name(),
+            w,
+            h,
+            crate::paper::mm_to_points(crate::paper::PAGE_MARGIN_MM)
+        );
+    }
 
     // `enumerate` rather than a flag: whether this is the process's first export
     // is a property of the loop, so it needs no mutable state and stays obvious
     // at the call site (REQ-LTTCE-XPT-00008).
     for (index, path) in paths.into_iter().enumerate() {
-        match export_one(&app, &path, format, index == 0).await {
+        match export_one(&app, &path, format, paper, index == 0).await {
             Ok(out) => info!("export-{}: wrote '{}'", format.as_str(), out.display()),
             Err(e) => {
                 had_error = true;
@@ -327,6 +348,7 @@ async fn export_one(
     app: &tauri::AppHandle,
     path: &str,
     format: ExportFormat,
+    paper: PaperSize,
     is_first_export: bool,
 ) -> Result<PathBuf, String> {
     ensure_readable(path)?;
@@ -398,7 +420,7 @@ async fn export_one(
     // very thing being printed.
     let result = match format {
         ExportFormat::Html => write_html(&out_path, ready),
-        ExportFormat::Pdf => print_pdf(&window, &out_path).await,
+        ExportFormat::Pdf => print_pdf(&window, &out_path, paper).await,
     };
 
     let _ = window.close();
@@ -444,15 +466,17 @@ fn write_html(out_path: &std::path::Path, ready: Option<String>) -> Result<(), S
 //**************************************************************
 // print_pdf
 //**************************************************************
-/// Asks the host WebView to print the settled document to `out_path`, bounded
-/// by `PDF_PRINT_TIMEOUT` so a wedged print operation cannot hang the whole
-/// batch (REQ-LTTCE-XPT-00006).
+/// Asks the host WebView to print the settled document to `out_path` on
+/// `paper`, bounded by `PDF_PRINT_TIMEOUT` so a wedged print operation cannot
+/// hang the whole batch (REQ-LTTCE-XPT-00006).
 async fn print_pdf(
     window: &tauri::WebviewWindow,
     out_path: &std::path::Path,
+    paper: PaperSize,
 ) -> Result<(), String> {
+    remove_previous_output(out_path)?;
     let (tx, rx) = tokio::sync::oneshot::channel();
-    crate::platform::print_to_pdf(window, out_path.to_path_buf(), tx);
+    crate::platform::print_to_pdf(window, out_path.to_path_buf(), paper, tx);
 
     match tokio::time::timeout(PDF_PRINT_TIMEOUT, rx).await {
         Ok(Ok(Ok(()))) => Ok(()),
@@ -462,6 +486,30 @@ async fn print_pdf(
     }
 }
 // print_pdf END *************************************************
+
+//**************************************************************
+// remove_previous_output
+//**************************************************************
+/// Deletes a file left at `out_path` by an earlier export, before the host is
+/// asked to write a new one.
+///
+/// REQ-LTTCE-XPT-00006 — `written_pdf_result` accepts a non-empty file at the
+/// path as proof of success. Without this, a host that reported success but
+/// wrote nothing would be credited with the previous run's PDF. Nothing there
+/// is fine; a path that cannot be cleared (a directory, a locked file) fails
+/// the export instead of risking that false success.
+fn remove_previous_output(out_path: &std::path::Path) -> Result<(), String> {
+    match std::fs::remove_file(out_path) {
+        Ok(()) => Ok(()),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(e) => Err(format!(
+            "cannot replace the existing '{}': {}",
+            out_path.display(),
+            e
+        )),
+    }
+}
+// remove_previous_output END ************************************
 
 #[cfg(test)]
 mod tests {
@@ -666,6 +714,40 @@ mod tests {
         write_html(&out, Some("<p>fresh</p>".to_string())).unwrap();
         assert_eq!(std::fs::read_to_string(&out).unwrap(), "<p>fresh</p>");
     }
+
+    //**************************************************************
+    // remove_previous_output_*
+    //**************************************************************
+    /// REQ-LTTCE-XPT-00006: a PDF from an earlier run must be gone before the
+    /// host prints, so it can never be mistaken for this run's output.
+    #[test]
+    fn remove_previous_output_deletes_an_earlier_pdf() {
+        let dir = tempfile::tempdir().unwrap();
+        let out = dir.path().join("a.pdf");
+        std::fs::write(&out, "%PDF- from an earlier run").unwrap();
+
+        remove_previous_output(&out).unwrap();
+        assert!(!out.exists());
+    }
+
+    #[test]
+    fn remove_previous_output_accepts_an_absent_file() {
+        let dir = tempfile::tempdir().unwrap();
+        assert_eq!(remove_previous_output(&dir.path().join("never.pdf")), Ok(()));
+    }
+
+    #[test]
+    fn remove_previous_output_fails_on_a_path_it_cannot_clear() {
+        // A directory where the PDF should go: printing there cannot succeed.
+        let dir = tempfile::tempdir().unwrap();
+        let out = dir.path().join("a.pdf");
+        std::fs::create_dir(&out).unwrap();
+
+        let err = remove_previous_output(&out).unwrap_err();
+        assert!(err.contains("cannot replace"), "{err}");
+        assert!(out.exists(), "a directory must never be deleted");
+    }
+    // remove_previous_output_* END *********************************
 
     //**************************************************************
     // first_export_gets_the_longer_render_budget

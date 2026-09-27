@@ -5,10 +5,33 @@ Edit the section for your next version **before** pushing the release tag like v
 
 
 
+## v0.3.31
+### Changes
+  <!-- INSERT BULLETS UNDER THIS LINE -->
+- RELEASE v0.3.30
+
+---
+
+## v0.3.30
+### Changes
+- FIX: PDF export on non-windows platforms
+- CHORE: update dependecies and bumped version
+- FEAT: MAKE A BUILD for LINUX ARM64
+---
 
 ## v0.3.29
 ### Changes
-  <!-- INSERT BULLETS UNDER THIS LINE -->
+
+- FIX: Keep the published demo PDF in the CLI export check
+- FIX: Act on the cycle-2 review of the PDF page geometry
+- FIX: Act on the cycle-1 review of the PDF page geometry
+- FEAT: Same PDF page on every host, with --paper a4|a3|letter
+- CHORE: Update dependencies
+- CHORE: Set version to 0.3.29
+- FIX: Install xdg-utils so the AppImage bundles on the ARM64 runner
+- FIX: Init Android only on the CI leg that installs the Android SDK
+- FEAT: Build Linux ARM64 natively in CI
+- CHORE: merged dev branch to avoid future remerges on squash
 - FIX: Timing issue of macOS on Intel/AMD64 Build
 - FIX: Stop headless export depending on timers in a hidden window
 - CHORE: Note the upstream coverage bug on Windows ARM64

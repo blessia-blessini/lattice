@@ -37,6 +37,7 @@
 //!   than a skip. CI sets this; a local working tree that has never been
 //!   built should not hard-fail.
 
+use lattice_lib::paper::PaperSize;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -53,6 +54,24 @@ const EXIT_FAIL: i32 = 1;
 /// numbers only have to exclude an empty or stub file.
 const MIN_HTML_BYTES: usize = 10_000;
 const MIN_PDF_BYTES: usize = 20_000;
+
+/// How far a PDF page may deviate from the requested paper, in points.
+/// Hosts round differently — WebView2 writes A4 as 594.96 × 841.92 pt against
+/// the nominal 595.28 × 841.89 — so an exact match would fail a correct page,
+/// while a wrong paper is off by 17 pt (A4 vs Letter) or more.
+const PAGE_SIZE_TOLERANCE_PT: f64 = 1.5;
+
+/// Fewest pages a PDF of `demo.md` may have. The demo paginates to 9 (A3) to
+/// 14 (Letter) pages on every host that really prints; a window snapshot or a
+/// print clipped to the window height is a single page — the v0.3.28 macOS
+/// output had exactly one.
+const MIN_DEMO_PDF_PAGES: usize = 2;
+
+/// The six whitespace bytes of the PDF syntax (ISO 32000-1, 7.2.2).
+const PDF_WHITESPACE: &[u8] = b"\0\t\n\x0c\r ";
+
+/// The ten delimiter bytes of the PDF syntax (ISO 32000-1, 7.2.2).
+const PDF_DELIMITERS: &[u8] = b"()<>[]{}/%";
 
 /// How long one export run may take before it is killed and failed.
 ///
@@ -471,7 +490,7 @@ impl Args {
 //**************************************************************
 // run_export
 //**************************************************************
-/// Runs `<bin> <flag> <file>` and returns its exit code, killing it if it
+/// Runs `<bin> <args...> <file>` and returns its exit code, killing it if it
 /// outlives [`RUN_TIMEOUT`].
 ///
 /// `current_dir` is the scratch directory, so a relative output path (and any
@@ -484,10 +503,11 @@ impl Args {
 /// Observed exactly that on 2026-09-26 against a pre-`--export-pdf` binary —
 /// without this, that hangs the whole test suite and, in CI, burns the job's
 /// wall clock instead of reporting a failure.
-fn run_export(bin: &Path, scratch: &Path, flag: &str, file: &Path) -> Result<i32, String> {
-    println!("  $ {} {} {}", bin.display(), flag, file.display());
+fn run_export(bin: &Path, scratch: &Path, args: &[&str], file: &Path) -> Result<i32, String> {
+    println!("  $ {} {} {}", bin.display(), args.join(" "), file.display());
+    let flag = args.first().copied().unwrap_or_default();
     let mut child = Command::new(bin)
-        .arg(flag)
+        .args(args)
         .arg(file)
         .current_dir(scratch)
         .spawn()
@@ -627,11 +647,11 @@ fn check_diagrams(html: &str, expected: usize) -> Vec<String> {
 //**************************************************************
 // check_pdf
 //**************************************************************
-/// Asserts the exported file really is a PDF and not a stub.
+/// Asserts the exported file really is a PDF, not a stub, laid out on `paper`.
 ///
 /// The magic number is checked on the raw bytes because a PDF is not UTF-8;
 /// reading it as a string would fail before the check could run.
-fn check_pdf(path: &Path) -> Vec<String> {
+fn check_pdf(path: &Path, paper: PaperSize) -> Vec<String> {
     let mut problems = Vec::new();
     let bytes = match fs::read(path) {
         Ok(b) => b,
@@ -650,10 +670,125 @@ fn check_pdf(path: &Path) -> Vec<String> {
             bytes.len()
         ));
     }
+    problems.extend(check_page_size(&bytes, paper));
+    problems.extend(check_page_count(&bytes));
 
     problems
 }
 // check_pdf END ************************************************
+
+
+//**************************************************************
+// pdf_page_count
+//**************************************************************
+/// Number of page objects — `/Type /Page`, not the `/Type /Pages` tree nodes —
+/// in a PDF's plain-text object dictionaries.
+///
+/// Counted on the raw bytes, like [`pdf_page_size`]: none of the three hosts
+/// puts objects in compressed object streams, and this count matched
+/// `pdfinfo` on every host's output (Windows, Linux, and the one-page v0.3.28
+/// macOS snapshot). The `/Count` of the page tree is not used: outlines carry
+/// a `/Count` too, and come first in the Chromium and Cairo output.
+fn pdf_page_count(bytes: &[u8]) -> usize {
+    const KEY: &[u8] = b"/Type";
+    const PAGE: &[u8] = b"/Page";
+    let mut count = 0;
+    let mut from = 0;
+    while let Some(at) = bytes[from..].windows(KEY.len()).position(|w| w == KEY) {
+        let rest = &bytes[from + at + KEY.len()..];
+        let skip = rest.iter().take_while(|b| PDF_WHITESPACE.contains(b)).count();
+        let value = &rest[skip..];
+        // A name ends only at whitespace or a delimiter (ISO 32000-1, 7.2.2),
+        // so "/Pages", "/PageLabel" and "/Page_1" are other names, not "/Page".
+        if value.starts_with(PAGE)
+            && value
+                .get(PAGE.len())
+                .is_none_or(|b| PDF_WHITESPACE.contains(b) || PDF_DELIMITERS.contains(b))
+        {
+            count += 1;
+        }
+        from += at + KEY.len();
+    }
+    count
+}
+// pdf_page_count END *******************************************
+
+
+//**************************************************************
+// check_page_count
+//**************************************************************
+/// REQ-LTTCE-XPT-00004 / 00012 — the document is paginated, not one page.
+/// Catches the failure a page-size check cannot: a single page that has the
+/// right paper size but holds only what fit in the window.
+fn check_page_count(bytes: &[u8]) -> Vec<String> {
+    match pdf_page_count(bytes) {
+        n if n >= MIN_DEMO_PDF_PAGES => Vec::new(),
+        n => vec![format!(
+            "PDF has {n} page(s), expected at least {MIN_DEMO_PDF_PAGES} — \
+             the document was not paginated"
+        )],
+    }
+}
+// check_page_count END *****************************************
+
+
+//**************************************************************
+// pdf_page_size
+//**************************************************************
+/// Width and height, in points, of the first `/MediaBox [x0 y0 x1 y1]` in a
+/// PDF, or `None` if there is none in plain text.
+///
+/// Scanned on the raw bytes: page objects keep their `/MediaBox` outside the
+/// compressed content streams in the output of all three hosts (checked on the
+/// v0.3.28 release PDFs), so no PDF library is needed. Pure and unit-tested.
+fn pdf_page_size(bytes: &[u8]) -> Option<(f64, f64)> {
+    const KEY: &[u8] = b"/MediaBox";
+    let after = bytes.windows(KEY.len()).position(|w| w == KEY)? + KEY.len();
+    let rest = &bytes[after..];
+    // The array follows the key after PDF whitespace only, of any length; any
+    // other byte first means the key is not followed by its array.
+    let open = rest.iter().position(|b| !PDF_WHITESPACE.contains(b))?;
+    if rest[open] != b'[' {
+        return None;
+    }
+    let close = open + rest[open..].iter().position(|&b| b == b']')?;
+    let numbers: Vec<f64> = std::str::from_utf8(&rest[open + 1..close])
+        .ok()?
+        .split_whitespace()
+        .map(|t| t.parse().ok())
+        .collect::<Option<_>>()?;
+    let [x0, y0, x1, y1] = numbers[..] else {
+        return None;
+    };
+    Some(((x1 - x0).abs(), (y1 - y0).abs()))
+}
+// pdf_page_size END ********************************************
+
+
+//**************************************************************
+// check_page_size
+//**************************************************************
+/// REQ-LTTCE-XPT-00011 / 00012 — the page is `paper`, portrait, within
+/// [`PAGE_SIZE_TOLERANCE_PT`]. Catches both defects this was added for: a
+/// window-sized snapshot instead of a page (macOS, 800 × 568 pt) and a host
+/// default paper instead of the requested one (Windows, US Letter).
+fn check_page_size(bytes: &[u8], paper: PaperSize) -> Vec<String> {
+    let (want_w, want_h) = paper.size_points();
+    match pdf_page_size(bytes) {
+        None => vec!["no /MediaBox found — the page size cannot be checked".into()],
+        Some((w, h))
+            if (w - want_w).abs() <= PAGE_SIZE_TOLERANCE_PT
+                && (h - want_h).abs() <= PAGE_SIZE_TOLERANCE_PT =>
+        {
+            Vec::new()
+        }
+        Some((w, h)) => vec![format!(
+            "page is {w:.0} x {h:.0} pt, expected {} portrait, {want_w:.0} x {want_h:.0} pt",
+            paper.name()
+        )],
+    }
+}
+// check_page_size END ******************************************
 
 //**************************************************************
 // report
@@ -676,24 +811,25 @@ fn report(name: &str, problems: Vec<String>, all_pass: &mut bool) -> bool {
 //**************************************************************
 // scenario_export
 //**************************************************************
-/// One format's round trip: run the CLI, assert the exit code, assert the
-/// file beside the input. Returns the output path on success.
+/// One export round trip: run the CLI with `args`, assert the exit code,
+/// assert the file beside the input. Returns the output path on success.
+#[allow(clippy::too_many_arguments)] // one call site per scenario; a struct would only rename them
 fn scenario_export(
     bin: &Path,
     scratch: &Path,
     source: &Path,
-    flag: &str,
+    name: &str,
+    args: &[&str],
     ext: &str,
-    check: fn(&Path) -> Vec<String>,
+    check: &dyn Fn(&Path) -> Vec<String>,
     all_pass: &mut bool,
 ) -> Option<PathBuf> {
-    let name = flag.trim_start_matches("--");
     println!("\n[SCENARIO] {name}");
 
     let out = source.with_extension(ext);
     let _ = fs::remove_file(&out); // stale output from a previous run
 
-    let code = match run_export(bin, scratch, flag, source) {
+    let code = match run_export(bin, scratch, args, source) {
         Ok(c) => c,
         Err(e) => {
             report(name, vec![e], all_pass);
@@ -732,7 +868,7 @@ fn scenario_missing_file(bin: &Path, scratch: &Path, all_pass: &mut bool) {
     let would_be = missing.with_extension("html");
 
     let mut problems = Vec::new();
-    match run_export(bin, scratch, "--export-html", &missing) {
+    match run_export(bin, scratch, &["--export-html"], &missing) {
         Ok(code) if code == EXIT_FAIL => {}
         Ok(code) => problems.push(format!("exit code {code}, expected {EXIT_FAIL}")),
         Err(e) => problems.push(e),
@@ -745,6 +881,44 @@ fn scenario_missing_file(bin: &Path, scratch: &Path, all_pass: &mut bool) {
     report("missing-input", problems, all_pass);
 }
 // scenario_missing_file END ************************************
+
+
+//**************************************************************
+// scenario_bad_paper
+//**************************************************************
+/// REQ-LTTCE-XPT-00011 — an unknown `--paper` value fails the run up front:
+/// exit code 1 and no file, rather than a silent fallback to the default
+/// paper. The parser is unit-tested; only the binary proves the refusal
+/// reaches the exit code before any window or file exists.
+///
+/// Runs on its own staged copy of `source`: proving "no file" means clearing
+/// the output path first, and on `source` itself that path is the default
+/// PDF the publish step still needs (CI run 36352524987 lost it that way).
+fn scenario_bad_paper(bin: &Path, scratch: &Path, source: &Path, all_pass: &mut bool) {
+    const NAME: &str = "export-pdf --paper a5 (unknown)";
+    println!("\n[SCENARIO] {NAME}");
+    let staged = scratch.join("demo-bad-paper.md");
+    if let Err(e) = fs::copy(source, &staged) {
+        report(NAME, vec![format!("cannot stage {}: {e}", staged.display())], all_pass);
+        return;
+    }
+    let out = staged.with_extension("pdf");
+    let _ = fs::remove_file(&out);
+
+    let mut problems = Vec::new();
+    match run_export(bin, scratch, &["--export-pdf", "--paper", "a5"], &staged) {
+        Ok(code) if code == EXIT_FAIL => {}
+        Ok(code) => problems.push(format!("exit code {code}, expected {EXIT_FAIL}")),
+        Err(e) => problems.push(e),
+    }
+    if out.exists() {
+        problems.push("a PDF was written despite the unknown paper size".into());
+        let _ = fs::remove_file(&out);
+    }
+
+    report(NAME, problems, all_pass);
+}
+// scenario_bad_paper END ***************************************
 
 //**************************************************************
 // publish
@@ -840,15 +1014,37 @@ fn run() -> i32 {
     let mut produced: Vec<(PathBuf, &str)> = Vec::new();
 
     if let Some(p) = scenario_export(
-        &bin, &scratch, &source, "--export-html", "html", check_html, &mut all_pass,
+        &bin, &scratch, &source, "export-html", &["--export-html"], "html", &check_html,
+        &mut all_pass,
     ) {
         produced.push((p, "html"));
     }
+    // Default paper, no --paper given: this is the PDF the release page shows.
     if let Some(p) = scenario_export(
-        &bin, &scratch, &source, "--export-pdf", "pdf", check_pdf, &mut all_pass,
+        &bin, &scratch, &source, "export-pdf (default paper)", &["--export-pdf"], "pdf",
+        &|p| check_pdf(p, PaperSize::default()), &mut all_pass,
     ) {
         produced.push((p, "pdf"));
     }
+    // A non-default paper, end to end on every leg (REQ-LTTCE-XPT-00011). A
+    // separate staged copy, so it cannot overwrite the default PDF above.
+    let a3_source = scratch.join("demo-a3.md");
+    match fs::copy(&source, &a3_source) {
+        Ok(_) => {
+            scenario_export(
+                &bin, &scratch, &a3_source, "export-pdf --paper a3", &["--export-pdf", "--paper", "a3"],
+                "pdf", &|p| check_pdf(p, PaperSize::A3), &mut all_pass,
+            );
+        }
+        Err(e) => {
+            report(
+                "export-pdf --paper a3",
+                vec![format!("cannot stage {}: {e}", a3_source.display())],
+                &mut all_pass,
+            );
+        }
+    }
+    scenario_bad_paper(&bin, &scratch, &source, &mut all_pass);
     scenario_missing_file(&bin, &scratch, &mut all_pass);
 
     // Publish only a complete, passing pair: a release page must never carry
@@ -936,6 +1132,84 @@ mod tests {
     #[test]
     fn a_source_without_diagrams_cannot_pass_vacuously() {
         assert_eq!(check_diagrams("", 0).len(), 1);
+    }
+
+    // ── page size ───────────────────────────────────────────────────────────
+    // The MediaBox strings below are the ones the real hosts wrote on
+    // 2026-09-27: WebView2 A4 after the fix, WebKitGTK A4, and the macOS
+    // snapshot of v0.3.28 that this check exists to reject.
+
+    #[test]
+    fn reads_the_media_box_in_the_spellings_hosts_write() {
+        assert_eq!(pdf_page_size(b"<< /MediaBox [0 0 595 842] >>"), Some((595.0, 842.0)));
+        assert_eq!(pdf_page_size(b"/MediaBox[0 0 612 792]"), Some((612.0, 792.0)));
+        let (w, h) = pdf_page_size(b"/MediaBox [ 0 0 594.96 841.92 ]").unwrap();
+        assert!((w - 594.96).abs() < 1e-9 && (h - 841.92).abs() < 1e-9);
+        // Line breaks and indentation of any length before the array.
+        assert_eq!(
+            pdf_page_size(b"/MediaBox\r\n\t\t\t\t\t\t\t\t\t\t[0 0 842 1191]"),
+            Some((842.0, 1191.0))
+        );
+    }
+
+    #[test]
+    fn no_or_malformed_media_box_is_none() {
+        assert_eq!(pdf_page_size(b"%PDF-1.4 no page tree here"), None);
+        assert_eq!(pdf_page_size(b"/MediaBox [0 0 595]"), None);
+        assert_eq!(pdf_page_size(b"/MediaBox [0 0 a b]"), None);
+        // A '[' far after the key belongs to something else.
+        assert_eq!(pdf_page_size(b"/MediaBox /Other 1 0 R /Kids [0 0 595 842]"), None);
+    }
+
+    #[test]
+    fn a_correct_page_passes_within_host_rounding() {
+        assert!(check_page_size(b"/MediaBox [0 0 594.96 841.92]", PaperSize::A4).is_empty());
+        assert!(check_page_size(b"/MediaBox [0 0 842 1191]", PaperSize::A3).is_empty());
+        assert!(check_page_size(b"/MediaBox [0 0 612 792]", PaperSize::Letter).is_empty());
+    }
+
+    #[test]
+    fn the_macos_snapshot_page_is_rejected() {
+        let problems = check_page_size(b"/MediaBox [0 0 800 568]", PaperSize::A4);
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert!(problems[0].contains("800 x 568"), "{problems:?}");
+    }
+
+    #[test]
+    fn the_wrong_paper_is_rejected() {
+        // Letter where A4 was asked for: WebView2's default before the fix.
+        assert_eq!(check_page_size(b"/MediaBox [0 0 612 792]", PaperSize::A4).len(), 1);
+        // Landscape A4 is not A4.
+        assert_eq!(check_page_size(b"/MediaBox [0 0 842 595]", PaperSize::A4).len(), 1);
+    }
+
+    #[test]
+    fn a_pdf_without_a_media_box_fails_rather_than_passing_silently() {
+        assert_eq!(check_page_size(b"%PDF-1.7", PaperSize::A4).len(), 1);
+    }
+
+    #[test]
+    fn counts_page_objects_but_not_the_page_tree_or_other_names() {
+        let pdf = b"<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>\n\
+                    << /Type /Page /Parent 2 0 R >>\n\
+                    << /Type/Page/Parent 2 0 R >>\n\
+                    << /Type\r\n/Page >>\n\
+                    << /Type /PageLabel >> << /Type /Catalog /Pages 2 0 R >>\n\
+                    << /Type /Page_1 >> << /Type /Page>>";
+        // The last one ends at a delimiter, '>', so it is a page; "/Page_1" is not.
+        assert_eq!(pdf_page_count(pdf), 4);
+        assert_eq!(pdf_page_count(b"%PDF-1.7"), 0);
+        // Ends right after the name: still a page.
+        assert_eq!(pdf_page_count(b"/Type /Page"), 1);
+    }
+
+    #[test]
+    fn a_single_page_fails_and_a_paginated_document_passes() {
+        // The v0.3.28 macOS snapshot: one page.
+        let one = check_page_count(b"<< /Type /Pages /Count 1 >> << /Type /Page >>");
+        assert_eq!(one.len(), 1, "{one:?}");
+        assert!(one[0].contains("1 page"), "{one:?}");
+        assert!(check_page_count(b"<< /Type /Page >> << /Type /Page >>").is_empty());
     }
 }
 // tests END ****************************************************

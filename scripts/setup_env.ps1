@@ -20,6 +20,11 @@
 #
 # See LICENCE file in GitHUB root folder of the repository.
 # END OF NOTE
+param(
+    # CI passes it on every leg; the android leg inits in its own step, after
+    # installing the SDK that runners of the other legs do not have.
+    [switch] $SkipAndroidInit
+)
 Write-Host "=========================================="
 Write-Host " Lattice Environment Setup (Windows)"
 Write-Host "=========================================="
@@ -267,13 +272,10 @@ Write-Host "  **************************************"
 Write-Host "  [INFO] Considering to Set up Android project ... "
 Write-Host "  **************************************"
 
-# RuntimeInformation.OSArchitecture reflects the actual OS, unlike
-# $env:PROCESSOR_ARCHITECTURE which reflects the CALLING PROCESS and is
-# wrong whenever pwsh itself is running under x64 emulation.
-$isArm64Windows = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq
-    [System.Runtime.InteropServices.Architecture]::Arm64
-
-if (-not (Get-Command "java" -ErrorAction SilentlyContinue)) {
+if ($SkipAndroidInit) {
+    Write-Host ".  [INFO] -SkipAndroidInit given: skipping Android project initialization."
+}
+elseif (-not (Get-Command "java" -ErrorAction SilentlyContinue)) {
     Write-Host ".  [INFO] IF you plan to build android version please install "
     Write-Host "            Java and call this script again; it is required for Android development."
     Write-Host ".           or read how to install a tauri android project manually."
@@ -282,9 +284,6 @@ if (-not (Get-Command "java" -ErrorAction SilentlyContinue)) {
 }
 elseif (Test-Path "src-tauri/gen/android") {
     Write-Host ".  [INFO] Android project already initialized. Skipping init."
-}
-elseif ($isArm64Windows) {
-    Write-Host ".  [INFO] windows-11-arm: skipping 'npm run tauri android init' -- not set up on this runner."
 }
 else {
     Write-Host ".  ***************************************"

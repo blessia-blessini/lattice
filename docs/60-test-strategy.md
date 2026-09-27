@@ -158,7 +158,9 @@ which were previously compile-verified only.
 | Scenario | Asserts |
 |:---------|:--------|
 | `export-html` | exit `0`; `demo.html` beside the input; contains the H1 text, `data-source-line` (the rendered preview, not raw source), `<table`, `katex`, and one rasterised PNG per Mermaid block |
-| `export-pdf`  | exit `0`; `demo.pdf` beside the input; starts with the `%PDF-` magic number and is not a stub |
+| `export-pdf (default paper)` | exit `0`; `demo.pdf` beside the input; starts with the `%PDF-` magic number, is not a stub, its page is A4 portrait (`/MediaBox`, ±1.5 pt), and it has at least 2 pages — the demo is paginated, not clipped to one page |
+| `export-pdf --paper a3` | the same on a separate staged copy, with an A3 portrait page — a non-default paper, end to end |
+| `export-pdf --paper a5 (unknown)` | exit `1` and no PDF written (REQ-LTTCE-XPT-00011) |
 | `missing-input` | an unreadable path exits `1` and writes no output file (the `ensure_readable` defect) |
 
 Run by `build-test.ps1` / `build-test.sh` as step **1d**, and by CI inside step 370.2. With

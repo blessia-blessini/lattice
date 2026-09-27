@@ -60,6 +60,9 @@ if [ "$OS" = "Linux" ]; then
 
     # Update and Install Dependencies
     # (Using the list from the plan/reference)
+    # xdg-utils: the AppImage bundler copies /usr/bin/xdg-open into the AppImage
+    #   (tauri-plugin-opener uses it). ubuntu-latest ships it, ubuntu-24.04-arm
+    #   does not, so it must be listed here rather than assumed.
     echo "[INFO] Updating apt and installing libraries..."
     $SUDO apt-get update
     $SUDO apt-get install -y \
@@ -72,6 +75,7 @@ if [ "$OS" = "Linux" ]; then
        libgtk-3-dev \
        libayatana-appindicator3-dev \
        librsvg2-dev \
+       xdg-utils \
        xvfb
 
 
@@ -234,7 +238,11 @@ fi
 echo "  **************************************"
 echo "  [INFO] Considering to Set up Android project ... "
 echo "  **************************************"
-if ! command -v java >/dev/null 2>&1; then
+# --skip-android-init: CI passes it on every leg; the android leg inits in its own
+# step, after installing the SDK that runners of the other legs do not have.
+if [[ "$*" == *"--skip-android-init"* ]]; then
+    echo ".  [INFO] --skip-android-init given: skipping Android project initialization."
+elif ! command -v java >/dev/null 2>&1; then
   if [ "$OS" = "Linux" ]; then
     echo ".  [INFO] IF you plan to build android version please install "
     echo "            Java and call this script again required for Android development."
