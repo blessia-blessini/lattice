@@ -5,14 +5,38 @@ Edit the section for your next version **before** pushing the release tag like v
 
 
 
-## v0.3.27
 
+## v0.3.29
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- RELEASE v0.3.28: CLI for HTML and PDF export
+
+---
+
+## v0.3.28
+### Changes
+- FEAT:  HTML and PDF Export with CLI 
+- FIX:   New Stability and Compatability on 
+  - MacOS(Intel/AMD64- **and** Apple-Silicon)
+  - Linux(Intel/Amd64)
+- CHORE: New Automated tests on all Desktop platforms
+---
+
+## v0.3.27
+### Changes
+- TEST: Count diagrams, not PNGs, in the CLI export check; derive the expected count from demo.md
+- FIX: Fail an export whose diagrams have not rendered; derive the diagram wait from the render budget
+- FIX: Link the generated demo HTML through the site, not raw.githubusercontent
+- FIX: Give the first export a cold-start render budget; stop testing debug builds
+- FIX: Make the export check's directory scans deterministic
+- FIX: Act on the cycle-1 review of the CI export fixes
+- copy paste now works in terminal
+- FIX: Make the CLI export check find the macOS build and PDF export work without a printer
+- TEST: Add CLI export check and publish per-platform demo documents
+- CHORE: Bump lattice version to 0.3.27
 - CHORE: Merge Squash on main branch to prep v0.3.26
 - CHORE: Prep v0.3.26
 ---
-
 
 ## v0.3.26
 
@@ -25,7 +49,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.25
 cd sr 
 ### Changes
-  <!-- INSERT BULLETS UNDER THIS LINE -->
+ 
 - TEST: Prove headless export drives the live DOM under StrictMode
 - FEAT: Add --export-pdf headless CLI export
 - fix: android build
@@ -37,7 +61,7 @@ cd sr
 ## v0.3.23
 
 ### Changes
-  <!-- INSERT BULLETS UNDER THIS LINE -->
+
 - mend
 - FEAT: CLI HTML export
 - CHORE: bumped version to v0.3.23
@@ -164,8 +188,6 @@ cd sr
 
 - RELEASE: Security ans stability fixes
 
-
-
 ## v0.3.11
 
 ### Changes
@@ -191,7 +213,6 @@ cd sr
 - FEAT: Setting — copy Mermaid diagrams on a light background
 - FEAT: Copy Mermaid diagrams from the preview as pictures
 - FIX: Stop the file watcher from resetting the editor mid-typing
-
 
 ---
 - bumped to version 3.10
@@ -246,7 +267,6 @@ cd sr
 - FEAT: Whitespace visualisation
 - CHORE: npm and cargo update #07-13
 - Fix: npm and cargo update with vulnerabilities fix
-
 
 
 ## v0.3.6

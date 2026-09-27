@@ -139,32 +139,94 @@ export function buildCopyHtml(fragment: DocumentFragment): string | null {
 } // buildCopyHtml END *********************************************************
 
 
+/** Settle budget used when the caller supplies none (e.g. an export window
+ *  launched by an older backend that does not send `exportSettleMs`). */
+export const DEFAULT_SETTLE_TIMEOUT_MS = 8000;
+
+/** Outcome of `waitForDiagramsSettled`: `pending` diagrams of `total` had
+ *  neither a cached PNG nor an error block when the wait ended. */
+export interface DiagramSettleResult {
+    pending: number;
+    total: number;
+}
+
+
 //******************************************************************************
 // waitForDiagramsSettled
 //******************************************************************************
 /**
- * IMPL-LTTCE-XPT-00001 — REQ-LTTCE-XPT-00001 — resolves once every diagram container currently under
- * `root` has either produced its cached PNG (see `Mermaid.tsx`'s
+ * IMPL-LTTCE-XPT-00001 — REQ-LTTCE-XPT-00001 / 00009 — waits until every diagram container currently
+ * under `root` has either produced its cached PNG (see `Mermaid.tsx`'s
  * `DIAGRAM_PNG_ATTR` write, deferred to an idle callback) or failed to render
  * (an `.error` block in its place), so the export below never fires while a
  * diagram is still an unrasterised `<svg>`.
  *
  * Polls rather than listening for an event because the PNG write is a plain
  * DOM attribute set from `Mermaid.tsx`, not an event this module can hook.
- * Gives up after `timeoutMs` and resolves anyway — a slow or stuck diagram
- * must not hang a CLI export forever; the caller gets whatever rendered.
+ * Gives up after `timeoutMs` so a stuck diagram cannot hang a CLI export
+ * forever — but *reports* how many were still pending rather than resolving
+ * as though all were done. Treating a timeout as success is what let an
+ * export write at most 2 of 4 diagrams and exit 0 (REQ-LTTCE-XPT-00009); the caller
+ * decides, via `describeUnsettledDiagrams`, that such a result is a failure.
  */
-export async function waitForDiagramsSettled(root: Element, timeoutMs = 8000): Promise<void> {
-    const settled = () =>
-        Array.from(root.querySelectorAll('.mermaid')).every(
-            (el) => el.hasAttribute(DIAGRAM_PNG_ATTR) || el.querySelector('pre.error') !== null,
-        );
+export async function waitForDiagramsSettled(
+    root: Element,
+    timeoutMs = DEFAULT_SETTLE_TIMEOUT_MS,
+): Promise<DiagramSettleResult> {
+    const count = (): DiagramSettleResult => {
+        const diagrams = Array.from(root.querySelectorAll('.mermaid'));
+        const pending = diagrams.filter(
+            (el) => !el.hasAttribute(DIAGRAM_PNG_ATTR) && el.querySelector('pre.error') === null,
+        ).length;
+        return { pending, total: diagrams.length };
+    };
 
     const start = Date.now();
-    while (!settled() && Date.now() - start < timeoutMs) {
+    let result = count();
+    while (result.pending > 0 && Date.now() - start < timeoutMs) {
         await new Promise((resolve) => setTimeout(resolve, 100));
+        result = count();
     }
+    return result;
 } // waitForDiagramsSettled END ************************************************
+
+
+//******************************************************************************
+// resolveSettleTimeout
+//******************************************************************************
+/**
+ * IMPL-LTTCE-XPT-00001 — REQ-LTTCE-XPT-00009 — validates the settle budget
+ * Rust hands over in `__LATTICE_INIT_DATA__.exportSettleMs`. Anything that is
+ * not a positive, finite number of milliseconds (absent, `null`, a string,
+ * `NaN`) falls back to `DEFAULT_SETTLE_TIMEOUT_MS` rather than turning into a
+ * zero-length or endless wait.
+ */
+export function resolveSettleTimeout(raw: unknown): number {
+    return typeof raw === 'number' && Number.isFinite(raw) && raw > 0
+        ? raw
+        : DEFAULT_SETTLE_TIMEOUT_MS;
+} // resolveSettleTimeout END **************************************************
+
+
+//******************************************************************************
+// describeUnsettledDiagrams
+//******************************************************************************
+/**
+ * IMPL-LTTCE-XPT-00001 — REQ-LTTCE-XPT-00009 — turns a settle result into the
+ * failure message an export must report, or `null` when every diagram
+ * settled. The message names how many diagrams were missing and the budget
+ * that elapsed, so "renderer too slow" can be told apart from "budget too
+ * tight" in a log (the same reasoning as REQ-LTTCE-XPT-00008).
+ */
+export function describeUnsettledDiagrams(
+    result: DiagramSettleResult,
+    timeoutMs: number,
+): string | null {
+    if (result.pending <= 0) return null;
+    const seconds = Math.round(timeoutMs / 1000);
+    return `${result.pending} of ${result.total} diagram(s) had not finished rendering after `
+        + `${seconds}s — refusing to export an incomplete document`;
+} // describeUnsettledDiagrams END *********************************************
 
 
 //******************************************************************************

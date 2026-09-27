@@ -16,3 +16,7 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - IMPL-LTTCE-MRC-00003 **covers** ARCH-LTTCE-MRC-00001
 - IMPL-LTTCE-XPT-00001 **covers** REQ-LTTCE-XPT-00001
 - IMPL-LTTCE-XPT-00001 **covers** ARCH-LTTCE-XPT-00001
+- IMPL-LTTCE-XPT-00001 **covers** REQ-LTTCE-XPT-00009  (`waitForDiagramsSettled` reports
+  `{ pending, total }` instead of resolving on timeout; `describeUnsettledDiagrams` builds the failure
+  message; `resolveSettleTimeout` validates `exportSettleMs`) — UTST: `src/lib/preview-copy.test.ts`,
+  *waiting for diagrams to settle* and *unsettled diagrams are an export failure*

@@ -646,6 +646,7 @@ teaches the other:
 | :--------------- | :---------------------------------- | :-------------------------- |
 | `--export-html`  | the rendered preview as HTML        | XPT-00001 … 00003           |
 | `--export-pdf`   | the rendered preview as a paginated PDF | XPT-00004 … 00006       |
+| both             | printer-free PDF, render budget, no partial output | XPT-00007 … 00009 |
 
 <!--REQ-LTTCE-XPT-00001-->
 **REQ-LTTCE-XPT-00001** — Launching `lattice` with `--export-html <path> [<path> ...]` SHALL, for each
@@ -710,6 +711,49 @@ output.
 *Rationale*: the batch-robustness argument of REQ-LTTCE-XPT-00003, plus one case HTML does not have.
 Producing a PDF depends on a host facility that may be absent; a script must be able to tell "this
 platform cannot" from "this file failed", and neither may look like success.
+
+<!--REQ-LTTCE-XPT-00007-->
+**REQ-LTTCE-XPT-00007** — PDF export SHALL NOT require a printer to be configured on the host. On a host with no printer, and with no print queue or print service reachable, `--export-pdf` SHALL still
+produce the PDF.
+
+*Rationale*: the PDF is written to a file; a printer never enters into it. Depending on one was an implementation accident of driving the host's print pipeline — on Linux, GTK resolved the *default*
+printer through its CUPS backend before it would honour the file output already requested, so a machine with no printer failed with "Printer not found" and produced nothing. Printer-less machines
+are not an edge case: every CI runner is one, and so is any desktop or server that only ever exports documents. A user who has never owned a printer must still be able to export a PDF.
+
+<!--REQ-LTTCE-XPT-00008-->
+**REQ-LTTCE-XPT-00008** — The time allowed for a document's preview to render during an export SHALL
+be sufficient for a **cold** start: the first export performed by a process SHALL be given a longer
+render budget than the exports that follow it in the same process. A correct render SHALL NOT be
+abandoned because the machine, the application or its WebView had not been used yet.
+
+*Rationale*: only the first export pays for paging the executable and the WebView's frameworks in,
+constructing the process's first WebView, and parsing the frontend bundle. Measured on a macOS arm64
+CI runner (2026-09-26): application launch alone took 4 s cold against 1 s warm, and a cold render of
+`docs/demo/demo.md` — four Mermaid diagrams and KaTeX — exceeded a 20 s budget, while the *warm*
+render of the same document by the same binary completed in 17 s, inside that budget by three
+seconds. The user who meets the cold case is the most ordinary one there is: install Lattice, export a
+document. A budget a correct render can miss because nothing was warm yet is not a safety net, it is a
+source of false failure. The budget's purpose is to bound a render that will never finish — the wait
+itself ends on the frontend's settled signal, not on the clock, so a generous bound costs a healthy
+export nothing. The reported error SHALL state the budget that elapsed, so "too slow" can be told
+apart from "too tight".
+
+<!--REQ-LTTCE-XPT-00009-->
+**REQ-LTTCE-XPT-00009** — An export SHALL NOT write an output file for a document whose diagrams
+have not all finished rendering (each one either rasterised or shown as a render error). Such a
+document SHALL be treated as a failed path under REQ-LTTCE-XPT-00003 / REQ-LTTCE-XPT-00006 — logged,
+skipped, non-zero exit — and the reported error SHALL state how many diagrams were still unrendered,
+out of how many, and the budget that elapsed. The time the export waits for diagrams SHALL be
+derived from the render budget of REQ-LTTCE-XPT-00008, not set independently of it.
+
+*Rationale*: a partially rendered document that reports success is the worst outcome an export can
+have — worse than a failure, because nothing tells the user or the invoking script that the file is
+wrong. It happened (CI, macOS Intel, 2026-09-26): the render budget had been raised to 90 s for a
+cold start, but the wait for diagrams still ran on a separate, fixed 8 s clock. The cold render took
+about 9 s, the diagram wait gave up at 8, and the export wrote a file with at most 2 of its 4 diagrams and
+exited 0. Two bounds on one wait will drift apart the next time either is changed; one bound,
+derived in one place, cannot.
+
 
 
 ## Chapter FWT — File Watching and External Reload

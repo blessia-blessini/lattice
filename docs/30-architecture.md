@@ -1287,15 +1287,18 @@ lattice --export-html a.md b.md          lattice --export-pdf a.md b.md
 Rust: cli_args::requested_export_format() → export::run_export(paths, format)
         │  for each path, sequentially:
         ▼
-  build_window_with_file_ex(path, Some(format))   invisible window,
+  build_window_with_file_ex(path, Some(ExportLaunch))   invisible window,
         │                              __LATTICE_INIT_DATA__.exportFormat = "html" | "pdf"
+        │                              __LATTICE_INIT_DATA__.exportSettleMs = render budget − 10 s
         ▼
   App.tsx checkLaunch(): Direct Push loads the file → normal preview render starts
         │                (pdf only: setViewMode(preview) + applyPrintStyle — see below)
         ▼
-  waitForDiagramsSettled(previewBodyRef)   poll until every .mermaid has its
-        │                                  cached PNG (or failed) — same signal
+  waitForDiagramsSettled(previewBodyRef,   poll until every .mermaid has its
+        │          exportSettleMs)         cached PNG (or failed) — same signal
         │                                  Mermaid.tsx writes for copy (IMPL-LTTCE-MRC-00001)
+        │                                  still pending at the budget → export_ready({error}),
+        │                                  never a partial document (REQ-LTTCE-XPT-00009)
         ├──────────── html ────────────┐              ├──────────── pdf ────────────┐
         ▼                              │              ▼                             │
   buildExportHtml(previewBodyRef)      │        (nothing to serialise —              │
@@ -1358,6 +1361,44 @@ could only log as "produced no HTML"; the reason now survives the IPC hop.
 hanging every file after it, the window is always closed whether the file succeeded or not, and the
 process exits with a non-zero status if anything failed.
 
+**The bound is two values, not one (REQ-LTTCE-XPT-00008).** `render_timeout(is_first_export)` returns
+`FIRST_RENDER_TIMEOUT` (90 s) for the first file of a run and `RENDER_TIMEOUT` (45 s) for the rest.
+Only the first export pays cold-start cost — paging the executable and the WebView frameworks in,
+constructing the process's first WebView, parsing the frontend bundle — and on a macOS arm64 CI
+runner that was the difference between a 4 s and a 1 s launch, and between missing and meeting the
+old 20 s budget on a document whose *warm* render took 17 s. "First" comes from `enumerate()` in the
+loop rather than a flag, so the policy needs no mutable state, and `render_timeout` is pure and
+unit-tested without a WebView.
+
+Widening these is close to free, which is the point worth keeping in mind if they are ever revisited:
+the wait ends on the frontend's `export_ready` signal, never on the clock, so a healthy export
+finishes the moment it is ready no matter how large the bound. The bound exists only to decide when a
+render is declared wedged. Two consequences are recorded so they are not rediscovered: the timeout
+message names the elapsed budget (so "too slow" and "too tight" can be told apart in a CI log), and
+`RUN_TIMEOUT` in `examples/export_demo.rs` — the harness's own kill switch — must stay above
+`FIRST_RENDER_TIMEOUT + PDF_PRINT_TIMEOUT` plus startup, or the harness kills a run the app would have
+completed. It was 120 s and is now 300 s for exactly that reason.
+
+**One bound, owned by Rust, and a timeout is never a success (REQ-LTTCE-XPT-00009).** The frontend's
+wait for diagrams (`waitForDiagramsSettled`) is itself bounded — a stuck diagram must not hang the
+window — and that bound used to be its own hard-coded 8 s. When the render budget above was raised
+to 90 s, the 8 s clock silently became the real limit, and because the wait *resolved as though
+settled* when it ran out, a cold macOS Intel render that took ~9 s exported at most 2 of its 4 diagrams and
+exited 0. Two rules now close that off:
+
+- The settle budget is **derived, not set**: `settle_budget(render_timeout(..))` is the render budget
+  less `SETTLE_MARGIN`, handed to the frontend as `__LATTICE_INIT_DATA__.exportSettleMs` via
+  `ExportLaunch`. The margin is 10 s because Rust's clock starts when the window is built, while the
+  frontend's starts only after it has booted and loaded the file (~3 s cold on a macOS CI runner). Raising the render budget raises it with it. The margin makes the frontend give up
+  first, because only the frontend can say *which* diagrams are missing; Rust's own timeout remains
+  as the backstop for a renderer that never answers at all.
+- The wait **reports** rather than resolves: it returns `{ pending, total }`, and
+  `describeUnsettledDiagrams` turns any `pending > 0` into an error ("3 of 5 diagram(s) had not
+  finished rendering after 80s — refusing to export an incomplete document"), which `App.tsx` throws
+  into the existing `export_ready({ error })` path. Rust logs it and fails that file exactly as it
+  would any other render failure. A diagram that fails to render (a Mermaid syntax error) still
+  counts as settled — its error block *is* what the preview shows.
+
 **A Tauri runtime gap, found while verifying this feature.** `AppHandle::exit(code)` (tauri 2.11.5,
 `tauri-runtime-wry`) sets `ControlFlow::Exit` on `RequestExit(code)` but never threads `code` through to
 `std::process::exit` — the OS-level exit status is always `0` regardless of what was requested, unless
@@ -1417,6 +1458,30 @@ same family, both macOS/iOS-only, neither reaching a Windows or Linux build. Tha
 small) widening of the dependency graph and is recorded here rather than glossed as "nothing new":
 the project rule is to minimise dependencies *and* to report them accurately when one is added.
 
+**Linux needs a named printer, and it must be the file one (REQ-LTTCE-XPT-00007).** GTK's
+`output-uri` / `output-file-format` settings say *where* the output goes, not *who* produces it. With
+no printer named in the settings, GTK resolves the host's default printer through its CUPS backend
+first — so a host with no printer fails with "Printer not found" and writes nothing, which is how the
+Linux CI leg found this. `impls/linux.rs` therefore restricts the process to GTK's **file** print
+backend and names that backend's printer in the settings. Narrowing the backend costs no feature:
+`print_to_pdf` is reached only from `export.rs`, which always writes a file, and Lattice has no
+print-to-paper feature at all.
+
+Two details are deliberate and were both review findings on the first attempt:
+
+- **The backend is selected on `gtk::Settings`, not through `GTK_PRINT_BACKENDS`.** Setting the
+  environment variable would be undefined behaviour — by the time an export runs, tokio workers, the
+  `notify` watcher thread and glib's pools are live, and POSIX `setenv` mutates the global `environ`
+  with no synchronisation against a concurrent `getenv`. It would also be wrong to *defer* to an
+  inherited value: a desktop setting `GTK_PRINT_BACKENDS=cups` would leave the file backend unloaded
+  and reintroduce the very failure. The GTK setting is applied unconditionally instead.
+- **The printer's name is resolved through gettext, not hard-coded.** GTK translates that name, and
+  gtk-rs 0.18 binds no printer enumeration (there is no `gtk::Printer`), so it cannot be read back
+  without unsafe FFI into `gtk_enumerate_printers`. Asking `glib::dgettext` for the same msgid in
+  GTK's own `gtk30` domain returns exactly the string GTK registered, in any locale, with no unsafe
+  code — and with no catalogue installed gettext returns the msgid, which is the C-locale name.
+  `LATTICE_GTK_PRINTER` remains as an override.
+
 `Platform::print_to_pdf` carries a **default implementation** that refuses with a bounded, logged
 error. That is deliberately what the Android and iOS stubs get: neither has a verified print-to-PDF
 path, and REQ-LTTCE-XPT-00006's last sentence requires "this platform cannot" to be a loud failure
@@ -1469,7 +1534,7 @@ deliberately: the other hosts run this same code on different schedulers and hav
 executed at all.
 
 It was found in review, not by the tests, because the only document exercised by hand
-(`docs/demo/demo.md`) contains five Mermaid diagrams — so the settle loop always yielded and always
+(`docs/demo/demo.md`) contains four Mermaid diagrams — so the settle loop always yielded and always
 gave React its commit. `App.test.tsx` now samples `data-view-mode` *at the instant of the signal*
 rather than afterwards (a `waitFor` assertion passes on a value that only arrives later, which is
 exactly how the defect hid), and does it on deliberately diagram-free content.

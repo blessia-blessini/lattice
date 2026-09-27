@@ -47,13 +47,26 @@ vi.mock('@tauri-apps/plugin-opener', () => ({
 // kept — only the root element each one is handed is recorded, so a test can
 // assert *which* DOM node the headless export drove (see the StrictMode
 // regression in 'App — headless export launch').
-export const g_exportRoots: { settled: Element[]; built: Element[] } = { settled: [], built: [] };
+//
+// `timeouts` records the settle budget each call was given, and `forceResult`
+// (when set) replaces the real wait's outcome — jsdom renders no Mermaid
+// markup, so a still-rendering diagram can only be simulated here.
+export const g_exportRoots: {
+    settled: Element[];
+    built: Element[];
+    timeouts: (number | undefined)[];
+    forceResult: { pending: number; total: number } | null;
+} = { settled: [], built: [], timeouts: [], forceResult: null };
 vi.mock('./lib/preview-copy', async (importOriginal) => {
     const actual = await importOriginal<typeof import('./lib/preview-copy')>();
     return {
         ...actual,
         waitForDiagramsSettled: (root: Element, timeoutMs?: number) => {
             g_exportRoots.settled.push(root);
+            g_exportRoots.timeouts.push(timeoutMs);
+            if (g_exportRoots.forceResult) {
+                return Promise.resolve(g_exportRoots.forceResult);
+            }
             return actual.waitForDiagramsSettled(root, timeoutMs as any);
         },
         buildExportHtml: (root: Element) => {
@@ -928,10 +941,46 @@ describe('App — headless export launch', () => {
         document.title = '';
         document.getElementById('lattice-print-dynamic')?.remove();
         vi.mocked(TauriCore.invoke).mockImplementation(makeInvokeMock());
+        g_exportRoots.timeouts.length = 0;
+        g_exportRoots.forceResult = null;
     });
 
     const readyCalls = () =>
         vi.mocked(TauriCore.invoke).mock.calls.filter(c => c[0] === 'export_ready');
+
+    it('waits for diagrams with the budget Rust sent, not a clock of its own', async () => {
+        // REQ-LTTCE-XPT-00009. The frontend used to ignore Rust's budget and
+        // wait a fixed 8 s; the two must be one number.
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/a.md', content: '# Hi', exportFormat: 'html', exportSettleMs: 12_345,
+        };
+        render(<App />);
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(1));
+        expect(g_exportRoots.timeouts).toEqual([12_345]);
+    });
+
+    it.each(['html', 'pdf'])(
+        'exportFormat "%s" fails instead of exporting an incomplete document (REQ-LTTCE-XPT-00009)',
+        async (format) => {
+            // Regression (CI run 36260972990, 2026-09-26): at most 2 of 4 diagrams had
+            // rendered when the wait gave up, and the export still reported
+            // success. It must hand back an error and no document.
+            const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+            g_exportRoots.forceResult = { pending: 3, total: 5 };
+            (window as any).__LATTICE_INIT_DATA__ = {
+                path: '/vault/a.md', content: '# Hi', exportFormat: format, exportSettleMs: 40_000,
+            };
+            render(<App />);
+
+            await waitFor(() => expect(readyCalls()).toHaveLength(1));
+            const [, args] = readyCalls()[0] as [string, any];
+            expect(args.html).toBeNull();
+            expect(args.error).toContain('3 of 5');
+            expect(args.error).toContain('40s');
+            err.mockRestore();
+        },
+    );
 
     it('an ordinary launch never signals export_ready', async () => {
         (window as any).__LATTICE_INIT_DATA__ = { path: '/vault/a.md', content: '# Hi' };

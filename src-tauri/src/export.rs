@@ -84,6 +84,35 @@ impl ExportFormat {
 }
 // ExportFormat END **********************************************
 
+
+//**************************************************************
+// ExportLaunch
+//**************************************************************
+/// What an export window is told at launch, in `__LATTICE_INIT_DATA__`:
+/// the format to produce and how long the frontend may wait for the
+/// preview's diagrams to settle.
+///
+/// The settle budget travels with the format so the frontend has no clock of
+/// its own to keep in step with Rust's. It once had one — a hard-coded 8 s —
+/// and when Rust's render budget was raised to 90 s for a cold start, the
+/// frontend still gave up at 8 s and exported an incomplete document
+/// (REQ-LTTCE-XPT-00009).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ExportLaunch {
+    pub format: ExportFormat,
+    pub settle_budget: Duration,
+}
+
+impl ExportLaunch {
+    /// The settle budget in whole milliseconds, as the frontend's
+    /// `exportSettleMs` expects it.
+    pub fn settle_ms(self) -> u64 {
+        u64::try_from(self.settle_budget.as_millis()).unwrap_or(u64::MAX)
+    }
+}
+// ExportLaunch END **********************************************
+
+
 /// Per-app state carrying the channel for the single in-flight export.
 ///
 /// The payload is what the *frontend* has to say once the preview has
@@ -113,16 +142,46 @@ pub struct ExportState {
     pending: Mutex<Option<Pending>>,
 }
 
-/// How long to wait for one file's preview to render and settle before
-/// giving up on it and moving to the next. Generous because Mermaid
-/// rasterisation is deferred to an idle callback under
-/// `requestIdleCallback`, which a busy renderer can delay.
-const EXPORT_TIMEOUT: Duration = Duration::from_secs(20);
+/// How long to wait for the **first** file of a run to render and settle.
+///
+/// REQ-LTTCE-XPT-00008 — the first export in a process pays costs no later one
+/// does: the executable and the WebView's frameworks are paged in, the first
+/// WKWebView / WebKitGTK / WebView2 instance of the process is constructed, and
+/// the frontend bundle is parsed and executed for the first time. Measured on a
+/// macOS arm64 CI runner on 2026-09-26: app launch alone took 4 s cold against
+/// 1 s warm, and the cold render of `docs/demo/demo.md` (four Mermaid diagrams,
+/// KaTeX) exceeded a 20 s budget while the warm render of the same document in
+/// the same binary needed 17 s — inside the old limit by three seconds. A
+/// budget that a correct render can miss because the machine was cold is not a
+/// safety net, it is a source of false failures.
+const FIRST_RENDER_TIMEOUT: Duration = Duration::from_secs(90);
+
+/// How long to wait for each **subsequent** file's preview to render and settle
+/// before giving up on it and moving to the next. Generous because Mermaid
+/// rasterisation is deferred to an idle callback under `requestIdleCallback`,
+/// which a busy renderer can delay.
+///
+/// Raising these costs nothing when rendering is quick: the wait ends on the
+/// frontend's `export_ready` signal, not on the clock (see `export_one`). The
+/// timeout exists only to bound a render that is never going to finish, so it
+/// should be set by "how long before we call it wedged", not by "how long a
+/// healthy render ought to take".
+const RENDER_TIMEOUT: Duration = Duration::from_secs(45);
 
 /// How long to wait for the host WebView's print-to-PDF to complete once the
-/// document has already settled. Shorter than `EXPORT_TIMEOUT`: nothing is
+/// document has already settled. Shorter than `RENDER_TIMEOUT`: nothing is
 /// being rendered or rasterised any more, only paginated and serialised.
 const PDF_PRINT_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// How much of a render budget is held back from the frontend's diagram wait
+/// (REQ-LTTCE-XPT-00009). The frontend must give up *before* Rust does, so
+/// that a stuck diagram is reported by the side that can say which diagrams
+/// are missing — "3 of 5 diagram(s) had not finished rendering" — rather than
+/// by Rust's bare "timed out". The margin covers what Rust's clock counts
+/// but the frontend's does not: the frontend's own start-up and file load
+/// before its wait begins (~3 s cold on a macOS CI runner, 2026-09-26), then
+/// serialising the document and the IPC hop back.
+const SETTLE_MARGIN: Duration = Duration::from_secs(10);
 
 //**************************************************************
 // is_expected_sender
@@ -201,6 +260,37 @@ pub fn export_output_path(source: &str, format: ExportFormat) -> PathBuf {
 // export_output_path END ****************************************
 
 //**************************************************************
+// render_timeout
+//**************************************************************
+/// The render budget for one export: longer for the first of a run.
+///
+/// IMPL for REQ-LTTCE-XPT-00008. Pure, so the policy is unit-testable without
+/// a WebView, a window or a clock.
+fn render_timeout(is_first_export: bool) -> Duration {
+    if is_first_export {
+        FIRST_RENDER_TIMEOUT
+    } else {
+        RENDER_TIMEOUT
+    }
+}
+// render_timeout END *******************************************
+
+
+//**************************************************************
+// settle_budget
+//**************************************************************
+/// The frontend's diagram-settle budget for a given render budget:
+/// `SETTLE_MARGIN` less, so the frontend reports first (see `SETTLE_MARGIN`).
+///
+/// IMPL for REQ-LTTCE-XPT-00009. Derived, never set separately, so raising
+/// the render budget raises this with it. Pure and unit-tested.
+fn settle_budget(render_budget: Duration) -> Duration {
+    render_budget.saturating_sub(SETTLE_MARGIN)
+}
+// settle_budget END ********************************************
+
+
+//**************************************************************
 // run_export
 //**************************************************************
 /// Drives the whole headless export run: each path in turn, then exits the
@@ -210,8 +300,11 @@ pub fn export_output_path(source: &str, format: ExportFormat) -> PathBuf {
 pub async fn run_export(app: tauri::AppHandle, paths: Vec<String>, format: ExportFormat) {
     let mut had_error = false;
 
-    for path in paths {
-        match export_one(&app, &path, format).await {
+    // `enumerate` rather than a flag: whether this is the process's first export
+    // is a property of the loop, so it needs no mutable state and stays obvious
+    // at the call site (REQ-LTTCE-XPT-00008).
+    for (index, path) in paths.into_iter().enumerate() {
+        match export_one(&app, &path, format, index == 0).await {
             Ok(out) => info!("export-{}: wrote '{}'", format.as_str(), out.display()),
             Err(e) => {
                 had_error = true;
@@ -234,6 +327,7 @@ async fn export_one(
     app: &tauri::AppHandle,
     path: &str,
     format: ExportFormat,
+    is_first_export: bool,
 ) -> Result<PathBuf, String> {
     ensure_readable(path)?;
 
@@ -252,10 +346,16 @@ async fn export_one(
         });
     }
 
-    let window =
-        crate::build_window_with_file_ex(app, label, Some(path.to_string()), Some(format))?;
+    let budget = render_timeout(is_first_export);
+    let launch = ExportLaunch {
+        format,
+        settle_budget: settle_budget(budget),
+    };
 
-    let settled = tokio::time::timeout(EXPORT_TIMEOUT, rx).await;
+    let window =
+        crate::build_window_with_file_ex(app, label, Some(path.to_string()), Some(launch))?;
+
+    let settled = tokio::time::timeout(budget, rx).await;
 
     // Whatever happens next, stop tracking a sender for this window. This
     // alone does not make a late signal harmless — the next file installs its
@@ -281,7 +381,13 @@ async fn export_one(
         Err(_) => {
             clear_pending();
             let _ = window.close();
-            return Err("timed out waiting for preview to render".to_string());
+            // The budget is named in the message: "timed out" alone cannot be
+            // told apart from "timed out because the budget was too small",
+            // which is exactly the confusion that cost a CI investigation.
+            return Err(format!(
+                "timed out waiting for preview to render (waited {}s)",
+                budget.as_secs()
+            ));
         }
     };
     clear_pending();
@@ -560,4 +666,115 @@ mod tests {
         write_html(&out, Some("<p>fresh</p>".to_string())).unwrap();
         assert_eq!(std::fs::read_to_string(&out).unwrap(), "<p>fresh</p>");
     }
+
+    //**************************************************************
+    // first_export_gets_the_longer_render_budget
+    //**************************************************************
+    /// REQ-LTTCE-XPT-00008: the first export of a process must be allowed more
+    /// time than the ones after it, because only it pays cold-start cost.
+    #[test]
+    fn first_export_gets_the_longer_render_budget() {
+        assert_eq!(render_timeout(true), FIRST_RENDER_TIMEOUT);
+        assert_eq!(render_timeout(false), RENDER_TIMEOUT);
+        assert!(
+            render_timeout(true) > render_timeout(false),
+            "the first export must never get a smaller budget than a later one"
+        );
+    }
+    // first_export_gets_the_longer_render_budget END ***************
+
+
+    //**************************************************************
+    // render_budgets_exceed_the_observed_cold_render
+    //**************************************************************
+    /// Guards the numbers against being tightened back to where a correct
+    /// render fails. A warm render of `docs/demo/demo.md` took 17 s on a macOS
+    /// arm64 CI runner and the cold one exceeded 20 s, so a budget anywhere
+    /// near 20 s reintroduces the false failure of 2026-09-26.
+    #[test]
+    fn render_budgets_exceed_the_observed_cold_render() {
+        const OBSERVED_WARM_RENDER: Duration = Duration::from_secs(17);
+        assert!(
+            render_timeout(false) > OBSERVED_WARM_RENDER.saturating_mul(2),
+            "a later export needs comfortable headroom over the observed warm render"
+        );
+        assert!(
+            render_timeout(true) >= render_timeout(false).saturating_mul(2),
+            "the first export needs markedly more than a warm one, not a token extra"
+        );
+    }
+    // render_budgets_exceed_the_observed_cold_render END ***********
+
+
+    //**************************************************************
+    // settle_budget_ends_before_the_render_budget
+    //**************************************************************
+    /// REQ-LTTCE-XPT-00009: the frontend's diagram wait must give up strictly
+    /// before Rust's render budget does, for both budgets, or a stuck diagram
+    /// is reported as Rust's bare timeout instead of by name.
+    #[test]
+    fn settle_budget_ends_before_the_render_budget() {
+        for is_first in [true, false] {
+            let render = render_timeout(is_first);
+            let settle = settle_budget(render);
+            assert!(settle < render, "settle {:?} must end before render {:?}", settle, render);
+            assert!(!settle.is_zero(), "a zero settle budget would export before anything rendered");
+        }
+    }
+    // settle_budget_ends_before_the_render_budget END **************
+
+
+    //**************************************************************
+    // settle_budget_is_not_the_old_8s_clock
+    //**************************************************************
+    /// Regression (CI run 36260972990, macos-intel, 2026-09-26): the frontend
+    /// waited a fixed 8 s while Rust allowed 90 s, so a cold render that took
+    /// ~9 s was exported with at most 2 of its 4 diagrams. The settle budget must scale
+    /// with the render budget and stay well clear of that old clock.
+    #[test]
+    fn settle_budget_is_not_the_old_8s_clock() {
+        const OLD_FRONTEND_CLOCK: Duration = Duration::from_secs(8);
+        assert!(settle_budget(render_timeout(false)) > OLD_FRONTEND_CLOCK.saturating_mul(4));
+        assert!(settle_budget(render_timeout(true)) > settle_budget(render_timeout(false)));
+    }
+    // settle_budget_is_not_the_old_8s_clock END ********************
+
+
+    //**************************************************************
+    // settle_budget_saturates_instead_of_underflowing
+    //**************************************************************
+    /// Defensive: a render budget at or below the margin yields zero rather
+    /// than panicking on `Duration` underflow. (The frontend then falls back
+    /// to its default; see `resolveSettleTimeout`.)
+    #[test]
+    fn settle_budget_saturates_instead_of_underflowing() {
+        assert_eq!(settle_budget(Duration::ZERO), Duration::ZERO);
+        assert_eq!(settle_budget(SETTLE_MARGIN), Duration::ZERO);
+        assert_eq!(
+            settle_budget(SETTLE_MARGIN + Duration::from_secs(1)),
+            Duration::from_secs(1)
+        );
+    }
+    // settle_budget_saturates_instead_of_underflowing END **********
+
+
+    //**************************************************************
+    // export_launch_reports_settle_budget_in_millis
+    //**************************************************************
+    /// `exportSettleMs` is what the frontend reads; it must be milliseconds.
+    #[test]
+    fn export_launch_reports_settle_budget_in_millis() {
+        let launch = ExportLaunch {
+            format: ExportFormat::Html,
+            settle_budget: Duration::from_secs(40),
+        };
+        assert_eq!(launch.settle_ms(), 40_000);
+
+        let sub_second = ExportLaunch {
+            format: ExportFormat::Pdf,
+            settle_budget: Duration::from_millis(1500),
+        };
+        assert_eq!(sub_second.settle_ms(), 1500);
+    }
+    // export_launch_reports_settle_budget_in_millis END ************
 }
