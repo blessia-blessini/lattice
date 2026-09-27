@@ -9,6 +9,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.29
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: Install xdg-utils so the AppImage bundles on the ARM64 runner
 - FIX: Init Android only on the CI leg that installs the Android SDK
 - FEAT: Build Linux ARM64 natively in CI
 - CHORE: merged dev branch to avoid future remerges on squash

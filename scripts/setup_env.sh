@@ -60,6 +60,9 @@ if [ "$OS" = "Linux" ]; then
 
     # Update and Install Dependencies
     # (Using the list from the plan/reference)
+    # xdg-utils: the AppImage bundler copies /usr/bin/xdg-open into the AppImage
+    #   (tauri-plugin-opener uses it). ubuntu-latest ships it, ubuntu-24.04-arm
+    #   does not, so it must be listed here rather than assumed.
     echo "[INFO] Updating apt and installing libraries..."
     $SUDO apt-get update
     $SUDO apt-get install -y \
@@ -72,6 +75,7 @@ if [ "$OS" = "Linux" ]; then
        libgtk-3-dev \
        libayatana-appindicator3-dev \
        librsvg2-dev \
+       xdg-utils \
        xvfb
 
 
