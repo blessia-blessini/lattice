@@ -260,6 +260,27 @@ pub fn export_output_path(source: &str, format: ExportFormat) -> PathBuf {
 }
 // export_output_path END ****************************************
 
+
+//**************************************************************
+// resolved_output_path
+//**************************************************************
+/// [`export_output_path`] made absolute against the current directory — the
+/// path every writer is actually given.
+///
+/// REQ-LTTCE-XPT-00005 — `lattice --export-pdf demo.md`, the command the
+/// release page shows, passes a *relative* path. The host print APIs want an
+/// absolute one: GTK's `output-uri` must be a `file://` URI, and
+/// `glib::filename_to_uri` refuses a relative path ("is not an absolute path"
+/// — the whole export failed on Linux, found 2026-09-28). Resolving it here,
+/// once, gives every backend the same absolute path instead of each coping on
+/// its own. Lexical only (`std::path::absolute`): the file does not exist yet,
+/// so it cannot be canonicalised.
+fn resolved_output_path(source: &str, format: ExportFormat) -> Result<PathBuf, String> {
+    std::path::absolute(export_output_path(source, format))
+        .map_err(|e| format!("cannot resolve the output path for '{}': {}", source, e))
+}
+// resolved_output_path END **************************************
+
 //**************************************************************
 // render_timeout
 //**************************************************************
@@ -313,11 +334,11 @@ pub async fn run_export(
         // checked against the output file directly.
         let (w, h) = paper.size_points();
         info!(
-            "export-pdf: paper {} ({:.0} x {:.0} pt), margins {:.0} pt",
+            "export-pdf: paper {} ({:.0} x {:.0} pt), margins {}",
             paper.name(),
             w,
             h,
-            crate::paper::mm_to_points(crate::paper::PAGE_MARGIN_MM)
+            crate::platform::page_margins().describe_points()
         );
     }
 
@@ -414,7 +435,13 @@ async fn export_one(
     };
     clear_pending();
 
-    let out_path = export_output_path(path, format);
+    let out_path = match resolved_output_path(path, format) {
+        Ok(p) => p,
+        Err(e) => {
+            let _ = window.close();
+            return Err(e);
+        }
+    };
 
     // The window must stay alive until the output exists: for a PDF it is the
     // very thing being printed.
@@ -542,6 +569,27 @@ mod tests {
             PathBuf::from("notes.pdf")
         );
     }
+
+    //**************************************************************
+    // resolved_output_path — REQ-LTTCE-XPT-00005, relative input
+    //**************************************************************
+    #[test]
+    fn a_relative_source_gets_an_absolute_output_path_in_the_current_dir() {
+        // `lattice --export-pdf demo.md`: GTK refuses a relative output path,
+        // so the writers must never see one. Reads the cwd, never changes it.
+        let out = resolved_output_path("demo.md", ExportFormat::Pdf).unwrap();
+        assert!(out.is_absolute(), "{}", out.display());
+        assert_eq!(out, std::env::current_dir().unwrap().join("demo.pdf"));
+    }
+
+    #[test]
+    fn an_absolute_source_keeps_its_directory() {
+        let dir = tempfile::tempdir().unwrap();
+        let source = dir.path().join("notes.md");
+        let out = resolved_output_path(source.to_str().unwrap(), ExportFormat::Html).unwrap();
+        assert_eq!(out, dir.path().join("notes.html"));
+    }
+    // resolved_output_path END *************************************
 
     #[test]
     fn adds_extension_when_absent() {

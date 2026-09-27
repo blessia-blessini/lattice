@@ -54,6 +54,18 @@ impl Platform for PlatformImpl {
         }
     }
     // print_to_pdf (windows) END ********************************
+
+
+    //**************************************************************
+    // draws_page_header_footer (windows)
+    //**************************************************************
+    /// Chromium draws the CSS page-margin boxes, so a Windows PDF carries the
+    /// file-name header and "Page X of Y" footer, and keeps the 2 cm margins
+    /// they sit in.
+    fn draws_page_header_footer(&self) -> bool {
+        true
+    }
+    // draws_page_header_footer (windows) END ********************
 }
 
 //******************************************************************************
@@ -114,8 +126,8 @@ fn windows_print_to_pdf(
 //******************************************************************************
 // windows_print_settings
 //******************************************************************************
-/// WebView2 print settings for `paper`: portrait, page size and
-/// [`crate::paper::PAGE_MARGIN_MM`] on every side, all in inches.
+/// WebView2 print settings for `paper`: portrait, page size and the host's
+/// [`page_margins`] — 2 cm on every side here — all in inches.
 ///
 /// Passing `None` to `PrintToPdf` instead — as the first version did — takes
 /// WebView2's defaults, which are US Letter regardless of the requested paper.
@@ -136,19 +148,19 @@ fn windows_print_settings(
     let environment: ICoreWebView2Environment6 = unsafe { core2.Environment()? }.cast()?;
     let settings = unsafe { environment.CreatePrintSettings()? };
 
-    use crate::paper::{mm_to_inches, PAGE_MARGIN_MM};
+    use crate::paper::mm_to_inches;
     let (width_mm, height_mm) = paper.size_mm();
     let (width, height) = (mm_to_inches(width_mm), mm_to_inches(height_mm));
-    let margin = mm_to_inches(PAGE_MARGIN_MM);
+    let margins = page_margins();
     // SAFETY: plain property setters on a settings object this function owns.
     unsafe {
         settings.SetOrientation(COREWEBVIEW2_PRINT_ORIENTATION_PORTRAIT)?;
         settings.SetPageWidth(width)?;
         settings.SetPageHeight(height)?;
-        settings.SetMarginTop(margin)?;
-        settings.SetMarginBottom(margin)?;
-        settings.SetMarginLeft(margin)?;
-        settings.SetMarginRight(margin)?;
+        settings.SetMarginTop(mm_to_inches(margins.top_mm))?;
+        settings.SetMarginBottom(mm_to_inches(margins.bottom_mm))?;
+        settings.SetMarginLeft(mm_to_inches(margins.left_mm))?;
+        settings.SetMarginRight(mm_to_inches(margins.right_mm))?;
     }
     Ok(settings)
 }

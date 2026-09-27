@@ -695,7 +695,8 @@ apart, silently and unprovably.
 <!--REQ-LTTCE-XPT-00005-->
 **REQ-LTTCE-XPT-00005** — The output file for a given input path SHALL be saved alongside it, named by
 replacing (or, if absent, adding) the input's extension with `.pdf`, and SHALL overwrite an existing
-file at that path without prompting.
+file at that path without prompting. An input path relative to the current directory (`lattice
+--export-pdf demo.md`) SHALL work exactly like an absolute one.
 
 *Rationale*: identical in spirit and in wording to REQ-LTTCE-XPT-00002 — the two export modes must not
 require the caller to learn two different naming rules, and the differing extension is what keeps an
@@ -793,9 +794,14 @@ international standard size.
 
 <!--REQ-LTTCE-XPT-00012-->
 **REQ-LTTCE-XPT-00012** — On every desktop platform a PDF export SHALL produce paginated portrait
-pages of exactly the requested paper size (REQ-LTTCE-XPT-00011), with a 2 cm margin on every side of
-every page — the margin of the print stylesheet. The page geometry SHALL NOT depend on the host
-WebView's defaults.
+pages of exactly the requested paper size (REQ-LTTCE-XPT-00011). The margins SHALL be the same for
+every paper and SHALL depend only on whether the platform prints the running header and page-number
+footer:
+
+- where it does (Windows), 2 cm on every side — the margin of the print stylesheet, which holds them;
+- where it does not (Linux, macOS), 1 cm at the top, right and bottom, and 2 cm on the left.
+
+The page geometry SHALL NOT depend on the host WebView's defaults.
 
 *Rationale*: three hosts produced three different pages from one document. WebView2 used US Letter;
 WebKitGTK, which ignores the CSS `@page` margin, put the text within a few millimetres of the paper
@@ -803,7 +809,9 @@ edge; and on macOS the export was a window-sized snapshot — a single 800 × 56
 holding only what fitted in the window, which also broke the pagination REQ-LTTCE-XPT-00004
 requires. The running file-name header and "Page X of Y" footer are **not** covered here: they are CSS
 page-margin boxes, which WebKit (Linux, macOS) does not render at all — a platform limitation recorded
-in `30-architecture.md`, not a behaviour this requirement promises.
+in `30-architecture.md`, not a behaviour this requirement promises. Where they are absent, 2 cm at the
+top and bottom held nothing, so those margins shrink to 1 cm (2026-09-28); the left keeps 2 cm as room
+for binding or punching.
 
 
 

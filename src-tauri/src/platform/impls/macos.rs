@@ -204,8 +204,9 @@ fn macos_print_to_pdf(
 //******************************************************************************
 // macos_print_info
 //******************************************************************************
-/// A fresh `NSPrintInfo` for `paper`: portrait, [`crate::paper::PAGE_MARGIN_MM`]
-/// on every side, fitted to the page width, saved to `out_path`.
+/// A fresh `NSPrintInfo` for `paper`: portrait, with the host's
+/// [`page_margins`] — WKWebView draws no header or footer, so 1 cm top, right
+/// and bottom and 2 cm left — fitted to the page width, saved to `out_path`.
 ///
 /// Fresh rather than `sharedPrintInfo`, which is app-wide state that wry's
 /// interactive `print()` also mutates. A non-UTF-8 path is refused here with a
@@ -214,7 +215,7 @@ fn macos_print_info(
     out_path: &std::path::Path,
     paper: crate::paper::PaperSize,
 ) -> Result<objc2::rc::Retained<objc2_app_kit::NSPrintInfo>, String> {
-    use crate::paper::{mm_to_points, PAGE_MARGIN_MM};
+    use crate::paper::mm_to_points;
     use objc2::runtime::ProtocolObject;
     use objc2_app_kit::{
         NSPaperOrientation, NSPrintInfo, NSPrintJobSavingURL, NSPrintSaveJob,
@@ -230,11 +231,11 @@ fn macos_print_info(
     let (width, height) = paper.size_points();
     info.setPaperSize(NSSize::new(width, height));
     info.setOrientation(NSPaperOrientation::Portrait);
-    let margin = mm_to_points(PAGE_MARGIN_MM);
-    info.setTopMargin(margin);
-    info.setBottomMargin(margin);
-    info.setLeftMargin(margin);
-    info.setRightMargin(margin);
+    let margins = page_margins();
+    info.setTopMargin(mm_to_points(margins.top_mm));
+    info.setBottomMargin(mm_to_points(margins.bottom_mm));
+    info.setLeftMargin(mm_to_points(margins.left_mm));
+    info.setRightMargin(mm_to_points(margins.right_mm));
     info.setHorizontalPagination(NSPrintingPaginationMode::Fit);
     info.setVerticalPagination(NSPrintingPaginationMode::Automatic);
     info.setHorizontallyCentered(false);
