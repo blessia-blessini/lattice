@@ -70,6 +70,9 @@ const MIN_DEMO_PDF_PAGES: usize = 2;
 /// The six whitespace bytes of the PDF syntax (ISO 32000-1, 7.2.2).
 const PDF_WHITESPACE: &[u8] = b"\0\t\n\x0c\r ";
 
+/// The ten delimiter bytes of the PDF syntax (ISO 32000-1, 7.2.2).
+const PDF_DELIMITERS: &[u8] = b"()<>[]{}/%";
+
 /// How long one export run may take before it is killed and failed.
 ///
 /// Must stay comfortably above the app's own budget, or this harness kills a
@@ -695,10 +698,12 @@ fn pdf_page_count(bytes: &[u8]) -> usize {
         let rest = &bytes[from + at + KEY.len()..];
         let skip = rest.iter().take_while(|b| PDF_WHITESPACE.contains(b)).count();
         let value = &rest[skip..];
-        // A name ends at the first byte that is not a regular character, so
-        // "/Pages" and "/PageLabel" are other names, not "/Page".
+        // A name ends only at whitespace or a delimiter (ISO 32000-1, 7.2.2),
+        // so "/Pages", "/PageLabel" and "/Page_1" are other names, not "/Page".
         if value.starts_with(PAGE)
-            && !value.get(PAGE.len()).is_some_and(|b| b.is_ascii_alphanumeric())
+            && value
+                .get(PAGE.len())
+                .is_none_or(|b| PDF_WHITESPACE.contains(b) || PDF_DELIMITERS.contains(b))
         {
             count += 1;
         }
@@ -885,14 +890,23 @@ fn scenario_missing_file(bin: &Path, scratch: &Path, all_pass: &mut bool) {
 /// exit code 1 and no file, rather than a silent fallback to the default
 /// paper. The parser is unit-tested; only the binary proves the refusal
 /// reaches the exit code before any window or file exists.
+///
+/// Runs on its own staged copy of `source`: proving "no file" means clearing
+/// the output path first, and on `source` itself that path is the default
+/// PDF the publish step still needs (CI run 36352524987 lost it that way).
 fn scenario_bad_paper(bin: &Path, scratch: &Path, source: &Path, all_pass: &mut bool) {
     const NAME: &str = "export-pdf --paper a5 (unknown)";
     println!("\n[SCENARIO] {NAME}");
-    let out = source.with_extension("pdf");
+    let staged = scratch.join("demo-bad-paper.md");
+    if let Err(e) = fs::copy(source, &staged) {
+        report(NAME, vec![format!("cannot stage {}: {e}", staged.display())], all_pass);
+        return;
+    }
+    let out = staged.with_extension("pdf");
     let _ = fs::remove_file(&out);
 
     let mut problems = Vec::new();
-    match run_export(bin, scratch, &["--export-pdf", "--paper", "a5"], source) {
+    match run_export(bin, scratch, &["--export-pdf", "--paper", "a5"], &staged) {
         Ok(code) if code == EXIT_FAIL => {}
         Ok(code) => problems.push(format!("exit code {code}, expected {EXIT_FAIL}")),
         Err(e) => problems.push(e),
@@ -1180,8 +1194,10 @@ mod tests {
                     << /Type /Page /Parent 2 0 R >>\n\
                     << /Type/Page/Parent 2 0 R >>\n\
                     << /Type\r\n/Page >>\n\
-                    << /Type /PageLabel >> << /Type /Catalog /Pages 2 0 R >>";
-        assert_eq!(pdf_page_count(pdf), 3);
+                    << /Type /PageLabel >> << /Type /Catalog /Pages 2 0 R >>\n\
+                    << /Type /Page_1 >> << /Type /Page>>";
+        // The last one ends at a delimiter, '>', so it is a page; "/Page_1" is not.
+        assert_eq!(pdf_page_count(pdf), 4);
         assert_eq!(pdf_page_count(b"%PDF-1.7"), 0);
         // Ends right after the name: still a page.
         assert_eq!(pdf_page_count(b"/Type /Page"), 1);
