@@ -23,7 +23,7 @@
 
 import React from 'react';
 import { render, waitFor, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // ---------------------------------------------------------------------------
 // Mock the mermaid library — it does not run in JSDOM
@@ -35,8 +35,17 @@ vi.mock('mermaid', () => ({
     },
 }));
 
+// rasterizeSvg needs a canvas jsdom does not have; the PNG-cache tests below
+// script its result. Every other test keeps the real implementation.
+vi.mock('../lib/svg-raster', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../lib/svg-raster')>();
+    return { ...actual, rasterizeSvg: vi.fn(actual.rasterizeSvg) };
+});
+
 import mermaid from 'mermaid';
 import { Mermaid } from './Mermaid';
+import { rasterizeSvg } from '../lib/svg-raster';
+import { DIAGRAM_PNG_ATTR, DIAGRAM_PNG_FAILED_ATTR, EXPORT_MODE_ATTR } from '../lib/preview-copy';
 
 const CHART = 'graph TD; A-->B';
 
@@ -278,5 +287,94 @@ describe('Mermaid', () => {
 
         expect(container.querySelector('[data-testid="mock-svg"]')?.textContent).toBe('on screen');
         errSpy.mockRestore();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// PNG cache reaches a final state; export mode skips the idle slot
+// (REQ-LTTCE-XPT-00010, IMPL-LTTCE-MRC-00001)
+// ---------------------------------------------------------------------------
+// A diagram must end with either its PNG or DIAGRAM_PNG_FAILED_ATTR — never
+// neither, which an export can only read as "still rendering". In a headless
+// export window the cache must not wait for an idle slot a hidden page may
+// never get. The idle callback is stubbed to never fire, so anything that
+// still settles did so without one.
+describe('Mermaid — PNG cache final state and export mode', () => {
+    const PNG = 'data:image/png;base64,AAAA';
+    let idle: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        vi.mocked(mermaid.render).mockResolvedValue({ svg: '<svg data-testid="mock-svg">diagram</svg>', diagramType: 'graph' });
+        idle = vi.fn(() => 1);
+        vi.stubGlobal('requestIdleCallback', idle);
+    });
+
+    afterEach(() => {
+        document.documentElement.removeAttribute(EXPORT_MODE_ATTR);
+        vi.unstubAllGlobals();
+    });
+
+    const mount = async (chart = CHART) => {
+        let view!: ReturnType<typeof render>;
+        await act(async () => { view = render(<Mermaid chart={chart} theme="light" />); });
+        return view;
+    };
+    const box = (view: ReturnType<typeof render>) => view.container.querySelector('.mermaid')!;
+
+    it('rasterises at once in an export window, without an idle slot', async () => {
+        document.documentElement.setAttribute(EXPORT_MODE_ATTR, 'html');
+        vi.mocked(rasterizeSvg).mockResolvedValue(PNG);
+
+        const view = await mount();
+        await waitFor(() => expect(box(view).getAttribute(DIAGRAM_PNG_ATTR)).toBe(PNG));
+        expect(idle).not.toHaveBeenCalled();
+    });
+
+    it('marks the diagram failed when rasterising returns nothing', async () => {
+        document.documentElement.setAttribute(EXPORT_MODE_ATTR, 'pdf');
+        vi.mocked(rasterizeSvg).mockResolvedValue(null);
+
+        const view = await mount();
+        await waitFor(() => expect(box(view).hasAttribute(DIAGRAM_PNG_FAILED_ATTR)).toBe(true));
+        expect(box(view).hasAttribute(DIAGRAM_PNG_ATTR)).toBe(false);
+    });
+
+    it('drops a stale PNG when a later render fails to rasterise', async () => {
+        document.documentElement.setAttribute(EXPORT_MODE_ATTR, 'html');
+        vi.mocked(rasterizeSvg).mockResolvedValue(PNG);
+
+        const view = await mount();
+        await waitFor(() => expect(box(view).getAttribute(DIAGRAM_PNG_ATTR)).toBe(PNG));
+
+        vi.mocked(rasterizeSvg).mockResolvedValue(null);
+        vi.mocked(mermaid.render).mockResolvedValue({ svg: '<svg data-testid="mock-svg">changed</svg>', diagramType: 'graph' });
+        await act(async () => { view.rerender(<Mermaid chart="graph TD; X-->Y" theme="light" />); });
+        await waitFor(() => expect(box(view).hasAttribute(DIAGRAM_PNG_FAILED_ATTR)).toBe(true));
+        expect(box(view).hasAttribute(DIAGRAM_PNG_ATTR)).toBe(false);
+    });
+
+    it('clears a stale failure mark once a later render succeeds', async () => {
+        document.documentElement.setAttribute(EXPORT_MODE_ATTR, 'html');
+        vi.mocked(rasterizeSvg).mockResolvedValue(null);
+
+        const view = await mount();
+        await waitFor(() => expect(box(view).hasAttribute(DIAGRAM_PNG_FAILED_ATTR)).toBe(true));
+
+        vi.mocked(rasterizeSvg).mockResolvedValue(PNG);
+        vi.mocked(mermaid.render).mockResolvedValue({ svg: '<svg data-testid="mock-svg">changed</svg>', diagramType: 'graph' });
+        await act(async () => { view.rerender(<Mermaid chart="graph TD; X-->Y" theme="light" />); });
+        await waitFor(() => expect(box(view).getAttribute(DIAGRAM_PNG_ATTR)).toBe(PNG));
+        expect(box(view).hasAttribute(DIAGRAM_PNG_FAILED_ATTR)).toBe(false);
+    });
+
+    it('still defers to an idle slot in the interactive app', async () => {
+        vi.mocked(rasterizeSvg).mockResolvedValue(PNG);
+
+        const view = await mount();
+        await waitFor(() => expect(idle).toHaveBeenCalled());
+        await act(async () => { await Promise.resolve(); });
+        expect(rasterizeSvg).not.toHaveBeenCalled();
+        expect(box(view).hasAttribute(DIAGRAM_PNG_ATTR)).toBe(false);
     });
 });

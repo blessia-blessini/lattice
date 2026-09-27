@@ -1287,15 +1287,15 @@ lattice --export-html a.md b.md          lattice --export-pdf a.md b.md
 Rust: cli_args::requested_export_format() → export::run_export(paths, format)
         │  for each path, sequentially:
         ▼
-  build_window_with_file_ex(path, Some(ExportLaunch))   invisible window,
+  build_window_with_file_ex(path, Some(ExportLaunch))   invisible, unthrottled window,
         │                              __LATTICE_INIT_DATA__.exportFormat = "html" | "pdf"
         │                              __LATTICE_INIT_DATA__.exportSettleMs = render budget − 10 s
         ▼
   App.tsx checkLaunch(): Direct Push loads the file → normal preview render starts
         │                (pdf only: setViewMode(preview) + applyPrintStyle — see below)
         ▼
-  waitForDiagramsSettled(previewBodyRef,   poll until every .mermaid has its
-        │          exportSettleMs)         cached PNG (or failed) — same signal
+  waitForDiagramsSettled(previewBodyRef,   MutationObserver until every .mermaid has
+        │          exportSettleMs)         its PNG, a render error or a raster failure — same signal
         │                                  Mermaid.tsx writes for copy (IMPL-LTTCE-MRC-00001)
         │                                  still pending at the budget → export_ready({error}),
         │                                  never a partial document (REQ-LTTCE-XPT-00009)
@@ -1329,7 +1329,8 @@ window, is slower per file but structurally cannot drift.
 `build_window_with_file` (the existing Direct Push window builder shared by every startup path — CLI
 association, `RunEvent::Opened` on macOS, `open_new_window`) is split into a thin wrapper plus
 `build_window_with_file_ex(app, path, export: Option<ExportFormat>)`, which additionally makes the
-window invisible (`.visible(false)`) and adds `exportFormat: "html" | "pdf"` to the injected payload
+window invisible (`.visible(false)`) and unthrottled (`.background_throttling(Disabled)`, see *No
+timers on the export path* below) and adds `exportFormat: "html" | "pdf"` to the injected payload
 when `export` is `Some`. Every existing call site is unaffected — `export` is `None` through the
 wrapper.
 
@@ -1399,6 +1400,30 @@ exited 0. Two rules now close that off:
   would any other render failure. A diagram that fails to render (a Mermaid syntax error) still
   counts as settled — its error block *is* what the preview shows.
 
+**No timers on the export path (REQ-LTTCE-XPT-00010).** The export window is invisible, and an
+invisible window is a hidden page to the WebView: macOS WebKit delays, then suspends, a hidden page's
+timers and idle callbacks. The export used to need both — the diagram wait polled every 100 ms, and
+`Mermaid.tsx` produced each PNG in an idle callback — so the same build passed in ~9 s one day and
+produced nothing in 90 s the next (macos-intel, 2026-09-27), with even the frontend's own 80 s deadline
+failing to fire in time. Three changes remove the dependence rather than widen a budget:
+
+- **The window opts out.** `build_window_with_file_ex` adds
+  `.background_throttling(BackgroundThrottlingPolicy::Disabled)` to export windows only — WKWebView's
+  `inactiveSchedulingPolicy = none`, honoured on macOS 14+. It is a plain builder call with no
+  `#[cfg]`: where the host offers no such switch (WebView2, WebKitGTK) it is a no-op. No such stall has
+  been seen on the Windows or Linux legs; the other two changes below do not rely on this one.
+- **The export drives the PNG instead of waiting for idle time.** `App.tsx` sets `EXPORT_MODE_ATTR` on
+  `<html>` *before* loading the document; `Mermaid.tsx` then rasterises as soon as the SVG is in the DOM.
+  The interactive app keeps the idle deferral, where not competing with rendering is the point.
+- **Every diagram reaches a final state, and the wait sees it at once.** A rasterisation that returns
+  nothing now sets `DIAGRAM_PNG_FAILED_ATTR` (before, the diagram looked "still rendering" forever), and
+  `waitForDiagramsSettled` reacts to attribute and subtree mutations through a `MutationObserver` —
+  microtasks, which no page-visibility policy throttles. A raster failure fails the export at once with
+  its own message ("1 of 4 diagram(s) could not be converted to an image"), not a budget overrun.
+
+The budgets of REQ-LTTCE-XPT-00008 / 00009 are unchanged. They now bound only a renderer that never
+answers — the one case that genuinely needs a clock.
+
 **A Tauri runtime gap, found while verifying this feature.** `AppHandle::exit(code)` (tauri 2.11.5,
 `tauri-runtime-wry`) sets `ControlFlow::Exit` on `RequestExit(code)` but never threads `code` through to
 `std::process::exit` — the OS-level exit status is always `0` regardless of what was requested, unless
@@ -1415,10 +1440,11 @@ additional step when `initData.exportFormat` is set: wait for the preview to set
 serialise it (`html`) or simply signal that it has settled (`pdf`) — no editor UI is shown or becomes
 interactive in either mode.
 
-- `waitForDiagramsSettled` (`lib/preview-copy.ts`) polls `.mermaid` containers under the preview root
-  until each one either carries `DIAGRAM_PNG_ATTR` (`Mermaid.tsx`'s idle-callback cache, `ARCH-LTTCE-
-  MRC-00001`) or has failed (`pre.error`), giving up after a bounded timeout rather than hanging on a
-  diagram that never settles.
+- `waitForDiagramsSettled` (`lib/preview-copy.ts`) watches `.mermaid` containers under the preview
+  root with a `MutationObserver` until each one carries `DIAGRAM_PNG_ATTR` (`Mermaid.tsx`'s PNG cache,
+  `ARCH-LTTCE-MRC-00001`), has failed to render (`pre.error`), or could not be rasterised
+  (`DIAGRAM_PNG_FAILED_ATTR`). A bounded timeout remains only as the backstop for a renderer that never
+  answers (see *No timers on the export path* above).
 - `buildExportHtml` reuses `substituteDiagrams` — the exact function `buildCopyHtml` uses for a clipboard
   selection — but over the *whole* preview body and unconditionally (`buildCopyHtml` returns `null` for a
   diagram-free selection by design, per `REQ-LTTCE-MRC-00003`; a whole-document export has no such

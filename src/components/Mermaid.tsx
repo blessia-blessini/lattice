@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mermaid from 'mermaid';
 import { rasterizeSvg, svgIntrinsicSize } from '../lib/svg-raster';
-import { DIAGRAM_PNG_ATTR } from '../lib/preview-copy';
+import { DIAGRAM_PNG_ATTR, DIAGRAM_PNG_FAILED_ATTR, EXPORT_MODE_ATTR } from '../lib/preview-copy';
 import { PREVIEW_THEME_COLORS } from '../lib/preview-theme';
 
 /** Props for the {@link Mermaid} diagram renderer. */
@@ -136,7 +136,14 @@ export const Mermaid: React.FC<MermaidProps> = ({ chart, theme, mermaidInit, cop
   // carries — so the copy path needs no lookup back into the live DOM.
   //
   // Deferred to an idle slot: the user may never copy the diagram, and this
-  // must not compete with rendering the rest of the document.
+  // must not compete with rendering the rest of the document. Not in a headless
+  // export window (IMPL-LTTCE-MRC-00001 — REQ-LTTCE-XPT-00010): there the PNG *is* the output, nothing
+  // else competes for the window, and an idle slot is exactly what a hidden
+  // page may never get — so it runs at once.
+  //
+  // Every run ends in a final state the export can see: the PNG, or
+  // DIAGRAM_PNG_FAILED_ATTR when rasterising returned nothing. Returning
+  // silently left the diagram looking "still rendering" until a timeout.
   //
   // In dark theme with "Copy Diagrams On Light Background" on, the diagram is
   // rendered a *second* time off-screen with Mermaid's light theme, and that
@@ -155,7 +162,14 @@ export const Mermaid: React.FC<MermaidProps> = ({ chart, theme, mermaidInit, cop
 
     const cache = async (el: SVGSVGElement, size: { width: number; height: number }) => {
       const png = await rasterizeSvg(el, background, size.width > 0 ? size : undefined);
-      if (cancelled || !png) return;
+      if (cancelled) return;
+      if (!png) {
+        // Drop any PNG of an earlier render too: it shows a different chart.
+        container.removeAttribute(DIAGRAM_PNG_ATTR);
+        container.setAttribute(DIAGRAM_PNG_FAILED_ATTR, '');
+        return;
+      }
+      container.removeAttribute(DIAGRAM_PNG_FAILED_ATTR);
       container.setAttribute(DIAGRAM_PNG_ATTR, png);
       if (size.width > 0) container.setAttribute('data-lattice-diagram-width', String(Math.round(size.width)));
       if (size.height > 0) container.setAttribute('data-lattice-diagram-height', String(Math.round(size.height)));
@@ -180,6 +194,11 @@ export const Mermaid: React.FC<MermaidProps> = ({ chart, theme, mermaidInit, cop
         void cache(lightSvg ?? onScreen, size);
       });
     };
+
+    if (document.documentElement.hasAttribute(EXPORT_MODE_ATTR)) {
+      run();
+      return () => { cancelled = true; };
+    }
 
     const idle = (window as unknown as {
       requestIdleCallback?: (cb: () => void) => number;

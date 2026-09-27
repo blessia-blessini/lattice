@@ -646,7 +646,7 @@ teaches the other:
 | :--------------- | :---------------------------------- | :-------------------------- |
 | `--export-html`  | the rendered preview as HTML        | XPT-00001 … 00003           |
 | `--export-pdf`   | the rendered preview as a paginated PDF | XPT-00004 … 00006       |
-| both             | printer-free PDF, render budget, no partial output | XPT-00007 … 00009 |
+| both             | printer-free PDF, render budget, no partial output, no dependence on timers | XPT-00007 … 00010 |
 
 <!--REQ-LTTCE-XPT-00001-->
 **REQ-LTTCE-XPT-00001** — Launching `lattice` with `--export-html <path> [<path> ...]` SHALL, for each
@@ -753,6 +753,27 @@ cold start, but the wait for diagrams still ran on a separate, fixed 8 s clock. 
 about 9 s, the diagram wait gave up at 8, and the export wrote a file with at most 2 of its 4 diagrams and
 exited 0. Two bounds on one wait will drift apart the next time either is changed; one bound,
 derived in one place, cannot.
+
+<!--REQ-LTTCE-XPT-00010-->
+**REQ-LTTCE-XPT-00010** — Whether an export completes SHALL NOT depend on timer or idle scheduling
+inside the export window. Specifically: (a) the host SHALL NOT throttle or suspend the export
+window's rendering because that window is not visible, wherever the host lets an application opt
+out of such throttling; (b) every diagram SHALL reach a final state — rasterised, shown as a render
+error, or marked as not rasterisable — and the export SHALL notice each final state when it happens,
+not at the next tick of a clock; (c) a diagram that could not be rasterised SHALL fail that path at
+once under REQ-LTTCE-XPT-00003 / REQ-LTTCE-XPT-00006, with an error that says so rather than one
+reporting an elapsed budget. The render budget of REQ-LTTCE-XPT-00008 then bounds only a renderer that
+never answers.
+
+*Rationale*: the export window is invisible by design, and to the WebView an invisible window is a
+hidden page — which macOS WebKit throttles, delaying timers and idle callbacks and eventually
+suspending them. The export depended on both: the diagram wait polled on a 100 ms timer, and each
+diagram's PNG was produced in an idle callback. The same build then passed or failed by luck (CI,
+macOS Intel, 2026-09-27: an export of `docs/demo/demo.md` that had taken ~9 s the day before produced
+nothing in 90 s, and even the frontend's own 80 s deadline never reported — its timer did not fire
+in time either). Separately, a diagram whose rasterisation returned nothing carried neither a PNG nor
+an error block, so it could only ever end in a timeout. A wait that ends on events cannot be starved
+this way, and a failure that is known immediately is reported immediately.
 
 
 

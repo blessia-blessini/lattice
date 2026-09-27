@@ -56,6 +56,23 @@
  */
 export const DIAGRAM_PNG_ATTR = 'data-lattice-diagram-png';
 
+/**
+ * Attribute marking a diagram whose PNG could not be produced (the SVG had no
+ * size, would not decode, or no canvas was available).
+ *
+ * REQ-LTTCE-XPT-00010 — without it such a diagram had neither a PNG nor an
+ * error block and looked "still rendering" forever, so only a timeout could
+ * end an export's wait. Written by `Mermaid.tsx`, read here.
+ */
+export const DIAGRAM_PNG_FAILED_ATTR = 'data-lattice-diagram-png-failed';
+
+/**
+ * Attribute on `<html>` marking a headless export window (value: the export
+ * format). Set by `App.tsx` before the document loads; read by `Mermaid.tsx`
+ * to rasterise at once instead of in an idle slot (REQ-LTTCE-XPT-00010).
+ */
+export const EXPORT_MODE_ATTR = 'data-lattice-export';
+
 /** Alt text given to the substituted image. */
 const DIAGRAM_ALT = 'Mermaid diagram';
 
@@ -143,10 +160,12 @@ export function buildCopyHtml(fragment: DocumentFragment): string | null {
  *  launched by an older backend that does not send `exportSettleMs`). */
 export const DEFAULT_SETTLE_TIMEOUT_MS = 8000;
 
-/** Outcome of `waitForDiagramsSettled`: `pending` diagrams of `total` had
- *  neither a cached PNG nor an error block when the wait ended. */
+/** Outcome of `waitForDiagramsSettled`, out of `total` diagrams:
+ *  `pending` had reached no final state when the wait ended; `failed` had
+ *  reached one, but it is "could not be rasterised" (`DIAGRAM_PNG_FAILED_ATTR`). */
 export interface DiagramSettleResult {
     pending: number;
+    failed: number;
     total: number;
 }
 
@@ -155,19 +174,25 @@ export interface DiagramSettleResult {
 // waitForDiagramsSettled
 //******************************************************************************
 /**
- * IMPL-LTTCE-XPT-00001 — REQ-LTTCE-XPT-00001 / 00009 — waits until every diagram container currently
- * under `root` has either produced its cached PNG (see `Mermaid.tsx`'s
- * `DIAGRAM_PNG_ATTR` write, deferred to an idle callback) or failed to render
- * (an `.error` block in its place), so the export below never fires while a
- * diagram is still an unrasterised `<svg>`.
+ * IMPL-LTTCE-XPT-00001 — REQ-LTTCE-XPT-00001 / 00009 / 00010 — waits until every diagram container
+ * currently under `root` has reached a final state: its cached PNG
+ * (`DIAGRAM_PNG_ATTR`, written by `Mermaid.tsx`), a render error (an `.error`
+ * block in its place), or a rasterisation failure (`DIAGRAM_PNG_FAILED_ATTR`).
+ * The export below therefore never fires while a diagram is still an
+ * unrasterised `<svg>`.
  *
- * Polls rather than listening for an event because the PNG write is a plain
- * DOM attribute set from `Mermaid.tsx`, not an event this module can hook.
- * Gives up after `timeoutMs` so a stuck diagram cannot hang a CLI export
- * forever — but *reports* how many were still pending rather than resolving
- * as though all were done. Treating a timeout as success is what let an
- * export write at most 2 of 4 diagrams and exit 0 (REQ-LTTCE-XPT-00009); the caller
- * decides, via `describeUnsettledDiagrams`, that such a result is a failure.
+ * Event-driven (REQ-LTTCE-XPT-00010): a `MutationObserver` re-checks whenever
+ * one of those attributes or the subtree changes, so the wait ends the moment
+ * the last diagram settles. It used to poll on a 100 ms `setTimeout`, and a
+ * timer is exactly what WebKit throttles in a hidden page — the export window
+ * is one. Observer callbacks are microtasks and are not throttled.
+ *
+ * `timeoutMs` remains only as a backstop against a renderer that never answers
+ * at all; it is never the normal way out. When it fires the result *reports*
+ * what was still pending rather than resolving as though all were done —
+ * treating a timeout as success is what let an export write at most 2 of 4
+ * diagrams and exit 0 (REQ-LTTCE-XPT-00009). The caller decides, via
+ * `describeUnsettledDiagrams`, whether a result is a failure.
  */
 export async function waitForDiagramsSettled(
     root: Element,
@@ -175,19 +200,42 @@ export async function waitForDiagramsSettled(
 ): Promise<DiagramSettleResult> {
     const count = (): DiagramSettleResult => {
         const diagrams = Array.from(root.querySelectorAll('.mermaid'));
-        const pending = diagrams.filter(
-            (el) => !el.hasAttribute(DIAGRAM_PNG_ATTR) && el.querySelector('pre.error') === null,
-        ).length;
-        return { pending, total: diagrams.length };
+        let pending = 0;
+        let failed = 0;
+        for (const el of diagrams) {
+            if (el.hasAttribute(DIAGRAM_PNG_ATTR) || el.querySelector('pre.error') !== null) continue;
+            if (el.hasAttribute(DIAGRAM_PNG_FAILED_ATTR)) failed += 1;
+            else pending += 1;
+        }
+        return { pending, failed, total: diagrams.length };
     };
 
-    const start = Date.now();
-    let result = count();
-    while (result.pending > 0 && Date.now() - start < timeoutMs) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        result = count();
-    }
-    return result;
+    const initial = count();
+    if (initial.pending === 0) return initial;
+
+    return new Promise<DiagramSettleResult>((resolve) => {
+        let backstop: ReturnType<typeof setTimeout> | undefined;
+        let done = false;
+        const finish = () => {
+            if (done) return;
+            done = true;
+            observer.disconnect();
+            clearTimeout(backstop);
+            resolve(count());
+        };
+        // Observing starts synchronously after `initial`, so no change can
+        // slip in between the first count and the first callback.
+        const observer = new MutationObserver(() => {
+            if (count().pending === 0) finish();
+        });
+        observer.observe(root, {
+            subtree: true,
+            childList: true,
+            attributes: true,
+            attributeFilter: [DIAGRAM_PNG_ATTR, DIAGRAM_PNG_FAILED_ATTR],
+        });
+        backstop = setTimeout(finish, timeoutMs);
+    });
 } // waitForDiagramsSettled END ************************************************
 
 
@@ -212,7 +260,7 @@ export function resolveSettleTimeout(raw: unknown): number {
 // describeUnsettledDiagrams
 //******************************************************************************
 /**
- * IMPL-LTTCE-XPT-00001 — REQ-LTTCE-XPT-00009 — turns a settle result into the
+ * IMPL-LTTCE-XPT-00001 — REQ-LTTCE-XPT-00009 / 00010 — turns a settle result into the
  * failure message an export must report, or `null` when every diagram
  * settled. The message names how many diagrams were missing and the budget
  * that elapsed, so "renderer too slow" can be told apart from "budget too
@@ -222,6 +270,13 @@ export function describeUnsettledDiagrams(
     result: DiagramSettleResult,
     timeoutMs: number,
 ): string | null {
+    // REQ-LTTCE-XPT-00010 — checked first: a rasterisation failure is known
+    // the moment it happens and names its own cause; it must not be reported
+    // as though the budget had run out.
+    if (result.failed > 0) {
+        return `${result.failed} of ${result.total} diagram(s) could not be converted to an image `
+            + `— refusing to export an incomplete document`;
+    }
     if (result.pending <= 0) return null;
     const seconds = Math.round(timeoutMs / 1000);
     return `${result.pending} of ${result.total} diagram(s) had not finished rendering after `

@@ -26,6 +26,7 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { render, fireEvent, waitFor, act } from '@testing-library/react';
 import App from './App';
+import { EXPORT_MODE_ATTR } from './lib/preview-copy';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as TauriCore from '@tauri-apps/api/core';
 import { StaticRuntime } from "@services/StaticRuntime";
@@ -55,7 +56,7 @@ export const g_exportRoots: {
     settled: Element[];
     built: Element[];
     timeouts: (number | undefined)[];
-    forceResult: { pending: number; total: number } | null;
+    forceResult: { pending: number; failed: number; total: number } | null;
 } = { settled: [], built: [], timeouts: [], forceResult: null };
 vi.mock('./lib/preview-copy', async (importOriginal) => {
     const actual = await importOriginal<typeof import('./lib/preview-copy')>();
@@ -943,6 +944,7 @@ describe('App — headless export launch', () => {
         vi.mocked(TauriCore.invoke).mockImplementation(makeInvokeMock());
         g_exportRoots.timeouts.length = 0;
         g_exportRoots.forceResult = null;
+        document.documentElement.removeAttribute(EXPORT_MODE_ATTR);
     });
 
     const readyCalls = () =>
@@ -967,7 +969,7 @@ describe('App — headless export launch', () => {
             // rendered when the wait gave up, and the export still reported
             // success. It must hand back an error and no document.
             const err = vi.spyOn(console, 'error').mockImplementation(() => {});
-            g_exportRoots.forceResult = { pending: 3, total: 5 };
+            g_exportRoots.forceResult = { pending: 3, failed: 0, total: 5 };
             (window as any).__LATTICE_INIT_DATA__ = {
                 path: '/vault/a.md', content: '# Hi', exportFormat: format, exportSettleMs: 40_000,
             };
@@ -981,6 +983,45 @@ describe('App — headless export launch', () => {
             err.mockRestore();
         },
     );
+
+    it.each(['html', 'pdf'])(
+        'exportFormat "%s" marks the window as an export window (REQ-LTTCE-XPT-00010)',
+        async (format) => {
+            // Mermaid.tsx reads this to rasterise at once instead of waiting
+            // for an idle slot a hidden page may never get.
+            (window as any).__LATTICE_INIT_DATA__ = {
+                path: '/vault/a.md', content: '# Hi', exportFormat: format,
+            };
+            render(<App />);
+
+            await waitFor(() => expect(readyCalls()).toHaveLength(1));
+            expect(document.documentElement.getAttribute(EXPORT_MODE_ATTR)).toBe(format);
+        },
+    );
+
+    it('an ordinary launch is never marked as an export window', async () => {
+        (window as any).__LATTICE_INIT_DATA__ = { path: '/vault/a.md', content: '# Hi' };
+        render(<App />);
+        await waitFor(() => expect(document.title).toContain('a.md'));
+
+        expect(document.documentElement.hasAttribute(EXPORT_MODE_ATTR)).toBe(false);
+    });
+
+    it('fails at once with the real cause when a diagram could not be rasterised (REQ-LTTCE-XPT-00010)', async () => {
+        const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+        g_exportRoots.forceResult = { pending: 0, failed: 1, total: 4 };
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/a.md', content: '# Hi', exportFormat: 'html', exportSettleMs: 80_000,
+        };
+        render(<App />);
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(1));
+        const [, args] = readyCalls()[0] as [string, any];
+        expect(args.html).toBeNull();
+        expect(args.error).toContain('1 of 4');
+        expect(args.error).toContain('could not be converted to an image');
+        err.mockRestore();
+    });
 
     it('an ordinary launch never signals export_ready', async () => {
         (window as any).__LATTICE_INIT_DATA__ = { path: '/vault/a.md', content: '# Hi' };

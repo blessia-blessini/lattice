@@ -58,6 +58,7 @@ import {
   buildCopyHtml,
   buildExportHtml,
   describeUnsettledDiagrams,
+  EXPORT_MODE_ATTR,
   resolveSettleTimeout,
   waitForDiagramsSettled,
 } from './lib/preview-copy';
@@ -1074,6 +1075,14 @@ function App() {
       if (initData) {
         console.log("DEBUG: Direct Push Data found for:", initData.path);
         try {
+          // IMPL-LTTCE-XPT-00002 — REQ-LTTCE-XPT-00010 — mark a headless export window *before* the
+          // document loads, so its diagrams rasterise at once rather than in
+          // an idle slot a hidden page may never get (see Mermaid.tsx).
+          const exportFormat: string | null = initData.exportFormat ?? null;
+          if (exportFormat) {
+            document.documentElement.setAttribute(EXPORT_MODE_ATTR, exportFormat);
+          }
+
           applyLoadedDocument(initData.content); // Sync editor + preview on launch
 
           setCurrentFilePath(initData.path);
@@ -1100,7 +1109,6 @@ function App() {
           //           prints this very window through the host WebView
           //           (IMPL-LTTCE-XPT-00005), so both formats come from one
           //           renderer and cannot drift apart.
-          const exportFormat: string | null = initData.exportFormat ?? null;
           if (exportFormat) {
             try {
               if (exportFormat === 'pdf') {

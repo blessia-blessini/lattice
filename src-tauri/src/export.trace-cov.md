@@ -26,6 +26,10 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - IMPL-LTTCE-XPT-00003 **covers** REQ-LTTCE-XPT-00009  (`settle_budget(render_timeout(..))` handed
   to the frontend as `exportSettleMs` via `ExportLaunch` / `build_window_with_file_ex`; one derived
   bound instead of a separate frontend clock)
+- IMPL-LTTCE-XPT-00003 **covers** REQ-LTTCE-XPT-00010  (`build_window_with_file_ex` builds export
+  windows with `background_throttling(Disabled)`, so WebKit does not throttle the invisible page;
+  macOS 14+, a no-op elsewhere) — no unit test: a builder call with no logic of its own, exercised by
+  ITST-LTTCE-XPT-00010 on the macOS legs
 - IMPL-LTTCE-XPT-00004 **covers** REQ-LTTCE-XPT-00006  (non-zero process exit code)
 - IMPL-LTTCE-XPT-00005 **covers** REQ-LTTCE-XPT-00004  (host-WebView print backends)
 - IMPL-LTTCE-XPT-00005 **covers** REQ-LTTCE-XPT-00006  (unsupported platform reported as a failure)
@@ -41,7 +45,7 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 
 | Anchor                | Unit / automatic tests                                                        |
 | :-------------------- | :---------------------------------------------------------------------------- |
-| IMPL-LTTCE-XPT-00002  | `src/App.test.tsx` — *App — headless export launch* (12 cases, incl. the signal-ordering regression and the three REQ-LTTCE-XPT-00009 cases) |
+| IMPL-LTTCE-XPT-00002  | `src/App.test.tsx` — *App — headless export launch* (17 cases, incl. the signal-ordering regression, the three REQ-LTTCE-XPT-00009 cases and the four REQ-LTTCE-XPT-00010 cases) |
 | IMPL-LTTCE-XPT-00003  | `src-tauri/src/export.rs` `mod tests` (24 cases, incl. `is_expected_sender`, the two REQ-LTTCE-XPT-00008 budget cases, one of which guards the numbers against being tightened back to where a correct render fails, and four REQ-LTTCE-XPT-00009 `settle_budget` / `ExportLaunch` cases); `platform/cli_args.rs` `mod tests` |
 | IMPL-LTTCE-XPT-00004  | ITST-LTTCE-XPT-00010 — `src-tauri/examples/export_demo.rs` (`export-html`, `export-pdf`, `missing-input`); not unit-testable, needs a real process exit (see ARCH-LTTCE-XPT-00001) |
 | IMPL-LTTCE-XPT-00005  | `platform/mod.rs` `mod tests` (`PdfDone`); `platform/impls/linux.rs` `mod linux_print_tests` (4 cases — printer-name resolution incl. the localized and blank-override cases, REQ-LTTCE-XPT-00007; pure, no environment mutation; compiled and run on the Linux leg only); host backends: ITST-LTTCE-XPT-00010 per desktop platform |
@@ -50,6 +54,10 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 ## Integration test
 
 - ITST-LTTCE-XPT-00010 **covers** IMPL-LTTCE-XPT-00003, IMPL-LTTCE-XPT-00004, IMPL-LTTCE-XPT-00005
+- ITST-LTTCE-XPT-00010 **covers** REQ-LTTCE-XPT-00010 end to end: the first export of a process, on
+  every desktop leg, must finish without timer or idle scheduling in a hidden window. It found the
+  defect (macos-intel, run 36311605228, 2026-09-27: `export-html` produced nothing in 90 s after a
+  ~9 s pass the day before). One green run does not prove an intermittent fault gone; several do.
 - ITST-LTTCE-XPT-00010 **covers** REQ-LTTCE-XPT-00009 end to end: `export-html` asserts exactly one
   `alt="Mermaid diagram"` `<img>` per ```` ```mermaid ```` fence of the staged `demo.md` (counted from
   the source, not a constant) and no leftover `.mermaid` container. It caught the partial export on
