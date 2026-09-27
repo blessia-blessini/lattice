@@ -303,7 +303,16 @@ try {
     # platform/mod.rs is a Tauri forwarding shim (PlatformImpl calls require a
     # live Tauri App instance). Both are excluded so they don't drag down the total.
     $IGNORE = "main\.rs|platform.mod\.rs"
+    # Windows ARM64 only: llvm-profdata rejects that toolchain's .profraw
+    # files, so the table comes out as error text. Keyed on the Rust host
+    # triple, same as build-test.sh. Remove once the upstream bug is fixed
+    # in stable.
+    $covNote = ""
+    if ((rustc -vV 2>$null) -match '^host: aarch64-pc-windows-msvc') {
+        $covNote = "NOTE: If you see a malformed coverage table, it is because of the upstream bug https://github.com/rust-lang/rust/issues/150123"
+    }
     cargo llvm-cov report --ignore-filename-regex $IGNORE
+    if ($covNote) { Write-Output $covNote }
     Write-Output "****************************************************"
 
     # 2. Run Frontend Tests Run Later with Coverage
@@ -346,6 +355,7 @@ try {
     Write-Output "Running combined html coverage report..."
     cargo llvm-cov report --html --ignore-filename-regex $IGNORE
     cargo llvm-cov report --ignore-filename-regex $IGNORE
+    if ($covNote) { Write-Output $covNote }
     # print out the llvm-cov version
     cargo llvm-cov --version
 

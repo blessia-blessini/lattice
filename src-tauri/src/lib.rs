@@ -358,7 +358,15 @@ fn build_window_with_file_ex(
     {
         builder = configure_desktop_window(builder, product_name);
         if export.is_some() {
-            builder = builder.visible(false);
+            // IMPL-LTTCE-XPT-00003 — REQ-LTTCE-XPT-00010 — an invisible window is a hidden page to
+            // the WebView, and WebKit throttles or suspends a hidden page's
+            // timers and idle work. The export window's whole job is to finish
+            // rendering while nobody looks at it, so opt it out. Honoured on
+            // macOS 14+ (WKWebView inactiveSchedulingPolicy = none); a no-op on
+            // hosts without such a policy, hence no platform selection here.
+            builder = builder
+                .visible(false)
+                .background_throttling(tauri::utils::config::BackgroundThrottlingPolicy::Disabled);
         }
     }
 

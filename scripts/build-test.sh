@@ -413,7 +413,16 @@ pushd src-tauri || exit
   # main.rs is a 3-line entry-point shim; platform/mod.rs is a Tauri forwarding
   # shim — both require a live Tauri runtime and cannot be unit-tested.
   IGNORE="main\.rs|platform.mod\.rs"
+  # Windows ARM64 only (CI leg windows-11-arm): llvm-profdata rejects that
+  # toolchain's .profraw files, so the table comes out as error text.
+  # Keyed on the Rust host triple, not `uname -m`, which may report x86_64
+  # under emulation. Remove once the upstream bug is fixed in stable.
+  COV_NOTE=""
+  if rustc -vV 2>/dev/null | grep -q '^host: aarch64-pc-windows-msvc'; then
+    COV_NOTE="NOTE: If you see a malformed coverage table, it is because of the upstream bug https://github.com/rust-lang/rust/issues/150123"
+  fi
   cargo llvm-cov report --ignore-filename-regex "$IGNORE" 2>&1 | tee "$RUST_OUT_COV"
+  [ -n "$COV_NOTE" ] && echo "$COV_NOTE" | tee -a "$RUST_OUT_COV"
   echo "****************************************************"
 popd || exit
 
@@ -485,6 +494,7 @@ echo "Running combined html coverage report..."
 pushd src-tauri || exit
   cargo llvm-cov report --html --ignore-filename-regex "$IGNORE"
   cargo llvm-cov report --ignore-filename-regex "$IGNORE"
+  [ -n "$COV_NOTE" ] && echo "$COV_NOTE"
   # print out the llvm-cov version
   cargo llvm-cov --version
 popd || exit

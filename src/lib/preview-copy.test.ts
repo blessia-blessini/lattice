@@ -24,7 +24,7 @@
 // UTST for REQ-LTTCE-MRC-00001..00003 (IMPL-LTTCE-MRC-00002) — the clipboard
 // transform that carries Mermaid diagrams into pasted HTML.
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
     buildCopyHtml,
     buildExportHtml,
@@ -35,6 +35,7 @@ import {
     resolveSettleTimeout,
     DEFAULT_SETTLE_TIMEOUT_MS,
     DIAGRAM_PNG_ATTR,
+    DIAGRAM_PNG_FAILED_ATTR,
 } from './preview-copy';
 
 const PNG = 'data:image/png;base64,AAAA';
@@ -220,17 +221,17 @@ describe('preview copy — waiting for diagrams to settle', () => {
             + `<div class="mermaid"><svg></svg></div>`,
         );
         const result = await waitForDiagramsSettled(root, 250);
-        expect(result).toEqual({ pending: 2, total: 4 });
+        expect(result).toEqual({ pending: 2, failed: 0, total: 4 });
     });
 
     it('reports nothing pending once every diagram settled', async () => {
         const result = await waitForDiagramsSettled(elementOf(`${diagram()}${diagram()}`), 500);
-        expect(result).toEqual({ pending: 0, total: 2 });
+        expect(result).toEqual({ pending: 0, failed: 0, total: 2 });
     });
 
     it('reports an empty document as settled with zero diagrams', async () => {
         const result = await waitForDiagramsSettled(elementOf('<p>plain text</p>'), 500);
-        expect(result).toEqual({ pending: 0, total: 0 });
+        expect(result).toEqual({ pending: 0, failed: 0, total: 0 });
     });
 
     it('resolves once a still-rendering diagram later gets its PNG', async () => {
@@ -247,20 +248,103 @@ describe('preview copy — waiting for diagrams to settle', () => {
     });
 });
 
+// UTST for REQ-LTTCE-XPT-00010 — the wait ends on the diagrams' own state
+// changes, never on a timer, and a diagram that cannot be rasterised is a
+// final state rather than "still rendering".
+describe('preview copy — settling is event-driven, not timed', () => {
+    afterEach(() => { vi.useRealTimers(); });
+
+    it('settles on the PNG write alone, with every timer frozen', async () => {
+        // Fake timers freeze setTimeout: a polling wait could never observe
+        // the change and would hang here. The observer sees it as a microtask.
+        vi.useFakeTimers();
+        const root = elementOf('<div class="mermaid"><svg></svg></div>');
+        document.body.appendChild(root);
+        try {
+            const wait = waitForDiagramsSettled(root, 60_000);
+            root.querySelector('.mermaid')!.setAttribute(DIAGRAM_PNG_ATTR, PNG);
+            await expect(wait).resolves.toEqual({ pending: 0, failed: 0, total: 1 });
+        } finally {
+            root.remove();
+        }
+    });
+
+    it('settles on a render-error block appearing, with every timer frozen', async () => {
+        vi.useFakeTimers();
+        const root = elementOf('<div class="mermaid"><svg></svg></div>');
+        const wait = waitForDiagramsSettled(root, 60_000);
+        root.querySelector('.mermaid')!.innerHTML = '<pre class="error">boom</pre>';
+        await expect(wait).resolves.toEqual({ pending: 0, failed: 0, total: 1 });
+    });
+
+    it('treats a rasterisation failure as final and reports it', async () => {
+        vi.useFakeTimers();
+        const root = elementOf(`${diagram()}<div class="mermaid"><svg></svg></div>`);
+        const wait = waitForDiagramsSettled(root, 60_000);
+        root.querySelectorAll('.mermaid')[1].setAttribute(DIAGRAM_PNG_FAILED_ATTR, '');
+        await expect(wait).resolves.toEqual({ pending: 0, failed: 1, total: 2 });
+    });
+
+    it('reports an already-failed diagram without waiting at all', async () => {
+        const root = elementOf(`<div class="mermaid" ${DIAGRAM_PNG_FAILED_ATTR}=""><svg></svg></div>`);
+        await expect(waitForDiagramsSettled(root, 60_000)).resolves.toEqual({ pending: 0, failed: 1, total: 1 });
+    });
+
+    it('counts a PNG as settled even beside a stale failure mark', async () => {
+        const root = elementOf(diagram(PNG, `${DIAGRAM_PNG_FAILED_ATTR}=""`));
+        await expect(waitForDiagramsSettled(root, 60_000)).resolves.toEqual({ pending: 0, failed: 0, total: 1 });
+    });
+
+    it('keeps waiting while only some diagrams have settled', async () => {
+        vi.useFakeTimers();
+        const root = elementOf('<div class="mermaid"><svg></svg></div><div class="mermaid"><svg></svg></div>');
+        const [first, second] = Array.from(root.querySelectorAll('.mermaid'));
+        let settled = false;
+        const wait = waitForDiagramsSettled(root, 60_000).then((r) => { settled = true; return r; });
+
+        first.setAttribute(DIAGRAM_PNG_ATTR, PNG);
+        await Promise.resolve(); await Promise.resolve();
+        expect(settled).toBe(false);
+
+        second.setAttribute(DIAGRAM_PNG_ATTR, PNG);
+        await expect(wait).resolves.toEqual({ pending: 0, failed: 0, total: 2 });
+    });
+
+    it('still ends on the backstop when nothing ever changes', async () => {
+        vi.useFakeTimers();
+        const root = elementOf('<div class="mermaid"><svg></svg></div>');
+        const wait = waitForDiagramsSettled(root, 60_000);
+        await vi.advanceTimersByTimeAsync(60_000);
+        await expect(wait).resolves.toEqual({ pending: 1, failed: 0, total: 1 });
+    });
+});
+
 // UTST for REQ-LTTCE-XPT-00009 — an export whose diagrams did not all settle
 // must fail with a message that names what was missing and the elapsed budget.
 describe('preview copy — unsettled diagrams are an export failure', () => {
 
     it('returns null when every diagram settled', () => {
-        expect(describeUnsettledDiagrams({ pending: 0, total: 5 }, 40_000)).toBeNull();
-        expect(describeUnsettledDiagrams({ pending: 0, total: 0 }, 40_000)).toBeNull();
+        expect(describeUnsettledDiagrams({ pending: 0, failed: 0, total: 5 }, 40_000)).toBeNull();
+        expect(describeUnsettledDiagrams({ pending: 0, failed: 0, total: 0 }, 40_000)).toBeNull();
     });
 
     it('names the missing count, the total and the budget in seconds', () => {
-        const msg = describeUnsettledDiagrams({ pending: 3, total: 5 }, 85_000);
+        const msg = describeUnsettledDiagrams({ pending: 3, failed: 0, total: 5 }, 85_000);
         expect(msg).toContain('3 of 5');
         expect(msg).toContain('85s');
         expect(msg).toContain('incomplete');
+    });
+
+    it('reports a rasterisation failure as its own cause, not as a budget overrun (REQ-LTTCE-XPT-00010)', () => {
+        const msg = describeUnsettledDiagrams({ pending: 0, failed: 1, total: 4 }, 80_000);
+        expect(msg).toContain('1 of 4');
+        expect(msg).toContain('could not be converted to an image');
+        expect(msg).not.toContain('80s');
+    });
+
+    it('names the failure even while other diagrams are still pending', () => {
+        const msg = describeUnsettledDiagrams({ pending: 2, failed: 1, total: 4 }, 80_000);
+        expect(msg).toContain('could not be converted to an image');
     });
 
     it('accepts the budget Rust sends and falls back for anything else', () => {
