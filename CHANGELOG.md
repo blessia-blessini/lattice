@@ -9,6 +9,8 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.29
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: merged dev branch to avoid future remerges on squash
+- FIX: Timing issue of macOS on Intel/AMD64 Build
 - FIX: Stop headless export depending on timers in a hidden window
 - CHORE: Note the upstream coverage bug on Windows ARM64
 - RELEASE v0.3.28: CLI for HTML and PDF export
