@@ -61,6 +61,12 @@ const MIN_PDF_BYTES: usize = 20_000;
 /// while a wrong paper is off by 17 pt (A4 vs Letter) or more.
 const PAGE_SIZE_TOLERANCE_PT: f64 = 1.5;
 
+/// Fewest pages a PDF of `demo.md` may have. The demo paginates to 9 (A3) to
+/// 14 (Letter) pages on every host that really prints; a window snapshot or a
+/// print clipped to the window height is a single page — the v0.3.28 macOS
+/// output had exactly one.
+const MIN_DEMO_PDF_PAGES: usize = 2;
+
 /// The six whitespace bytes of the PDF syntax (ISO 32000-1, 7.2.2).
 const PDF_WHITESPACE: &[u8] = b"\0\t\n\x0c\r ";
 
@@ -662,10 +668,63 @@ fn check_pdf(path: &Path, paper: PaperSize) -> Vec<String> {
         ));
     }
     problems.extend(check_page_size(&bytes, paper));
+    problems.extend(check_page_count(&bytes));
 
     problems
 }
 // check_pdf END ************************************************
+
+
+//**************************************************************
+// pdf_page_count
+//**************************************************************
+/// Number of page objects — `/Type /Page`, not the `/Type /Pages` tree nodes —
+/// in a PDF's plain-text object dictionaries.
+///
+/// Counted on the raw bytes, like [`pdf_page_size`]: none of the three hosts
+/// puts objects in compressed object streams, and this count matched
+/// `pdfinfo` on every host's output (Windows, Linux, and the one-page v0.3.28
+/// macOS snapshot). The `/Count` of the page tree is not used: outlines carry
+/// a `/Count` too, and come first in the Chromium and Cairo output.
+fn pdf_page_count(bytes: &[u8]) -> usize {
+    const KEY: &[u8] = b"/Type";
+    const PAGE: &[u8] = b"/Page";
+    let mut count = 0;
+    let mut from = 0;
+    while let Some(at) = bytes[from..].windows(KEY.len()).position(|w| w == KEY) {
+        let rest = &bytes[from + at + KEY.len()..];
+        let skip = rest.iter().take_while(|b| PDF_WHITESPACE.contains(b)).count();
+        let value = &rest[skip..];
+        // A name ends at the first byte that is not a regular character, so
+        // "/Pages" and "/PageLabel" are other names, not "/Page".
+        if value.starts_with(PAGE)
+            && !value.get(PAGE.len()).is_some_and(|b| b.is_ascii_alphanumeric())
+        {
+            count += 1;
+        }
+        from += at + KEY.len();
+    }
+    count
+}
+// pdf_page_count END *******************************************
+
+
+//**************************************************************
+// check_page_count
+//**************************************************************
+/// REQ-LTTCE-XPT-00004 / 00012 — the document is paginated, not one page.
+/// Catches the failure a page-size check cannot: a single page that has the
+/// right paper size but holds only what fit in the window.
+fn check_page_count(bytes: &[u8]) -> Vec<String> {
+    match pdf_page_count(bytes) {
+        n if n >= MIN_DEMO_PDF_PAGES => Vec::new(),
+        n => vec![format!(
+            "PDF has {n} page(s), expected at least {MIN_DEMO_PDF_PAGES} — \
+             the document was not paginated"
+        )],
+    }
+}
+// check_page_count END *****************************************
 
 
 //**************************************************************
@@ -1113,6 +1172,28 @@ mod tests {
     #[test]
     fn a_pdf_without_a_media_box_fails_rather_than_passing_silently() {
         assert_eq!(check_page_size(b"%PDF-1.7", PaperSize::A4).len(), 1);
+    }
+
+    #[test]
+    fn counts_page_objects_but_not_the_page_tree_or_other_names() {
+        let pdf = b"<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>\n\
+                    << /Type /Page /Parent 2 0 R >>\n\
+                    << /Type/Page/Parent 2 0 R >>\n\
+                    << /Type\r\n/Page >>\n\
+                    << /Type /PageLabel >> << /Type /Catalog /Pages 2 0 R >>";
+        assert_eq!(pdf_page_count(pdf), 3);
+        assert_eq!(pdf_page_count(b"%PDF-1.7"), 0);
+        // Ends right after the name: still a page.
+        assert_eq!(pdf_page_count(b"/Type /Page"), 1);
+    }
+
+    #[test]
+    fn a_single_page_fails_and_a_paginated_document_passes() {
+        // The v0.3.28 macOS snapshot: one page.
+        let one = check_page_count(b"<< /Type /Pages /Count 1 >> << /Type /Page >>");
+        assert_eq!(one.len(), 1, "{one:?}");
+        assert!(one[0].contains("1 page"), "{one:?}");
+        assert!(check_page_count(b"<< /Type /Page >> << /Type /Page >>").is_empty());
     }
 }
 // tests END ****************************************************

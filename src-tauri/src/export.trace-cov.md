@@ -59,7 +59,7 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 | Anchor                | Unit / automatic tests                                                        |
 | :-------------------- | :---------------------------------------------------------------------------- |
 | IMPL-LTTCE-XPT-00002  | `src/App.test.tsx` — *App — headless export launch* (17 cases, incl. the signal-ordering regression, the three REQ-LTTCE-XPT-00009 cases and the four REQ-LTTCE-XPT-00010 cases) |
-| IMPL-LTTCE-XPT-00003  | `src-tauri/src/export.rs` `mod tests` (24 cases, incl. `is_expected_sender`, the two REQ-LTTCE-XPT-00008 budget cases, one of which guards the numbers against being tightened back to where a correct render fails, and four REQ-LTTCE-XPT-00009 `settle_budget` / `ExportLaunch` cases); `platform/cli_args.rs` `mod tests` |
+| IMPL-LTTCE-XPT-00003  | `src-tauri/src/export.rs` `mod tests` (27 cases, incl. the three `remove_previous_output` cases — an earlier PDF is gone before the host prints, REQ-LTTCE-XPT-00006 — `is_expected_sender`, the two REQ-LTTCE-XPT-00008 budget cases, one of which guards the numbers against being tightened back to where a correct render fails, and four REQ-LTTCE-XPT-00009 `settle_budget` / `ExportLaunch` cases); `platform/cli_args.rs` `mod tests` |
 | IMPL-LTTCE-XPT-00004  | ITST-LTTCE-XPT-00010 — `src-tauri/examples/export_demo.rs` (`export-html`, `export-pdf (default paper)`, `export-pdf --paper a3`, `export-pdf --paper a5 (unknown)`, `missing-input`); not unit-testable, needs a real process exit (see ARCH-LTTCE-XPT-00001) |
 | IMPL-LTTCE-XPT-00007  | `src-tauri/src/paper.rs` `mod tests` (9 cases — sizes in every unit against the standards, default, names, case, portrait); `platform/cli_args.rs` `mod tests` (12 paper / file-path cases — both spellings, position, default, unknown and missing values, first wins, near misses, a paper value never taken for a file) |
 | IMPL-LTTCE-XPT-00005  | `platform/mod.rs` `mod tests` (`PdfDone`; `written_pdf_result`, 4 cases — success needs a non-empty file, a stale file never masks a failure); `platform/impls/linux.rs` `mod linux_print_tests` (4 cases — printer-name resolution incl. the localized and blank-override cases, REQ-LTTCE-XPT-00007; pure, no environment mutation; compiled and run on the Linux leg only); host backends: ITST-LTTCE-XPT-00010 per desktop platform |
@@ -71,9 +71,11 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   IMPL-LTTCE-XPT-00007
 - ITST-LTTCE-XPT-00010 **covers** REQ-LTTCE-XPT-00011 and REQ-LTTCE-XPT-00012 end to end: the default
   export must be A4 portrait and a `--paper a3` export A3 portrait (read from the PDF's `/MediaBox`,
-  within 1.5 pt; expected sizes from `paper.rs` itself), and `--paper a5` must exit `1` with no file.
-  The page-size rule has its own unit tests (`cargo test --example export_demo`, 6 of 12 cases),
-  including the 800 × 568 pt macOS snapshot of v0.3.28 as a case that must fail.
+  within 1.5 pt; expected sizes from `paper.rs` itself), both must have at least 2 pages (counted
+  `/Type /Page` objects; a print clipped to one window-high page has the right size but one page),
+  and `--paper a5` must exit `1` with no file. The page-size and page-count rules have their own unit
+  tests (`cargo test --example export_demo`, 8 of 14 cases), including the 800 × 568 pt one-page
+  macOS snapshot of v0.3.28 as a case that must fail.
 - ITST-LTTCE-XPT-00010 **covers** REQ-LTTCE-XPT-00010 end to end: the first export of a process, on
   every desktop leg, must finish without timer or idle scheduling in a hidden window. It found the
   defect (macos-intel, run 36311605228, 2026-09-27: `export-html` produced nothing in 90 s after a

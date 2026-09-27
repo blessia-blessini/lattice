@@ -1654,7 +1654,12 @@ HTML, because the part that actually produces the bytes is host code behind an F
   (`examples/export_demo.rs`, ITST-LTTCE-XPT-00010, since 2026-09-26): the real binary exports
   `docs/demo/demo.md`, and the check asserts exit codes, the `%PDF-` magic and — since 2026-09-27 —
   the page size of the default (A4) and a `--paper a3` export, plus the refusal of an unknown paper.
-  The page-size assertion is what exposes a snapshot instead of a page, or a host default paper.
+  The page-size assertion is what exposes a snapshot instead of a page, or a host default paper; a
+  page-count assertion (at least 2 pages for the demo) exposes a print clipped to one window-high
+  page, which has the right paper size and would otherwise pass. Neither can see a blank page: that
+  needs a look at the PDF the CI uploads.
+- Before a PDF is printed, `export.rs` deletes any file already at the output path, so a host that
+  reports success without writing can never be credited with an earlier run's PDF.
 - On 2026-09-27 the paper change was also run by hand: **Windows** (WebView2) and **Linux** (WebKitGTK
   2.52 on Ubuntu 24.04 under WSL) each exported A4, A3 and Letter at the exact size with 2 cm margins,
   and exited `1` with no file for `--paper a5` and a bare `--paper`. The **macOS** print-operation

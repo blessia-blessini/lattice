@@ -170,11 +170,10 @@ fn macos_print_to_pdf(
     let operation = unsafe { webview.printOperationWithPrintInfo(&info) };
     operation.setShowsPrintPanel(false);
     operation.setShowsProgressPanel(false);
-    // WKWebView's print view is created with a zero frame, and a zero-sized
-    // view is widely reported to print blank pages; give it the web view's.
-    if let Some(view) = operation.view() {
-        view.setFrame(webview.frame());
-    }
+    // The print view's frame is deliberately left as WebKit made it — wry's
+    // own print does the same. WebKit paginates from `info`; forcing the
+    // window's frame onto the view risks clipping the output to one
+    // window-high page, the very defect this operation replaces.
 
     let delegate =
         pdf_print_delegate::PdfPrintDelegate::new(std::sync::Arc::clone(done), out_path.to_path_buf());

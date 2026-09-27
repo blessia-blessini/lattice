@@ -474,6 +474,7 @@ async fn print_pdf(
     out_path: &std::path::Path,
     paper: PaperSize,
 ) -> Result<(), String> {
+    remove_previous_output(out_path)?;
     let (tx, rx) = tokio::sync::oneshot::channel();
     crate::platform::print_to_pdf(window, out_path.to_path_buf(), paper, tx);
 
@@ -485,6 +486,30 @@ async fn print_pdf(
     }
 }
 // print_pdf END *************************************************
+
+//**************************************************************
+// remove_previous_output
+//**************************************************************
+/// Deletes a file left at `out_path` by an earlier export, before the host is
+/// asked to write a new one.
+///
+/// REQ-LTTCE-XPT-00006 — `written_pdf_result` accepts a non-empty file at the
+/// path as proof of success. Without this, a host that reported success but
+/// wrote nothing would be credited with the previous run's PDF. Nothing there
+/// is fine; a path that cannot be cleared (a directory, a locked file) fails
+/// the export instead of risking that false success.
+fn remove_previous_output(out_path: &std::path::Path) -> Result<(), String> {
+    match std::fs::remove_file(out_path) {
+        Ok(()) => Ok(()),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(e) => Err(format!(
+            "cannot replace the existing '{}': {}",
+            out_path.display(),
+            e
+        )),
+    }
+}
+// remove_previous_output END ************************************
 
 #[cfg(test)]
 mod tests {
@@ -689,6 +714,40 @@ mod tests {
         write_html(&out, Some("<p>fresh</p>".to_string())).unwrap();
         assert_eq!(std::fs::read_to_string(&out).unwrap(), "<p>fresh</p>");
     }
+
+    //**************************************************************
+    // remove_previous_output_*
+    //**************************************************************
+    /// REQ-LTTCE-XPT-00006: a PDF from an earlier run must be gone before the
+    /// host prints, so it can never be mistaken for this run's output.
+    #[test]
+    fn remove_previous_output_deletes_an_earlier_pdf() {
+        let dir = tempfile::tempdir().unwrap();
+        let out = dir.path().join("a.pdf");
+        std::fs::write(&out, "%PDF- from an earlier run").unwrap();
+
+        remove_previous_output(&out).unwrap();
+        assert!(!out.exists());
+    }
+
+    #[test]
+    fn remove_previous_output_accepts_an_absent_file() {
+        let dir = tempfile::tempdir().unwrap();
+        assert_eq!(remove_previous_output(&dir.path().join("never.pdf")), Ok(()));
+    }
+
+    #[test]
+    fn remove_previous_output_fails_on_a_path_it_cannot_clear() {
+        // A directory where the PDF should go: printing there cannot succeed.
+        let dir = tempfile::tempdir().unwrap();
+        let out = dir.path().join("a.pdf");
+        std::fs::create_dir(&out).unwrap();
+
+        let err = remove_previous_output(&out).unwrap_err();
+        assert!(err.contains("cannot replace"), "{err}");
+        assert!(out.exists(), "a directory must never be deleted");
+    }
+    // remove_previous_output_* END *********************************
 
     //**************************************************************
     // first_export_gets_the_longer_render_budget
