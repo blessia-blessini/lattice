@@ -41,11 +41,12 @@ on:
         type: choice
         options:
         - all
-        - desktops                # macOS (Apple + Intel silicon), Linux, Windows (x64+ARM)
-        - non-apple-os-desktops   # Windows (x64+ARM), Linux
+        - desktops                # macOS (Apple + Intel silicon), Linux (x64+ARM), Windows (x64+ARM)
+        - non-apple-os-desktops   # Windows (x64+ARM), Linux (x64+ARM)
         - windows-desktop
         - windows-arm-desktop
         - linux-desktop
+        - linux-arm-desktop
         - macos-universal
         - macos-arm64
         - macos-intel
@@ -135,6 +136,17 @@ jobs:
             "upload_path2": "src-tauri/target/release/bundle/deb/*.deb"
           },
           {
+            "os": "ubuntu-24.04-arm",
+            "platform": "linux-arm-desktop",
+            "export_mode": "required",
+            "bldprefix": "",
+            "mobile_build": "",
+            "args": "",
+            "download_name": "Linux-ARM64-Desktop-App-tested-on-Ubuntu-Appimage",
+            "upload_path1": "src-tauri/target/release/bundle/appimage/*.AppImage",
+            "upload_path2": "src-tauri/target/release/bundle/deb/*.deb"
+          },
+          {
             "os": "ubuntu-latest",
             "platform": "android",
             "export_mode": "skip",
@@ -176,6 +188,8 @@ jobs:
             TARGET="ios"
           elif [[ "$BRANCH" == *"buildWindows"* ]]; then
             TARGET="windows-desktop"
+          elif [[ "$BRANCH" == *"buildLinuxArm"* ]]; then   # before buildLinux: substring match
+            TARGET="linux-arm-desktop"
           elif [[ "$BRANCH" == *"buildLinux"* ]]; then
             TARGET="linux-desktop"
           elif [[ "$BRANCH" == *"buildMacosArm"* ]]; then
@@ -198,11 +212,11 @@ jobs:
         if [ "$TARGET" == "all" ]; then
           FINAL_JSON=$(echo "$CONST_JSON")
         elif [ "$TARGET" == "desktops" ]; then
-          FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "windows-desktop" or .platform == "windows-arm-desktop" or .platform == "linux-desktop" or .platform == "macos-arm64" or .platform == "macos-intel")]')
+          FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "windows-desktop" or .platform == "windows-arm-desktop" or .platform == "linux-desktop" or .platform == "linux-arm-desktop" or .platform == "macos-arm64" or .platform == "macos-intel")]')
         elif [ "$TARGET" == "desktops-macos" ]; then
           FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "macos-arm64" or .platform == "macos-intel")]')
         elif [ "$TARGET" == "non-apple-os-desktops" ]; then
-          FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "windows-desktop" or .platform == "windows-arm-desktop" or .platform == "linux-desktop")]')
+          FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "windows-desktop" or .platform == "windows-arm-desktop" or .platform == "linux-desktop" or .platform == "linux-arm-desktop")]')
         elif [ "$TARGET" == "windows-desktop" ]; then
           FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "windows-desktop")]')
         elif [ "$TARGET" == "windows-arm-desktop" ]; then
@@ -1059,6 +1073,9 @@ jobs:
             *.msixbundle)          platform='<span class="material-icons">window</span> Windows — Store bundle (.msixbundle, sideload)' ;;
             *_amd64.AppImage)      platform='<span class="material-icons">terminal</span> Linux — x86-64 (AppImage)' ;;
             *_amd64.deb)           platform='<span class="material-icons">terminal</span> Linux — x86-64 (Debian / Ubuntu)' ;;
+            *_aarch64.AppImage|*_arm64.AppImage)
+                                   platform='<span class="material-icons">terminal</span> Linux — ARM64 (AppImage)' ;;
+            *_arm64.deb)           platform='<span class="material-icons">terminal</span> Linux — ARM64 (Debian / Ubuntu)' ;;
             *.apk)                 platform='<span class="material-icons">android</span> Android — Universal' ;;
             *.aab)                 platform='<span class="material-icons">android</span> Android — Universal (Play Store)' ;;
             *.ipa)                 platform='<span class="material-icons">phone_iphone</span> iOS' ;;
@@ -1218,6 +1235,7 @@ jobs:
                 macos-arm64)         nice='<span class="material-icons">laptop_mac</span> macOS — Apple Silicon (ARM64)' ;;
                 macos-intel)         nice='<span class="material-icons">laptop_mac</span> macOS — Intel (x86-64)' ;;
                 linux-desktop)       nice='<span class="material-icons">terminal</span> Linux — x86-64' ;;
+                linux-arm-desktop)   nice='<span class="material-icons">terminal</span> Linux — ARM64' ;;
                 *)                   nice="$plat" ;;
               esac
 

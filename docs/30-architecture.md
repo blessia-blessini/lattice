@@ -305,6 +305,9 @@ graph TD
 
 ### Key CI Steps:
 1.  **Setup Job**: A preliminary job determines which platforms (e.g., `windows-desktop`, `linux-desktop`, `all`) to run on based on the manual trigger input or the branch name. It generates a JSON matrix for the next job.
+    Every desktop leg builds natively on a runner of its own architecture — `windows-11-arm` and
+    `ubuntu-24.04-arm` for the ARM64 Windows and Linux legs — except `macos-intel`, which is
+    cross-built on an arm64 macOS runner.
 2.  **Build & Test Job**: This job runs in parallel for each configuration in the matrix.
     -   **Environment**: Sets up Node.js, Rust (including cross-compilation targets if needed), and caches dependencies.
     -   **Build**: Compiles the Rust backend and builds the frontend, finally bundling them into a native application (`.exe`, `.dmg`, `.AppImage`).
@@ -1606,7 +1609,7 @@ HTML, because the part that actually produces the bytes is host code behind an F
   interactively, wrong for an export, which must fail. `export.rs` now refuses up front via
   `ensure_readable`, before any window is built, for both formats.
 - The **Linux** and **macOS** backends are compile-verified by the CI matrix only
-  (`.github/workflows/buildAndTest.yml` builds linux, macos-arm64 and macos-intel); no one on this
+  (`.github/workflows/buildAndTest.yml` builds linux x86-64 and ARM64, macos-arm64 and macos-intel); no one on this
   project can run them by hand today, and they are explicitly *unverified at runtime*.
 - The **Android/iOS** default refusal is by construction, not by test.
 

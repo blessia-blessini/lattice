@@ -9,6 +9,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.29
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FEAT: Build Linux ARM64 natively in CI
 - CHORE: merged dev branch to avoid future remerges on squash
 - FIX: Timing issue of macOS on Intel/AMD64 Build
 - FIX: Stop headless export depending on timers in a hidden window
