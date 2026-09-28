@@ -952,9 +952,10 @@ fn publish(out_dir: &Path, produced: &[(PathBuf, String)]) -> Result<(), String>
 ///
 /// The default paper keeps the plain name: it is the document the release
 /// page embeds, and the name that page has always used. The paper is joined
-/// with a dot because a platform label never contains one, so the release
-/// page (step 905 in `buildAndTest.yml`) can tell the extra papers apart —
-/// and link them — without a list of paper names of its own.
+/// with a dot, so the release page (step 905 in `buildAndTest.yml`) can tell
+/// an extra paper by its parent: `demo-<label>.a3.pdf` minus its last
+/// `.<part>` is `demo-<label>.pdf`, which exists. It needs no list of paper
+/// names of its own, and a label containing a dot still works.
 fn published_name(label: &str, paper: Option<PaperSize>, ext: &str) -> String {
     match paper {
         Some(p) if p != PaperSize::default() => format!("demo-{label}.{}.{ext}", p.name()),
@@ -962,6 +963,7 @@ fn published_name(label: &str, paper: Option<PaperSize>, ext: &str) -> String {
     }
 }
 // published_name END *******************************************
+
 
 //**************************************************************
 // run

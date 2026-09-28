@@ -281,6 +281,7 @@ fn resolved_output_path(source: &str, format: ExportFormat) -> Result<PathBuf, S
 }
 // resolved_output_path END **************************************
 
+
 //**************************************************************
 // render_timeout
 //**************************************************************
@@ -373,6 +374,9 @@ async fn export_one(
     is_first_export: bool,
 ) -> Result<PathBuf, String> {
     ensure_readable(path)?;
+    // Resolved before any window exists: a path that cannot be resolved fails
+    // at once, not after a render budget spent on a document with nowhere to go.
+    let out_path = resolved_output_path(path, format)?;
 
     // The label is generated *before* the window exists so the sender can be
     // bound to it up front. Installing the sender first and learning the
@@ -434,14 +438,6 @@ async fn export_one(
         }
     };
     clear_pending();
-
-    let out_path = match resolved_output_path(path, format) {
-        Ok(p) => p,
-        Err(e) => {
-            let _ = window.close();
-            return Err(e);
-        }
-    };
 
     // The window must stay alive until the output exists: for a PDF it is the
     // very thing being printed.
@@ -590,6 +586,7 @@ mod tests {
         assert_eq!(out, dir.path().join("notes.html"));
     }
     // resolved_output_path END *************************************
+
 
     #[test]
     fn adds_extension_when_absent() {

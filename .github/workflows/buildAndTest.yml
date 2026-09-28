@@ -1232,13 +1232,15 @@ jobs:
             # is stable release to release.
             #
             # export_demo publishes the other papers as demo-<platform>.<paper>.pdf
-            # (a3, letter). A platform label never contains a dot, so a base
-            # name with a dot in it is one of those extra papers: skip it here
-            # and link it under its own platform below — no paper list to keep
-            # in sync with paper.rs.
+            # (a3, letter). One is recognised by its parent existing: strip the
+            # last ".<part>" and if demo-<platform>.pdf is there, this is an extra
+            # paper of that platform — skip it here and link it under its
+            # platform below. No paper list to keep in sync with paper.rs, and a
+            # platform label that itself contains a dot (say "ubuntu-24.04") is
+            # still embedded, because no "demo-ubuntu-24.pdf" exists.
             for pdf in $(ls "$GEN_SRC"/demo-*.pdf 2>/dev/null | sort); do
               base=$(basename "$pdf" .pdf)          # demo-<platform>
-              case "$base" in *.*) continue ;; esac
+              case "$base" in *.*) [ -f "$GEN_SRC/${base%.*}.pdf" ] && continue ;; esac
               plat="${base#demo-}"                  # <platform>
 
               # Human-readable heading. Mirrors the download-table labels
