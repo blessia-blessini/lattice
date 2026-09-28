@@ -208,6 +208,10 @@ fn macos_print_to_pdf(
 /// [`page_margins`] — WKWebView draws no header or footer, so 1 cm top, right
 /// and bottom and 2 cm left — fitted to the page width, saved to `out_path`.
 ///
+/// These margins alone do not reach the PDF: WKWebView obeys the stylesheet's
+/// `@page` margin over them. The export window's `@page` rule carries the same
+/// values (`ExportLaunch::page_margins`), so the two agree.
+///
 /// Fresh rather than `sharedPrintInfo`, which is app-wide state that wry's
 /// interactive `print()` also mutates. A non-UTF-8 path is refused here with a
 /// clear message rather than handed to AppKit.

@@ -1557,6 +1557,15 @@ The page is therefore decided in one place and handed to every host explicitly:
 - **`Platform::print_to_pdf(window, out_path, paper, done)`** — each backend sets paper, portrait and
   margins through its own page-setup API: WebView2 `ICoreWebView2PrintSettings` (inches), GTK
   `GtkPageSetup` + `GtkPrintSettings` (millimetres), AppKit `NSPrintInfo` (points).
+- **The CSS half — `ExportLaunch::page_margins` → `@page { margin }`.** A host API margin alone is
+  not enough: WKWebView obeys the stylesheet's `@page` margin over `NSPrintInfo`'s (measured on CI
+  run 36393041791 — NSPrintInfo said 1 cm, the macOS PDFs had 2 cm all round, `App.css`'s value).
+  So the same `platform::page_margins()` value also travels to the export window, as
+  `__LATTICE_INIT_DATA__.exportPageMarginsMm` (`ExportLaunch::page_margins_mm_json`, PDF only), and
+  `src/lib/print-style.ts` (`resolvePageMargins`, `buildPrintStyleCss`) writes it into the injected
+  `@page` rule, which comes after `App.css` and overrides its 2 cm. CSS and host API then agree on
+  every host, whichever of the two a WebView obeys; a missing or malformed value leaves `App.css`'s
+  margin in place. Interactive Ctrl-P passes no margins and keeps `App.css`'s 2 cm.
 - **`written_pdf_result`** (`platform/mod.rs`) — every backend reports success only when the host
   says so *and* a non-empty file exists; a host's "finished" alone is not evidence of a file.
 - **`resolved_output_path`** (`export.rs`) — the output path is made absolute once, before any

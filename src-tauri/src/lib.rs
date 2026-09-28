@@ -331,9 +331,10 @@ fn build_window_with_file(app: &tauri::AppHandle, path: Option<String>) -> Resul
 //******************************************************************************
 /// Full implementation behind `build_window_with_file`. Adds `export`: when
 /// `Some(launch)`, the window is built invisible and `__LATTICE_INIT_DATA__`
-/// carries `exportFormat: "html" | "pdf"` and `exportSettleMs` (how long the
-/// frontend may wait for diagrams, derived from Rust's render budget — see
-/// `export::ExportLaunch`), which tells the frontend (see
+/// carries `exportFormat: "html" | "pdf"`, `exportSettleMs` (how long the
+/// frontend may wait for diagrams, derived from Rust's render budget) and, for
+/// a PDF, `exportPageMarginsMm` (the page margins its `@page` rule must match —
+/// see `export::ExportLaunch`), which tells the frontend (see
 /// `App.tsx`'s `checkLaunch`) to render the document, wait for its preview to
 /// settle, and signal back via the `export_ready` command instead of showing
 /// itself. Returns the built window so the caller (see `export.rs`) can await
@@ -403,6 +404,7 @@ fn build_window_with_file_ex(
         "path": path_str,
         "exportFormat": export.map(|e| e.format.as_str()),
         "exportSettleMs": export.map(|e| e.settle_ms()),
+        "exportPageMarginsMm": export.and_then(|e| e.page_margins_mm_json()),
     });
     let script = format!("window.__LATTICE_INIT_DATA__ = {};", payload);
     builder = builder.initialization_script(&script);

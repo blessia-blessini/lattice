@@ -162,9 +162,10 @@ pub(crate) fn print_to_pdf(
 /// the rule in [`crate::paper::PageMargins`] applied to this host's
 /// [`Platform::draws_page_header_footer`].
 ///
-/// The one source for both the backends, which hand it to their page-setup
-/// API, and `export.rs`, which logs it — so the log always states the margins
-/// actually used.
+/// The one source for the backends, which hand it to their page-setup API,
+/// and for `export.rs`, which logs it and hands it to the export window's
+/// `@page` rule (`ExportLaunch::page_margins`) — so CSS, host API and log
+/// always state the same margins.
 pub(crate) fn page_margins() -> crate::paper::PageMargins {
     crate::paper::PageMargins::for_host(PlatformImpl.draws_page_header_footer())
 }

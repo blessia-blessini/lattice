@@ -63,7 +63,7 @@ import {
   waitForDiagramsSettled,
 } from './lib/preview-copy';
 import { flushSync } from 'react-dom';
-import { applyPrintStyle, removePrintStyle } from './lib/print-style';
+import { applyPrintStyle, removePrintStyle, resolvePageMargins } from './lib/print-style';
 
 import { StaticRuntime } from "@services/StaticRuntime";
 
@@ -1137,8 +1137,16 @@ function App() {
                 }
 
                 // The host print API never fires `beforeprint`, so the
-                // running header and zoom sizing must be applied explicitly.
-                applyPrintStyle(document, initData.path, m_fontSize);
+                // running header and zoom sizing must be applied explicitly —
+                // with the page margins Rust gave the host print API, which
+                // the `@page` rule must repeat: macOS obeys the CSS one
+                // (REQ-LTTCE-XPT-00012).
+                applyPrintStyle(
+                  document,
+                  initData.path,
+                  m_fontSize,
+                  resolvePageMargins(initData.exportPageMarginsMm),
+                );
               }
 
               // Read the preview root once, after any view-mode change, and

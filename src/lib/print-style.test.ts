@@ -11,7 +11,10 @@ import {
     buildPrintStyleCss,
     applyPrintStyle,
     removePrintStyle,
+    resolvePageMargins,
 } from './print-style';
+
+const COMPACT = { top: 10, right: 10, bottom: 10, left: 20 };
 
 describe('printTitleFor', () => {
     it('takes the bare file name from a POSIX path', () => {
@@ -60,11 +63,50 @@ describe('buildPrintStyleCss', () => {
         expect(css.match(/content: "/g)).toHaveLength(1);
     });
 
+    it('sets the @page margin in CSS side order when given margins (REQ-LTTCE-XPT-00012)', () => {
+        const css = buildPrintStyleCss('a.md', 100, COMPACT);
+        expect(css).toContain('@page {\n  margin: 10mm 10mm 10mm 20mm;\n');
+        // still one @page rule, still carrying the header
+        expect(css.match(/@page/g)).toHaveLength(1);
+        expect(css).toContain('content: "a.md"');
+    });
+
+    it('leaves the stylesheet margin alone without margins (interactive Ctrl-P)', () => {
+        expect(buildPrintStyleCss('a.md', 100)).not.toContain('margin:');
+        expect(buildPrintStyleCss('a.md', 100, null)).not.toContain('margin:');
+    });
+
     it('falls back to 100% for a missing or nonsensical zoom', () => {
         // Would otherwise emit "NaNpt" / a negative size and void the rule.
         expect(buildPrintStyleCss('a.md', NaN)).toContain('font-size: 11.00pt');
         expect(buildPrintStyleCss('a.md', 0)).toContain('font-size: 11.00pt');
         expect(buildPrintStyleCss('a.md', -5)).toContain('font-size: 11.00pt');
+    });
+});
+
+describe('resolvePageMargins', () => {
+    it('accepts four finite, non-negative sides', () => {
+        expect(resolvePageMargins(COMPACT)).toEqual(COMPACT);
+        expect(resolvePageMargins({ top: 0, right: 0, bottom: 0, left: 0 }))
+            .toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
+    });
+
+    it('keeps only the four sides', () => {
+        expect(resolvePageMargins({ ...COMPACT, extra: 99 })).toEqual(COMPACT);
+    });
+
+    it.each([
+        ['absent (HTML export or older backend)', undefined],
+        ['null', null],
+        ['a number', 20],
+        ['a string', '10mm'],
+        ['a missing side', { top: 10, right: 10, bottom: 10 }],
+        ['a string side', { ...COMPACT, left: '20' }],
+        ['a NaN side', { ...COMPACT, top: NaN }],
+        ['an infinite side', { ...COMPACT, right: Infinity }],
+        ['a negative side', { ...COMPACT, bottom: -1 }],
+    ])('returns null for %s, keeping the stylesheet margin', (_label, raw) => {
+        expect(resolvePageMargins(raw)).toBeNull();
     });
 });
 
@@ -92,6 +134,12 @@ describe('applyPrintStyle / removePrintStyle', () => {
         // and it carries the latest values, not the first ones
         expect(all[0].textContent).toContain('b.md');
         expect(all[0].textContent).toContain('font-size: 16.50pt');
+    });
+
+    it('carries the margins into the injected element', () => {
+        applyPrintStyle(document, '/vault/a.md', 100, COMPACT);
+        expect(document.getElementById(PRINT_STYLE_ID)!.textContent)
+            .toContain('margin: 10mm 10mm 10mm 20mm;');
     });
 
     it('removes the element again', () => {

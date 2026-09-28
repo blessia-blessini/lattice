@@ -173,7 +173,8 @@ page — the A4 PDF embedded, the other papers linked — so each desktop build'
 
 Margins are not asserted by the check: they would need the text positions inside the page, which the
 raw-byte scan cannot see without a PDF library. They are checked by rendering the published PDFs
-(REQ-LTTCE-XPT-00012), and their values are unit-tested in `paper.rs`.
+(REQ-LTTCE-XPT-00012), and their values are unit-tested in `paper.rs`, their hand-over to the
+frontend in `export.rs` and their `@page` rule in `print-style.test.ts`.
 
 Two traps this check is built around, both found by running it:
 

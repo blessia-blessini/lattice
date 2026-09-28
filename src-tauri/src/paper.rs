@@ -112,8 +112,9 @@ impl PaperSize {
 //**************************************************************
 /// The four page margins of a PDF export, in millimetres.
 ///
-/// REQ-LTTCE-XPT-00012 — decided here, per kind of host, and handed to the
-/// host's page-setup API; the same for every paper. A host that draws the
+/// REQ-LTTCE-XPT-00012 — decided here, per kind of host, and handed both to
+/// the host's page-setup API and to the export window's CSS `@page` rule
+/// (WKWebView obeys the CSS one); the same for every paper. A host that draws the
 /// running header and page-number footer (the CSS page-margin boxes) needs
 /// [`HEADER_FOOTER_MARGIN_MM`] all round for them. A host that cannot draw them
 /// (WebKit) gets [`COMPACT_MARGIN_MM`] at the top, right and bottom and

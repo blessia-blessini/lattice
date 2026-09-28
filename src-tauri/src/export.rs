@@ -29,7 +29,7 @@
 //! Files are processed one at a time — `ExportState` holds at most one
 //! in-flight sender — so no window is ever left open behind another.
 
-use crate::paper::PaperSize;
+use crate::paper::{PageMargins, PaperSize};
 use log::{error, info};
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -90,18 +90,24 @@ impl ExportFormat {
 // ExportLaunch
 //**************************************************************
 /// What an export window is told at launch, in `__LATTICE_INIT_DATA__`:
-/// the format to produce and how long the frontend may wait for the
-/// preview's diagrams to settle.
+/// the format to produce, how long the frontend may wait for the preview's
+/// diagrams to settle, and the page margins a PDF is printed with.
 ///
 /// The settle budget travels with the format so the frontend has no clock of
 /// its own to keep in step with Rust's. It once had one — a hard-coded 8 s —
 /// and when Rust's render budget was raised to 90 s for a cold start, the
 /// frontend still gave up at 8 s and exported an incomplete document
 /// (REQ-LTTCE-XPT-00009).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+///
+/// The margins travel for the same reason (REQ-LTTCE-XPT-00012): WKWebView
+/// obeys the stylesheet's `@page` margin over `NSPrintInfo`'s, so a margin set
+/// only through the host API never reached a macOS PDF. The frontend writes
+/// these values into its `@page` rule, so CSS and host API agree on every host.
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ExportLaunch {
     pub format: ExportFormat,
     pub settle_budget: Duration,
+    pub page_margins: PageMargins,
 }
 
 impl ExportLaunch {
@@ -109,6 +115,23 @@ impl ExportLaunch {
     /// `exportSettleMs` expects it.
     pub fn settle_ms(self) -> u64 {
         u64::try_from(self.settle_budget.as_millis()).unwrap_or(u64::MAX)
+    }
+
+    /// The page margins as the frontend's `exportPageMarginsMm` expects them:
+    /// `{ "top": .., "right": .., "bottom": .., "left": .. }` in millimetres
+    /// (see `resolvePageMargins` in `src/lib/print-style.ts`). `None` for an
+    /// HTML export, which has no pages.
+    pub fn page_margins_mm_json(self) -> Option<serde_json::Value> {
+        if self.format != ExportFormat::Pdf {
+            return None;
+        }
+        let m = self.page_margins;
+        Some(serde_json::json!({
+            "top": m.top_mm,
+            "right": m.right_mm,
+            "bottom": m.bottom_mm,
+            "left": m.left_mm,
+        }))
     }
 }
 // ExportLaunch END **********************************************
@@ -397,6 +420,7 @@ async fn export_one(
     let launch = ExportLaunch {
         format,
         settle_budget: settle_budget(budget),
+        page_margins: crate::platform::page_margins(),
     };
 
     let window =
@@ -894,14 +918,56 @@ mod tests {
         let launch = ExportLaunch {
             format: ExportFormat::Html,
             settle_budget: Duration::from_secs(40),
+            page_margins: PageMargins::WITH_HEADER_FOOTER,
         };
         assert_eq!(launch.settle_ms(), 40_000);
 
         let sub_second = ExportLaunch {
             format: ExportFormat::Pdf,
             settle_budget: Duration::from_millis(1500),
+            page_margins: PageMargins::WITH_HEADER_FOOTER,
         };
         assert_eq!(sub_second.settle_ms(), 1500);
     }
     // export_launch_reports_settle_budget_in_millis END ************
+
+
+    //**************************************************************
+    // export_launch_hands_pdf_margins_to_the_frontend
+    //**************************************************************
+    /// REQ-LTTCE-XPT-00012: `exportPageMarginsMm` carries the host's margins,
+    /// in millimetres and CSS side order, so the frontend's `@page` rule can
+    /// match what the host page-setup API was given. macOS obeys the CSS one.
+    #[test]
+    fn export_launch_hands_pdf_margins_to_the_frontend() {
+        let launch = ExportLaunch {
+            format: ExportFormat::Pdf,
+            settle_budget: Duration::from_secs(40),
+            page_margins: PageMargins::WITHOUT_HEADER_FOOTER,
+        };
+        assert_eq!(
+            launch.page_margins_mm_json(),
+            Some(serde_json::json!({
+                "top": 10.0, "right": 10.0, "bottom": 10.0, "left": 20.0,
+            }))
+        );
+    }
+    // export_launch_hands_pdf_margins_to_the_frontend END **********
+
+
+    //**************************************************************
+    // export_launch_sends_no_margins_for_html
+    //**************************************************************
+    /// An HTML export has no pages; sending margins would only invite the
+    /// frontend to apply a print rule nobody prints.
+    #[test]
+    fn export_launch_sends_no_margins_for_html() {
+        let launch = ExportLaunch {
+            format: ExportFormat::Html,
+            settle_budget: Duration::from_secs(40),
+            page_margins: PageMargins::WITHOUT_HEADER_FOOTER,
+        };
+        assert_eq!(launch.page_margins_mm_json(), None);
+    }
+    // export_launch_sends_no_margins_for_html END ******************
 }

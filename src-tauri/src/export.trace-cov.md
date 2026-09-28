@@ -53,6 +53,16 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - IMPL-LTTCE-XPT-00005 **covers** REQ-LTTCE-XPT-00006  (`written_pdf_result`: success needs a
   non-empty file, on every backend)
 - IMPL-LTTCE-XPT-00005 **covers** ARCH-LTTCE-XPT-00003
+- IMPL-LTTCE-XPT-00003 **covers** REQ-LTTCE-XPT-00012  (`ExportLaunch::page_margins` /
+  `page_margins_mm_json` hands `platform::page_margins()` to the export window as
+  `exportPageMarginsMm`, PDF only, via `build_window_with_file_ex`)
+- IMPL-LTTCE-XPT-00003 **covers** ARCH-LTTCE-XPT-00003
+- IMPL-LTTCE-XPT-00006 **covers** REQ-LTTCE-XPT-00012  (`print-style.ts` `resolvePageMargins` +
+  `buildPrintStyleCss` write those margins into the injected `@page` rule, so macOS — whose WKWebView
+  obeys the CSS margin over `NSPrintInfo` — prints the same margins as the host API was given)
+- IMPL-LTTCE-XPT-00006 **covers** ARCH-LTTCE-XPT-00003
+- IMPL-LTTCE-XPT-00002 **covers** REQ-LTTCE-XPT-00012  (`App.tsx` passes `exportPageMarginsMm` to
+  `applyPrintStyle` in the PDF launch branch)
 
 ---
 
@@ -60,12 +70,12 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 
 | Anchor                | Unit / automatic tests                                                        |
 | :-------------------- | :---------------------------------------------------------------------------- |
-| IMPL-LTTCE-XPT-00002  | `src/App.test.tsx` — *App — headless export launch* (17 cases, incl. the signal-ordering regression, the three REQ-LTTCE-XPT-00009 cases and the four REQ-LTTCE-XPT-00010 cases) |
-| IMPL-LTTCE-XPT-00003  | `src-tauri/src/export.rs` `mod tests` (29 cases, incl. the two `resolved_output_path` cases — a relative source such as `demo.md` gets an absolute output path, REQ-LTTCE-XPT-00005 — the three `remove_previous_output` cases — an earlier PDF is gone before the host prints, REQ-LTTCE-XPT-00006 — `is_expected_sender`, the two REQ-LTTCE-XPT-00008 budget cases, one of which guards the numbers against being tightened back to where a correct render fails, and four REQ-LTTCE-XPT-00009 `settle_budget` / `ExportLaunch` cases); `platform/cli_args.rs` `mod tests` |
+| IMPL-LTTCE-XPT-00002  | `src/App.test.tsx` — *App — headless export launch* (19 cases, incl. the signal-ordering regression, the three REQ-LTTCE-XPT-00009 cases, the four REQ-LTTCE-XPT-00010 cases, and two REQ-LTTCE-XPT-00012 cases — a PDF launch repeats Rust's margins in `@page`, a malformed value keeps the stylesheet's) |
+| IMPL-LTTCE-XPT-00003  | `src-tauri/src/export.rs` `mod tests` (31 cases, incl. the two `resolved_output_path` cases — a relative source such as `demo.md` gets an absolute output path, REQ-LTTCE-XPT-00005 — the three `remove_previous_output` cases — an earlier PDF is gone before the host prints, REQ-LTTCE-XPT-00006 — `is_expected_sender`, the two REQ-LTTCE-XPT-00008 budget cases, one of which guards the numbers against being tightened back to where a correct render fails, four REQ-LTTCE-XPT-00009 `settle_budget` / `ExportLaunch` cases, and two REQ-LTTCE-XPT-00012 `page_margins_mm_json` cases — PDF margins in millimetres, none for HTML); `platform/cli_args.rs` `mod tests` |
 | IMPL-LTTCE-XPT-00004  | ITST-LTTCE-XPT-00010 — `src-tauri/examples/export_demo.rs` (`export-html`, `export-pdf (default paper)`, `export-pdf --paper a3`, `export-pdf --paper letter (relative path)`, `export-pdf --paper a5 (unknown)`, `missing-input`); not unit-testable, needs a real process exit (see ARCH-LTTCE-XPT-00001) |
 | IMPL-LTTCE-XPT-00007  | `src-tauri/src/paper.rs` `mod tests` (12 cases — sizes in every unit against the standards, default, names, case, portrait; margins: 2 cm all round for a header/footer host, 1 / 1 / 1 cm and 2 cm left otherwise, and their log text); `platform/cli_args.rs` `mod tests` (12 paper / file-path cases — both spellings, position, default, unknown and missing values, first wins, near misses, a paper value never taken for a file) |
 | IMPL-LTTCE-XPT-00005  | `platform/mod.rs` `mod tests` (`PdfDone`; `written_pdf_result`, 4 cases — success needs a non-empty file, a stale file never masks a failure); `platform/impls/linux.rs` `mod linux_print_tests` (4 cases — printer-name resolution incl. the localized and blank-override cases, REQ-LTTCE-XPT-00007; pure, no environment mutation; compiled and run on the Linux leg only); host backends: ITST-LTTCE-XPT-00010 per desktop platform |
-| IMPL-LTTCE-XPT-00006  | `src/lib/print-style.test.ts` (13 cases)                                       |
+| IMPL-LTTCE-XPT-00006  | `src/lib/print-style.test.ts` (27 cases, incl. 14 for REQ-LTTCE-XPT-00012 — `resolvePageMargins` accepts four finite non-negative sides and rejects nine malformed shapes; `@page` margin in CSS side order, none without margins) |
 
 ## Integration test
 
