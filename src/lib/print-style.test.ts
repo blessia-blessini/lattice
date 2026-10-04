@@ -4,14 +4,20 @@
 // See LICENCE file in GitHUB root folder of the repository.
 
 import { describe, it, expect, beforeEach } from 'vitest';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import {
     PRINT_STYLE_ID,
     PRINT_UNTITLED,
+    PRINT_DEFAULT_MARGINS_MM,
     printTitleFor,
     buildPrintStyleCss,
     applyPrintStyle,
     removePrintStyle,
+    resolvePageMargins,
 } from './print-style';
+
+const COMPACT = { top: 10, right: 10, bottom: 10, left: 20 };
 
 describe('printTitleFor', () => {
     it('takes the bare file name from a POSIX path', () => {
@@ -60,11 +66,83 @@ describe('buildPrintStyleCss', () => {
         expect(css.match(/content: "/g)).toHaveLength(1);
     });
 
+    it('sets the @page margin in CSS side order when given margins (REQ-LTTCE-XPT-00012)', () => {
+        const css = buildPrintStyleCss('a.md', 100, COMPACT);
+        expect(css).toContain('@page {\n  margin: 10mm 10mm 10mm 20mm;\n');
+        // still one @page rule, still carrying the header
+        expect(css.match(/@page/g)).toHaveLength(1);
+        expect(css).toContain('content: "a.md"');
+    });
+
+    it('prints with the 2 cm default without margins (interactive Ctrl-P)', () => {
+        expect(buildPrintStyleCss('a.md', 100)).toContain('@page {\n  margin: 20mm 20mm 20mm 20mm;\n');
+        expect(buildPrintStyleCss('a.md', 100, null)).toContain('margin: 20mm 20mm 20mm 20mm;');
+    });
+
+    it('declares exactly one page margin, whatever it is given', () => {
+        expect(buildPrintStyleCss('a.md', 100).match(/margin:/g)).toHaveLength(1);
+        expect(buildPrintStyleCss('a.md', 100, COMPACT).match(/margin:/g)).toHaveLength(1);
+    });
+
     it('falls back to 100% for a missing or nonsensical zoom', () => {
         // Would otherwise emit "NaNpt" / a negative size and void the rule.
         expect(buildPrintStyleCss('a.md', NaN)).toContain('font-size: 11.00pt');
         expect(buildPrintStyleCss('a.md', 0)).toContain('font-size: 11.00pt');
         expect(buildPrintStyleCss('a.md', -5)).toContain('font-size: 11.00pt');
+    });
+});
+
+describe('resolvePageMargins', () => {
+    it('accepts four finite, non-negative sides', () => {
+        expect(resolvePageMargins(COMPACT)).toEqual(COMPACT);
+        expect(resolvePageMargins({ top: 0, right: 0, bottom: 0, left: 0 }))
+            .toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
+    });
+
+    it('keeps only the four sides', () => {
+        expect(resolvePageMargins({ ...COMPACT, extra: 99 })).toEqual(COMPACT);
+    });
+
+    it.each([
+        ['absent (HTML export or older backend)', undefined],
+        ['null', null],
+        ['a number', 20],
+        ['a string', '10mm'],
+        ['a missing side', { top: 10, right: 10, bottom: 10 }],
+        ['a string side', { ...COMPACT, left: '20' }],
+        ['a NaN side', { ...COMPACT, top: NaN }],
+        ['an infinite side', { ...COMPACT, right: Infinity }],
+        ['a negative side', { ...COMPACT, bottom: -1 }],
+    ])('returns null for %s, so the 2 cm default applies', (_label, raw) => {
+        expect(resolvePageMargins(raw)).toBeNull();
+    });
+});
+
+describe('the page margin is declared only here (REQ-LTTCE-XPT-00012)', () => {
+    it('matches paper.rs HEADER_FOOTER_MARGIN_MM (20 mm) on every side', () => {
+        expect(PRINT_DEFAULT_MARGINS_MM).toEqual({ top: 20, right: 20, bottom: 20, left: 20 });
+    });
+
+    it('App.css declares no margin inside any @page rule', () => {
+        // Regression (CI run 36527742324, 2026-09-29): with a second margin
+        // declaration in App.css, WebKit on macOS printed that one's 2 cm and
+        // wrote it back over NSPrintInfo, ignoring the injected margins.
+        const css = readFileSync(resolve(import.meta.dirname, '..', 'App.css'), 'utf-8')
+            .replace(/\/\*[\s\S]*?\*\//g, ''); // comments may mention "margin"
+        const pageRules: string[] = [];
+        for (let at = css.indexOf('@page'); at !== -1; at = css.indexOf('@page', at + 1)) {
+            let depth = 0, i = css.indexOf('{', at);
+            const start = i;
+            for (; i < css.length; i++) {
+                if (css[i] === '{') depth++;
+                else if (css[i] === '}' && --depth === 0) break;
+            }
+            pageRules.push(css.slice(start, i + 1));
+        }
+        expect(pageRules.length).toBeGreaterThan(0);
+        for (const rule of pageRules) {
+            expect(rule).not.toMatch(/(^|[\s;{])margin(-(top|right|bottom|left))?\s*:/);
+        }
     });
 });
 
@@ -92,6 +170,12 @@ describe('applyPrintStyle / removePrintStyle', () => {
         // and it carries the latest values, not the first ones
         expect(all[0].textContent).toContain('b.md');
         expect(all[0].textContent).toContain('font-size: 16.50pt');
+    });
+
+    it('carries the margins into the injected element', () => {
+        applyPrintStyle(document, '/vault/a.md', 100, COMPACT);
+        expect(document.getElementById(PRINT_STYLE_ID)!.textContent)
+            .toContain('margin: 10mm 10mm 10mm 20mm;');
     });
 
     it('removes the element again', () => {

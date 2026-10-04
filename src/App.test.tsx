@@ -1074,6 +1074,36 @@ describe('App — headless export launch', () => {
         expect(style!.textContent).toContain('my-note.md');
     });
 
+    it('exportFormat "pdf" repeats Rust\'s page margins in the @page rule (REQ-LTTCE-XPT-00012)', async () => {
+        // Regression (CI run 36393041791, 2026-09-28): the macOS PDFs kept
+        // 2 cm all round although NSPrintInfo was given 1 cm — WKWebView obeys
+        // the CSS @page margin, so the CSS must carry the same values.
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/a.md', content: '# Hi', exportFormat: 'pdf',
+            exportPageMarginsMm: { top: 10, right: 10, bottom: 10, left: 20 },
+        };
+        render(<App />);
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(1));
+        const style = document.getElementById('lattice-print-dynamic');
+        expect(style!.textContent).toContain('margin: 10mm 10mm 10mm 20mm;');
+    });
+
+    it('exportFormat "pdf" without valid margins prints with the 2 cm default', async () => {
+        // An older backend, or a malformed value: never a broken margin, and
+        // never no margin at all — App.css no longer declares one.
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/a.md', content: '# Hi', exportFormat: 'pdf',
+            exportPageMarginsMm: { top: 'x' },
+        };
+        render(<App />);
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(1));
+        const style = document.getElementById('lattice-print-dynamic');
+        expect(style).not.toBeNull();
+        expect(style!.textContent).toContain('margin: 20mm 20mm 20mm 20mm;');
+    });
+
     it('exportFormat "pdf" forces the preview view so raw Markdown never reaches the page', async () => {
         (window as any).__LATTICE_INIT_DATA__ = {
             path: '/vault/a.md', content: '# Hi', exportFormat: 'pdf',
@@ -1242,6 +1272,9 @@ describe('App — print event handlers', () => {
         expect(style!.textContent).toContain('my-note.md');
         // Font-size rule is injected using the current zoom level (default 100% = 11.00pt).
         expect(style!.textContent).toContain('font-size: 11.00pt');
+        // The page margin comes only from here now (App.css declares none):
+        // an interactive print gets the 2 cm default (REQ-LTTCE-XPT-00012).
+        expect(style!.textContent).toContain('margin: 20mm 20mm 20mm 20mm;');
     });
 
     it('afterprint removes the injected style tag', async () => {

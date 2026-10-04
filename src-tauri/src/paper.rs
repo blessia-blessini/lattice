@@ -13,7 +13,9 @@
 //! from one document: WebView2 fell back to US Letter, WebKitGTK to A4 with
 //! GTK's near-zero default margins (it ignores the CSS `@page` margin), and the
 //! macOS path took a window-sized snapshot. Pure and host-testable — no Tauri,
-//! GTK, COM or AppKit types.
+//! GTK, COM or AppKit types. The one host-specific fact the margins depend on —
+//! whether the host draws the running header and footer — comes from
+//! `Platform::draws_page_header_footer`; the rule itself is [`PageMargins`].
 
 //**************************************************************
 // Page geometry constants
@@ -21,13 +23,21 @@
 /// The CLI option that selects the paper: `--paper <name>` or `--paper=<name>`.
 pub const PAPER_FLAG: &str = "--paper";
 
-/// Margin on every side of every page, in millimetres.
+/// Margin on every side of a page that carries the running header and
+/// "Page X of Y" footer, in millimetres — room for them to sit in.
 ///
-/// Mirrors `@page { margin: 2cm }` in `src/App.css`, which only Chromium
-/// (WebView2) honours. The WebKit hosts are given this value through their own
-/// page-setup APIs instead, so all three produce the same page. Change both
-/// together.
-pub const PAGE_MARGIN_MM: f64 = 20.0;
+/// Mirrors `PRINT_DEFAULT_MARGINS_MM` in `src/lib/print-style.ts`, the margin
+/// of an interactive print, which Chromium (WebView2) honours and draws those
+/// page-margin boxes inside. Change both together.
+pub const HEADER_FOOTER_MARGIN_MM: f64 = 20.0;
+
+/// Top, right and bottom margin of a page with no header or footer, in
+/// millimetres. With nothing to hold, 2 cm there was only lost paper.
+pub const COMPACT_MARGIN_MM: f64 = 10.0;
+
+/// Left margin of a page with no header or footer, in millimetres. Kept at
+/// 2 cm by choice: room for binding or punching on the side pages are held by.
+pub const BINDING_MARGIN_MM: f64 = 20.0;
 
 const MM_PER_INCH: f64 = 25.4;
 const POINTS_PER_INCH: f64 = 72.0;
@@ -96,6 +106,69 @@ impl PaperSize {
     }
 }
 // PaperSize END *************************************************
+
+
+//**************************************************************
+// PageMargins
+//**************************************************************
+/// The four page margins of a PDF export, in millimetres.
+///
+/// REQ-LTTCE-XPT-00012 — decided here, per kind of host, and handed both to
+/// the host's page-setup API and to the export window's CSS `@page` rule
+/// (WKWebView obeys the CSS one); the same for every paper. A host that draws the
+/// running header and page-number footer (the CSS page-margin boxes) needs
+/// [`HEADER_FOOTER_MARGIN_MM`] all round for them. A host that cannot draw them
+/// (WebKit) gets [`COMPACT_MARGIN_MM`] at the top, right and bottom and
+/// [`BINDING_MARGIN_MM`] on the left.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PageMargins {
+    pub top_mm: f64,
+    pub right_mm: f64,
+    pub bottom_mm: f64,
+    pub left_mm: f64,
+}
+
+impl PageMargins {
+    /// A page with the running header and page-number footer.
+    pub const WITH_HEADER_FOOTER: PageMargins = PageMargins {
+        top_mm: HEADER_FOOTER_MARGIN_MM,
+        right_mm: HEADER_FOOTER_MARGIN_MM,
+        bottom_mm: HEADER_FOOTER_MARGIN_MM,
+        left_mm: HEADER_FOOTER_MARGIN_MM,
+    };
+
+    /// A page without them.
+    pub const WITHOUT_HEADER_FOOTER: PageMargins = PageMargins {
+        top_mm: COMPACT_MARGIN_MM,
+        right_mm: COMPACT_MARGIN_MM,
+        bottom_mm: COMPACT_MARGIN_MM,
+        left_mm: BINDING_MARGIN_MM,
+    };
+
+    /// The margins for a host that does (`true`) or does not (`false`) draw
+    /// the running header and page-number footer.
+    pub const fn for_host(draws_header_footer: bool) -> PageMargins {
+        if draws_header_footer {
+            PageMargins::WITH_HEADER_FOOTER
+        } else {
+            PageMargins::WITHOUT_HEADER_FOOTER
+        }
+    }
+
+    /// The margins in PostScript points, rounded, for the export log:
+    /// `"top 28, right 28, bottom 28, left 57 pt"` — the unit of the PDF, like
+    /// the page size logged beside it.
+    pub fn describe_points(&self) -> String {
+        format!(
+            "top {:.0}, right {:.0}, bottom {:.0}, left {:.0} pt",
+            mm_to_points(self.top_mm),
+            mm_to_points(self.right_mm),
+            mm_to_points(self.bottom_mm),
+            mm_to_points(self.left_mm)
+        )
+    }
+}
+// PageMargins END ***********************************************
 
 
 //**************************************************************
@@ -191,10 +264,48 @@ mod tests {
     }
 
     #[test]
-    fn margin_is_two_centimetres_in_every_unit() {
-        assert!(close(PAGE_MARGIN_MM, 20.0));
-        assert!(close(mm_to_points(PAGE_MARGIN_MM), 56.69));
-        assert!(close(mm_to_inches(PAGE_MARGIN_MM), 0.787));
+    fn margin_constants_in_every_unit() {
+        assert!(close(HEADER_FOOTER_MARGIN_MM, 20.0));
+        assert!(close(mm_to_points(HEADER_FOOTER_MARGIN_MM), 56.69));
+        assert!(close(mm_to_inches(HEADER_FOOTER_MARGIN_MM), 0.787));
+        assert!(close(COMPACT_MARGIN_MM, 10.0));
+        assert!(close(mm_to_points(COMPACT_MARGIN_MM), 28.35));
+        assert!(close(BINDING_MARGIN_MM, 20.0));
+    }
+
+    #[test]
+    fn a_header_footer_host_keeps_two_centimetres_all_round() {
+        // Windows (WebView2): the page is exactly what it was before compact
+        // margins existed — header and "Page X of Y" need the room.
+        let m = PageMargins::for_host(true);
+        assert_eq!(m, PageMargins::WITH_HEADER_FOOTER);
+        for side in [m.top_mm, m.right_mm, m.bottom_mm, m.left_mm] {
+            assert!(close(side, 20.0));
+        }
+    }
+
+    #[test]
+    fn a_host_without_header_footer_gets_one_centimetre_except_left() {
+        // REQ-LTTCE-XPT-00012: Linux and macOS (WebKit) — nothing to hold in
+        // the margins, so 1 cm top, right and bottom; the left keeps 2 cm.
+        let m = PageMargins::for_host(false);
+        assert_eq!(m, PageMargins::WITHOUT_HEADER_FOOTER);
+        assert!(close(m.top_mm, 10.0));
+        assert!(close(m.right_mm, 10.0));
+        assert!(close(m.bottom_mm, 10.0));
+        assert!(close(m.left_mm, 20.0));
+    }
+
+    #[test]
+    fn margins_are_logged_in_points_per_side() {
+        assert_eq!(
+            PageMargins::WITHOUT_HEADER_FOOTER.describe_points(),
+            "top 28, right 28, bottom 28, left 57 pt"
+        );
+        assert_eq!(
+            PageMargins::WITH_HEADER_FOOTER.describe_points(),
+            "top 57, right 57, bottom 57, left 57 pt"
+        );
     }
 }
 // tests END *************************************************

@@ -43,7 +43,9 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 
 - IMPL-LTTCE-XPT-00007 **covers** REQ-LTTCE-XPT-00011  (`paper.rs` `PaperSize`; `cli_args.rs`
   `paper_size_in` / `file_paths_in` / `VALUED_OPTIONS`; `setup_handler` validates before any window)
-- IMPL-LTTCE-XPT-00007 **covers** REQ-LTTCE-XPT-00012  (`paper.rs` `PAGE_MARGIN_MM`, portrait sizes)
+- IMPL-LTTCE-XPT-00007 **covers** REQ-LTTCE-XPT-00012  (`paper.rs` `PageMargins` — 2 cm all round
+  with header/footer, otherwise 1 cm top/right/bottom and 2 cm left — and portrait sizes;
+  `platform::page_margins()` over `Platform::draws_page_header_footer`, `true` on Windows only)
 - IMPL-LTTCE-XPT-00007 **covers** ARCH-LTTCE-XPT-00003
 - IMPL-LTTCE-XPT-00005 **covers** REQ-LTTCE-XPT-00012  (per-host page setup: `windows_print_settings`,
   `linux_page_setup`, `macos_print_info`; macOS print operation instead of the snapshot API)
@@ -51,6 +53,17 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - IMPL-LTTCE-XPT-00005 **covers** REQ-LTTCE-XPT-00006  (`written_pdf_result`: success needs a
   non-empty file, on every backend)
 - IMPL-LTTCE-XPT-00005 **covers** ARCH-LTTCE-XPT-00003
+- IMPL-LTTCE-XPT-00003 **covers** REQ-LTTCE-XPT-00012  (`ExportLaunch::page_margins` /
+  `page_margins_mm_json` hands `platform::page_margins()` to the export window as
+  `exportPageMarginsMm`, PDF only, via `build_window_with_file_ex`)
+- IMPL-LTTCE-XPT-00003 **covers** ARCH-LTTCE-XPT-00003
+- IMPL-LTTCE-XPT-00006 **covers** REQ-LTTCE-XPT-00012  (`print-style.ts` `resolvePageMargins` +
+  `buildPrintStyleCss` make those margins the document's only `@page` margin — `App.css` declares
+  none; Ctrl-P gets `PRINT_DEFAULT_MARGINS_MM` — so macOS, where WebKit writes the CSS margin back
+  over `NSPrintInfo`'s, prints the same margins as the host API was given)
+- IMPL-LTTCE-XPT-00006 **covers** ARCH-LTTCE-XPT-00003
+- IMPL-LTTCE-XPT-00002 **covers** REQ-LTTCE-XPT-00012  (`App.tsx` passes `exportPageMarginsMm` to
+  `applyPrintStyle` in the PDF launch branch)
 
 ---
 
@@ -58,24 +71,27 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 
 | Anchor                | Unit / automatic tests                                                        |
 | :-------------------- | :---------------------------------------------------------------------------- |
-| IMPL-LTTCE-XPT-00002  | `src/App.test.tsx` — *App — headless export launch* (17 cases, incl. the signal-ordering regression, the three REQ-LTTCE-XPT-00009 cases and the four REQ-LTTCE-XPT-00010 cases) |
-| IMPL-LTTCE-XPT-00003  | `src-tauri/src/export.rs` `mod tests` (27 cases, incl. the three `remove_previous_output` cases — an earlier PDF is gone before the host prints, REQ-LTTCE-XPT-00006 — `is_expected_sender`, the two REQ-LTTCE-XPT-00008 budget cases, one of which guards the numbers against being tightened back to where a correct render fails, and four REQ-LTTCE-XPT-00009 `settle_budget` / `ExportLaunch` cases); `platform/cli_args.rs` `mod tests` |
-| IMPL-LTTCE-XPT-00004  | ITST-LTTCE-XPT-00010 — `src-tauri/examples/export_demo.rs` (`export-html`, `export-pdf (default paper)`, `export-pdf --paper a3`, `export-pdf --paper a5 (unknown)`, `missing-input`); not unit-testable, needs a real process exit (see ARCH-LTTCE-XPT-00001) |
-| IMPL-LTTCE-XPT-00007  | `src-tauri/src/paper.rs` `mod tests` (9 cases — sizes in every unit against the standards, default, names, case, portrait); `platform/cli_args.rs` `mod tests` (12 paper / file-path cases — both spellings, position, default, unknown and missing values, first wins, near misses, a paper value never taken for a file) |
+| IMPL-LTTCE-XPT-00002  | `src/App.test.tsx` — *App — headless export launch* (19 cases, incl. the signal-ordering regression, the three REQ-LTTCE-XPT-00009 cases, the four REQ-LTTCE-XPT-00010 cases, and two REQ-LTTCE-XPT-00012 cases — a PDF launch repeats Rust's margins in `@page`, a malformed value keeps the stylesheet's) |
+| IMPL-LTTCE-XPT-00003  | `src-tauri/src/export.rs` `mod tests` (31 cases, incl. the two `resolved_output_path` cases — a relative source such as `demo.md` gets an absolute output path, REQ-LTTCE-XPT-00005 — the three `remove_previous_output` cases — an earlier PDF is gone before the host prints, REQ-LTTCE-XPT-00006 — `is_expected_sender`, the two REQ-LTTCE-XPT-00008 budget cases, one of which guards the numbers against being tightened back to where a correct render fails, four REQ-LTTCE-XPT-00009 `settle_budget` / `ExportLaunch` cases, and two REQ-LTTCE-XPT-00012 `page_margins_mm_json` cases — PDF margins in millimetres, none for HTML); `platform/cli_args.rs` `mod tests` |
+| IMPL-LTTCE-XPT-00004  | ITST-LTTCE-XPT-00010 — `src-tauri/examples/export_demo.rs` (`export-html`, `export-pdf (default paper)`, `export-pdf --paper a3`, `export-pdf --paper letter (relative path)`, `export-pdf --paper a5 (unknown)`, `missing-input`); not unit-testable, needs a real process exit (see ARCH-LTTCE-XPT-00001) |
+| IMPL-LTTCE-XPT-00007  | `src-tauri/src/paper.rs` `mod tests` (12 cases — sizes in every unit against the standards, default, names, case, portrait; margins: 2 cm all round for a header/footer host, 1 / 1 / 1 cm and 2 cm left otherwise, and their log text); `platform/cli_args.rs` `mod tests` (12 paper / file-path cases — both spellings, position, default, unknown and missing values, first wins, near misses, a paper value never taken for a file) |
 | IMPL-LTTCE-XPT-00005  | `platform/mod.rs` `mod tests` (`PdfDone`; `written_pdf_result`, 4 cases — success needs a non-empty file, a stale file never masks a failure); `platform/impls/linux.rs` `mod linux_print_tests` (4 cases — printer-name resolution incl. the localized and blank-override cases, REQ-LTTCE-XPT-00007; pure, no environment mutation; compiled and run on the Linux leg only); host backends: ITST-LTTCE-XPT-00010 per desktop platform |
-| IMPL-LTTCE-XPT-00006  | `src/lib/print-style.test.ts` (13 cases)                                       |
+| IMPL-LTTCE-XPT-00006  | `src/lib/print-style.test.ts` (30 cases, incl. 17 for REQ-LTTCE-XPT-00012 — `resolvePageMargins` accepts four finite non-negative sides and rejects nine malformed shapes; `@page` margin in CSS side order, the 20 mm default without margins, exactly one margin declaration either way; `PRINT_DEFAULT_MARGINS_MM` matches `paper.rs`; `App.css` declares no margin in any `@page` rule — the macOS regression guard) |
 
 ## Integration test
 
 - ITST-LTTCE-XPT-00010 **covers** IMPL-LTTCE-XPT-00003, IMPL-LTTCE-XPT-00004, IMPL-LTTCE-XPT-00005,
   IMPL-LTTCE-XPT-00007
 - ITST-LTTCE-XPT-00010 **covers** REQ-LTTCE-XPT-00011 and REQ-LTTCE-XPT-00012 end to end: the default
-  export must be A4 portrait and a `--paper a3` export A3 portrait (read from the PDF's `/MediaBox`,
-  within 1.5 pt; expected sizes from `paper.rs` itself), both must have at least 2 pages (counted
-  `/Type /Page` objects; a print clipped to one window-high page has the right size but one page),
-  and `--paper a5` must exit `1` with no file. The page-size and page-count rules have their own unit
-  tests (`cargo test --example export_demo`, 8 of 14 cases), including the 800 × 568 pt one-page
-  macOS snapshot of v0.3.28 as a case that must fail.
+  export must be A4 portrait, and `--paper a3` / `--paper letter` exports A3 / Letter portrait (read
+  from the PDF's `/MediaBox`, within 1.5 pt; expected sizes from `paper.rs` itself); every one must
+  have at least 2 pages (counted `/Type /Page` objects; a print clipped to one window-high page has the
+  right size but one page), and `--paper a5` must exit `1` with no file. All three PDFs are published
+  per platform (`published_name`: `demo-<platform>.pdf`, `.a3.pdf`, `.letter.pdf`). The page-size,
+  page-count and naming rules have their own unit tests (`cargo test --example export_demo`, 10 of
+  16 cases), including the 800 × 568 pt one-page macOS snapshot of v0.3.28 as a case that must fail.
+  The **margins** of REQ-LTTCE-XPT-00012 are not read from the bytes (that needs text positions, i.e.
+  a PDF library); they are checked by rendering the published PDFs, and their values are unit-tested.
 - ITST-LTTCE-XPT-00010 **covers** REQ-LTTCE-XPT-00010 end to end: the first export of a process, on
   every desktop leg, must finish without timer or idle scheduling in a hidden window. It found the
   defect (macos-intel, run 36311605228, 2026-09-27: `export-html` produced nothing in 90 s after a

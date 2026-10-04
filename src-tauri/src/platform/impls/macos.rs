@@ -170,6 +170,7 @@ fn macos_print_to_pdf(
     let operation = unsafe { webview.printOperationWithPrintInfo(&info) };
     operation.setShowsPrintPanel(false);
     operation.setShowsProgressPanel(false);
+    macos_log_print_geometry("before run", &operation);
     // The print view's frame is deliberately left as WebKit made it — wry's
     // own print does the same. WebKit paginates from `info`; forcing the
     // window's frame onto the view risks clipping the output to one
@@ -202,10 +203,54 @@ fn macos_print_to_pdf(
 
 
 //******************************************************************************
+// macos_log_print_geometry
+//******************************************************************************
+/// DIAGNOSTIC — temporary, remove with the macOS margin fix. Logs the page
+/// geometry the print operation actually uses, to find where the 2 cm
+/// horizontal margin of the macOS PDFs comes from (CI run 36476296060: the
+/// content is laid out at the CSS `@page` width, then shrunk into a 481 pt
+/// printable width although `NSPrintInfo` was given 28 / 57 pt).
+fn macos_log_print_geometry(stage: &str, operation: &objc2_app_kit::NSPrintOperation) {
+    let info = operation.printInfo();
+    info!(
+        "macos-print-diag [{}]: paper {:?}; margins top {}, right {}, bottom {}, left {}; \
+         imageable {:?}; scaling {}; pagination h {:?} v {:?}",
+        stage,
+        info.paperSize(),
+        info.topMargin(),
+        info.rightMargin(),
+        info.bottomMargin(),
+        info.leftMargin(),
+        info.imageablePageBounds(),
+        info.scalingFactor(),
+        info.horizontalPagination(),
+        info.verticalPagination(),
+    );
+    match operation.view() {
+        Some(view) => info!(
+            "macos-print-diag [{}]: view frame {:?}; bounds {:?}",
+            stage,
+            view.frame(),
+            view.bounds()
+        ),
+        None => info!("macos-print-diag [{}]: no view", stage),
+    }
+}
+// macos_log_print_geometry END ************************************************
+
+
+//******************************************************************************
 // macos_print_info
 //******************************************************************************
-/// A fresh `NSPrintInfo` for `paper`: portrait, [`crate::paper::PAGE_MARGIN_MM`]
-/// on every side, fitted to the page width, saved to `out_path`.
+/// A fresh `NSPrintInfo` for `paper`: portrait, with the host's
+/// [`page_margins`] — WKWebView draws no header or footer, so 1 cm top, right
+/// and bottom and 2 cm left — fitted to the page width, saved to `out_path`.
+///
+/// These margins alone do not reach the PDF: while printing, WebKit replaces
+/// them with the document's CSS `@page` margin (CI run 36527742324 logged
+/// 56.69 pt on every side after the run — `App.css`'s old 2 cm). The export
+/// window's only `@page` margin carries the same values
+/// (`ExportLaunch::page_margins`), so the two agree.
 ///
 /// Fresh rather than `sharedPrintInfo`, which is app-wide state that wry's
 /// interactive `print()` also mutates. A non-UTF-8 path is refused here with a
@@ -214,7 +259,7 @@ fn macos_print_info(
     out_path: &std::path::Path,
     paper: crate::paper::PaperSize,
 ) -> Result<objc2::rc::Retained<objc2_app_kit::NSPrintInfo>, String> {
-    use crate::paper::{mm_to_points, PAGE_MARGIN_MM};
+    use crate::paper::mm_to_points;
     use objc2::runtime::ProtocolObject;
     use objc2_app_kit::{
         NSPaperOrientation, NSPrintInfo, NSPrintJobSavingURL, NSPrintSaveJob,
@@ -230,11 +275,11 @@ fn macos_print_info(
     let (width, height) = paper.size_points();
     info.setPaperSize(NSSize::new(width, height));
     info.setOrientation(NSPaperOrientation::Portrait);
-    let margin = mm_to_points(PAGE_MARGIN_MM);
-    info.setTopMargin(margin);
-    info.setBottomMargin(margin);
-    info.setLeftMargin(margin);
-    info.setRightMargin(margin);
+    let margins = page_margins();
+    info.setTopMargin(mm_to_points(margins.top_mm));
+    info.setBottomMargin(mm_to_points(margins.bottom_mm));
+    info.setLeftMargin(mm_to_points(margins.left_mm));
+    info.setRightMargin(mm_to_points(margins.right_mm));
     info.setHorizontalPagination(NSPrintingPaginationMode::Fit);
     info.setVerticalPagination(NSPrintingPaginationMode::Automatic);
     info.setHorizontallyCentered(false);
@@ -289,6 +334,7 @@ mod pdf_print_delegate {
                 success: Bool,
                 _context: *mut std::ffi::c_void,
             ) {
+                super::macos_log_print_geometry("after run", _operation);
                 let ivars = self.ivars();
                 ivars
                     .done

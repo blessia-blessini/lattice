@@ -29,7 +29,7 @@
 //! Files are processed one at a time — `ExportState` holds at most one
 //! in-flight sender — so no window is ever left open behind another.
 
-use crate::paper::PaperSize;
+use crate::paper::{PageMargins, PaperSize};
 use log::{error, info};
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -90,18 +90,26 @@ impl ExportFormat {
 // ExportLaunch
 //**************************************************************
 /// What an export window is told at launch, in `__LATTICE_INIT_DATA__`:
-/// the format to produce and how long the frontend may wait for the
-/// preview's diagrams to settle.
+/// the format to produce, how long the frontend may wait for the preview's
+/// diagrams to settle, and the page margins a PDF is printed with.
 ///
 /// The settle budget travels with the format so the frontend has no clock of
 /// its own to keep in step with Rust's. It once had one — a hard-coded 8 s —
 /// and when Rust's render budget was raised to 90 s for a cold start, the
 /// frontend still gave up at 8 s and exported an incomplete document
 /// (REQ-LTTCE-XPT-00009).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+///
+/// The margins travel for the same reason (REQ-LTTCE-XPT-00012): WebKit on
+/// macOS takes the page margin from the stylesheet's `@page` rule and writes
+/// it back over `NSPrintInfo`'s while printing (logged on CI run 36527742324),
+/// so a margin set only through the host API never reached a macOS PDF. The
+/// frontend makes these values the document's only `@page` margin, so CSS and
+/// host API agree on every host.
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ExportLaunch {
     pub format: ExportFormat,
     pub settle_budget: Duration,
+    pub page_margins: PageMargins,
 }
 
 impl ExportLaunch {
@@ -109,6 +117,23 @@ impl ExportLaunch {
     /// `exportSettleMs` expects it.
     pub fn settle_ms(self) -> u64 {
         u64::try_from(self.settle_budget.as_millis()).unwrap_or(u64::MAX)
+    }
+
+    /// The page margins as the frontend's `exportPageMarginsMm` expects them:
+    /// `{ "top": .., "right": .., "bottom": .., "left": .. }` in millimetres
+    /// (see `resolvePageMargins` in `src/lib/print-style.ts`). `None` for an
+    /// HTML export, which has no pages.
+    pub fn page_margins_mm_json(self) -> Option<serde_json::Value> {
+        if self.format != ExportFormat::Pdf {
+            return None;
+        }
+        let m = self.page_margins;
+        Some(serde_json::json!({
+            "top": m.top_mm,
+            "right": m.right_mm,
+            "bottom": m.bottom_mm,
+            "left": m.left_mm,
+        }))
     }
 }
 // ExportLaunch END **********************************************
@@ -260,6 +285,28 @@ pub fn export_output_path(source: &str, format: ExportFormat) -> PathBuf {
 }
 // export_output_path END ****************************************
 
+
+//**************************************************************
+// resolved_output_path
+//**************************************************************
+/// [`export_output_path`] made absolute against the current directory — the
+/// path every writer is actually given.
+///
+/// REQ-LTTCE-XPT-00005 — `lattice --export-pdf demo.md`, the command the
+/// release page shows, passes a *relative* path. The host print APIs want an
+/// absolute one: GTK's `output-uri` must be a `file://` URI, and
+/// `glib::filename_to_uri` refuses a relative path ("is not an absolute path"
+/// — the whole export failed on Linux, found 2026-09-28). Resolving it here,
+/// once, gives every backend the same absolute path instead of each coping on
+/// its own. Lexical only (`std::path::absolute`): the file does not exist yet,
+/// so it cannot be canonicalised.
+fn resolved_output_path(source: &str, format: ExportFormat) -> Result<PathBuf, String> {
+    std::path::absolute(export_output_path(source, format))
+        .map_err(|e| format!("cannot resolve the output path for '{}': {}", source, e))
+}
+// resolved_output_path END **************************************
+
+
 //**************************************************************
 // render_timeout
 //**************************************************************
@@ -313,11 +360,11 @@ pub async fn run_export(
         // checked against the output file directly.
         let (w, h) = paper.size_points();
         info!(
-            "export-pdf: paper {} ({:.0} x {:.0} pt), margins {:.0} pt",
+            "export-pdf: paper {} ({:.0} x {:.0} pt), margins {}",
             paper.name(),
             w,
             h,
-            crate::paper::mm_to_points(crate::paper::PAGE_MARGIN_MM)
+            crate::platform::page_margins().describe_points()
         );
     }
 
@@ -352,6 +399,9 @@ async fn export_one(
     is_first_export: bool,
 ) -> Result<PathBuf, String> {
     ensure_readable(path)?;
+    // Resolved before any window exists: a path that cannot be resolved fails
+    // at once, not after a render budget spent on a document with nowhere to go.
+    let out_path = resolved_output_path(path, format)?;
 
     // The label is generated *before* the window exists so the sender can be
     // bound to it up front. Installing the sender first and learning the
@@ -372,6 +422,7 @@ async fn export_one(
     let launch = ExportLaunch {
         format,
         settle_budget: settle_budget(budget),
+        page_margins: crate::platform::page_margins(),
     };
 
     let window =
@@ -413,8 +464,6 @@ async fn export_one(
         }
     };
     clear_pending();
-
-    let out_path = export_output_path(path, format);
 
     // The window must stay alive until the output exists: for a PDF it is the
     // very thing being printed.
@@ -542,6 +591,28 @@ mod tests {
             PathBuf::from("notes.pdf")
         );
     }
+
+    //**************************************************************
+    // resolved_output_path — REQ-LTTCE-XPT-00005, relative input
+    //**************************************************************
+    #[test]
+    fn a_relative_source_gets_an_absolute_output_path_in_the_current_dir() {
+        // `lattice --export-pdf demo.md`: GTK refuses a relative output path,
+        // so the writers must never see one. Reads the cwd, never changes it.
+        let out = resolved_output_path("demo.md", ExportFormat::Pdf).unwrap();
+        assert!(out.is_absolute(), "{}", out.display());
+        assert_eq!(out, std::env::current_dir().unwrap().join("demo.pdf"));
+    }
+
+    #[test]
+    fn an_absolute_source_keeps_its_directory() {
+        let dir = tempfile::tempdir().unwrap();
+        let source = dir.path().join("notes.md");
+        let out = resolved_output_path(source.to_str().unwrap(), ExportFormat::Html).unwrap();
+        assert_eq!(out, dir.path().join("notes.html"));
+    }
+    // resolved_output_path END *************************************
+
 
     #[test]
     fn adds_extension_when_absent() {
@@ -849,14 +920,56 @@ mod tests {
         let launch = ExportLaunch {
             format: ExportFormat::Html,
             settle_budget: Duration::from_secs(40),
+            page_margins: PageMargins::WITH_HEADER_FOOTER,
         };
         assert_eq!(launch.settle_ms(), 40_000);
 
         let sub_second = ExportLaunch {
             format: ExportFormat::Pdf,
             settle_budget: Duration::from_millis(1500),
+            page_margins: PageMargins::WITH_HEADER_FOOTER,
         };
         assert_eq!(sub_second.settle_ms(), 1500);
     }
     // export_launch_reports_settle_budget_in_millis END ************
+
+
+    //**************************************************************
+    // export_launch_hands_pdf_margins_to_the_frontend
+    //**************************************************************
+    /// REQ-LTTCE-XPT-00012: `exportPageMarginsMm` carries the host's margins,
+    /// in millimetres and CSS side order, so the frontend's `@page` rule can
+    /// match what the host page-setup API was given. macOS obeys the CSS one.
+    #[test]
+    fn export_launch_hands_pdf_margins_to_the_frontend() {
+        let launch = ExportLaunch {
+            format: ExportFormat::Pdf,
+            settle_budget: Duration::from_secs(40),
+            page_margins: PageMargins::WITHOUT_HEADER_FOOTER,
+        };
+        assert_eq!(
+            launch.page_margins_mm_json(),
+            Some(serde_json::json!({
+                "top": 10.0, "right": 10.0, "bottom": 10.0, "left": 20.0,
+            }))
+        );
+    }
+    // export_launch_hands_pdf_margins_to_the_frontend END **********
+
+
+    //**************************************************************
+    // export_launch_sends_no_margins_for_html
+    //**************************************************************
+    /// An HTML export has no pages; sending margins would only invite the
+    /// frontend to apply a print rule nobody prints.
+    #[test]
+    fn export_launch_sends_no_margins_for_html() {
+        let launch = ExportLaunch {
+            format: ExportFormat::Html,
+            settle_budget: Duration::from_secs(40),
+            page_margins: PageMargins::WITHOUT_HEADER_FOOTER,
+        };
+        assert_eq!(launch.page_margins_mm_json(), None);
+    }
+    // export_launch_sends_no_margins_for_html END ******************
 }

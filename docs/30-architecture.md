@@ -1540,8 +1540,16 @@ near-zero margins (it ignores the CSS `@page` margin entirely), and macOS took a
 The page is therefore decided in one place and handed to every host explicitly:
 
 - **`src-tauri/src/paper.rs`** (IMPL-LTTCE-XPT-00007) — pure and host-tested. `PaperSize` (`a4`,
-  `a3`, `letter`; A4 the default) is the single table of names and sizes; `PAGE_MARGIN_MM` (20) mirrors
-  `@page { margin: 2cm }` in `App.css`; unit conversions give each host its own unit.
+  `a3`, `letter`; A4 the default) is the single table of names and sizes; `PageMargins` is the single
+  margin rule — `HEADER_FOOTER_MARGIN_MM` (20, mirroring `PRINT_DEFAULT_MARGINS_MM` in `print-style.ts`) all
+  round for a host that draws the running header and footer, otherwise `COMPACT_MARGIN_MM` (10) top,
+  right and bottom with `BINDING_MARGIN_MM` (20) on the left; unit conversions give each host its own
+  unit.
+- **`Platform::draws_page_header_footer`** — the one host fact the margins depend on: `true` for
+  WebView2 (Chromium draws the page-margin boxes), the default `false` for WebKitGTK and WKWebView.
+  `platform::page_margins()` applies `PageMargins` to it; the backends hand the result to their
+  page-setup API and `export.rs` logs it, so the log states the margins actually used. The consumer
+  asks a capability; it never branches on the platform.
 - **`platform/cli_args.rs`** — `paper_size_in` reads `--paper <name>` / `--paper=<name>`;
   `file_paths_in` skips every valued option's value (`VALUED_OPTIONS`), so a paper name is never taken
   for a file. `setup_handler` validates the paper before anything else in a PDF run, so a bad value
@@ -1549,8 +1557,27 @@ The page is therefore decided in one place and handed to every host explicitly:
 - **`Platform::print_to_pdf(window, out_path, paper, done)`** — each backend sets paper, portrait and
   margins through its own page-setup API: WebView2 `ICoreWebView2PrintSettings` (inches), GTK
   `GtkPageSetup` + `GtkPrintSettings` (millimetres), AppKit `NSPrintInfo` (points).
+- **The CSS half — one `@page` margin, the same value.** A host API margin alone is not enough on
+  macOS: while printing, WebKit takes the page margin from the document's CSS `@page` rule and writes
+  it back over `NSPrintInfo`'s. Logged on CI run 36527742324: `NSPrintInfo` held 28 / 28 / 28 / 57 pt
+  before the print operation ran and 56.69 pt on every side after it — `App.css`'s then
+  `margin: 2cm`, which beat a later injected `@page` margin as well (why it won is not established).
+  So the document now has **exactly one** page-margin declaration: `App.css`'s `@page` declares none
+  (a unit test guards that), and `src/lib/print-style.ts` (`buildPrintStyleCss`) writes the margin
+  into the `@page` rule it injects before every print. For `--export-pdf` that is the same
+  `platform::page_margins()` value the host API gets, carried to the window as
+  `__LATTICE_INIT_DATA__.exportPageMarginsMm` (`ExportLaunch::page_margins_mm_json`, PDF only;
+  validated by `resolvePageMargins`). For interactive Ctrl-P, and for a missing or malformed export
+  value, it is `PRINT_DEFAULT_MARGINS_MM` (20 mm, mirroring `HEADER_FOOTER_MARGIN_MM`). CSS and host
+  API then agree on every host — and should a WebView drop the injected rule, no competing CSS margin
+  is left, so the host API's identical value applies. **Unverified:** that the interactive `print()`
+  of WKWebView and WebKitGTK fires `beforeprint`; if it does not, an interactive print there gets the
+  host's default page margins instead of 2 cm.
 - **`written_pdf_result`** (`platform/mod.rs`) — every backend reports success only when the host
   says so *and* a non-empty file exists; a host's "finished" alone is not evidence of a file.
+- **`resolved_output_path`** (`export.rs`) — the output path is made absolute once, before any
+  backend sees it. GTK's `output-uri` must be a `file://` URI and refuses a relative path, so
+  `lattice --export-pdf demo.md` failed on Linux until 2026-09-28.
 
 The same routine is what an interactive "Export to PDF…" command must call, so that a script and a
 person exporting the same document get the same page.
@@ -1559,14 +1586,17 @@ person exporting the same document get the same page.
 are CSS page-margin boxes (`@top-center`, `@bottom-center`). Per MDN's compatibility data, Chromium
 renders them (since 131); WebKit and Firefox do not. So Windows PDFs carry them and Linux and macOS
 PDFs do not — and neither does an interactive print on those platforms. This is recorded as a known
-limitation; closing it needs a different mechanism than CSS and has not been decided.
+limitation; closing it needs a different mechanism than CSS and has not been decided. Until it is, the
+pages that lack them do not keep the 2 cm the header and footer would need: their top, right and bottom
+margins are 1 cm (`PageMargins::WITHOUT_HEADER_FOOTER`).
 
 ### Frontend — what `beforeprint` would have done
 
-The host print APIs write the file directly; **none of them fire a `beforeprint` event**. But two of
+The host print APIs write the file directly; **none of them fire a `beforeprint` event**. But some of
 Lattice's print rules are runtime values, not static CSS — the `@page @top-center` running header
-carries the file name, and the body point size is scaled from an 11 pt baseline by the live zoom — and
-those were injected by `App.tsx`'s `beforeprint` handler. Left alone, `--export-pdf` would silently
+carries the file name, the body point size is scaled from an 11 pt baseline by the live zoom, and the
+`@page` margin is the only one in the document (see above) — and those are injected by `App.tsx`'s
+`beforeprint` handler. Left alone, `--export-pdf` would silently
 produce headerless, unzoomed pages that an interactive Ctrl-P on the same file does not.
 
 That runtime half therefore moved out of the handler into `lib/print-style.ts`

@@ -69,7 +69,7 @@ pub(crate) trait Platform {
     /// `--export-html` and an interactive Ctrl-P produce.
     ///
     /// Every implementation lays the document out on `paper`, portrait, with
-    /// [`crate::paper::PAGE_MARGIN_MM`] on each side (REQ-LTTCE-XPT-00011 /
+    /// the margins [`page_margins`] gives for this host (REQ-LTTCE-XPT-00011 /
     /// REQ-LTTCE-XPT-00012), set explicitly through its host's page-setup API.
     /// Host defaults differ (Letter vs A4, GTK's near-zero margins) and WebKit
     /// ignores the CSS `@page` margin, so nothing may be left to them.
@@ -96,6 +96,22 @@ pub(crate) trait Platform {
         )));
     }
     // Platform::print_to_pdf END ********************************
+
+
+    //**************************************************************
+    // Platform::draws_page_header_footer
+    //**************************************************************
+    /// Whether this host's print engine draws the CSS page-margin boxes — the
+    /// running file-name header and the "Page X of Y" footer.
+    ///
+    /// A fact about the engine, not a choice: Chromium (WebView2) draws them,
+    /// WebKit (WebKitGTK, WKWebView) does not. [`page_margins`] turns it into
+    /// the page's margins. The default, `false`, is right for every WebKit host
+    /// and harmless for the mobile stubs, which cannot print at all.
+    fn draws_page_header_footer(&self) -> bool {
+        false
+    }
+    // Platform::draws_page_header_footer END ********************
 }
 
 // ── Platform implementation — injected by build.rs ──────────────────────────
@@ -137,6 +153,23 @@ pub(crate) fn print_to_pdf(
     PlatformImpl.print_to_pdf(window, out_path, paper, done);
 }
 // print_to_pdf END ************************************************************
+
+
+//******************************************************************************
+// page_margins
+//******************************************************************************
+/// The margins every PDF of this build is printed with (REQ-LTTCE-XPT-00012):
+/// the rule in [`crate::paper::PageMargins`] applied to this host's
+/// [`Platform::draws_page_header_footer`].
+///
+/// The one source for the backends, which hand it to their page-setup API,
+/// and for `export.rs`, which logs it and hands it to the export window's
+/// `@page` rule (`ExportLaunch::page_margins`) — so CSS, host API and log
+/// always state the same margins.
+pub(crate) fn page_margins() -> crate::paper::PageMargins {
+    crate::paper::PageMargins::for_host(PlatformImpl.draws_page_header_footer())
+}
+// page_margins END ************************************************************
 
 
 //******************************************************************************

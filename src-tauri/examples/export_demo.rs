@@ -26,7 +26,8 @@
 //! ```
 //!
 //! * `--out <dir>` also copy the produced files to `<dir>` as
-//!   `demo-<label>.html` / `demo-<label>.pdf`, for CI to publish on the
+//!   `demo-<label>.html` / `demo-<label>.pdf` (A4) / `demo-<label>.a3.pdf` /
+//!   `demo-<label>.letter.pdf`, for CI to publish on the
 //!   release page.
 //! * `--label <name>` the platform label used in those names; defaults to the
 //!   host OS.
@@ -826,7 +827,10 @@ fn scenario_export(
 ) -> Option<PathBuf> {
     println!("\n[SCENARIO] {name}");
 
-    let out = source.with_extension(ext);
+    // `source` may be relative — to `scratch`, the directory the CLI runs in —
+    // exactly as a user types it; the output is then looked for there.
+    // (`join` with an absolute `source` is just `source`.)
+    let out = scratch.join(source).with_extension(ext);
     let _ = fs::remove_file(&out); // stale output from a previous run
 
     let code = match run_export(bin, scratch, args, source) {
@@ -923,12 +927,13 @@ fn scenario_bad_paper(bin: &Path, scratch: &Path, source: &Path, all_pass: &mut 
 //**************************************************************
 // publish
 //**************************************************************
-/// Copies the produced files into `out_dir` under platform-labelled names, so
-/// several matrix legs can publish side by side without colliding.
-fn publish(out_dir: &Path, label: &str, produced: &[(PathBuf, &str)]) -> Result<(), String> {
+/// Copies the produced files into `out_dir` under their published names (see
+/// [`published_name`]), so several matrix legs can publish side by side
+/// without colliding.
+fn publish(out_dir: &Path, produced: &[(PathBuf, String)]) -> Result<(), String> {
     fs::create_dir_all(out_dir).map_err(|e| format!("cannot create {}: {e}", out_dir.display()))?;
-    for (src, ext) in produced {
-        let dest = out_dir.join(format!("demo-{label}.{ext}"));
+    for (src, name) in produced {
+        let dest = out_dir.join(name);
         fs::copy(src, &dest)
             .map_err(|e| format!("cannot copy {} -> {}: {e}", src.display(), dest.display()))?;
         println!("  published {}", dest.display());
@@ -936,6 +941,29 @@ fn publish(out_dir: &Path, label: &str, produced: &[(PathBuf, &str)]) -> Result<
     Ok(())
 }
 // publish END **************************************************
+
+
+//**************************************************************
+// published_name
+//**************************************************************
+/// The file name a produced document is published under:
+/// `demo-<label>.<ext>` for the HTML and the default-paper PDF, and
+/// `demo-<label>.<paper>.<ext>` for every other paper.
+///
+/// The default paper keeps the plain name: it is the document the release
+/// page embeds, and the name that page has always used. The paper is joined
+/// with a dot, so the release page (step 905 in `buildAndTest.yml`) can tell
+/// an extra paper by its parent: `demo-<label>.a3.pdf` minus its last
+/// `.<part>` is `demo-<label>.pdf`, which exists. It needs no list of paper
+/// names of its own, and a label containing a dot still works.
+fn published_name(label: &str, paper: Option<PaperSize>, ext: &str) -> String {
+    match paper {
+        Some(p) if p != PaperSize::default() => format!("demo-{label}.{}.{ext}", p.name()),
+        _ => format!("demo-{label}.{ext}"),
+    }
+}
+// published_name END *******************************************
+
 
 //**************************************************************
 // run
@@ -1011,37 +1039,52 @@ fn run() -> i32 {
     // so the first scenario below is left to prove that on the real artefact.
 
     let mut all_pass = true;
-    let mut produced: Vec<(PathBuf, &str)> = Vec::new();
+    // (file produced, name it is published under)
+    let mut produced: Vec<(PathBuf, String)> = Vec::new();
 
     if let Some(p) = scenario_export(
         &bin, &scratch, &source, "export-html", &["--export-html"], "html", &check_html,
         &mut all_pass,
     ) {
-        produced.push((p, "html"));
+        produced.push((p, published_name(&args.label, None, "html")));
     }
-    // Default paper, no --paper given: this is the PDF the release page shows.
-    if let Some(p) = scenario_export(
-        &bin, &scratch, &source, "export-pdf (default paper)", &["--export-pdf"], "pdf",
-        &|p| check_pdf(p, PaperSize::default()), &mut all_pass,
-    ) {
-        produced.push((p, "pdf"));
-    }
-    // A non-default paper, end to end on every leg (REQ-LTTCE-XPT-00011). A
-    // separate staged copy, so it cannot overwrite the default PDF above.
-    let a3_source = scratch.join("demo-a3.md");
-    match fs::copy(&source, &a3_source) {
-        Ok(_) => {
-            scenario_export(
-                &bin, &scratch, &a3_source, "export-pdf --paper a3", &["--export-pdf", "--paper", "a3"],
-                "pdf", &|p| check_pdf(p, PaperSize::A3), &mut all_pass,
-            );
-        }
-        Err(e) => {
-            report(
-                "export-pdf --paper a3",
-                vec![format!("cannot stage {}: {e}", a3_source.display())],
-                &mut all_pass,
-            );
+    // Every paper, end to end on every leg (REQ-LTTCE-XPT-00011 / 00012), and
+    // every one published, so each platform's page can be looked at on each
+    // paper. The default paper runs with no --paper at all — that is the path
+    // a plain `--export-pdf` takes, and its PDF is the one the release page
+    // embeds. Each other paper gets its own staged copy, so no run can
+    // overwrite another's output.
+    for paper in PaperSize::ALL {
+        let (name, cli_args, paper_source) = if paper == PaperSize::default() {
+            ("export-pdf (default paper)".to_string(), vec!["--export-pdf"], source.clone())
+        } else {
+            let staged = scratch.join(format!("demo-{}.md", paper.name()));
+            if let Err(e) = fs::copy(&source, &staged) {
+                report(
+                    &format!("export-pdf --paper {}", paper.name()),
+                    vec![format!("cannot stage {}: {e}", staged.display())],
+                    &mut all_pass,
+                );
+                continue;
+            }
+            // Letter is exported by its bare file name, relative to the
+            // directory the CLI runs in — the way a user types
+            // `lattice --export-pdf demo.md`. GTK refused relative output
+            // paths until 2026-09-28; this keeps that path covered on every
+            // leg without an extra export run.
+            let (name, file) = if paper == PaperSize::Letter {
+                let bare = PathBuf::from(staged.file_name().expect("staged file has a name"));
+                (format!("export-pdf --paper {} (relative path)", paper.name()), bare)
+            } else {
+                (format!("export-pdf --paper {}", paper.name()), staged)
+            };
+            (name, vec!["--export-pdf", "--paper", paper.name()], file)
+        };
+        if let Some(p) = scenario_export(
+            &bin, &scratch, &paper_source, &name, &cli_args, "pdf",
+            &|p| check_pdf(p, paper), &mut all_pass,
+        ) {
+            produced.push((p, published_name(&args.label, Some(paper), "pdf")));
         }
     }
     scenario_bad_paper(&bin, &scratch, &source, &mut all_pass);
@@ -1053,7 +1096,7 @@ fn run() -> i32 {
         println!("\n[PUBLISH] {}", out_dir.display());
         if !all_pass {
             println!("  skipped — the export checks did not pass");
-        } else if let Err(e) = publish(out_dir, &args.label, &produced) {
+        } else if let Err(e) = publish(out_dir, &produced) {
             println!("  → FAIL  publish: {e}");
             all_pass = false;
         }
@@ -1210,6 +1253,31 @@ mod tests {
         assert_eq!(one.len(), 1, "{one:?}");
         assert!(one[0].contains("1 page"), "{one:?}");
         assert!(check_page_count(b"<< /Type /Page >> << /Type /Page >>").is_empty());
+    }
+
+    #[test]
+    fn the_default_paper_and_the_html_keep_the_plain_published_name() {
+        // The release page embeds exactly this name; it must not change.
+        assert_eq!(published_name("macos-arm64", Some(PaperSize::A4), "pdf"), "demo-macos-arm64.pdf");
+        assert_eq!(published_name("macos-arm64", None, "html"), "demo-macos-arm64.html");
+    }
+
+    #[test]
+    fn every_other_paper_is_published_under_its_own_dotted_name() {
+        assert_eq!(
+            published_name("linux-arm-desktop", Some(PaperSize::A3), "pdf"),
+            "demo-linux-arm-desktop.a3.pdf"
+        );
+        assert_eq!(
+            published_name("windows-desktop", Some(PaperSize::Letter), "pdf"),
+            "demo-windows-desktop.letter.pdf"
+        );
+        // One distinct name per paper: no leg overwrites its own output.
+        let mut names: Vec<_> =
+            PaperSize::ALL.map(|p| published_name("x", Some(p), "pdf")).to_vec();
+        names.sort_unstable();
+        names.dedup();
+        assert_eq!(names.len(), PaperSize::ALL.len());
     }
 }
 // tests END ****************************************************

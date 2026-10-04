@@ -160,13 +160,21 @@ which were previously compile-verified only.
 | `export-html` | exit `0`; `demo.html` beside the input; contains the H1 text, `data-source-line` (the rendered preview, not raw source), `<table`, `katex`, and one rasterised PNG per Mermaid block |
 | `export-pdf (default paper)` | exit `0`; `demo.pdf` beside the input; starts with the `%PDF-` magic number, is not a stub, its page is A4 portrait (`/MediaBox`, ±1.5 pt), and it has at least 2 pages — the demo is paginated, not clipped to one page |
 | `export-pdf --paper a3` | the same on a separate staged copy, with an A3 portrait page — a non-default paper, end to end |
+| `export-pdf --paper letter (relative path)` | the same on its own staged copy, with a US Letter portrait page — and the file given by its bare name, relative to the directory the CLI runs in, as a user types it (Linux refused relative output paths until 2026-09-28) |
 | `export-pdf --paper a5 (unknown)` | exit `1` and no PDF written (REQ-LTTCE-XPT-00011) |
 | `missing-input` | an unreadable path exits `1` and writes no output file (the `ensure_readable` defect) |
 
 Run by `build-test.ps1` / `build-test.sh` as step **1d**, and by CI inside step 370.2. With
-`--out <dir> --label <platform>` it also copies the passing pair out; CI step 375 uploads that as
-`DEMO-EXPORT-<platform>` and step 905 publishes every platform's pair on the release page, so each
-desktop build's own rendering of `demo.md` is visible side by side.
+`--out <dir> --label <platform>` it also copies the passing documents out — the HTML and one PDF per
+paper: `demo-<platform>.pdf` (A4), `demo-<platform>.a3.pdf`, `demo-<platform>.letter.pdf`. CI step 375
+uploads them as `DEMO-EXPORT-<platform>` and step 905 publishes every platform's set on the release
+page — the A4 PDF embedded, the other papers linked — so each desktop build's own rendering of
+`demo.md` is visible side by side, on every paper.
+
+Margins are not asserted by the check: they would need the text positions inside the page, which the
+raw-byte scan cannot see without a PDF library. They are checked by rendering the published PDFs
+(REQ-LTTCE-XPT-00012), and their values are unit-tested in `paper.rs`, their hand-over to the
+frontend in `export.rs` and their `@page` rule in `print-style.test.ts`.
 
 Two traps this check is built around, both found by running it:
 

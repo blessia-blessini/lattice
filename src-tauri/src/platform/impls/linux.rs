@@ -136,16 +136,17 @@ fn linux_print_to_pdf(
 //******************************************************************************
 // linux_page_setup
 //******************************************************************************
-/// The GTK page for `paper`: portrait, [`crate::paper::PAGE_MARGIN_MM`] on
-/// every side.
+/// The GTK page for `paper`: portrait, with the host's [`page_margins`] —
+/// WebKitGTK draws no header or footer, so 1 cm top, right and bottom and
+/// 2 cm left.
 ///
 /// Without it WebKitGTK falls back to GTK's default page — near-zero margins —
-/// and, unlike Chromium, ignores the CSS `@page { margin: 2cm }` entirely: the
+/// and, unlike Chromium, ignores the CSS `@page` margin entirely: the
 /// text ran to within a few millimetres of the paper edge (seen in the
 /// v0.3.28 release PDFs). Paper names are GTK's own constants, not typed
 /// strings.
 fn linux_page_setup(paper: crate::paper::PaperSize) -> gtk::PageSetup {
-    use crate::paper::{PaperSize, PAGE_MARGIN_MM};
+    use crate::paper::PaperSize;
 
     let name = match paper {
         PaperSize::A4 => gtk::PAPER_NAME_A4,
@@ -155,10 +156,11 @@ fn linux_page_setup(paper: crate::paper::PaperSize) -> gtk::PageSetup {
     let setup = gtk::PageSetup::new();
     setup.set_paper_size(&gtk::PaperSize::new(Some(name.as_str())));
     setup.set_orientation(gtk::PageOrientation::Portrait);
-    setup.set_top_margin(PAGE_MARGIN_MM, gtk::Unit::Mm);
-    setup.set_bottom_margin(PAGE_MARGIN_MM, gtk::Unit::Mm);
-    setup.set_left_margin(PAGE_MARGIN_MM, gtk::Unit::Mm);
-    setup.set_right_margin(PAGE_MARGIN_MM, gtk::Unit::Mm);
+    let margins = page_margins();
+    setup.set_top_margin(margins.top_mm, gtk::Unit::Mm);
+    setup.set_bottom_margin(margins.bottom_mm, gtk::Unit::Mm);
+    setup.set_left_margin(margins.left_mm, gtk::Unit::Mm);
+    setup.set_right_margin(margins.right_mm, gtk::Unit::Mm);
     setup
 }
 // linux_page_setup END ********************************************************
