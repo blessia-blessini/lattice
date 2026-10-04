@@ -170,7 +170,6 @@ fn macos_print_to_pdf(
     let operation = unsafe { webview.printOperationWithPrintInfo(&info) };
     operation.setShowsPrintPanel(false);
     operation.setShowsProgressPanel(false);
-    macos_log_print_geometry("before run", &operation);
     // The print view's frame is deliberately left as WebKit made it — wry's
     // own print does the same. WebKit paginates from `info`; forcing the
     // window's frame onto the view risks clipping the output to one
@@ -200,43 +199,6 @@ fn macos_print_to_pdf(
     std::mem::forget(delegate);
 }
 // macos_print_to_pdf END ******************************************************
-
-
-//******************************************************************************
-// macos_log_print_geometry
-//******************************************************************************
-/// DIAGNOSTIC — temporary, remove with the macOS margin fix. Logs the page
-/// geometry the print operation actually uses, to find where the 2 cm
-/// horizontal margin of the macOS PDFs comes from (CI run 36476296060: the
-/// content is laid out at the CSS `@page` width, then shrunk into a 481 pt
-/// printable width although `NSPrintInfo` was given 28 / 57 pt).
-fn macos_log_print_geometry(stage: &str, operation: &objc2_app_kit::NSPrintOperation) {
-    let info = operation.printInfo();
-    info!(
-        "macos-print-diag [{}]: paper {:?}; margins top {}, right {}, bottom {}, left {}; \
-         imageable {:?}; scaling {}; pagination h {:?} v {:?}",
-        stage,
-        info.paperSize(),
-        info.topMargin(),
-        info.rightMargin(),
-        info.bottomMargin(),
-        info.leftMargin(),
-        info.imageablePageBounds(),
-        info.scalingFactor(),
-        info.horizontalPagination(),
-        info.verticalPagination(),
-    );
-    match operation.view() {
-        Some(view) => info!(
-            "macos-print-diag [{}]: view frame {:?}; bounds {:?}",
-            stage,
-            view.frame(),
-            view.bounds()
-        ),
-        None => info!("macos-print-diag [{}]: no view", stage),
-    }
-}
-// macos_log_print_geometry END ************************************************
 
 
 //******************************************************************************
@@ -334,7 +296,6 @@ mod pdf_print_delegate {
                 success: Bool,
                 _context: *mut std::ffi::c_void,
             ) {
-                super::macos_log_print_geometry("after run", _operation);
                 let ivars = self.ivars();
                 ivars
                     .done

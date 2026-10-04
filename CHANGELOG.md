@@ -10,6 +10,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.32
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: Remove the temporary macOS print-geometry logging
 - TEST: Fail the CLI export check when a PDF's printed margins are wrong
 - FIX: Keep the export's page margins when macOS fires beforeprint
 - FIX: Repeat the PDF page margins in the @page rule, so macOS honours them for 1cm
