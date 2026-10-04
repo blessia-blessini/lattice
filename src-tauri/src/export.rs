@@ -99,10 +99,12 @@ impl ExportFormat {
 /// frontend still gave up at 8 s and exported an incomplete document
 /// (REQ-LTTCE-XPT-00009).
 ///
-/// The margins travel for the same reason (REQ-LTTCE-XPT-00012): WKWebView
-/// obeys the stylesheet's `@page` margin over `NSPrintInfo`'s, so a margin set
-/// only through the host API never reached a macOS PDF. The frontend writes
-/// these values into its `@page` rule, so CSS and host API agree on every host.
+/// The margins travel for the same reason (REQ-LTTCE-XPT-00012): WebKit on
+/// macOS takes the page margin from the stylesheet's `@page` rule and writes
+/// it back over `NSPrintInfo`'s while printing (logged on CI run 36527742324),
+/// so a margin set only through the host API never reached a macOS PDF. The
+/// frontend makes these values the document's only `@page` margin, so CSS and
+/// host API agree on every host.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ExportLaunch {
     pub format: ExportFormat,

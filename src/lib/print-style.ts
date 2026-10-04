@@ -7,8 +7,9 @@
  * The runtime half of Lattice's print stylesheet.
  *
  * IMPL-LTTCE-XPT-00006. Most print rules are static and live in `App.css`'s
- * `@media print` block. Two of them cannot be: the running page header carries
- * the file name, and the body point size is derived from the live zoom level.
+ * `@media print` block. Three of them cannot be: the running page header
+ * carries the file name, the body point size is derived from the live zoom
+ * level, and the page margin depends on the caller (see `buildPrintStyleCss`).
  * They are therefore injected as a `<style>` element at print time.
  *
  * This module exists because there are now *two* callers that need that
@@ -47,14 +48,27 @@ export interface PageMarginsMm {
 /** The sides of `PageMarginsMm`, in the order CSS's `margin` shorthand takes them. */
 const MARGIN_SIDES = ['top', 'right', 'bottom', 'left'] as const;
 
+/**
+ * The page margin of an interactive print (Ctrl-P): 2 cm all round, room for
+ * the running header and "Page X of Y" footer. Mirrors
+ * `HEADER_FOOTER_MARGIN_MM` in `src-tauri/src/paper.rs` — change both together.
+ * `App.css` declares no page margin of its own; this module is the only place.
+ */
+export const PRINT_DEFAULT_MARGINS_MM: Readonly<PageMarginsMm> = Object.freeze({
+    top: 20,
+    right: 20,
+    bottom: 20,
+    left: 20,
+});
+
 
 //******************************************************************************
 // resolvePageMargins
 //******************************************************************************
 /**
  * IMPL-LTTCE-XPT-00006 — REQ-LTTCE-XPT-00012 — validates the page margins Rust
- * hands over for a PDF export. Returns `null` — keep the stylesheet's own
- * `@page` margin — unless every side is a finite, non-negative number:
+ * hands over for a PDF export. Returns `null` — print with
+ * `PRINT_DEFAULT_MARGINS_MM` — unless every side is a finite, non-negative number:
  * absent (an HTML export, or an older backend), `null`, a missing side, a
  * string or `NaN` must not become a `margin` that voids the whole rule.
  */
@@ -99,15 +113,16 @@ export function printTitleFor(filePath: string | null | undefined): string {
  * quotes are escaped — a Windows path fragment or a quoted file name must not
  * be able to terminate the literal and corrupt the rest of the sheet.
  *
- * With `margins`, the `@page` rule also sets the page margin. This element
- * comes after `App.css` in the document, so it overrides that sheet's 2 cm —
- * which matters on macOS, where WKWebView obeys the CSS margin rather than the
- * one given to its print API (REQ-LTTCE-XPT-00012). Without `margins` (an
- * interactive Ctrl-P) the stylesheet's own margin stands.
+ * The `@page` rule carries the document's only page-margin declaration
+ * (`App.css` has none): `margins` when given — the host's margins, for
+ * `--export-pdf` — otherwise `PRINT_DEFAULT_MARGINS_MM`. Only one, because
+ * WebKit on macOS takes the page margin from CSS and writes it back over the
+ * one given to its print API; with two declarations it took `App.css`'s 2 cm
+ * (REQ-LTTCE-XPT-00012, CI run 36527742324).
  *
  * @param fileName    running header text (see `printTitleFor`)
  * @param fontSizePct current zoom, in percent (100 = unzoomed)
- * @param margins     page margins to set, or `null` to keep the stylesheet's
+ * @param margins     page margins, or `null` for `PRINT_DEFAULT_MARGINS_MM`
  */
 export function buildPrintStyleCss(
     fileName: string,
@@ -119,9 +134,8 @@ export function buildPrintStyleCss(
     // which would silently void the whole rule.
     const pct = Number.isFinite(fontSizePct) && fontSizePct > 0 ? fontSizePct : 100;
     const printPt = ((PRINT_BASE_PT * pct) / 100).toFixed(2);
-    const marginCss = margins
-        ? '  margin: ' + MARGIN_SIDES.map((side) => margins[side] + 'mm').join(' ') + ';\n'
-        : '';
+    const page = margins ?? PRINT_DEFAULT_MARGINS_MM;
+    const marginCss = '  margin: ' + MARGIN_SIDES.map((side) => page[side] + 'mm').join(' ') + ';\n';
 
     const pageCss = '@page {\n' + marginCss + '  @top-center {\n    content: "' + esc + '";\n'
         + '    font-size: 9pt;\n    font-family: Arial, Helvetica, sans-serif;\n'
@@ -144,8 +158,8 @@ export function buildPrintStyleCss(
  * print during an export — or two `beforeprint` events in a row — cannot
  * stack duplicates.
  *
- * `margins` is passed by the headless PDF export only (see
- * `buildPrintStyleCss`).
+ * `margins` is passed by the headless PDF export only; an interactive print
+ * gets `PRINT_DEFAULT_MARGINS_MM` (see `buildPrintStyleCss`).
  */
 export function applyPrintStyle(
     doc: Document,

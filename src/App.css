@@ -460,8 +460,12 @@ body {
 }
 
 @page {
-  /* 2 cm on all sides — comfortable margins for A4 / Letter. */
-  margin: 2cm;
+  /* No margin here, deliberately. The page margin is declared exactly once,
+     by the print style src/lib/print-style.ts injects before every print
+     (2 cm for Ctrl-P, the host's margins for --export-pdf). A second
+     declaration here was what the macOS PDFs used: WebKit took this 2 cm
+     over the injected one and wrote it back into NSPrintInfo
+     (REQ-LTTCE-XPT-00012, CI run 36527742324). */
 
   /* ── Header: file name injected dynamically by handleBeforePrint ──
      The @top-center rule itself is written into a <style> tag just

@@ -4,9 +4,12 @@
 // See LICENCE file in GitHUB root folder of the repository.
 
 import { describe, it, expect, beforeEach } from 'vitest';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import {
     PRINT_STYLE_ID,
     PRINT_UNTITLED,
+    PRINT_DEFAULT_MARGINS_MM,
     printTitleFor,
     buildPrintStyleCss,
     applyPrintStyle,
@@ -71,9 +74,14 @@ describe('buildPrintStyleCss', () => {
         expect(css).toContain('content: "a.md"');
     });
 
-    it('leaves the stylesheet margin alone without margins (interactive Ctrl-P)', () => {
-        expect(buildPrintStyleCss('a.md', 100)).not.toContain('margin:');
-        expect(buildPrintStyleCss('a.md', 100, null)).not.toContain('margin:');
+    it('prints with the 2 cm default without margins (interactive Ctrl-P)', () => {
+        expect(buildPrintStyleCss('a.md', 100)).toContain('@page {\n  margin: 20mm 20mm 20mm 20mm;\n');
+        expect(buildPrintStyleCss('a.md', 100, null)).toContain('margin: 20mm 20mm 20mm 20mm;');
+    });
+
+    it('declares exactly one page margin, whatever it is given', () => {
+        expect(buildPrintStyleCss('a.md', 100).match(/margin:/g)).toHaveLength(1);
+        expect(buildPrintStyleCss('a.md', 100, COMPACT).match(/margin:/g)).toHaveLength(1);
     });
 
     it('falls back to 100% for a missing or nonsensical zoom', () => {
@@ -105,8 +113,36 @@ describe('resolvePageMargins', () => {
         ['a NaN side', { ...COMPACT, top: NaN }],
         ['an infinite side', { ...COMPACT, right: Infinity }],
         ['a negative side', { ...COMPACT, bottom: -1 }],
-    ])('returns null for %s, keeping the stylesheet margin', (_label, raw) => {
+    ])('returns null for %s, so the 2 cm default applies', (_label, raw) => {
         expect(resolvePageMargins(raw)).toBeNull();
+    });
+});
+
+describe('the page margin is declared only here (REQ-LTTCE-XPT-00012)', () => {
+    it('matches paper.rs HEADER_FOOTER_MARGIN_MM (20 mm) on every side', () => {
+        expect(PRINT_DEFAULT_MARGINS_MM).toEqual({ top: 20, right: 20, bottom: 20, left: 20 });
+    });
+
+    it('App.css declares no margin inside any @page rule', () => {
+        // Regression (CI run 36527742324, 2026-09-29): with a second margin
+        // declaration in App.css, WebKit on macOS printed that one's 2 cm and
+        // wrote it back over NSPrintInfo, ignoring the injected margins.
+        const css = readFileSync(resolve(import.meta.dirname, '..', 'App.css'), 'utf-8')
+            .replace(/\/\*[\s\S]*?\*\//g, ''); // comments may mention "margin"
+        const pageRules: string[] = [];
+        for (let at = css.indexOf('@page'); at !== -1; at = css.indexOf('@page', at + 1)) {
+            let depth = 0, i = css.indexOf('{', at);
+            const start = i;
+            for (; i < css.length; i++) {
+                if (css[i] === '{') depth++;
+                else if (css[i] === '}' && --depth === 0) break;
+            }
+            pageRules.push(css.slice(start, i + 1));
+        }
+        expect(pageRules.length).toBeGreaterThan(0);
+        for (const rule of pageRules) {
+            expect(rule).not.toMatch(/(^|[\s;{])margin(-(top|right|bottom|left))?\s*:/);
+        }
     });
 });
 

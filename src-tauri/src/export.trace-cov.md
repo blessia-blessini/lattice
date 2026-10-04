@@ -58,8 +58,9 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   `exportPageMarginsMm`, PDF only, via `build_window_with_file_ex`)
 - IMPL-LTTCE-XPT-00003 **covers** ARCH-LTTCE-XPT-00003
 - IMPL-LTTCE-XPT-00006 **covers** REQ-LTTCE-XPT-00012  (`print-style.ts` `resolvePageMargins` +
-  `buildPrintStyleCss` write those margins into the injected `@page` rule, so macOS — whose WKWebView
-  obeys the CSS margin over `NSPrintInfo` — prints the same margins as the host API was given)
+  `buildPrintStyleCss` make those margins the document's only `@page` margin — `App.css` declares
+  none; Ctrl-P gets `PRINT_DEFAULT_MARGINS_MM` — so macOS, where WebKit writes the CSS margin back
+  over `NSPrintInfo`'s, prints the same margins as the host API was given)
 - IMPL-LTTCE-XPT-00006 **covers** ARCH-LTTCE-XPT-00003
 - IMPL-LTTCE-XPT-00002 **covers** REQ-LTTCE-XPT-00012  (`App.tsx` passes `exportPageMarginsMm` to
   `applyPrintStyle` in the PDF launch branch)
@@ -75,7 +76,7 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 | IMPL-LTTCE-XPT-00004  | ITST-LTTCE-XPT-00010 — `src-tauri/examples/export_demo.rs` (`export-html`, `export-pdf (default paper)`, `export-pdf --paper a3`, `export-pdf --paper letter (relative path)`, `export-pdf --paper a5 (unknown)`, `missing-input`); not unit-testable, needs a real process exit (see ARCH-LTTCE-XPT-00001) |
 | IMPL-LTTCE-XPT-00007  | `src-tauri/src/paper.rs` `mod tests` (12 cases — sizes in every unit against the standards, default, names, case, portrait; margins: 2 cm all round for a header/footer host, 1 / 1 / 1 cm and 2 cm left otherwise, and their log text); `platform/cli_args.rs` `mod tests` (12 paper / file-path cases — both spellings, position, default, unknown and missing values, first wins, near misses, a paper value never taken for a file) |
 | IMPL-LTTCE-XPT-00005  | `platform/mod.rs` `mod tests` (`PdfDone`; `written_pdf_result`, 4 cases — success needs a non-empty file, a stale file never masks a failure); `platform/impls/linux.rs` `mod linux_print_tests` (4 cases — printer-name resolution incl. the localized and blank-override cases, REQ-LTTCE-XPT-00007; pure, no environment mutation; compiled and run on the Linux leg only); host backends: ITST-LTTCE-XPT-00010 per desktop platform |
-| IMPL-LTTCE-XPT-00006  | `src/lib/print-style.test.ts` (27 cases, incl. 14 for REQ-LTTCE-XPT-00012 — `resolvePageMargins` accepts four finite non-negative sides and rejects nine malformed shapes; `@page` margin in CSS side order, none without margins) |
+| IMPL-LTTCE-XPT-00006  | `src/lib/print-style.test.ts` (30 cases, incl. 17 for REQ-LTTCE-XPT-00012 — `resolvePageMargins` accepts four finite non-negative sides and rejects nine malformed shapes; `@page` margin in CSS side order, the 20 mm default without margins, exactly one margin declaration either way; `PRINT_DEFAULT_MARGINS_MM` matches `paper.rs`; `App.css` declares no margin in any `@page` rule — the macOS regression guard) |
 
 ## Integration test
 

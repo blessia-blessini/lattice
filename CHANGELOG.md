@@ -8,6 +8,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.31
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: Declare the PDF page margin only once, so macOS stops printing 2 cm
 - FIX: Repeat the PDF page margins in the @page rule, so macOS honours them
 - FIX: Act on the cycle-1 review of the PDF margins change
 - FEAT: 1 cm PDF margins where no header/footer is printed; demo exported on every paper

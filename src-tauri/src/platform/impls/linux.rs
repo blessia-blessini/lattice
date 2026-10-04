@@ -141,7 +141,7 @@ fn linux_print_to_pdf(
 /// 2 cm left.
 ///
 /// Without it WebKitGTK falls back to GTK's default page — near-zero margins —
-/// and, unlike Chromium, ignores the CSS `@page { margin: 2cm }` entirely: the
+/// and, unlike Chromium, ignores the CSS `@page` margin entirely: the
 /// text ran to within a few millimetres of the paper edge (seen in the
 /// v0.3.28 release PDFs). Paper names are GTK's own constants, not typed
 /// strings.

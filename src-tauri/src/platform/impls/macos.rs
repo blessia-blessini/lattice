@@ -246,9 +246,11 @@ fn macos_log_print_geometry(stage: &str, operation: &objc2_app_kit::NSPrintOpera
 /// [`page_margins`] — WKWebView draws no header or footer, so 1 cm top, right
 /// and bottom and 2 cm left — fitted to the page width, saved to `out_path`.
 ///
-/// These margins alone do not reach the PDF: WKWebView obeys the stylesheet's
-/// `@page` margin over them. The export window's `@page` rule carries the same
-/// values (`ExportLaunch::page_margins`), so the two agree.
+/// These margins alone do not reach the PDF: while printing, WebKit replaces
+/// them with the document's CSS `@page` margin (CI run 36527742324 logged
+/// 56.69 pt on every side after the run — `App.css`'s old 2 cm). The export
+/// window's only `@page` margin carries the same values
+/// (`ExportLaunch::page_margins`), so the two agree.
 ///
 /// Fresh rather than `sharedPrintInfo`, which is app-wide state that wry's
 /// interactive `print()` also mutates. A non-UTF-8 path is refused here with a

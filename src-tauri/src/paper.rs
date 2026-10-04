@@ -26,8 +26,9 @@ pub const PAPER_FLAG: &str = "--paper";
 /// Margin on every side of a page that carries the running header and
 /// "Page X of Y" footer, in millimetres — room for them to sit in.
 ///
-/// Mirrors `@page { margin: 2cm }` in `src/App.css`, which Chromium (WebView2)
-/// honours and draws those page-margin boxes inside. Change both together.
+/// Mirrors `PRINT_DEFAULT_MARGINS_MM` in `src/lib/print-style.ts`, the margin
+/// of an interactive print, which Chromium (WebView2) honours and draws those
+/// page-margin boxes inside. Change both together.
 pub const HEADER_FOOTER_MARGIN_MM: f64 = 20.0;
 
 /// Top, right and bottom margin of a page with no header or footer, in
