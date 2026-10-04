@@ -64,6 +64,7 @@ import {
 } from './lib/preview-copy';
 import { flushSync } from 'react-dom';
 import { applyPrintStyle, removePrintStyle, resolvePageMargins } from './lib/print-style';
+import type { PageMarginsMm } from './lib/print-style';
 
 import { StaticRuntime } from "@services/StaticRuntime";
 
@@ -362,6 +363,10 @@ function App() {
 
   const autoSaveTimer = useRef<number | null>(null);
   const mainContentRef = useRef<HTMLDivElement>(null);
+  // Page margins of a headless PDF export (REQ-LTTCE-XPT-00012), null
+  // otherwise. A ref, not state: the beforeprint handler must see the value
+  // the export applied, and setting it must not re-render the export window.
+  const exportPageMarginsRef = useRef<PageMarginsMm | null>(null);
   // Used to skip the initial run of the m_currentFilePath effect so that the
   // sessionStorage session-restore item isn't wiped before checkLaunch reads it.
   const isInitialMount = useRef(true);
@@ -1136,16 +1141,19 @@ function App() {
                   );
                 }
 
-                // The host print API never fires `beforeprint`, so the
+                // Not every host print API fires `beforeprint`, so the
                 // running header and zoom sizing must be applied explicitly —
                 // with the page margins Rust gave the host print API, which
                 // the `@page` rule must repeat: macOS obeys the CSS one
-                // (REQ-LTTCE-XPT-00012).
+                // (REQ-LTTCE-XPT-00012).  Kept in a ref for the host that
+                // does fire it (WebKit on macOS): its handler re-applies the
+                // style and must not swap these for the Ctrl-P default.
+                exportPageMarginsRef.current = resolvePageMargins(initData.exportPageMarginsMm);
                 applyPrintStyle(
                   document,
                   initData.path,
                   m_fontSize,
-                  resolvePageMargins(initData.exportPageMarginsMm),
+                  exportPageMarginsRef.current,
                 );
               }
 
@@ -1414,11 +1422,13 @@ function App() {
     window.addEventListener('wheel', handleWheel, { passive: false });
 
     // Strip " - lattice (...)" from the title and inject the runtime half of
-    // the print stylesheet (running header + zoom-scaled point size).  Both
-    // live in lib/print-style.ts because the headless `--export-pdf` path
-    // needs exactly the same treatment and never fires `beforeprint`.
+    // the print stylesheet (running header, zoom-scaled point size, page
+    // margin).  It lives in lib/print-style.ts because the headless
+    // `--export-pdf` path needs exactly the same treatment and cannot rely on
+    // `beforeprint`.  Where a host does fire it during an export (WebKit on
+    // macOS), the export's margins are passed again, not the Ctrl-P default.
     const handleBeforePrint = () => {
-      applyPrintStyle(document, m_currentFilePath, m_fontSize);
+      applyPrintStyle(document, m_currentFilePath, m_fontSize, exportPageMarginsRef.current);
     };
 
     const handleAfterPrint = () => {

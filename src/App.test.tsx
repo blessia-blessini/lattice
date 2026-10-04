@@ -1089,6 +1089,24 @@ describe('App — headless export launch', () => {
         expect(style!.textContent).toContain('margin: 10mm 10mm 10mm 20mm;');
     });
 
+    it('a beforeprint during a PDF export keeps Rust\'s page margins (REQ-LTTCE-XPT-00012)', async () => {
+        // Regression (CI runs 36527742324 and 37221149163): WebKit on macOS
+        // fires beforeprint when its print operation starts. The handler
+        // re-applied the print style without the export margins, so the
+        // page printed with a uniform 2 cm whatever Rust had asked for.
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/a.md', content: '# Hi', exportFormat: 'pdf',
+            exportPageMarginsMm: { top: 10, right: 10, bottom: 10, left: 20 },
+        };
+        render(<App />);
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(1));
+        fireEvent(window, new Event('beforeprint'));
+        const style = document.getElementById('lattice-print-dynamic');
+        expect(style!.textContent).toContain('margin: 10mm 10mm 10mm 20mm;');
+        expect(style!.textContent!.match(/margin:/g)).toHaveLength(1);
+    });
+
     it('exportFormat "pdf" without valid margins prints with the 2 cm default', async () => {
         // An older backend, or a malformed value: never a broken margin, and
         // never no margin at all — App.css no longer declares one.

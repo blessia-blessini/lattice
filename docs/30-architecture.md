@@ -1573,6 +1573,13 @@ The page is therefore decided in one place and handed to every host explicitly:
   is left, so the host API's identical value applies. **Unverified:** that the interactive `print()`
   of WKWebView and WebKitGTK fires `beforeprint`; if it does not, an interactive print there gets the
   host's default page margins instead of 2 cm.
+- **`beforeprint` during an export keeps the export's margins.** With `App.css`'s margin gone, CI run
+  37221149163 still logged 56.69 pt on every side after the macOS run. The only uniform 2 cm left in
+  the document was `PRINT_DEFAULT_MARGINS_MM`, which `App.tsx`'s `beforeprint` handler wrote — so
+  WebKit on macOS fires `beforeprint` when its print operation starts, and the handler replaced the
+  export's style with Ctrl-P's. The export path therefore keeps its resolved margins in
+  `exportPageMarginsRef`, and the handler passes them on: whether or not a host fires the event, the
+  injected rule carries the export's margins.
 - **`written_pdf_result`** (`platform/mod.rs`) — every backend reports success only when the host
   says so *and* a non-empty file exists; a host's "finished" alone is not evidence of a file.
 - **`resolved_output_path`** (`export.rs`) — the output path is made absolute once, before any
@@ -1592,7 +1599,8 @@ margins are 1 cm (`PageMargins::WITHOUT_HEADER_FOOTER`).
 
 ### Frontend — what `beforeprint` would have done
 
-The host print APIs write the file directly; **none of them fire a `beforeprint` event**. But some of
+The host print APIs write the file directly, and **an export cannot rely on a `beforeprint` event**:
+WebView2's `PrintToPdf` fires none, while WebKit on macOS does (see the margin note above). But some of
 Lattice's print rules are runtime values, not static CSS — the `@page @top-center` running header
 carries the file name, the body point size is scaled from an 11 pt baseline by the live zoom, and the
 `@page` margin is the only one in the document (see above) — and those are injected by `App.tsx`'s
