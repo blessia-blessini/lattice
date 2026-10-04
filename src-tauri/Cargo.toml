@@ -101,6 +101,12 @@ objc2-app-kit = { version = "0.3", default-features = false, features = ["std", 
 objc2-web-kit = { version = "0.3", features = ["WKWebView", "objc2-app-kit"] }
 
 [dev-dependencies]
+# Pure-Rust PDF rasterizer for examples/export_demo.rs only: it renders each
+# exported PDF to measure the printed margins (REQ-LTTCE-XPT-00012). Never in
+# the shipped binary. No default features: the hosts embed every font they
+# use, so the standard-font and CJK-cmap tables would only add weight
+# (measured identical on all 18 CI PDFs of run 37221149163).
+hayro = { version = "0.8.0", default-features = false }
 tempfile = "3.24.0"
 tauri = { version = "2", features = ["test"] }
 url = "2"

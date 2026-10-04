@@ -38,7 +38,7 @@
 //!   than a skip. CI sets this; a local working tree that has never been
 //!   built should not hard-fail.
 
-use lattice_lib::paper::PaperSize;
+use lattice_lib::paper::{PageMargins, PaperSize, mm_to_points};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -61,6 +61,24 @@ const MIN_PDF_BYTES: usize = 20_000;
 /// the nominal 595.28 × 841.89 — so an exact match would fail a correct page,
 /// while a wrong paper is off by 17 pt (A4 vs Letter) or more.
 const PAGE_SIZE_TOLERANCE_PT: f64 = 1.5;
+
+/// Grey level (0 black … 255 white) below which a rendered pixel counts as
+/// ink. Anti-aliased edges fade towards white; this keeps their faintest
+/// fringe out, and with it the margins matched poppler's `pdftoppm` on all 18
+/// PDFs of CI run 37221149163 to within 1 pt.
+const INK_GREY_BELOW: u8 = 245;
+
+/// How far a printed margin may be from the one the build asked for, in
+/// points. Ink is measured to the whole point (one pixel per point) and glyphs
+/// carry a point or so of white beside them; the defects this exists for are
+/// 13 to 29 pt off (macOS printing 2 cm where 1 cm was asked, CI run
+/// 37221149163) or lose the whole margin (Linux v0.3.28, a few millimetres).
+const MARGIN_TOLERANCE_PT: f64 = 3.0;
+
+/// Closest the running header or page-number footer may sit to the paper
+/// edge, in points. They are drawn inside the top and bottom margin (about
+/// 22–25 pt from the edge on WebView2), never at the edge itself.
+const MIN_HEADER_FOOTER_INSET_PT: f64 = 10.0;
 
 /// Fewest pages a PDF of `demo.md` may have. The demo paginates to 9 (A3) to
 /// 14 (Letter) pages on every host that really prints; a window snapshot or a
@@ -674,9 +692,193 @@ fn check_pdf(path: &Path, paper: PaperSize) -> Vec<String> {
     problems.extend(check_page_size(&bytes, paper));
     problems.extend(check_page_count(&bytes));
 
+    let want = lattice_lib::page_margins();
+    match pdf_ink_margins(&bytes) {
+        Ok(ink) => {
+            println!(
+                "  ink margins: {} (asked for {})",
+                ink.describe(),
+                want.describe_points()
+            );
+            problems.extend(check_margins(&ink, &want));
+        }
+        Err(e) => problems.push(e),
+    }
+
     problems
 }
 // check_pdf END ************************************************
+
+
+//**************************************************************
+// InkMargins
+//**************************************************************
+/// Distance from each paper edge to the outermost ink, in points — the margins
+/// a PDF was really printed with, as opposed to the ones it was asked for.
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct InkMargins {
+    top: f64,
+    right: f64,
+    bottom: f64,
+    left: f64,
+}
+
+impl InkMargins {
+    /// The closer ink on each side of `self` and `other`: folded over every
+    /// page, the margins of the whole document.
+    fn nearest(self, other: InkMargins) -> InkMargins {
+        InkMargins {
+            top: self.top.min(other.top),
+            right: self.right.min(other.right),
+            bottom: self.bottom.min(other.bottom),
+            left: self.left.min(other.left),
+        }
+    }
+
+    /// `"top 28, right 28, bottom 28, left 56 pt"` — the format of
+    /// [`PageMargins::describe_points`], so the two read side by side.
+    fn describe(&self) -> String {
+        format!(
+            "top {:.0}, right {:.0}, bottom {:.0}, left {:.0} pt",
+            self.top, self.right, self.bottom, self.left
+        )
+    }
+}
+// InkMargins END ***********************************************
+
+
+//**************************************************************
+// ink_box
+//**************************************************************
+/// `(left, top, right, bottom)` pixel bounds of the ink in a row-major grey
+/// image `width` pixels wide, or `None` for a blank page. Pure.
+fn ink_box(grey: &[u8], width: usize) -> Option<(usize, usize, usize, usize)> {
+    if width == 0 {
+        return None;
+    }
+    let is_ink = |g: &u8| *g < INK_GREY_BELOW;
+    let mut found: Option<(usize, usize, usize, usize)> = None;
+    for (y, row) in grey.chunks_exact(width).enumerate() {
+        let (Some(x0), Some(x1)) = (row.iter().position(is_ink), row.iter().rposition(is_ink))
+        else {
+            continue;
+        };
+        found = Some(match found {
+            None => (x0, y, x1, y),
+            Some((left, top, right, _)) => (left.min(x0), top, right.max(x1), y),
+        });
+    }
+    found
+}
+// ink_box END **************************************************
+
+
+//**************************************************************
+// page_ink_margins
+//**************************************************************
+/// The ink margins of one page rendered at one pixel per point, or `None` for
+/// a blank page — which says nothing about the margins. Pure.
+fn page_ink_margins(grey: &[u8], width: usize, height: usize) -> Option<InkMargins> {
+    let (left, top, right, bottom) = ink_box(grey, width)?;
+    Some(InkMargins {
+        top: top as f64,
+        right: (width - 1 - right) as f64,
+        bottom: (height - 1 - bottom) as f64,
+        left: left as f64,
+    })
+}
+// page_ink_margins END *****************************************
+
+
+//**************************************************************
+// pdf_ink_margins
+//**************************************************************
+/// REQ-LTTCE-XPT-00012 — renders every page of a PDF at one pixel per point
+/// on white (hayro, pure Rust) and returns the margins of its ink.
+///
+/// A PDF does not record its margins: they exist only as where the host drew
+/// the content, so the only honest measurement is the rendered page — the same
+/// one a reader sees. Measured by hand, this is what showed the macOS PDFs
+/// keeping 2 cm for three CI runs while the export log said 1 cm.
+fn pdf_ink_margins(bytes: &[u8]) -> Result<InkMargins, String> {
+    use hayro::hayro_interpret::InterpreterSettings;
+    use hayro::hayro_syntax::Pdf;
+    use hayro::vello_cpu::color::palette::css::WHITE;
+    use hayro::{PixmapSettings, RenderCache, RenderSettings, render};
+
+    let pdf = Pdf::new(bytes.to_vec())
+        .map_err(|e| format!("cannot parse the PDF to measure its margins: {e:?}"))?;
+    let cache = RenderCache::new();
+    let interpreter = InterpreterSettings::default();
+    let settings = RenderSettings::default();
+    let one_px_per_pt = PixmapSettings { x_scale: 1.0, y_scale: 1.0, bg_color: WHITE };
+
+    let mut margins: Option<InkMargins> = None;
+    for page in pdf.pages().iter() {
+        let pixmap = render(page, &cache, &interpreter, &settings, &one_px_per_pt);
+        let (width, height) = (usize::from(pixmap.width()), usize::from(pixmap.height()));
+        // Opaque, because the background is: premultiplied RGB is plain RGB.
+        // ITU-R BT.601 luma, in integers.
+        let grey: Vec<u8> = pixmap
+            .data()
+            .iter()
+            .map(|p| ((u32::from(p.r) * 299 + u32::from(p.g) * 587 + u32::from(p.b) * 114) / 1000) as u8)
+            .collect();
+        if let Some(page_margins) = page_ink_margins(&grey, width, height) {
+            margins = Some(margins.map_or(page_margins, |m| m.nearest(page_margins)));
+        }
+    }
+    margins.ok_or_else(|| "every page renders blank — the margins cannot be measured".into())
+}
+// pdf_ink_margins END ******************************************
+
+
+//**************************************************************
+// check_margins
+//**************************************************************
+/// REQ-LTTCE-XPT-00012 — the printed margins are the ones asked for, within
+/// [`MARGIN_TOLERANCE_PT`]. Pure.
+///
+/// On a page with the running header and footer (`want` is
+/// [`PageMargins::WITH_HEADER_FOOTER`]) the outermost ink at the top and bottom
+/// is that header and footer, drawn *inside* the margin: there the ink must lie
+/// between [`MIN_HEADER_FOOTER_INSET_PT`] and the margin, which also fails a
+/// page that lost them. Every other side must match its margin.
+///
+/// `demo.md` is what makes the comparison exact rather than a lower bound: it
+/// has content touching every margin — a full-width element on the right, and a
+/// page filled to its bottom margin. A demo edit that removes those would fail
+/// here, and the measured margins printed beside the verdict show which side.
+fn check_margins(ink: &InkMargins, want: &PageMargins) -> Vec<String> {
+    let header_footer = *want == PageMargins::WITH_HEADER_FOOTER;
+    let sides = [
+        ("top", ink.top, want.top_mm, header_footer),
+        ("right", ink.right, want.right_mm, false),
+        ("bottom", ink.bottom, want.bottom_mm, header_footer),
+        ("left", ink.left, want.left_mm, false),
+    ];
+    let mut problems = Vec::new();
+    for (side, got, want_mm, holds_header_footer) in sides {
+        let want_pt = mm_to_points(want_mm);
+        if holds_header_footer {
+            let inner = want_pt - MARGIN_TOLERANCE_PT;
+            if !(MIN_HEADER_FOOTER_INSET_PT..=inner).contains(&got) {
+                problems.push(format!(
+                    "{side}: outermost ink {got:.0} pt from the edge, expected the running \
+                     header/footer between {MIN_HEADER_FOOTER_INSET_PT:.0} and {inner:.0} pt \
+                     (margin {want_pt:.0} pt)"
+                ));
+            }
+        } else if (got - want_pt).abs() > MARGIN_TOLERANCE_PT {
+            problems.push(format!(
+                "{side} margin is {got:.0} pt, expected {want_pt:.0} pt \
+                 (± {MARGIN_TOLERANCE_PT:.0})"
+            ));
+        }
+    }
+    problems
+}
+// check_margins END ********************************************
 
 
 //**************************************************************
@@ -1278,6 +1480,111 @@ mod tests {
         names.sort_unstable();
         names.dedup();
         assert_eq!(names.len(), PaperSize::ALL.len());
+    }
+
+    // ── margins ─────────────────────────────────────────────────────────────
+    // The InkMargins below are what the real hosts printed on CI run
+    // 37221149163 (A4), measured by both this code and poppler's pdftoppm.
+
+    const fn ink(top: f64, right: f64, bottom: f64, left: f64) -> InkMargins {
+        InkMargins { top, right, bottom, left }
+    }
+
+    /// A `width` × `height` white page with ink on the given inclusive box.
+    fn page(width: usize, height: usize, inked: (usize, usize, usize, usize)) -> Vec<u8> {
+        let (x0, y0, x1, y1) = inked;
+        let mut grey = vec![255u8; width * height];
+        for y in y0..=y1 {
+            for x in x0..=x1 {
+                grey[y * width + x] = 0;
+            }
+        }
+        grey
+    }
+
+    #[test]
+    fn a_blank_page_has_no_ink_box() {
+        assert_eq!(ink_box(&vec![255u8; 40 * 30], 40), None);
+        assert_eq!(ink_box(&[], 0), None);
+        // The faint anti-aliased fringe is not ink.
+        assert_eq!(ink_box(&vec![INK_GREY_BELOW; 40 * 30], 40), None);
+    }
+
+    #[test]
+    fn the_ink_box_spans_every_inked_row_and_column() {
+        let mut grey = page(40, 30, (5, 3, 6, 4));
+        grey[20 * 40 + 33] = INK_GREY_BELOW - 1; // one faint dot further out
+        assert_eq!(ink_box(&grey, 40), Some((5, 3, 33, 20)));
+    }
+
+    #[test]
+    fn page_margins_are_measured_from_each_edge() {
+        let grey = page(100, 50, (20, 10, 89, 44));
+        assert_eq!(page_ink_margins(&grey, 100, 50), Some(ink(10.0, 10.0, 5.0, 20.0)));
+        assert_eq!(page_ink_margins(&vec![255u8; 100 * 50], 100, 50), None);
+    }
+
+    #[test]
+    fn the_document_margin_is_the_nearest_ink_over_all_pages() {
+        let a = ink(28.0, 40.0, 90.0, 56.0); // a short last page
+        let b = ink(30.0, 28.0, 28.0, 57.0);
+        assert_eq!(a.nearest(b), ink(28.0, 28.0, 28.0, 56.0));
+    }
+
+    #[test]
+    fn the_linux_pages_pass() {
+        let want = PageMargins::WITHOUT_HEADER_FOOTER;
+        assert!(check_margins(&ink(28.0, 28.0, 28.0, 56.0), &want).is_empty());
+        assert!(check_margins(&ink(28.0, 28.0, 29.0, 56.0), &want).is_empty()); // A3
+    }
+
+    #[test]
+    fn the_macos_two_centimetre_pages_fail_on_three_sides() {
+        // The defect this check was written for: asked 1 / 1 / 1 / 2 cm,
+        // printed 2 cm all round.
+        let problems = check_margins(&ink(45.0, 57.0, 56.0, 56.0), &PageMargins::WITHOUT_HEADER_FOOTER);
+        assert_eq!(problems.len(), 3, "{problems:?}");
+        for side in ["top", "right", "bottom"] {
+            assert!(problems.iter().any(|p| p.starts_with(side)), "{side}: {problems:?}");
+        }
+    }
+
+    #[test]
+    fn near_zero_margins_fail_on_every_side() {
+        // Linux v0.3.28: GTK's default page, text a few millimetres from the edge.
+        let problems = check_margins(&ink(6.0, 6.0, 6.0, 6.0), &PageMargins::WITHOUT_HEADER_FOOTER);
+        assert_eq!(problems.len(), 4, "{problems:?}");
+    }
+
+    #[test]
+    fn the_windows_pages_pass_with_header_and_footer_inside_the_margin() {
+        let want = PageMargins::WITH_HEADER_FOOTER;
+        assert!(check_margins(&ink(25.0, 55.0, 22.0, 57.0), &want).is_empty());
+    }
+
+    #[test]
+    fn a_windows_page_without_header_and_footer_fails() {
+        // Content alone reaches only the 2 cm margin: no header, no footer.
+        let problems = check_margins(&ink(57.0, 56.0, 57.0, 57.0), &PageMargins::WITH_HEADER_FOOTER);
+        assert_eq!(problems.len(), 2, "{problems:?}");
+        assert!(problems[0].starts_with("top") && problems[1].starts_with("bottom"), "{problems:?}");
+    }
+
+    #[test]
+    fn a_header_at_the_paper_edge_fails() {
+        let problems = check_margins(&ink(4.0, 56.0, 22.0, 57.0), &PageMargins::WITH_HEADER_FOOTER);
+        assert_eq!(problems.len(), 1, "{problems:?}");
+    }
+
+    #[test]
+    fn the_tolerance_is_inclusive_and_symmetric() {
+        let want = PageMargins::WITHOUT_HEADER_FOOTER;
+        let left = mm_to_points(want.left_mm);
+        let at = |d: f64| ink(28.35, 28.35, 28.35, left + d);
+        assert!(check_margins(&at(MARGIN_TOLERANCE_PT), &want).is_empty());
+        assert!(check_margins(&at(-MARGIN_TOLERANCE_PT), &want).is_empty());
+        assert_eq!(check_margins(&at(MARGIN_TOLERANCE_PT + 0.5), &want).len(), 1);
+        assert_eq!(check_margins(&at(-MARGIN_TOLERANCE_PT - 0.5), &want).len(), 1);
     }
 }
 // tests END ****************************************************

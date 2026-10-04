@@ -89,9 +89,15 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   right size but one page), and `--paper a5` must exit `1` with no file. All three PDFs are published
   per platform (`published_name`: `demo-<platform>.pdf`, `.a3.pdf`, `.letter.pdf`). The page-size,
   page-count and naming rules have their own unit tests (`cargo test --example export_demo`, 10 of
-  16 cases), including the 800 × 568 pt one-page macOS snapshot of v0.3.28 as a case that must fail.
-  The **margins** of REQ-LTTCE-XPT-00012 are not read from the bytes (that needs text positions, i.e.
-  a PDF library); they are checked by rendering the published PDFs, and their values are unit-tested.
+  27 cases), including the 800 × 568 pt one-page macOS snapshot of v0.3.28 as a case that must fail.
+  The **margins** of REQ-LTTCE-XPT-00012 are not in the bytes — a PDF records only where the host
+  drew. So every exported PDF is rendered at one pixel per point (`pdf_ink_margins`, the pure-Rust
+  `hayro` rasterizer, a dev-dependency only) and the ink's distance from each edge must match
+  `lattice_lib::page_margins()` — the margins this build prints with — within 3 pt; on a page with
+  the running header and footer, the top and bottom ink must be that header and footer, inside the
+  margin (`check_margins`). The measured margins are printed beside every verdict. Unit tests (11 of
+  the 27): the ink box, per-page and per-document folding, and the real hosts' measurements of CI run
+  37221149163 — Linux and Windows pass, macOS's 2 cm and Linux v0.3.28's near-zero margins fail.
 - ITST-LTTCE-XPT-00010 **covers** REQ-LTTCE-XPT-00010 end to end: the first export of a process, on
   every desktop leg, must finish without timer or idle scheduling in a hidden window. It found the
   defect (macos-intel, run 36311605228, 2026-09-27: `export-html` produced nothing in 90 s after a

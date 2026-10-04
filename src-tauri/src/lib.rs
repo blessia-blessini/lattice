@@ -58,6 +58,9 @@ mod tsv_table;
 // Platform module — lib.rs has zero OS knowledge.
 // Platform selection is handled by build.rs; see platform/mod.rs.
 mod platform;
+// Public so the CLI export check (examples/export_demo.rs) measures each PDF's
+// margins against the ones this build prints with — not a copy of the rule.
+pub use platform::page_margins;
 
 #[cfg(test)]
 #[path = "test_fs_helpers.rs"]

@@ -148,6 +148,11 @@ logic is unit-tested on both sides (`export.rs`, `cli_args.rs`, `platform/mod.rs
 `print-style.test.ts`, `App.test.tsx` — see `src-tauri/src/export.trace-cov.md`); only running the
 binary proves those parts are actually wired together.
 
+Each PDF is also measured, not just parsed: its pages are rendered (the `hayro` crate, a
+dev-dependency of the check only) and the printed margins must match the ones the build asked the
+host for, within 3 pt. A wrong margin therefore fails the CI leg of the platform that printed it,
+rather than waiting for someone to look at the published PDFs.
+
 This is a **separate example, not an E2E harness scenario**, and the distinction is the point.
 The harness drives a visible, long-lived GUI through signal files, which is why `build-test.sh`
 gates it to Windows. An export is the opposite shape — it opens an invisible window, writes a file

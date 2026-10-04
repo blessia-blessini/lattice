@@ -165,8 +165,9 @@ pub(crate) fn print_to_pdf(
 /// The one source for the backends, which hand it to their page-setup API,
 /// and for `export.rs`, which logs it and hands it to the export window's
 /// `@page` rule (`ExportLaunch::page_margins`) — so CSS, host API and log
-/// always state the same margins.
-pub(crate) fn page_margins() -> crate::paper::PageMargins {
+/// always state the same margins. Re-exported from the crate root for the CLI
+/// export check, which measures every PDF against it.
+pub fn page_margins() -> crate::paper::PageMargins {
     crate::paper::PageMargins::for_host(PlatformImpl.draws_page_header_footer())
 }
 // page_margins END ************************************************************
