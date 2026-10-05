@@ -6,6 +6,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.33
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: Record the HTML export's trace links beside App.tsx and export-document.ts
 - FIX: Export HTML as a self-contained document so KaTeX math renders in a browser
 - CHORE: Corrected CHANGELOG
 

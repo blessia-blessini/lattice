@@ -52,6 +52,12 @@ import katexCss from 'katex/dist/katex.min.css?raw';
  * project-root path (`/node_modules/katex/dist/fonts/KaTeX_Main-Regular.woff2`).
  * `exhaustive` is needed for a glob inside `node_modules`; the scan is confined
  * to the static prefix, one directory of 20 files.
+ *
+ * The pattern is anchored at the Vite root, because a glob cannot follow
+ * Node's package resolution: were `katex` ever hoisted to a parent
+ * `node_modules` (a workspace layout), it would match nothing. That cannot pass
+ * unnoticed — `inlineKatexFonts` throws for the first font the sheet names, so
+ * the unit tests fail in the build gate and an export fails loudly.
  */
 const KATEX_WOFF2_DATA_URLS = import.meta.glob<string>(
     '/node_modules/katex/dist/fonts/*.woff2',
@@ -76,7 +82,9 @@ const KATEX_FONT_SRC_RE = /src:\s*url\(\s*["']?fonts\/([\w-]+)\.woff2["']?\s*\)\
 export function fontDataUrlsByName(globbed: Record<string, string>): Map<string, string> {
     const byName = new Map<string, string>();
     for (const [path, url] of Object.entries(globbed)) {
-        const base = path.split('/').pop() ?? '';
+        // Vite writes keys with '/', but split on both separators anyway, as
+        // `printTitleFor` does: a backslash key must not yield a whole path.
+        const base = path.split(/[\\/]/).pop() ?? '';
         byName.set(base.replace(/\.woff2$/, ''), url);
     }
     return byName;

@@ -47,5 +47,14 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   document loads, so diagrams rasterise without an idle slot; a raster failure fails the export at
   once) — UTST: `src/App.test.tsx`, *App — headless export launch* (html and pdf mark the window, an
   ordinary launch does not, raster-failure message)
+- IMPL-LTTCE-XPT-00002 **covers** REQ-LTTCE-XPT-00012  (passes Rust's `exportPageMarginsMm` to
+  `applyPrintStyle` in the PDF launch branch, and keeps them in a ref for a later `beforeprint`) —
+  UTST: `src/App.test.tsx`, *App — headless export launch* (three REQ-LTTCE-XPT-00012 cases)
+- IMPL-LTTCE-XPT-00002 **covers** REQ-LTTCE-XPT-00013  (the HTML launch branch loads
+  `lib/export-document.ts` with a dynamic `import()` and wraps `buildExportHtml`'s output in
+  `buildExportDocument`) — UTST: `src/App.test.tsx`, *App — headless export launch* (an HTML launch
+  hands back a whole document titled with the file name and carrying KaTeX's sheet)
 - IMPL-LTTCE-XPT-00002 **covers** ARCH-LTTCE-XPT-00001
 - IMPL-LTTCE-XPT-00002 **covers** ARCH-LTTCE-XPT-00002
+- IMPL-LTTCE-XPT-00002 **covers** ARCH-LTTCE-XPT-00003
+- IMPL-LTTCE-XPT-00002 **covers** ARCH-LTTCE-XPT-00004

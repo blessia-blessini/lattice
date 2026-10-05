@@ -67,6 +67,11 @@ describe('fontDataUrlsByName', () => {
         expect(byName.size).toBe(2);
     });
 
+    it('takes the bare name from a backslash-separated key too', () => {
+        const byName = fontDataUrlsByName({ 'C:\\katex\\fonts\\KaTeX_Main-Bold.woff2': 'data:c' });
+        expect([...byName.keys()]).toEqual(['KaTeX_Main-Bold']);
+    });
+
     it('returns an empty map for an empty glob', () => {
         expect(fontDataUrlsByName({}).size).toBe(0);
     });
