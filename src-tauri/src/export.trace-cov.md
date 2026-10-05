@@ -25,7 +25,7 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - IMPL-LTTCE-XPT-00002 **covers** REQ-LTTCE-XPT-00014  (`App.tsx` passes the preview root's
   `data-theme`, read from the DOM)
 - IMPL-LTTCE-XPT-00001 **covers** REQ-LTTCE-XPT-00014  (`preview-copy.ts` `waitForPreviewSettled` waits
-  for code highlighting too — see `src/components/Mermaid.trace-cov.md`)
+  for code highlighting too — see `src/lib/preview-copy.trace-cov.md`)
 - IMPL-LTTCE-PRV-00002 **covers** REQ-LTTCE-XPT-00014  (`HighlightedCode.tsx` marks a block pending
   while its parser loads — see `src/components/HighlightedCode.trace-cov.md`)
 

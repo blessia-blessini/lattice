@@ -6,6 +6,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.33
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- DOCS: Give preview-copy.ts its own trace satellite; trace ARCH-LTTCE-PRV-*
 - FIX: Serialise the HTML export in the same turn the preview settled
 - FIX: Give HTML exports the preview's look, syntax highlighting included
 - DOCS: Record ARCH-LTTCE-XPT-00004 in the architecture trace satellite
