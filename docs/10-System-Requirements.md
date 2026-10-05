@@ -648,6 +648,7 @@ teaches the other:
 | `--export-pdf`   | the rendered preview as a paginated PDF | XPT-00004 … 00006       |
 | both             | printer-free PDF, render budget, no partial output, no dependence on timers | XPT-00007 … 00010 |
 | `--export-pdf`   | paper chosen with `--paper`; the same page on every platform | XPT-00011 … 00012 |
+| `--export-html`  | a self-contained document that renders its math offline | XPT-00013 |
 
 <!--REQ-LTTCE-XPT-00001-->
 **REQ-LTTCE-XPT-00001** — Launching `lattice` with `--export-html <path> [<path> ...]` SHALL, for each
@@ -812,6 +813,23 @@ page-margin boxes, which WebKit (Linux, macOS) does not render at all — a plat
 in `30-architecture.md`, not a behaviour this requirement promises. Where they are absent, 2 cm at the
 top and bottom held nothing, so those margins shrink to 1 cm (2026-09-28); the left keeps 2 cm as room
 for binding or punching.
+
+<!--REQ-LTTCE-XPT-00013-->
+**REQ-LTTCE-XPT-00013** — The file `--export-html` writes SHALL be a complete HTML document — a
+`<!DOCTYPE html>` declaration, a head declaring UTF-8 and titled with the source file's name, and the
+rendered preview of REQ-LTTCE-XPT-00001 as its body, unchanged. Its head SHALL carry the stylesheet the
+preview's mathematics is laid out with, and that stylesheet's fonts, inside the file itself, so that
+opened in a current desktop browser with no network access every formula appears once, laid out as the
+preview shows it. The file SHALL NOT refer to any other file or network resource for its styling.
+
+*Rationale*: KaTeX writes each formula twice — a MathML copy for assistive technology and the visible
+layout — and only its stylesheet hides the one and lays out the other. Up to v0.3.32 the export was
+the preview's body alone, without that stylesheet, so a browser showed every formula twice (once as
+MathML, once as a garbled line of text) and drew each square-root bar as a rule across the page
+(v0.3.32 release demo, 2026-10-05). The PDF did not suffer, because it is printed from the live
+preview, which has the sheet. Embedding rather than linking keeps the file portable: it can be
+mailed, archived or opened offline, and opening it never makes the reader's browser contact a
+server.
 
 
 

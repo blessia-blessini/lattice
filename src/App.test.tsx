@@ -27,7 +27,7 @@ import { resolve } from 'path';
 import { render, fireEvent, waitFor, act } from '@testing-library/react';
 import App from './App';
 import { EXPORT_MODE_ATTR } from './lib/preview-copy';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
 import * as TauriCore from '@tauri-apps/api/core';
 import { StaticRuntime } from "@services/StaticRuntime";
 import { save } from '@tauri-apps/plugin-dialog';
@@ -934,6 +934,14 @@ describe('App — keyboard shortcuts', () => {
 // REQ-LTTCE-XPT-00001, REQ-LTTCE-XPT-00003, REQ-LTTCE-XPT-00004
 // ---------------------------------------------------------------------------
 describe('App — headless export launch', () => {
+    // An HTML export loads export-document.ts with a dynamic import. Its first
+    // transform under vitest (~370 KB of embedded fonts) outlasts waitFor's
+    // 1 s default, so load it once here — the cases measure the export, not
+    // the test runner's module cache.
+    beforeAll(async () => {
+        await import('./lib/export-document');
+    });
+
     beforeEach(() => {
         vi.clearAllMocks();
         sessionStorage.clear();
@@ -1046,6 +1054,26 @@ describe('App — headless export launch', () => {
         // against a hand-built DOM instead.
         expect(typeof args.html).toBe('string');
         expect(args.error).toBeNull();
+    });
+
+    it('exportFormat "html" hands back a self-contained document, not a fragment (REQ-LTTCE-XPT-00013)', async () => {
+        // Regression (v0.3.32 demo export): the bare fragment had no KaTeX
+        // sheet, so a browser showed every formula twice and drew each
+        // \sqrt bar across the page.
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/notes/a.md', content: '# Hi', exportFormat: 'html',
+        };
+        render(<App />);
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(1));
+        const [, args] = readyCalls()[0] as [string, any];
+        expect(args.error).toBeNull();
+        const doc = new DOMParser().parseFromString(args.html, 'text/html');
+        expect((args.html as string).startsWith('<!DOCTYPE html>')).toBe(true);
+        expect(doc.title).toBe('a.md');
+        expect(doc.head.querySelector('style')!.textContent).toContain('.katex .katex-mathml{');
+        // The body is what buildExportHtml serialised, nothing else.
+        expect(g_exportRoots.built).not.toHaveLength(0);
     });
 
     it('exportFormat "pdf" signals settled without any HTML', async () => {

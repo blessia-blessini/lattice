@@ -93,6 +93,13 @@ export function makeViteConfig(isE2EBuild: boolean) {
       // "npm warn Unknown cli config \"--pool\"" — npm inspects argv past the
       // `--` separator and will reject unknown flags in npm 12.
       pool: 'forks',
+      // Vitest blanks every CSS import by default — including `?raw` ones,
+      // which are text, not styles. `src/lib/export-document.ts` embeds
+      // KaTeX's sheet that way (REQ-LTTCE-XPT-00013), and its tests must see
+      // the real sheet. The pattern is matched against the id *with* its
+      // query, so the plain `import 'katex/dist/katex.min.css'` in App.tsx
+      // stays blanked as before.
+      css: { include: [/katex\.min\.css\?raw$/] },
     },
   }));
 }

@@ -112,6 +112,11 @@ const RUN_TIMEOUT: Duration = Duration::from_secs(300);
 /// constant this harness cannot import; if one changes, change both.
 const DIAGRAM_IMG_ALT: &str = "alt=\"Mermaid diagram\"";
 
+/// The selector of the KaTeX rule that hides each formula's MathML copy, as
+/// it appears in `katex.min.css` — the fingerprint of KaTeX's stylesheet in an
+/// exported document (REQ-LTTCE-XPT-00013).
+const KATEX_MATHML_RULE: &str = ".katex .katex-mathml{";
+
 //**************************************************************
 // repo_root
 //**************************************************************
@@ -571,9 +576,11 @@ fn run_export(bin: &Path, scratch: &Path, args: &[&str], file: &Path) -> Result<
 ///   NOT be: "contains no ``` fence" looks equivalent and is wrong — demo.md
 ///   says "Lattice renders ```mermaid fenced blocks" as inline code, so the
 ///   fence appears in a *correct* export;
-/// * `<table` and `katex` — proves the renderer ran, not just the parser;
+/// * `<table` and `class="katex"` — proves the renderer ran, not just the parser;
 /// * one `<img>` per Mermaid block — proves diagram rasterisation settled
-///   before the export fired (REQ-LTTCE-XPT-00001).
+///   before the export fired (REQ-LTTCE-XPT-00001);
+/// * a whole document carrying KaTeX's stylesheet and fonts — see
+///   `check_standalone` (REQ-LTTCE-XPT-00013).
 fn check_html(path: &Path) -> Vec<String> {
     let mut problems = Vec::new();
     let html = match fs::read_to_string(path) {
@@ -600,9 +607,12 @@ fn check_html(path: &Path) -> Vec<String> {
     if !html.contains("<table") {
         problems.push("HTML contains no <table> — the demo's tables did not render".into());
     }
-    if !html.contains("katex") {
+    // `class="katex"`, not bare `katex`: the embedded stylesheet names the
+    // class too, so the bare word would pass on a document with no math.
+    if !html.contains("class=\"katex\"") {
         problems.push("HTML contains no KaTeX markup — the demo's math did not render".into());
     }
+    problems.extend(check_standalone(&html));
 
     // The expected count comes from the staged source beside the output
     // (`<dir>/demo.md` → `<dir>/demo.html`), not from a constant that has to be
@@ -616,6 +626,36 @@ fn check_html(path: &Path) -> Vec<String> {
     problems
 }
 // check_html END ***********************************************
+
+
+//**************************************************************
+// check_standalone
+//**************************************************************
+/// REQ-LTTCE-XPT-00013 — the export is a whole document that renders its
+/// math offline: a doctype, KaTeX's stylesheet (identified by the rule that
+/// hides the MathML copy — without it a browser shows every formula twice,
+/// as the v0.3.32 demo export did) and its fonts as `data:` URLs, with no
+/// relative `fonts/` URL left that would point nowhere beside the file.
+/// Pure, so the rule is unit-tested without an app binary.
+fn check_standalone(html: &str) -> Vec<String> {
+    let mut problems = Vec::new();
+    if !html.starts_with("<!DOCTYPE html>") {
+        problems.push("HTML is not a whole document — it does not start with <!DOCTYPE html>".into());
+    }
+    if !html.contains(KATEX_MATHML_RULE) {
+        problems.push(
+            "HTML carries no KaTeX stylesheet — a browser would show every formula twice".into(),
+        );
+    }
+    if !html.contains("data:font/woff2;base64,") {
+        problems.push("HTML embeds no KaTeX font — math would fall back to system fonts".into());
+    }
+    if html.contains("url(fonts/") {
+        problems.push("HTML still refers to KaTeX fonts by a relative fonts/ URL".into());
+    }
+    problems
+}
+// check_standalone END *****************************************
 
 
 //**************************************************************
@@ -1377,6 +1417,36 @@ mod tests {
     #[test]
     fn a_source_without_diagrams_cannot_pass_vacuously() {
         assert_eq!(check_diagrams("", 0).len(), 1);
+    }
+
+    // ── standalone document (REQ-LTTCE-XPT-00013) ───────────────────────────
+
+    const STANDALONE: &str = "<!DOCTYPE html>\n<html><head><style>\
+        @font-face{font-family:KaTeX_Main;src:url(data:font/woff2;base64,AAAA) format(\"woff2\")}\
+        .katex .katex-mathml{position:absolute}</style></head><body><p>x</p></body></html>";
+
+    #[test]
+    fn a_standalone_export_passes() {
+        assert!(check_standalone(STANDALONE).is_empty());
+    }
+
+    #[test]
+    fn the_v0_3_32_bare_fragment_is_rejected() {
+        // What every release up to v0.3.32 wrote: the preview body alone.
+        let problems = check_standalone("<h1 data-source-line=\"1\">T</h1><span class=\"katex\"></span>");
+        assert_eq!(problems.len(), 3, "{problems:?}");
+        assert!(problems[0].contains("<!DOCTYPE html>"));
+        assert!(problems[1].contains("formula twice"));
+        assert!(problems[2].contains("system fonts"));
+    }
+
+    #[test]
+    fn a_relative_font_url_is_rejected() {
+        let html = STANDALONE.replace("data:font/woff2;base64,AAAA", "fonts/KaTeX_Main-Regular.woff2")
+            + "<i>data:font/woff2;base64,</i>";
+        let problems = check_standalone(&html);
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert!(problems[0].contains("relative fonts/ URL"));
     }
 
     // ── page size ───────────────────────────────────────────────────────────

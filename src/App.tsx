@@ -63,7 +63,7 @@ import {
   waitForDiagramsSettled,
 } from './lib/preview-copy';
 import { flushSync } from 'react-dom';
-import { applyPrintStyle, removePrintStyle, resolvePageMargins } from './lib/print-style';
+import { applyPrintStyle, printTitleFor, removePrintStyle, resolvePageMargins } from './lib/print-style';
 import type { PageMarginsMm } from './lib/print-style';
 
 import { StaticRuntime } from "@services/StaticRuntime";
@@ -1182,7 +1182,16 @@ function App() {
               if (exportFormat === 'pdf') {
                 await invoke('export_ready', { html: null, error: null });
               } else {
-                await invoke('export_ready', { html: buildExportHtml(previewRoot), error: null });
+                // REQ-LTTCE-XPT-00013 — a file on disk has no stylesheet but
+                // its own: wrap the preview in a document carrying KaTeX's
+                // sheet and fonts. Loaded here only — ~350 KB of font data
+                // no interactive launch should parse.
+                const { buildExportDocument } = await import('./lib/export-document');
+                const html = buildExportDocument(
+                  buildExportHtml(previewRoot),
+                  printTitleFor(initData.path),
+                );
+                await invoke('export_ready', { html, error: null });
               }
             } catch (e) {
               console.error("Export failed:", e);

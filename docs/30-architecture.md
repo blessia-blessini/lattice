@@ -1307,6 +1307,10 @@ Rust: cli_args::requested_export_format() → export::run_export(paths, format)
   buildExportHtml(previewBodyRef)      │        (nothing to serialise —              │
    same substitution as buildCopyHtml, │         the document itself is the output)  │
    generalised to the whole document   │                                             │
+        ▼                              │                                             │
+  buildExportDocument(body, file name) │                                             │
+   doctype + head + KaTeX sheet and    │                                             │
+   fonts inline (ARCH-LTTCE-XPT-00004) │                                             │
         ▼                              │              ▼                              │
   invoke('export_ready',{html})        │        invoke('export_ready',{html:null})   │
         ▼ (Rust)                       │              ▼ (Rust)                       │
@@ -1326,6 +1330,50 @@ per `ARCH-LTTCE-CPY-00001`, syntax highlighting) — a second renderer that coul
 the interactive preview actually shows, defeating the "as though copy/pasting from the preview pane"
 requirement at its source. Driving the same WebView the interactive app uses, just without showing its
 window, is slower per file but structurally cannot drift.
+
+### HTML — a self-contained document
+
+<!--ARCH-LTTCE-XPT-00004-->
+
+Covers REQ-LTTCE-XPT-00013. The preview's body is not enough on its own: KaTeX emits every formula as a
+MathML copy (`.katex-mathml`) *and* an HTML/SVG layout (`.katex-html`), and it is `katex.min.css` that
+hides the first, positions the second and clips the 400em-wide SVG each `\sqrt` bar is drawn with. The
+interactive preview has that sheet through `App.tsx`'s import; a file on disk has only what is written
+into it. The v0.3.32 export was the bare body, so browsers rendered the MathML natively, then the
+unstyled layout spans as a line of text beside it, and every root bar as a page-wide rule.
+
+`src/lib/export-document.ts` (IMPL-LTTCE-XPT-00008) therefore wraps `buildExportHtml`'s output:
+
+- `buildExportDocument(body, title)` — `<!DOCTYPE html>`, a head with `charset`, `viewport`, the
+  escaped file name as `<title>` (`printTitleFor`, the same name the print header uses) and one
+  `<style>`; the body placed unchanged, so REQ-LTTCE-XPT-00001's "the preview, as rendered" still holds.
+- The `<style>` is KaTeX's own sheet, imported with Vite's `?raw` — the very file the preview loads,
+  so the two cannot drift across a KaTeX upgrade.
+- Its fonts are embedded as `data:` URLs: `import.meta.glob` over `katex/dist/fonts/*.woff2` with
+  `?url&inline` (`exhaustive: true`, needed inside `node_modules`), and `inlineKatexFonts` rewrites each
+  `@font-face` `src:` list to that one woff2 URL. Only woff2 is embedded — every browser that renders
+  KaTeX reads it — and the woff/ttf fallbacks are dropped, since a relative `fonts/…` URL would point
+  nowhere beside the exported file. A font the sheet names but the build did not embed throws, which
+  fails that file (REQ-LTTCE-XPT-00003) rather than writing one that quietly renders in system fonts.
+
+**Embed, do not link.** Linking KaTeX from a CDN would cost ~1 KB instead of ~370 KB per file, but the
+file would then render correctly only online, and opening it would make the reader's browser contact a
+third-party server — for a local-first editor, a privacy leak the user never asked for.
+
+**Loaded on the export path only.** The module carries ~370 KB of font data; `App.tsx` reaches it with
+a dynamic `import()` inside the HTML export branch, so Vite emits it as a separate chunk and an
+interactive launch never parses it.
+
+**The rest of the preview's styling is not carried.** Headings, tables and code blocks appear with the
+browser's defaults rather than `App.css`'s look; inline highlight styling already travels inline
+(ARCH-LTTCE-CPY-00001). Only the math *needs* a stylesheet to be legible, which is what
+REQ-LTTCE-XPT-00013 asks for.
+
+**Why the frontend, not Rust.** Rust writes the file, so wrapping it there looks natural. But the
+content is npm package assets: Rust would have to `include_bytes!` each font out of `node_modules`,
+add a base64 encoder, and keep a hand-written font list in step with KaTeX's. Vite already resolves,
+encodes and versions exactly these files for the preview, and the tests can check the result against
+the sheet actually bundled.
 
 ### Rust — `export.rs` + `lib.rs`
 
