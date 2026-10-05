@@ -1367,9 +1367,15 @@ unstyled layout spans as a line of text beside it, and every root bar as a page-
 file would then render correctly only online, and opening it would make the reader's browser contact a
 third-party server — for a local-first editor, a privacy leak the user never asked for.
 
-**Loaded on the export path only.** The module carries ~370 KB of font data; `App.tsx` reaches it with
-a dynamic `import()` inside the HTML export branch, so Vite emits it as a separate chunk and an
-interactive launch never parses it.
+**Loaded on the export path only — and before the settle wait.** The module carries ~370 KB of font
+data; `App.tsx` reaches it with a dynamic `import()` in the HTML export branch, so Vite emits it as a
+separate chunk and an interactive launch never parses it. The import is awaited *before*
+`waitForPreviewSettled`, never between it and `buildExportHtml`: from the moment the preview is seen
+settled to the moment it is serialised there must be no `await`. The first version imported it after
+the wait; loading the chunk yielded to the event loop, a re-render in that gap reset the diagrams and
+the code highlighting, and linux-desktop wrote a file with 0 of 4 diagrams and uncoloured code (CI run
+37351395621). The PDF path has a gap of the same kind — `export_ready` is an IPC round trip before
+the host prints — which predates this change and has not been seen to fail.
 
 **The preview's look, not the app's (REQ-LTTCE-XPT-00014).** Syntax highlighting is `<span
 class="tok-…">` markup (ARCH-LTTCE-PRV-00002) whose colours are CSS rules scoped to

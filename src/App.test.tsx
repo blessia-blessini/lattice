@@ -57,7 +57,10 @@ export const g_exportRoots: {
     built: Element[];
     timeouts: (number | undefined)[];
     forceResult: { pending: number; failed: number; total: number; codePending: number } | null;
-} = { settled: [], built: [], timeouts: [], forceResult: null };
+    /** Runs on the preview root in the next task after the wait resolves —
+     *  stands in for a React re-render landing right after the settle. */
+    afterSettle: ((root: Element) => void) | null;
+} = { settled: [], built: [], timeouts: [], forceResult: null, afterSettle: null };
 vi.mock('./lib/preview-copy', async (importOriginal) => {
     const actual = await importOriginal<typeof import('./lib/preview-copy')>();
     return {
@@ -65,10 +68,11 @@ vi.mock('./lib/preview-copy', async (importOriginal) => {
         waitForPreviewSettled: (root: Element, timeoutMs?: number) => {
             g_exportRoots.settled.push(root);
             g_exportRoots.timeouts.push(timeoutMs);
-            if (g_exportRoots.forceResult) {
-                return Promise.resolve(g_exportRoots.forceResult);
-            }
-            return actual.waitForPreviewSettled(root, timeoutMs as any);
+            const after = g_exportRoots.afterSettle;
+            const result = g_exportRoots.forceResult
+                ? Promise.resolve(g_exportRoots.forceResult)
+                : actual.waitForPreviewSettled(root, timeoutMs as any);
+            return after ? result.then((r) => { setTimeout(() => after(root), 0); return r; }) : result;
         },
         buildExportHtml: (root: Element) => {
             g_exportRoots.built.push(root);
@@ -955,6 +959,7 @@ describe('App — headless export launch', () => {
         vi.mocked(TauriCore.invoke).mockImplementation(makeInvokeMock());
         g_exportRoots.timeouts.length = 0;
         g_exportRoots.forceResult = null;
+        g_exportRoots.afterSettle = null;
         document.documentElement.removeAttribute(EXPORT_MODE_ATTR);
     });
 
@@ -1077,6 +1082,35 @@ describe('App — headless export launch', () => {
         expect(doc.head.querySelector('style')!.textContent).toContain('.katex .katex-mathml{');
         // The body is what buildExportHtml serialised, nothing else.
         expect(g_exportRoots.built).not.toHaveLength(0);
+    });
+
+    it('exportFormat "html" serialises the preview in the same turn it settled, with no await between (REQ-LTTCE-XPT-00009 / 00014)', async () => {
+        // Regression (CI run 37351395621, linux-desktop, 2026-10-05): the
+        // export-document module was imported with an `await` *between* the
+        // settle wait and the serialisation. A re-render in that gap reset the
+        // four diagrams and the code highlighting, and the file was written
+        // with 0 of 4 diagrams and uncoloured code. A change landing in the
+        // next task after the settle must not reach the export.
+        //
+        // resetModules makes the export window's import of export-document.ts
+        // load for real, as it does in a WebView (the beforeAll pre-load would
+        // otherwise let it finish without yielding, hiding the gap).
+        vi.resetModules();
+        g_exportRoots.afterSettle = (root) => {
+            const late = document.createElement('div');
+            late.className = 'mermaid';
+            late.id = 'late-rerender';
+            root.appendChild(late);
+        };
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/notes/a.md', content: '# Hi', exportFormat: 'html',
+        };
+        render(<App />);
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(1), { timeout: 15_000 });
+        const [, args] = readyCalls()[0] as [string, any];
+        expect(args.error).toBeNull();
+        expect(args.html).not.toContain('late-rerender');
     });
 
     it('exportFormat "html" styles the export in the theme the preview root shows (REQ-LTTCE-XPT-00014)', async () => {

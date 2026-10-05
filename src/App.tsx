@@ -1172,6 +1172,19 @@ function App() {
               // A timeout is a failure, never a partial success
               // (REQ-LTTCE-XPT-00009).
               const settleMs = resolveSettleTimeout(initData.exportSettleMs);
+
+              // REQ-LTTCE-XPT-00013 / 00014 — the document wrapper for an
+              // HTML export, loaded here only (~350 KB of font data no
+              // interactive launch should parse) and loaded *before* the
+              // settle wait: from the moment the preview settles to the
+              // moment it is serialised there must be no await. A re-render
+              // in such a gap resets diagrams and code highlighting, and the
+              // file was written with 0 of 4 diagrams and uncoloured code
+              // (CI run 37351395621, linux-desktop, 2026-10-05).
+              const exportDocument = exportFormat === 'html'
+                ? await import('./lib/export-document')
+                : null;
+
               const unsettled = describeUnsettledPreview(
                 await waitForPreviewSettled(previewRoot, settleMs),
                 settleMs,
@@ -1180,20 +1193,18 @@ function App() {
                 throw new Error(unsettled);
               }
 
-              if (exportFormat === 'pdf') {
+              if (!exportDocument) {
                 await invoke('export_ready', { html: null, error: null });
               } else {
-                // REQ-LTTCE-XPT-00013 / 00014 — a file on disk has no
-                // stylesheet but its own: wrap the preview in a document
-                // carrying the preview's stylesheets and KaTeX's fonts, in
-                // the theme the preview root shows (read from the DOM, not
-                // from React state captured by this closure). Loaded here
-                // only — ~350 KB of font data no interactive launch should parse.
-                const { buildExportDocument, resolveExportTheme } = await import('./lib/export-document');
-                const html = buildExportDocument(
+                // A file on disk has no stylesheet but its own: wrap the
+                // preview in a document carrying the preview's stylesheets
+                // and KaTeX's fonts, in the theme the preview root shows
+                // (read from the DOM, not from React state captured by this
+                // closure). Synchronous from the settle check to here.
+                const html = exportDocument.buildExportDocument(
                   buildExportHtml(previewRoot),
                   printTitleFor(initData.path),
-                  resolveExportTheme(previewRoot.getAttribute('data-theme')),
+                  exportDocument.resolveExportTheme(previewRoot.getAttribute('data-theme')),
                 );
                 await invoke('export_ready', { html, error: null });
               }

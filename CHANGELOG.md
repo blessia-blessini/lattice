@@ -6,6 +6,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.33
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: Serialise the HTML export in the same turn the preview settled
 - FIX: Give HTML exports the preview's look, syntax highlighting included
 - DOCS: Record ARCH-LTTCE-XPT-00004 in the architecture trace satellite
 - FIX: Record the HTML export's trace links beside App.tsx and export-document.ts

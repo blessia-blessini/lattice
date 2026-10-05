@@ -56,7 +56,9 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   hands back a whole document titled with the file name and carrying KaTeX's sheet)
 - IMPL-LTTCE-XPT-00002 **covers** REQ-LTTCE-XPT-00014  (passes the preview root's `data-theme`, read
   from the DOM, to `buildExportDocument`; imports `preview-theme.css` for the pane) — UTST:
-  `src/App.test.tsx`, *App — headless export launch* (the article carries the preview root's theme)
+  `src/App.test.tsx`, *App — headless export launch* (the article carries the preview root's theme;
+  the preview is serialised in the same turn it settled — a re-render landing after the settle must
+  not reach the file, which reproduces CI run 37351395621 against the earlier import order)
 - IMPL-LTTCE-XPT-00002 **covers** ARCH-LTTCE-XPT-00001
 - IMPL-LTTCE-XPT-00002 **covers** ARCH-LTTCE-XPT-00002
 - IMPL-LTTCE-XPT-00002 **covers** ARCH-LTTCE-XPT-00003
