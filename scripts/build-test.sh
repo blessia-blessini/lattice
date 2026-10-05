@@ -82,8 +82,13 @@ if [ "$1" = "fast" ] || [ "$1" = "--fast" ] || [ "$1" = "-Fast" ]; then
 fi
 # fast_tests END **********************************************
 
+# Clear what could skew this run's coverage: earlier .profraw data and
+# Lattice's own instrumented build (also no stale E2E binary). --workspace
+# keeps the compiled dependencies — a bare `clean` threw those away and cost
+# ~2.5 min of recompiling on every run (172 s vs 25 s for step 1a, measured
+# 2026-10-05).
 pushd src-tauri || exit
-cargo llvm-cov clean
+cargo llvm-cov clean --workspace
 popd
 
 # Temp files to capture Rust test result lines for the GitHub Actions summary.

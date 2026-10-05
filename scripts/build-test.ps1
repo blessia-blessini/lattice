@@ -29,13 +29,6 @@ $oldEnv = $env:LATTICEBUILD_NO
 # here — even if nested Push/Pop calls are misaligned by a failure or Ctrl-C.
 $startDir = Get-Location
 
-Push-Location src-tauri
-try {
-  cargo llvm-cov clean
-} finally {
-    Set-Location $startDir
-}
-
 try {
 
     # call the preambule script
@@ -109,6 +102,15 @@ try {
         exit 0
     }
     # Invoke-FastTests END *****************************************
+
+    # Clear what could skew this run's coverage: earlier .profraw data and
+    # Lattice's own instrumented build (also no stale E2E binary). --workspace
+    # keeps the compiled dependencies — a bare `clean` threw those away and
+    # cost ~2.5 min of recompiling on every run (172 s vs 25 s for step 1a,
+    # measured 2026-10-05). Full runs only: FAST mode does not use llvm-cov.
+    Push-Location src-tauri
+    cargo llvm-cov clean --workspace
+    Pop-Location
 
     # 1a. Run Backend Unit Tests (Rust)
     # --no-report accumulates coverage data without generating a report yet,
