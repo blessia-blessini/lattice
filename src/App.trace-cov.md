@@ -54,6 +54,9 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   `lib/export-document.ts` with a dynamic `import()` and wraps `buildExportHtml`'s output in
   `buildExportDocument`) — UTST: `src/App.test.tsx`, *App — headless export launch* (an HTML launch
   hands back a whole document titled with the file name and carrying KaTeX's sheet)
+- IMPL-LTTCE-XPT-00002 **covers** REQ-LTTCE-XPT-00014  (passes the preview root's `data-theme`, read
+  from the DOM, to `buildExportDocument`; imports `preview-theme.css` for the pane) — UTST:
+  `src/App.test.tsx`, *App — headless export launch* (the article carries the preview root's theme)
 - IMPL-LTTCE-XPT-00002 **covers** ARCH-LTTCE-XPT-00001
 - IMPL-LTTCE-XPT-00002 **covers** ARCH-LTTCE-XPT-00002
 - IMPL-LTTCE-XPT-00002 **covers** ARCH-LTTCE-XPT-00003

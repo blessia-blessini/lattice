@@ -117,6 +117,25 @@ const DIAGRAM_IMG_ALT: &str = "alt=\"Mermaid diagram\"";
 /// exported document (REQ-LTTCE-XPT-00013).
 const KATEX_MATHML_RULE: &str = ".katex .katex-mathml{";
 
+/// The wrapper an exported document puts the preview in: the class and
+/// attribute every preview style rule is scoped to (REQ-LTTCE-XPT-00014).
+const PREVIEW_ARTICLE: &str = "<article class=\"markdown-body\" data-theme=\"";
+
+/// Fingerprint of `preview-theme.css` — its code-token palette rule (nested
+/// under `.markdown-body[data-theme]`) — in an exported document.
+const TOKEN_PALETTE_RULE: &str = "& .tok-keyword";
+
+/// Fingerprint of github-markdown-css, the preview's document stylesheet.
+const GITHUB_MARKDOWN_RULE: &str = ".markdown-body pre {";
+
+/// A syntax-highlighted keyword token in the exported markup.
+const KEYWORD_TOKEN: &str = "class=\"tok-keyword";
+
+/// The attribute a code block carries while its highlighting is still
+/// loading. Mirrors `HIGHLIGHT_PENDING_ATTR` in `src/lib/preview-copy.ts`,
+/// which this harness cannot import; if one changes, change both.
+const HIGHLIGHT_PENDING_ATTR: &str = "data-lattice-highlight-pending";
+
 //**************************************************************
 // repo_root
 //**************************************************************
@@ -613,6 +632,7 @@ fn check_html(path: &Path) -> Vec<String> {
         problems.push("HTML contains no KaTeX markup — the demo's math did not render".into());
     }
     problems.extend(check_standalone(&html));
+    problems.extend(check_preview_look(&html));
 
     // The expected count comes from the staged source beside the output
     // (`<dir>/demo.md` → `<dir>/demo.html`), not from a constant that has to be
@@ -656,6 +676,37 @@ fn check_standalone(html: &str) -> Vec<String> {
     problems
 }
 // check_standalone END *****************************************
+
+
+//**************************************************************
+// check_preview_look
+//**************************************************************
+/// REQ-LTTCE-XPT-00014 — the export looks like the preview: the body sits in
+/// a `.markdown-body` article with the preview's theme, the document carries
+/// github-markdown-css and the code-token palette, and the code blocks are
+/// syntax-highlighted — with none still waiting for its highlighting, which
+/// is what an export that fired too early would leave behind.
+/// Pure, so the rule is unit-tested without an app binary.
+fn check_preview_look(html: &str) -> Vec<String> {
+    let mut problems = Vec::new();
+    if !html.contains(PREVIEW_ARTICLE) {
+        problems.push("HTML has no .markdown-body article with a theme — no preview style rule can match".into());
+    }
+    if !html.contains(GITHUB_MARKDOWN_RULE) {
+        problems.push("HTML carries no github-markdown-css — the document would use browser defaults".into());
+    }
+    if !html.contains(TOKEN_PALETTE_RULE) {
+        problems.push("HTML carries no code-token palette — code would export uncoloured".into());
+    }
+    if !html.contains(KEYWORD_TOKEN) {
+        problems.push("HTML has no highlighted keyword token — the demo's code was not highlighted".into());
+    }
+    if html.contains(HIGHLIGHT_PENDING_ATTR) {
+        problems.push("HTML still has a code block waiting for its highlighting — exported too early".into());
+    }
+    problems
+}
+// check_preview_look END ***************************************
 
 
 //**************************************************************
@@ -1438,6 +1489,39 @@ mod tests {
         assert!(problems[0].contains("<!DOCTYPE html>"));
         assert!(problems[1].contains("formula twice"));
         assert!(problems[2].contains("system fonts"));
+    }
+
+    // ── preview look (REQ-LTTCE-XPT-00014) ──────────────────────────────────
+
+    const LOOK: &str = "<style>.markdown-body pre { padding: 16px; }        .markdown-body[data-theme=\"light\"] { & .tok-keyword { color: #cf222e } }</style>        <article class=\"markdown-body\" data-theme=\"light\">        <pre><code><span class=\"tok-keyword\">fn</span> main() {}</code></pre></article>";
+
+    #[test]
+    fn an_export_with_the_preview_look_passes() {
+        assert!(check_preview_look(LOOK).is_empty(), "{:?}", check_preview_look(LOOK));
+    }
+
+    #[test]
+    fn the_unstyled_unwrapped_export_is_rejected() {
+        // What 463ad53 wrote: tokens in the markup, but no wrapper and no
+        // sheet for them, so a browser drew every token in the text colour.
+        let problems = check_preview_look("<pre><code><span class=\"tok-keyword\">fn</span></code></pre>");
+        assert_eq!(problems.len(), 3, "{problems:?}");
+        assert!(problems[0].contains("article"));
+        assert!(problems[1].contains("github-markdown-css"));
+        assert!(problems[2].contains("palette"));
+    }
+
+    #[test]
+    fn plain_or_still_pending_code_is_rejected() {
+        let plain = LOOK.replace("<span class=\"tok-keyword\">fn</span>", "fn");
+        let problems = check_preview_look(&plain);
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert!(problems[0].contains("not highlighted"));
+
+        let pending = LOOK.replace("<code>", "<code data-lattice-highlight-pending=\"\">");
+        let problems = check_preview_look(&pending);
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert!(problems[0].contains("exported too early"));
     }
 
     #[test]

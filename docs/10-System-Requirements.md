@@ -649,6 +649,7 @@ teaches the other:
 | both             | printer-free PDF, render budget, no partial output, no dependence on timers | XPT-00007 … 00010 |
 | `--export-pdf`   | paper chosen with `--paper`; the same page on every platform | XPT-00011 … 00012 |
 | `--export-html`  | a self-contained document that renders its math offline | XPT-00013 |
+| `--export-html`  | the preview's look, syntax highlighting included          | XPT-00014 |
 
 <!--REQ-LTTCE-XPT-00001-->
 **REQ-LTTCE-XPT-00001** — Launching `lattice` with `--export-html <path> [<path> ...]` SHALL, for each
@@ -817,7 +818,7 @@ for binding or punching.
 <!--REQ-LTTCE-XPT-00013-->
 **REQ-LTTCE-XPT-00013** — The file `--export-html` writes SHALL be a complete HTML document — a
 `<!DOCTYPE html>` declaration, a head declaring UTF-8 and titled with the source file's name, and the
-rendered preview of REQ-LTTCE-XPT-00001 as its body, unchanged. Its head SHALL carry the stylesheet the
+rendered preview of REQ-LTTCE-XPT-00001, unchanged, as the content of its body. Its head SHALL carry the stylesheet the
 preview's mathematics is laid out with, and that stylesheet's fonts, inside the file itself, so that
 opened in a current desktop browser with no network access every formula appears once, laid out as the
 preview shows it. The file SHALL NOT refer to any other file or network resource for its styling.
@@ -830,6 +831,25 @@ MathML, once as a garbled line of text) and drew each square-root bar as a rule 
 preview, which has the sheet. Embedding rather than linking keeps the file portable: it can be
 mailed, archived or opened offline, and opening it never makes the reader's browser contact a
 server.
+
+<!--REQ-LTTCE-XPT-00014-->
+**REQ-LTTCE-XPT-00014** — The file `--export-html` writes SHALL look like the preview it was rendered
+from, in the preview's theme: code blocks syntax-highlighted in the preview's token colours, and
+headings, tables, block quotes and code blocks styled as the preview styles them. The stylesheets for
+this SHALL be carried inside the file, under the same no-external-resource rule as REQ-LTTCE-XPT-00013.
+An export SHALL NOT be written while any code block of the document is still waiting for its syntax
+highlighting; a block that cannot be highlighted within the render budget of REQ-LTTCE-XPT-00008 SHALL
+fail that file under REQ-LTTCE-XPT-00003, like an unsettled diagram under REQ-LTTCE-XPT-00009. A code
+block whose language is unknown, or whose parser fails to load, counts as settled — it is shown as plain
+text in the preview too.
+
+*Rationale*: the preview colours code with CSS rules scoped to its themed `.markdown-body` root, and
+takes its document look from github-markdown-css. The v0.3.32 export carried neither, nor the root's
+class and theme, so the token markup was in the file but every token was drawn in the text colour, and
+the document fell back to browser defaults (reported 2026-10-05). Highlighting is also asynchronous —
+each language's parser loads on demand — so an export that waits only for diagrams can catch code still
+uncoloured; a document without diagrams settles at once. "As the preview shows it" includes the theme:
+the file is styled in the theme the preview was rendered in.
 
 
 

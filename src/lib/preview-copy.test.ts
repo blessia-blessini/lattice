@@ -30,12 +30,13 @@ import {
     buildExportHtml,
     fragmentHasDiagram,
     substituteDiagrams,
-    waitForDiagramsSettled,
-    describeUnsettledDiagrams,
+    waitForPreviewSettled,
+    describeUnsettledPreview,
     resolveSettleTimeout,
     DEFAULT_SETTLE_TIMEOUT_MS,
     DIAGRAM_PNG_ATTR,
     DIAGRAM_PNG_FAILED_ATTR,
+    HIGHLIGHT_PENDING_ATTR,
 } from './preview-copy';
 
 const PNG = 'data:image/png;base64,AAAA';
@@ -50,7 +51,7 @@ const fragmentOf = (html: string): DocumentFragment => {
     return template.content;
 };
 
-// buildExportHtml/waitForDiagramsSettled walk a live root element (the
+// buildExportHtml/waitForPreviewSettled walk a live root element (the
 // preview body), not a detached selection fragment — this builds that.
 const elementOf = (html: string): HTMLElement => {
     const div = document.createElement('div');
@@ -186,20 +187,20 @@ describe('preview copy — waiting for diagrams to settle', () => {
 
     it('resolves immediately when there is no diagram', async () => {
         const start = Date.now();
-        await waitForDiagramsSettled(elementOf('<p>plain text</p>'), 500);
+        await waitForPreviewSettled(elementOf('<p>plain text</p>'), 500);
         expect(Date.now() - start).toBeLessThan(400);
     });
 
     it('resolves immediately once every diagram already has a cached PNG', async () => {
         const start = Date.now();
-        await waitForDiagramsSettled(elementOf(`${diagram()}${diagram('data:image/png;base64,BBBB')}`), 500);
+        await waitForPreviewSettled(elementOf(`${diagram()}${diagram('data:image/png;base64,BBBB')}`), 500);
         expect(Date.now() - start).toBeLessThan(400);
     });
 
     it('resolves immediately for a diagram that failed to render', async () => {
         const root = elementOf('<div class="mermaid"><pre class="error">boom</pre></div>');
         const start = Date.now();
-        await waitForDiagramsSettled(root, 500);
+        await waitForPreviewSettled(root, 500);
         expect(Date.now() - start).toBeLessThan(400);
     });
 
@@ -207,7 +208,7 @@ describe('preview copy — waiting for diagrams to settle', () => {
         // The <svg> has no cached PNG and no .error — never settles.
         const root = elementOf('<div class="mermaid"><svg></svg></div>');
         const start = Date.now();
-        await waitForDiagramsSettled(root, 250);
+        await waitForPreviewSettled(root, 250);
         expect(Date.now() - start).toBeGreaterThanOrEqual(200);
     });
 
@@ -220,18 +221,18 @@ describe('preview copy — waiting for diagrams to settle', () => {
             + `<div class="mermaid"><pre class="error">boom</pre></div>`
             + `<div class="mermaid"><svg></svg></div>`,
         );
-        const result = await waitForDiagramsSettled(root, 250);
-        expect(result).toEqual({ pending: 2, failed: 0, total: 4 });
+        const result = await waitForPreviewSettled(root, 250);
+        expect(result).toEqual({ pending: 2, failed: 0, total: 4, codePending: 0 });
     });
 
     it('reports nothing pending once every diagram settled', async () => {
-        const result = await waitForDiagramsSettled(elementOf(`${diagram()}${diagram()}`), 500);
-        expect(result).toEqual({ pending: 0, failed: 0, total: 2 });
+        const result = await waitForPreviewSettled(elementOf(`${diagram()}${diagram()}`), 500);
+        expect(result).toEqual({ pending: 0, failed: 0, total: 2, codePending: 0 });
     });
 
     it('reports an empty document as settled with zero diagrams', async () => {
-        const result = await waitForDiagramsSettled(elementOf('<p>plain text</p>'), 500);
-        expect(result).toEqual({ pending: 0, failed: 0, total: 0 });
+        const result = await waitForPreviewSettled(elementOf('<p>plain text</p>'), 500);
+        expect(result).toEqual({ pending: 0, failed: 0, total: 0, codePending: 0 });
     });
 
     it('resolves once a still-rendering diagram later gets its PNG', async () => {
@@ -240,7 +241,7 @@ describe('preview copy — waiting for diagrams to settle', () => {
         setTimeout(() => container.setAttribute(DIAGRAM_PNG_ATTR, PNG), 150);
 
         const start = Date.now();
-        const result = await waitForDiagramsSettled(root, 5000);
+        const result = await waitForPreviewSettled(root, 5000);
         const elapsed = Date.now() - start;
         expect(elapsed).toBeGreaterThanOrEqual(100);
         expect(elapsed).toBeLessThan(5000);
@@ -261,9 +262,9 @@ describe('preview copy — settling is event-driven, not timed', () => {
         const root = elementOf('<div class="mermaid"><svg></svg></div>');
         document.body.appendChild(root);
         try {
-            const wait = waitForDiagramsSettled(root, 60_000);
+            const wait = waitForPreviewSettled(root, 60_000);
             root.querySelector('.mermaid')!.setAttribute(DIAGRAM_PNG_ATTR, PNG);
-            await expect(wait).resolves.toEqual({ pending: 0, failed: 0, total: 1 });
+            await expect(wait).resolves.toEqual({ pending: 0, failed: 0, total: 1, codePending: 0 });
         } finally {
             root.remove();
         }
@@ -272,27 +273,27 @@ describe('preview copy — settling is event-driven, not timed', () => {
     it('settles on a render-error block appearing, with every timer frozen', async () => {
         vi.useFakeTimers();
         const root = elementOf('<div class="mermaid"><svg></svg></div>');
-        const wait = waitForDiagramsSettled(root, 60_000);
+        const wait = waitForPreviewSettled(root, 60_000);
         root.querySelector('.mermaid')!.innerHTML = '<pre class="error">boom</pre>';
-        await expect(wait).resolves.toEqual({ pending: 0, failed: 0, total: 1 });
+        await expect(wait).resolves.toEqual({ pending: 0, failed: 0, total: 1, codePending: 0 });
     });
 
     it('treats a rasterisation failure as final and reports it', async () => {
         vi.useFakeTimers();
         const root = elementOf(`${diagram()}<div class="mermaid"><svg></svg></div>`);
-        const wait = waitForDiagramsSettled(root, 60_000);
+        const wait = waitForPreviewSettled(root, 60_000);
         root.querySelectorAll('.mermaid')[1].setAttribute(DIAGRAM_PNG_FAILED_ATTR, '');
-        await expect(wait).resolves.toEqual({ pending: 0, failed: 1, total: 2 });
+        await expect(wait).resolves.toEqual({ pending: 0, failed: 1, total: 2, codePending: 0 });
     });
 
     it('reports an already-failed diagram without waiting at all', async () => {
         const root = elementOf(`<div class="mermaid" ${DIAGRAM_PNG_FAILED_ATTR}=""><svg></svg></div>`);
-        await expect(waitForDiagramsSettled(root, 60_000)).resolves.toEqual({ pending: 0, failed: 1, total: 1 });
+        await expect(waitForPreviewSettled(root, 60_000)).resolves.toEqual({ pending: 0, failed: 1, total: 1, codePending: 0 });
     });
 
     it('counts a PNG as settled even beside a stale failure mark', async () => {
         const root = elementOf(diagram(PNG, `${DIAGRAM_PNG_FAILED_ATTR}=""`));
-        await expect(waitForDiagramsSettled(root, 60_000)).resolves.toEqual({ pending: 0, failed: 0, total: 1 });
+        await expect(waitForPreviewSettled(root, 60_000)).resolves.toEqual({ pending: 0, failed: 0, total: 1, codePending: 0 });
     });
 
     it('keeps waiting while only some diagrams have settled', async () => {
@@ -300,22 +301,22 @@ describe('preview copy — settling is event-driven, not timed', () => {
         const root = elementOf('<div class="mermaid"><svg></svg></div><div class="mermaid"><svg></svg></div>');
         const [first, second] = Array.from(root.querySelectorAll('.mermaid'));
         let settled = false;
-        const wait = waitForDiagramsSettled(root, 60_000).then((r) => { settled = true; return r; });
+        const wait = waitForPreviewSettled(root, 60_000).then((r) => { settled = true; return r; });
 
         first.setAttribute(DIAGRAM_PNG_ATTR, PNG);
         await Promise.resolve(); await Promise.resolve();
         expect(settled).toBe(false);
 
         second.setAttribute(DIAGRAM_PNG_ATTR, PNG);
-        await expect(wait).resolves.toEqual({ pending: 0, failed: 0, total: 2 });
+        await expect(wait).resolves.toEqual({ pending: 0, failed: 0, total: 2, codePending: 0 });
     });
 
     it('still ends on the backstop when nothing ever changes', async () => {
         vi.useFakeTimers();
         const root = elementOf('<div class="mermaid"><svg></svg></div>');
-        const wait = waitForDiagramsSettled(root, 60_000);
+        const wait = waitForPreviewSettled(root, 60_000);
         await vi.advanceTimersByTimeAsync(60_000);
-        await expect(wait).resolves.toEqual({ pending: 1, failed: 0, total: 1 });
+        await expect(wait).resolves.toEqual({ pending: 1, failed: 0, total: 1, codePending: 0 });
     });
 });
 
@@ -324,26 +325,26 @@ describe('preview copy — settling is event-driven, not timed', () => {
 describe('preview copy — unsettled diagrams are an export failure', () => {
 
     it('returns null when every diagram settled', () => {
-        expect(describeUnsettledDiagrams({ pending: 0, failed: 0, total: 5 }, 40_000)).toBeNull();
-        expect(describeUnsettledDiagrams({ pending: 0, failed: 0, total: 0 }, 40_000)).toBeNull();
+        expect(describeUnsettledPreview({ pending: 0, failed: 0, total: 5, codePending: 0 }, 40_000)).toBeNull();
+        expect(describeUnsettledPreview({ pending: 0, failed: 0, total: 0, codePending: 0 }, 40_000)).toBeNull();
     });
 
     it('names the missing count, the total and the budget in seconds', () => {
-        const msg = describeUnsettledDiagrams({ pending: 3, failed: 0, total: 5 }, 85_000);
+        const msg = describeUnsettledPreview({ pending: 3, failed: 0, total: 5, codePending: 0 }, 85_000);
         expect(msg).toContain('3 of 5');
         expect(msg).toContain('85s');
         expect(msg).toContain('incomplete');
     });
 
     it('reports a rasterisation failure as its own cause, not as a budget overrun (REQ-LTTCE-XPT-00010)', () => {
-        const msg = describeUnsettledDiagrams({ pending: 0, failed: 1, total: 4 }, 80_000);
+        const msg = describeUnsettledPreview({ pending: 0, failed: 1, total: 4, codePending: 0 }, 80_000);
         expect(msg).toContain('1 of 4');
         expect(msg).toContain('could not be converted to an image');
         expect(msg).not.toContain('80s');
     });
 
     it('names the failure even while other diagrams are still pending', () => {
-        const msg = describeUnsettledDiagrams({ pending: 2, failed: 1, total: 4 }, 80_000);
+        const msg = describeUnsettledPreview({ pending: 2, failed: 1, total: 4, codePending: 0 }, 80_000);
         expect(msg).toContain('could not be converted to an image');
     });
 
@@ -352,5 +353,59 @@ describe('preview copy — unsettled diagrams are an export failure', () => {
         for (const bad of [undefined, null, 0, -1, NaN, Infinity, '40000', {}]) {
             expect(resolveSettleTimeout(bad)).toBe(DEFAULT_SETTLE_TIMEOUT_MS);
         }
+    });
+});
+
+// UTST for REQ-LTTCE-XPT-00014 — an export also waits for every code block's
+// syntax highlighting: a document with no diagrams used to settle at once and
+// could be written while its code was still plain text.
+describe('preview copy — the settle wait covers code highlighting', () => {
+    afterEach(() => { vi.useRealTimers(); });
+
+    const pendingCode = `<pre><code ${HIGHLIGHT_PENDING_ATTR}="">fn main() {}</code></pre>`;
+
+    it('waits for a pending code block even with no diagram in the document', async () => {
+        vi.useFakeTimers();
+        const root = elementOf(pendingCode);
+        let settled = false;
+        const wait = waitForPreviewSettled(root, 60_000).then((r) => { settled = true; return r; });
+        await Promise.resolve(); await Promise.resolve();
+        expect(settled).toBe(false);
+
+        root.querySelector('code')!.removeAttribute(HIGHLIGHT_PENDING_ATTR);
+        await expect(wait).resolves.toEqual({ pending: 0, failed: 0, total: 0, codePending: 0 });
+    });
+
+    it('needs both: diagrams settled and code highlighted', async () => {
+        vi.useFakeTimers();
+        const root = elementOf(`<div class="mermaid"><svg></svg></div>${pendingCode}`);
+        let settled = false;
+        const wait = waitForPreviewSettled(root, 60_000).then((r) => { settled = true; return r; });
+
+        root.querySelector('code')!.removeAttribute(HIGHLIGHT_PENDING_ATTR);
+        await Promise.resolve(); await Promise.resolve();
+        expect(settled).toBe(false);
+
+        root.querySelector('.mermaid')!.setAttribute(DIAGRAM_PNG_ATTR, PNG);
+        await expect(wait).resolves.toEqual({ pending: 0, failed: 0, total: 1, codePending: 0 });
+    });
+
+    it('reports code still pending at the backstop', async () => {
+        vi.useFakeTimers();
+        const wait = waitForPreviewSettled(elementOf(pendingCode + pendingCode), 60_000);
+        await vi.advanceTimersByTimeAsync(60_000);
+        await expect(wait).resolves.toEqual({ pending: 0, failed: 0, total: 0, codePending: 2 });
+    });
+
+    it('turns unhighlighted code into an export failure naming the count and budget', () => {
+        const msg = describeUnsettledPreview({ pending: 0, failed: 0, total: 0, codePending: 2 }, 80_000);
+        expect(msg).toContain('2 code block(s)');
+        expect(msg).toContain('80s');
+        expect(msg).toContain('incomplete');
+    });
+
+    it('names pending diagrams first when both are missing', () => {
+        const msg = describeUnsettledPreview({ pending: 1, failed: 0, total: 2, codePending: 3 }, 80_000);
+        expect(msg).toContain('1 of 2 diagram(s)');
     });
 });

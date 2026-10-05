@@ -20,6 +20,14 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - IMPL-LTTCE-XPT-00008 **covers** ARCH-LTTCE-XPT-00004
 - IMPL-LTTCE-XPT-00002 **covers** REQ-LTTCE-XPT-00013  (`App.tsx` HTML launch branch loads
   `export-document.ts` with a dynamic `import()` and wraps `buildExportHtml`'s output)
+- IMPL-LTTCE-XPT-00008 **covers** REQ-LTTCE-XPT-00014  (`export-document.ts` also embeds
+  `preview-theme.css` and github-markdown-css and wraps the body in a themed `.markdown-body` article)
+- IMPL-LTTCE-XPT-00002 **covers** REQ-LTTCE-XPT-00014  (`App.tsx` passes the preview root's
+  `data-theme`, read from the DOM)
+- IMPL-LTTCE-XPT-00001 **covers** REQ-LTTCE-XPT-00014  (`preview-copy.ts` `waitForPreviewSettled` waits
+  for code highlighting too — see `src/components/Mermaid.trace-cov.md`)
+- IMPL-LTTCE-PRV-00002 **covers** REQ-LTTCE-XPT-00014  (`HighlightedCode.tsx` marks a block pending
+  while its parser loads — see `src/components/HighlightedCode.trace-cov.md`)
 
 ## PDF export
 
@@ -77,8 +85,8 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 
 | Anchor                | Unit / automatic tests                                                        |
 | :-------------------- | :---------------------------------------------------------------------------- |
-| IMPL-LTTCE-XPT-00002  | `src/App.test.tsx` — *App — headless export launch* (21 cases, incl. the signal-ordering regression, the three REQ-LTTCE-XPT-00009 cases, the four REQ-LTTCE-XPT-00010 cases, three REQ-LTTCE-XPT-00012 cases — a PDF launch repeats Rust's margins in `@page`, a later `beforeprint` keeps them (the macOS regression), a malformed value prints with the 20 mm default — and one REQ-LTTCE-XPT-00013 case: an HTML launch hands back a whole document titled with the file name and carrying KaTeX's sheet) |
-| IMPL-LTTCE-XPT-00008  | `src/lib/export-document.test.ts` (18 cases — against the sheet and fonts this build bundles: the MathML-hiding and root-bar-clipping rules survive, one embedded woff2 per `@font-face` the shipped sheet declares and no relative font URL left; `fontDataUrlsByName` on both path separators; `inlineKatexFonts` on minified and quoted `src:` lists, the declaration boundary, a missing font throws; `escapeHtmlText`; `buildExportDocument` — doctype and charset, body unchanged, the one `<style>`, an escaped title) |
+| IMPL-LTTCE-XPT-00002  | `src/App.test.tsx` — *App — headless export launch* (22 cases, incl. the signal-ordering regression, the three REQ-LTTCE-XPT-00009 cases, the four REQ-LTTCE-XPT-00010 cases, three REQ-LTTCE-XPT-00012 cases — a PDF launch repeats Rust's margins in `@page`, a later `beforeprint` keeps them (the macOS regression), a malformed value prints with the 20 mm default — and one REQ-LTTCE-XPT-00013 case: an HTML launch hands back a whole document titled with the file name and carrying KaTeX's sheet — and one REQ-LTTCE-XPT-00014 case: the exported article carries the preview root's class and theme) |
+| IMPL-LTTCE-XPT-00008  | `src/lib/export-document.test.ts` (29 cases — 11 of them for REQ-LTTCE-XPT-00014, listed in `src/lib/export-document.trace-cov.md`; the REQ-LTTCE-XPT-00013 ones against the sheet and fonts this build bundles: the MathML-hiding and root-bar-clipping rules survive, one embedded woff2 per `@font-face` the shipped sheet declares and no relative font URL left; `fontDataUrlsByName` on both path separators; `inlineKatexFonts` on minified and quoted `src:` lists, the declaration boundary, a missing font throws; `escapeHtmlText`; `buildExportDocument` — doctype and charset, body unchanged, the one `<style>`, an escaped title) |
 | IMPL-LTTCE-XPT-00003  | `src-tauri/src/export.rs` `mod tests` (31 cases, incl. the two `resolved_output_path` cases — a relative source such as `demo.md` gets an absolute output path, REQ-LTTCE-XPT-00005 — the three `remove_previous_output` cases — an earlier PDF is gone before the host prints, REQ-LTTCE-XPT-00006 — `is_expected_sender`, the two REQ-LTTCE-XPT-00008 budget cases, one of which guards the numbers against being tightened back to where a correct render fails, four REQ-LTTCE-XPT-00009 `settle_budget` / `ExportLaunch` cases, and two REQ-LTTCE-XPT-00012 `page_margins_mm_json` cases — PDF margins in millimetres, none for HTML); `platform/cli_args.rs` `mod tests` |
 | IMPL-LTTCE-XPT-00004  | ITST-LTTCE-XPT-00010 — `src-tauri/examples/export_demo.rs` (`export-html`, `export-pdf (default paper)`, `export-pdf --paper a3`, `export-pdf --paper letter (relative path)`, `export-pdf --paper a5 (unknown)`, `missing-input`); not unit-testable, needs a real process exit (see ARCH-LTTCE-XPT-00001) |
 | IMPL-LTTCE-XPT-00007  | `src-tauri/src/paper.rs` `mod tests` (12 cases — sizes in every unit against the standards, default, names, case, portrait; margins: 2 cm all round for a header/footer host, 1 / 1 / 1 cm and 2 cm left otherwise, and their log text); `platform/cli_args.rs` `mod tests` (12 paper / file-path cases — both spellings, position, default, unknown and missing values, first wins, near misses, a paper value never taken for a file) |
@@ -95,6 +103,11 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   export_demo`, one of them the bare v0.3.32 fragment, which must fail). The KaTeX-markup check now
   looks for `class="katex"`, since the embedded sheet alone contains the bare word. What a browser
   *draws* is not asserted — no headless browser is run in CI.
+- ITST-LTTCE-XPT-00010 **covers** REQ-LTTCE-XPT-00014 end to end: `export-html` must wrap the body in
+  `<article class="markdown-body" data-theme="…">`, carry github-markdown-css and the code-token
+  palette, contain highlighted `tok-keyword` tokens, and leave no `data-lattice-highlight-pending`
+  block (`check_preview_look`; 3 unit cases, one of them the unwrapped, unstyled export of `463ad53`,
+  which must fail).
 - ITST-LTTCE-XPT-00010 **covers** REQ-LTTCE-XPT-00011 and REQ-LTTCE-XPT-00012 end to end: the default
   export must be A4 portrait, and `--paper a3` / `--paper letter` exports A3 / Letter portrait (read
   from the PDF's `/MediaBox`, within 1.5 pt; expected sizes from `paper.rs` itself); every one must

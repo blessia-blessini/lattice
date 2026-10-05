@@ -40,12 +40,23 @@
  * woff/ttf fallbacks in KaTeX's `src:` lists are dropped, since a relative
  * `fonts/...` URL would point nowhere beside an exported file.
  *
+ * REQ-LTTCE-XPT-00014 — the same holds for everything else the preview styles:
+ * code blocks are highlighted as `<span class="tok-…">` tokens whose colours
+ * are CSS rules scoped to `.markdown-body[data-theme]`, and headings, tables and
+ * code blocks take their look from github-markdown-css. So the document also
+ * carries github-markdown-css and `preview-theme.css` — the very files the
+ * preview loads — and wraps the body in a `.markdown-body` element with the
+ * preview's theme, so those rules match exactly as they do in the pane.
+ *
  * This module carries ~350 KB of font data, so `App.tsx` loads it with a
  * dynamic `import()` on the export path only; an interactive launch never
  * parses it.
  */
 
 import katexCss from 'katex/dist/katex.min.css?raw';
+import githubMarkdownCss from 'github-markdown-css/github-markdown.css?raw';
+import previewThemeCss from '../preview-theme.css?raw';
+import { PREVIEW_THEME_COLORS, type PreviewTheme } from './preview-theme';
 
 /**
  * The woff2 fonts KaTeX ships, as `data:` URLs, keyed by Vite with their
@@ -127,7 +138,56 @@ export function escapeHtmlText(text: string): string {
 } // escapeHtmlText END ********************************************************
 
 
-/** KaTeX's stylesheet with its fonts embedded — built once, on first export. */
+//******************************************************************************
+// resolveExportTheme
+//******************************************************************************
+/**
+ * The preview theme to export with, from the preview root's `data-theme`.
+ * Anything but `dark` — absent, empty, unknown — is `light`, the theme the
+ * preview itself starts in, so a malformed value can never select no theme.
+ */
+export function resolveExportTheme(raw: string | null | undefined): PreviewTheme {
+    return raw === 'dark' ? 'dark' : 'light';
+} // resolveExportTheme END ****************************************************
+
+
+//******************************************************************************
+// exportPageCss
+//******************************************************************************
+/**
+ * Page layout around the `.markdown-body` article: the page takes the theme's
+ * background (`PREVIEW_THEME_COLORS`, the value the preview pane paints), and
+ * the article is a centred reading column — github-markdown-css's own
+ * recommended frame, which the app does not need because the pane frames it.
+ */
+export function exportPageCss(theme: PreviewTheme): string {
+    return `body { margin: 0; background-color: ${PREVIEW_THEME_COLORS[theme].backgroundColor}; }\n`
+        + '.markdown-body { box-sizing: border-box; min-width: 200px; max-width: 980px;'
+        + ' margin: 0 auto; padding: 45px; }\n'
+        + '@media (max-width: 767px) { .markdown-body { padding: 15px; } }';
+} // exportPageCss END *********************************************************
+
+
+//******************************************************************************
+// joinStylesheets
+//******************************************************************************
+/**
+ * Joins stylesheets for one `<style>` element, in the order given.
+ *
+ * Throws if any contains `</style` — it would end the element early and spill
+ * the rest into the body. None of the shipped sheets does; the guard keeps a
+ * future dependency update from silently doing so.
+ */
+export function joinStylesheets(sheets: readonly string[]): string {
+    const css = sheets.join('\n');
+    if (/<\/style/i.test(css)) {
+        throw new Error('an embedded stylesheet contains "</style" — cannot place it in a <style> element');
+    }
+    return css;
+} // joinStylesheets END *******************************************************
+
+
+/** The theme-independent stylesheets with fonts embedded — built once, on first export. */
 let g_exportCss: string | null = null;
 
 
@@ -135,11 +195,15 @@ let g_exportCss: string | null = null;
 // exportStylesheet
 //******************************************************************************
 /**
- * The stylesheet every exported document carries: KaTeX's, fonts embedded.
+ * The stylesheets every exported document carries, in the order `App.tsx`
+ * imports them, so equal-specificity rules resolve as they do in the preview:
+ * the preview theme with the code-token palette, KaTeX's with its fonts
+ * embedded, then github-markdown-css.
  */
 export function exportStylesheet(): string {
     if (g_exportCss === null) {
-        g_exportCss = inlineKatexFonts(katexCss, fontDataUrlsByName(KATEX_WOFF2_DATA_URLS));
+        const katex = inlineKatexFonts(katexCss, fontDataUrlsByName(KATEX_WOFF2_DATA_URLS));
+        g_exportCss = joinStylesheets([previewThemeCss, katex, githubMarkdownCss]);
     }
     return g_exportCss;
 } // exportStylesheet END ******************************************************
@@ -149,26 +213,31 @@ export function exportStylesheet(): string {
 // buildExportDocument
 //******************************************************************************
 /**
- * IMPL-LTTCE-XPT-00008 — REQ-LTTCE-XPT-00013 — the complete file
+ * IMPL-LTTCE-XPT-00008 — REQ-LTTCE-XPT-00013 / 00014 — the complete file
  * `--export-html` writes: `bodyHtml` (the preview, exactly as
- * `buildExportHtml` serialised it — REQ-LTTCE-XPT-00001) inside a document
- * whose head declares UTF-8, names it `title` and carries
- * `exportStylesheet()`.
+ * `buildExportHtml` serialised it — REQ-LTTCE-XPT-00001) inside an
+ * `<article class="markdown-body" data-theme>` — the class and attribute the
+ * preview root carries, which every preview style rule is scoped to — in a
+ * document whose head declares UTF-8, names it `title` and carries
+ * `exportStylesheet()` and `exportPageCss(theme)`.
  *
- * @param bodyHtml the serialised preview, placed in `<body>` unchanged
+ * @param bodyHtml the serialised preview, placed in the article unchanged
  * @param title    the document title, normally the source file name
+ * @param theme    the preview theme the document is styled in
  */
-export function buildExportDocument(bodyHtml: string, title: string): string {
+export function buildExportDocument(bodyHtml: string, title: string, theme: PreviewTheme): string {
     return '<!DOCTYPE html>\n'
         + '<html>\n'
         + '<head>\n'
         + '<meta charset="utf-8">\n'
         + '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
         + `<title>${escapeHtmlText(title)}</title>\n`
-        + `<style>\n${exportStylesheet()}\n</style>\n`
+        + `<style>\n${exportStylesheet()}\n${exportPageCss(theme)}\n</style>\n`
         + '</head>\n'
         + '<body>\n'
+        + `<article class="markdown-body" data-theme="${theme}">\n`
         + bodyHtml
-        + '\n</body>\n'
+        + '\n</article>\n'
+        + '</body>\n'
         + '</html>\n';
 } // buildExportDocument END ***************************************************

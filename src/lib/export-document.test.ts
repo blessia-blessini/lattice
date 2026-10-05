@@ -14,14 +14,25 @@ import { resolve } from 'path';
 import {
     buildExportDocument,
     escapeHtmlText,
+    exportPageCss,
     exportStylesheet,
     fontDataUrlsByName,
     inlineKatexFonts,
+    joinStylesheets,
+    resolveExportTheme,
 } from './export-document';
+import { PREVIEW_THEME_COLORS } from './preview-theme';
 
 /** KaTeX's stylesheet as shipped, read straight from the package. */
 const SHIPPED_KATEX_CSS = readFileSync(
     resolve(__dirname, '../../node_modules/katex/dist/katex.min.css'),
+    'utf8',
+);
+
+/** The preview's own stylesheets, read straight from disk. */
+const PREVIEW_THEME_CSS = readFileSync(resolve(__dirname, '../preview-theme.css'), 'utf8');
+const GITHUB_MARKDOWN_CSS = readFileSync(
+    resolve(__dirname, '../../node_modules/github-markdown-css/github-markdown.css'),
     'utf8',
 );
 
@@ -124,31 +135,104 @@ describe('escapeHtmlText', () => {
     });
 });
 
+describe('resolveExportTheme', () => {
+    it('keeps dark', () => {
+        expect(resolveExportTheme('dark')).toBe('dark');
+    });
+
+    it('falls back to light for light, absent, empty or unknown values', () => {
+        for (const raw of ['light', null, undefined, '', 'Dark', 'solarized']) {
+            expect(resolveExportTheme(raw)).toBe('light');
+        }
+    });
+});
+
+describe('exportPageCss', () => {
+    it('paints the page in the preview pane\'s background for each theme', () => {
+        expect(exportPageCss('light')).toContain(`background-color: ${PREVIEW_THEME_COLORS.light.backgroundColor}`);
+        expect(exportPageCss('dark')).toContain(`background-color: ${PREVIEW_THEME_COLORS.dark.backgroundColor}`);
+    });
+
+    it('frames the article as a centred reading column', () => {
+        expect(exportPageCss('light')).toMatch(/\.markdown-body \{[^}]*max-width: 980px;[^}]*margin: 0 auto;/);
+    });
+});
+
+describe('joinStylesheets', () => {
+    it('joins in the order given', () => {
+        expect(joinStylesheets(['a{}', 'b{}'])).toBe('a{}\nb{}');
+    });
+
+    it('refuses a sheet that would close the <style> element early', () => {
+        expect(() => joinStylesheets(['a{}', 'b{content:"</STYLE>"}'])).toThrow(/<\/style/);
+    });
+});
+
+describe('exportStylesheet (the preview\'s look — REQ-LTTCE-XPT-00014)', () => {
+    const css = exportStylesheet();
+
+    it('carries preview-theme.css, KaTeX and github-markdown-css, in the order App.tsx imports them', () => {
+        const theme = css.indexOf(PREVIEW_THEME_CSS.trim());
+        const katex = css.indexOf('.katex .katex-mathml{');
+        const github = css.indexOf(GITHUB_MARKDOWN_CSS.trim());
+        expect(theme).toBeGreaterThanOrEqual(0);
+        expect(katex).toBeGreaterThan(theme);
+        expect(github).toBeGreaterThan(katex);
+    });
+
+    it('carries the code-token palette of both themes — the syntax highlighting', () => {
+        expect(css).toMatch(/\.markdown-body\[data-theme="light"\] \{\s*& \.tok-keyword/);
+        expect(css).toMatch(/\.markdown-body\[data-theme="dark"\] \{\s*& \.tok-keyword/);
+    });
+});
+
 describe('buildExportDocument', () => {
-    const BODY = '<h1 data-source-line="1">Title</h1><p><span class="katex">x</span></p>';
+    const BODY = '<h1 data-source-line="1">Title</h1><pre><code><span class="tok-keyword">fn</span></code></pre>'
+        + '<p><span class="katex">x</span></p>';
+    const parse = (html: string) => new DOMParser().parseFromString(html, 'text/html');
 
     it('is a standards-mode document that declares UTF-8', () => {
-        const html = buildExportDocument(BODY, 'notes.md');
+        const html = buildExportDocument(BODY, 'notes.md', 'light');
         expect(html.startsWith('<!DOCTYPE html>\n')).toBe(true);
         expect(html).toContain('<meta charset="utf-8">');
         expect(html.trimEnd().endsWith('</html>')).toBe(true);
     });
 
-    it('carries the body exactly as the preview serialised it', () => {
-        const doc = new DOMParser().parseFromString(buildExportDocument(BODY, 'notes.md'), 'text/html');
-        expect(doc.body.innerHTML.trim()).toBe(BODY);
+    it('carries the body exactly as the preview serialised it, inside one .markdown-body article', () => {
+        const doc = parse(buildExportDocument(BODY, 'notes.md', 'light'));
+        expect(doc.body.children).toHaveLength(1);
+        const article = doc.body.children[0];
+        expect(article.tagName).toBe('ARTICLE');
+        expect(article.className).toBe('markdown-body');
+        expect(article.innerHTML.trim()).toBe(BODY);
     });
 
-    it('carries the KaTeX stylesheet in the head', () => {
-        const doc = new DOMParser().parseFromString(buildExportDocument(BODY, 'notes.md'), 'text/html');
+    it.each(['light', 'dark'] as const)('styles the %s theme the preview showed', (theme) => {
+        const doc = parse(buildExportDocument(BODY, 'notes.md', theme));
+        expect(doc.querySelector('article')!.getAttribute('data-theme')).toBe(theme);
+        const style = doc.head.querySelector('style')!.textContent!;
+        expect(style).toContain(exportPageCss(theme));
+    });
+
+    it('carries every stylesheet in a single <style> in the head', () => {
+        const doc = parse(buildExportDocument(BODY, 'notes.md', 'light'));
         const styles = doc.head.querySelectorAll('style');
         expect(styles).toHaveLength(1);
-        expect(styles[0].textContent!.trim()).toBe(exportStylesheet().trim());
+        expect(styles[0].textContent).toContain(exportStylesheet().trim());
+        expect(doc.body.querySelectorAll('style')).toHaveLength(0);
+    });
+
+    it('a highlighted token in the export is reached by the palette\'s selector', () => {
+        // jsdom does not resolve nested CSS or compute colours, so this checks
+        // the flattened selector the nested rule stands for against the
+        // exported markup — the match the v0.3.32 export could never make.
+        const doc = parse(buildExportDocument(BODY, 'notes.md', 'light'));
+        expect(doc.querySelector('.markdown-body[data-theme="light"] .tok-keyword')).not.toBeNull();
     });
 
     it('titles the document with the escaped file name', () => {
-        const doc = new DOMParser().parseFromString(buildExportDocument(BODY, 'a<b>&c.md'), 'text/html');
+        const doc = parse(buildExportDocument(BODY, 'a<b>&c.md', 'light'));
         expect(doc.title).toBe('a<b>&c.md');
-        expect(doc.body.innerHTML.trim()).toBe(BODY);
+        expect(doc.querySelector('article')!.innerHTML.trim()).toBe(BODY);
     });
 });

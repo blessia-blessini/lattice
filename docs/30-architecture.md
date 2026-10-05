@@ -745,7 +745,8 @@ cooperating parts:
 ### Token Theming
 
 Covers REQ-LTTCE-PRV-00002. `classHighlighter` emits stable class names (`tok-keyword`, `tok-string`,
-…), so colors live in plain CSS — `App.css` (IMPL-LTTCE-PRV-00003) defines the palette twice, scoped to
+…), so colors live in plain CSS — `preview-theme.css` (IMPL-LTTCE-PRV-00003; part of `App.css` until the
+HTML export needed it too, ARCH-LTTCE-XPT-00004) defines the palette twice, scoped to
 the existing `.markdown-body[data-theme="light"]` / `[data-theme="dark"]` preview-theme selectors that
 github-markdown-css overrides already use. The palettes are GitHub's light/dark syntax colors, matching
 both the block's `github-markdown-css` chrome and the editor pane's `githubLight`/`githubDark` themes.
@@ -1297,9 +1298,10 @@ Rust: cli_args::requested_export_format() → export::run_export(paths, format)
   App.tsx checkLaunch(): Direct Push loads the file → normal preview render starts
         │                (pdf only: setViewMode(preview) + applyPrintStyle — see below)
         ▼
-  waitForDiagramsSettled(previewBodyRef,   MutationObserver until every .mermaid has
+  waitForPreviewSettled(previewBodyRef,   MutationObserver until every .mermaid has
         │          exportSettleMs)         its PNG, a render error or a raster failure — same signal
-        │                                  Mermaid.tsx writes for copy (IMPL-LTTCE-MRC-00001)
+        │                                  Mermaid.tsx writes for copy (IMPL-LTTCE-MRC-00001) — and
+        │                                  no code block is still loading its highlighting
         │                                  still pending at the budget → export_ready({error}),
         │                                  never a partial document (REQ-LTTCE-XPT-00009)
         ├──────────── html ────────────┐              ├──────────── pdf ────────────┐
@@ -1308,9 +1310,10 @@ Rust: cli_args::requested_export_format() → export::run_export(paths, format)
    same substitution as buildCopyHtml, │         the document itself is the output)  │
    generalised to the whole document   │                                             │
         ▼                              │                                             │
-  buildExportDocument(body, file name) │                                             │
-   doctype + head + KaTeX sheet and    │                                             │
-   fonts inline (ARCH-LTTCE-XPT-00004) │                                             │
+  buildExportDocument(body, file name, │                                             │
+   theme): doctype + head + preview    │                                             │
+   sheets, KaTeX fonts inline, body in │                                             │
+   .markdown-body  (ARCH-XPT-00004)    │                                             │
         ▼                              │              ▼                              │
   invoke('export_ready',{html})        │        invoke('export_ready',{html:null})   │
         ▼ (Rust)                       │              ▼ (Rust)                       │
@@ -1335,7 +1338,7 @@ window, is slower per file but structurally cannot drift.
 
 <!--ARCH-LTTCE-XPT-00004-->
 
-Covers REQ-LTTCE-XPT-00013. The preview's body is not enough on its own: KaTeX emits every formula as a
+Covers REQ-LTTCE-XPT-00013 and REQ-LTTCE-XPT-00014. The preview's body is not enough on its own: KaTeX emits every formula as a
 MathML copy (`.katex-mathml`) *and* an HTML/SVG layout (`.katex-html`), and it is `katex.min.css` that
 hides the first, positions the second and clips the 400em-wide SVG each `\sqrt` bar is drawn with. The
 interactive preview has that sheet through `App.tsx`'s import; a file on disk has only what is written
@@ -1344,11 +1347,15 @@ unstyled layout spans as a line of text beside it, and every root bar as a page-
 
 `src/lib/export-document.ts` (IMPL-LTTCE-XPT-00008) therefore wraps `buildExportHtml`'s output:
 
-- `buildExportDocument(body, title)` — `<!DOCTYPE html>`, a head with `charset`, `viewport`, the
-  escaped file name as `<title>` (`printTitleFor`, the same name the print header uses) and one
-  `<style>`; the body placed unchanged, so REQ-LTTCE-XPT-00001's "the preview, as rendered" still holds.
-- The `<style>` is KaTeX's own sheet, imported with Vite's `?raw` — the very file the preview loads,
-  so the two cannot drift across a KaTeX upgrade.
+- `buildExportDocument(body, title, theme)` — `<!DOCTYPE html>`, a head with `charset`, `viewport`,
+  the escaped file name as `<title>` (`printTitleFor`, the same name the print header uses) and one
+  `<style>`; the body content placed unchanged inside `<article class="markdown-body" data-theme>`, so
+  REQ-LTTCE-XPT-00001's "the preview, as rendered" still holds.
+- The `<style>` holds the preview's own stylesheets, imported with Vite's `?raw` — the very files the
+  preview loads, in the order `App.tsx` imports them, so they cannot drift across an upgrade:
+  `src/preview-theme.css`, KaTeX's sheet, then github-markdown-css; then a few lines of page frame
+  (`exportPageCss`: the theme's page background from `PREVIEW_THEME_COLORS`, a centred 980 px column).
+  A sheet containing `</style` throws (`joinStylesheets`) rather than ending the element early.
 - Its fonts are embedded as `data:` URLs: `import.meta.glob` over `katex/dist/fonts/*.woff2` with
   `?url&inline` (`exhaustive: true`, needed inside `node_modules`), and `inlineKatexFonts` rewrites each
   `@font-face` `src:` list to that one woff2 URL. Only woff2 is embedded — every browser that renders
@@ -1364,10 +1371,35 @@ third-party server — for a local-first editor, a privacy leak the user never a
 a dynamic `import()` inside the HTML export branch, so Vite emits it as a separate chunk and an
 interactive launch never parses it.
 
-**The rest of the preview's styling is not carried.** Headings, tables and code blocks appear with the
-browser's defaults rather than `App.css`'s look; inline highlight styling already travels inline
-(ARCH-LTTCE-CPY-00001). Only the math *needs* a stylesheet to be legible, which is what
-REQ-LTTCE-XPT-00013 asks for.
+**The preview's look, not the app's (REQ-LTTCE-XPT-00014).** Syntax highlighting is `<span
+class="tok-…">` markup (ARCH-LTTCE-PRV-00002) whose colours are CSS rules scoped to
+`.markdown-body[data-theme="light"|"dark"]`; the document look comes from github-markdown-css, scoped
+to `.markdown-body`. The first self-contained export carried neither — nor the class and theme they
+are keyed on, since `buildExportHtml` serialises the preview root's *inner* HTML — so every token was
+drawn in the text colour. The theme overrides and the token palette therefore moved out of `App.css`
+into `src/preview-theme.css`, imported by `App.tsx` for the pane and embedded by the export: one copy
+of the palette, two consumers. `App.css` keeps the app chrome (panes, toolbar, scrollbars, cursor
+flash), which must never reach a document. Moving the block was checked against the cascade: every
+declaration in it that another `App.css` rule could tie with is `!important` or uniquely specific,
+so the pane renders as before.
+
+**The theme is read from the DOM.** `App.tsx` passes `resolveExportTheme(previewRoot.getAttribute
+('data-theme'))` — what the preview root actually shows when the export fires, not React state captured
+by the init closure (the stale-closure trap). Anything but `dark` resolves to `light`. At the time of
+writing the preview theme is always `light`: `m_previewTheme` has no setter in use, so the dark path
+is supported and unit-tested but dormant.
+
+**Highlighting must have finished.** Each language's parser loads on demand, so `HighlightedCode`
+renders plain text first and the tokens a moment later. The export used to wait only for diagrams, and
+the demo's code was highlighted by the time its four diagrams settled — luck of timing; a document
+without diagrams settles at once. `HighlightedCode` now marks its `<code>` with
+`HIGHLIGHT_PENDING_ATTR` (`data-lattice-highlight-pending`) while the parser for its current tag is
+loading, and removes it when the load resolves — with a language, or with `null` for an unknown tag or
+a failed load, so it cannot stay forever. `waitForPreviewSettled` (formerly `waitForDiagramsSettled`)
+counts these as `codePending` and observes the attribute alongside the diagram ones; the single
+render-budget backstop of REQ-LTTCE-XPT-00009 covers both, and `describeUnsettledPreview` turns code
+still pending at the backstop into a failure naming the count. Inline highlight styling (`==mark==`)
+already travelled inline (ARCH-LTTCE-CPY-00001).
 
 **Why the frontend, not Rust.** Rust writes the file, so wrapping it there looks natural. But the
 content is npm package assets: Rust would have to `include_bytes!` each font out of `node_modules`,
@@ -1432,7 +1464,7 @@ message names the elapsed budget (so "too slow" and "too tight" can be told apar
 completed. It was 120 s and is now 300 s for exactly that reason.
 
 **One bound, owned by Rust, and a timeout is never a success (REQ-LTTCE-XPT-00009).** The frontend's
-wait for diagrams (`waitForDiagramsSettled`) is itself bounded — a stuck diagram must not hang the
+wait for diagrams (`waitForPreviewSettled`) is itself bounded — a stuck diagram must not hang the
 window — and that bound used to be its own hard-coded 8 s. When the render budget above was raised
 to 90 s, the 8 s clock silently became the real limit, and because the wait *resolved as though
 settled* when it ran out, a cold macOS Intel render that took ~9 s exported at most 2 of its 4 diagrams and
@@ -1445,7 +1477,7 @@ exited 0. Two rules now close that off:
   first, because only the frontend can say *which* diagrams are missing; Rust's own timeout remains
   as the backstop for a renderer that never answers at all.
 - The wait **reports** rather than resolves: it returns `{ pending, total }`, and
-  `describeUnsettledDiagrams` turns any `pending > 0` into an error ("3 of 5 diagram(s) had not
+  `describeUnsettledPreview` turns any `pending > 0` into an error ("3 of 5 diagram(s) had not
   finished rendering after 80s — refusing to export an incomplete document"), which `App.tsx` throws
   into the existing `export_ready({ error })` path. Rust logs it and fails that file exactly as it
   would any other render failure. A diagram that fails to render (a Mermaid syntax error) still
@@ -1468,7 +1500,7 @@ failing to fire in time. Three changes remove the dependence rather than widen a
   The interactive app keeps the idle deferral, where not competing with rendering is the point.
 - **Every diagram reaches a final state, and the wait sees it at once.** A rasterisation that returns
   nothing now sets `DIAGRAM_PNG_FAILED_ATTR` (before, the diagram looked "still rendering" forever), and
-  `waitForDiagramsSettled` reacts to attribute and subtree mutations through a `MutationObserver` —
+  `waitForPreviewSettled` reacts to attribute and subtree mutations through a `MutationObserver` —
   microtasks, which no page-visibility policy throttles. A raster failure fails the export at once with
   its own message ("1 of 4 diagram(s) could not be converted to an image"), not a budget overrun.
 
@@ -1491,7 +1523,7 @@ additional step when `initData.exportFormat` is set: wait for the preview to set
 serialise it (`html`) or simply signal that it has settled (`pdf`) — no editor UI is shown or becomes
 interactive in either mode.
 
-- `waitForDiagramsSettled` (`lib/preview-copy.ts`) watches `.mermaid` containers under the preview
+- `waitForPreviewSettled` (`lib/preview-copy.ts`) watches `.mermaid` containers under the preview
   root with a `MutationObserver` until each one carries `DIAGRAM_PNG_ATTR` (`Mermaid.tsx`'s PNG cache,
   `ARCH-LTTCE-MRC-00001`), has failed to render (`pre.error`), or could not be rasterised
   (`DIAGRAM_PNG_FAILED_ATTR`). A bounded timeout remains only as the backstop for a renderer that never
@@ -1666,7 +1698,7 @@ the page from `data-view-mode`, and `edit` — the startup default — would put
 the paper; an export always means the rendered document, so the mode is forced rather than inherited
 from whatever the user's saved settings happen to be.
 
-**It is forced with `flushSync`, and that detail is the whole fix.** `waitForDiagramsSettled`
+**It is forced with `flushSync`, and that detail is the whole fix.** `waitForPreviewSettled`
 evaluates its predicate before its first `await`, so a document with no diagrams settles *without
 ever yielding to the browser*. A plain `setViewMode` only schedules a commit, so on that path
 nothing guarantees the DOM carries `data-view-mode="preview"` by the time the signal is sent — the
@@ -1718,7 +1750,7 @@ to the DOM **before** the signal is sent on diagram-free content (the regression
 fail when the fix is reverted), that a diagram-free export still succeeds, and that a failed
 hand-back is retried with the reason rather than an empty document. `preview-copy.test.ts` continues to cover
 `buildExportHtml` (diagram-free passthrough, substitution, non-mutation of the live root) and
-`waitForDiagramsSettled` (immediate resolution, the timeout, and resolving once a deferred PNG lands).
+`waitForPreviewSettled` (immediate resolution, the timeout, and resolving once a deferred PNG lands).
 
 **What is not covered, and why.** The end-to-end round trip — invisible window build, IPC hand-back,
 file write, process exit code — needs a real WebView and a real process exit, which the Rust unit

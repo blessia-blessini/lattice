@@ -27,6 +27,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, waitFor } from '@testing-library/react';
 import { HighlightedCode } from './HighlightedCode';
+import { HIGHLIGHT_PENDING_ATTR } from '../lib/preview-copy';
 
 //******************************************************************************
 // HighlightedCode tests
@@ -74,6 +75,35 @@ describe('HighlightedCode', () => {
             expect(container.querySelector('span.tok-comment')).not.toBeNull();
         });
         expect(container.querySelector('span.tok-comment')!.textContent).toBe('# title');
+    });
+
+    // ── REQ-LTTCE-XPT-00014 — the "still loading" marker an export waits on ──
+
+    it('marks the code as pending until the highlighting is in, then drops the mark', async () => {
+        const { container } = render(<HighlightedCode code="let y = 2;" languageTag="ts" />);
+        expect(container.querySelector('code')!.hasAttribute(HIGHLIGHT_PENDING_ATTR)).toBe(true);
+
+        await waitFor(() => expect(container.querySelector('span.tok-keyword')).not.toBeNull());
+        expect(container.querySelector('code')!.hasAttribute(HIGHLIGHT_PENDING_ATTR)).toBe(false);
+    });
+
+    it('drops the mark for an unknown language too — a wait on it always ends', async () => {
+        const { container } = render(<HighlightedCode code="??" languageTag="no-such-language-xyz" />);
+        await waitFor(() =>
+            expect(container.querySelector('code')!.hasAttribute(HIGHLIGHT_PENDING_ATTR)).toBe(false));
+        expect(container.querySelector('[class*="tok-"]')).toBeNull();
+    });
+
+    it('is pending again right after a tag change, until the new language is in', async () => {
+        const { container, rerender } = render(<HighlightedCode code="# t" languageTag="js" />);
+        await waitFor(() =>
+            expect(container.querySelector('code')!.hasAttribute(HIGHLIGHT_PENDING_ATTR)).toBe(false));
+
+        rerender(<HighlightedCode code="# t" languageTag="python" />);
+        // Synchronously after the rerender the old tag's result is stale.
+        expect(container.querySelector('code')!.hasAttribute(HIGHLIGHT_PENDING_ATTR)).toBe(true);
+        await waitFor(() => expect(container.querySelector('span.tok-comment')).not.toBeNull());
+        expect(container.querySelector('code')!.hasAttribute(HIGHLIGHT_PENDING_ATTR)).toBe(false);
     });
 });
 // HighlightedCode tests END ***************************************************

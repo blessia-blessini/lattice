@@ -73,6 +73,18 @@ export const DIAGRAM_PNG_FAILED_ATTR = 'data-lattice-diagram-png-failed';
  */
 export const EXPORT_MODE_ATTR = 'data-lattice-export';
 
+/**
+ * Attribute on a code block's `<code>` while the parser for its language is
+ * still loading, so its syntax highlighting has not been applied yet.
+ *
+ * REQ-LTTCE-XPT-00014 — highlighting is asynchronous (each language parser is
+ * loaded lazily), so an export that does not wait for it can write plain,
+ * uncoloured code: a document without diagrams settles at once. Written by
+ * `HighlightedCode.tsx` and removed once the load resolves — highlighted,
+ * unknown language or failed load alike, so it can never stay forever.
+ */
+export const HIGHLIGHT_PENDING_ATTR = 'data-lattice-highlight-pending';
+
 /** Alt text given to the substituted image. */
 const DIAGRAM_ALT = 'Mermaid diagram';
 
@@ -160,26 +172,30 @@ export function buildCopyHtml(fragment: DocumentFragment): string | null {
  *  launched by an older backend that does not send `exportSettleMs`). */
 export const DEFAULT_SETTLE_TIMEOUT_MS = 8000;
 
-/** Outcome of `waitForDiagramsSettled`, out of `total` diagrams:
+/** Outcome of `waitForPreviewSettled`, out of `total` diagrams:
  *  `pending` had reached no final state when the wait ended; `failed` had
- *  reached one, but it is "could not be rasterised" (`DIAGRAM_PNG_FAILED_ATTR`). */
-export interface DiagramSettleResult {
+ *  reached one, but it is "could not be rasterised" (`DIAGRAM_PNG_FAILED_ATTR`).
+ *  `codePending` code blocks were still waiting for their highlighting
+ *  (`HIGHLIGHT_PENDING_ATTR`). */
+export interface PreviewSettleResult {
     pending: number;
     failed: number;
     total: number;
+    codePending: number;
 }
 
 
 //******************************************************************************
-// waitForDiagramsSettled
+// waitForPreviewSettled
 //******************************************************************************
 /**
- * IMPL-LTTCE-XPT-00001 — REQ-LTTCE-XPT-00001 / 00009 / 00010 — waits until every diagram container
- * currently under `root` has reached a final state: its cached PNG
+ * IMPL-LTTCE-XPT-00001 — REQ-LTTCE-XPT-00001 / 00009 / 00010 / 00014 — waits until every diagram
+ * container currently under `root` has reached a final state: its cached PNG
  * (`DIAGRAM_PNG_ATTR`, written by `Mermaid.tsx`), a render error (an `.error`
- * block in its place), or a rasterisation failure (`DIAGRAM_PNG_FAILED_ATTR`).
- * The export below therefore never fires while a diagram is still an
- * unrasterised `<svg>`.
+ * block in its place), or a rasterisation failure (`DIAGRAM_PNG_FAILED_ATTR`) —
+ * and every code block has its highlighting (no `HIGHLIGHT_PENDING_ATTR` left,
+ * REQ-LTTCE-XPT-00014). The export below therefore never fires while a diagram
+ * is still an unrasterised `<svg>` or a code block is still plain text.
  *
  * Event-driven (REQ-LTTCE-XPT-00010): a `MutationObserver` re-checks whenever
  * one of those attributes or the subtree changes, so the wait ends the moment
@@ -192,13 +208,13 @@ export interface DiagramSettleResult {
  * what was still pending rather than resolving as though all were done —
  * treating a timeout as success is what let an export write at most 2 of 4
  * diagrams and exit 0 (REQ-LTTCE-XPT-00009). The caller decides, via
- * `describeUnsettledDiagrams`, whether a result is a failure.
+ * `describeUnsettledPreview`, whether a result is a failure.
  */
-export async function waitForDiagramsSettled(
+export async function waitForPreviewSettled(
     root: Element,
     timeoutMs = DEFAULT_SETTLE_TIMEOUT_MS,
-): Promise<DiagramSettleResult> {
-    const count = (): DiagramSettleResult => {
+): Promise<PreviewSettleResult> {
+    const count = (): PreviewSettleResult => {
         const diagrams = Array.from(root.querySelectorAll('.mermaid'));
         let pending = 0;
         let failed = 0;
@@ -207,13 +223,15 @@ export async function waitForDiagramsSettled(
             if (el.hasAttribute(DIAGRAM_PNG_FAILED_ATTR)) failed += 1;
             else pending += 1;
         }
-        return { pending, failed, total: diagrams.length };
+        const codePending = root.querySelectorAll(`[${HIGHLIGHT_PENDING_ATTR}]`).length;
+        return { pending, failed, total: diagrams.length, codePending };
     };
+    const settled = (r: PreviewSettleResult) => r.pending === 0 && r.codePending === 0;
 
     const initial = count();
-    if (initial.pending === 0) return initial;
+    if (settled(initial)) return initial;
 
-    return new Promise<DiagramSettleResult>((resolve) => {
+    return new Promise<PreviewSettleResult>((resolve) => {
         let backstop: ReturnType<typeof setTimeout> | undefined;
         let done = false;
         const finish = () => {
@@ -226,17 +244,17 @@ export async function waitForDiagramsSettled(
         // Observing starts synchronously after `initial`, so no change can
         // slip in between the first count and the first callback.
         const observer = new MutationObserver(() => {
-            if (count().pending === 0) finish();
+            if (settled(count())) finish();
         });
         observer.observe(root, {
             subtree: true,
             childList: true,
             attributes: true,
-            attributeFilter: [DIAGRAM_PNG_ATTR, DIAGRAM_PNG_FAILED_ATTR],
+            attributeFilter: [DIAGRAM_PNG_ATTR, DIAGRAM_PNG_FAILED_ATTR, HIGHLIGHT_PENDING_ATTR],
         });
         backstop = setTimeout(finish, timeoutMs);
     });
-} // waitForDiagramsSettled END ************************************************
+} // waitForPreviewSettled END ************************************************
 
 
 //******************************************************************************
@@ -257,7 +275,7 @@ export function resolveSettleTimeout(raw: unknown): number {
 
 
 //******************************************************************************
-// describeUnsettledDiagrams
+// describeUnsettledPreview
 //******************************************************************************
 /**
  * IMPL-LTTCE-XPT-00001 — REQ-LTTCE-XPT-00009 / 00010 — turns a settle result into the
@@ -266,8 +284,8 @@ export function resolveSettleTimeout(raw: unknown): number {
  * that elapsed, so "renderer too slow" can be told apart from "budget too
  * tight" in a log (the same reasoning as REQ-LTTCE-XPT-00008).
  */
-export function describeUnsettledDiagrams(
-    result: DiagramSettleResult,
+export function describeUnsettledPreview(
+    result: PreviewSettleResult,
     timeoutMs: number,
 ): string | null {
     // REQ-LTTCE-XPT-00010 — checked first: a rasterisation failure is known
@@ -277,11 +295,18 @@ export function describeUnsettledDiagrams(
         return `${result.failed} of ${result.total} diagram(s) could not be converted to an image `
             + `— refusing to export an incomplete document`;
     }
-    if (result.pending <= 0) return null;
     const seconds = Math.round(timeoutMs / 1000);
-    return `${result.pending} of ${result.total} diagram(s) had not finished rendering after `
-        + `${seconds}s — refusing to export an incomplete document`;
-} // describeUnsettledDiagrams END *********************************************
+    if (result.pending > 0) {
+        return `${result.pending} of ${result.total} diagram(s) had not finished rendering after `
+            + `${seconds}s — refusing to export an incomplete document`;
+    }
+    // REQ-LTTCE-XPT-00014 — uncoloured code is an incomplete document too.
+    if (result.codePending > 0) {
+        return `${result.codePending} code block(s) had not been syntax-highlighted after `
+            + `${seconds}s — refusing to export an incomplete document`;
+    }
+    return null;
+} // describeUnsettledPreview END *********************************************
 
 
 //******************************************************************************

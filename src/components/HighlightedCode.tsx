@@ -32,6 +32,7 @@
 import { useEffect, useState } from 'react';
 import type { Language } from '@codemirror/language';
 import { loadCodeLanguage, highlightTokens } from '../lib/code-highlight';
+import { HIGHLIGHT_PENDING_ATTR } from '../lib/preview-copy';
 
 interface HighlightedCodeProps {
     /** Raw text content of the fenced code block. */
@@ -67,22 +68,35 @@ function getCachedLanguage(tag: string): Promise<Language | null> {
 /**
  * `<code>` replacement for the preview pane. Shows plain text immediately,
  * then swaps in highlighted `tok-*` spans once the language bundle is ready.
+ *
+ * While the bundle for the *current* tag is still loading, the `<code>`
+ * carries `HIGHLIGHT_PENDING_ATTR` (REQ-LTTCE-XPT-00014), so an export can
+ * wait for the colours instead of writing plain code. It goes as soon as the
+ * load resolves — with a language, or with `null` for an unknown tag or a
+ * failed load — so it cannot stay forever.
  */
 export function HighlightedCode({ code, languageTag, className }: HighlightedCodeProps) {
-    const [language, setLanguage] = useState<Language | null>(null);
+    // Tagged with the fence tag it was loaded for: after a tag change the old
+    // result must count as "still loading", not as the new tag's answer.
+    const [loaded, setLoaded] = useState<{ tag: string; language: Language | null } | null>(null);
 
     useEffect(() => {
         let cancelled = false;
         getCachedLanguage(languageTag).then(lang => {
             // Defensive: ignore late results after unmount or tag change.
-            if (!cancelled) setLanguage(lang);
+            if (!cancelled) setLoaded({ tag: languageTag, language: lang });
         });
         return () => { cancelled = true; };
     }, [languageTag]);
 
-    // Plain fallback: unknown language, or bundle still loading.
+    const pending = loaded?.tag !== languageTag;
+    const language = pending ? null : loaded!.language;
+
+    // Plain fallback: bundle still loading (marked pending), or unknown language.
     if (!language) {
-        return <code className={className}>{code}</code>;
+        return pending
+            ? <code className={className} {...{ [HIGHLIGHT_PENDING_ATTR]: '' }}>{code}</code>
+            : <code className={className}>{code}</code>;
     }
 
     const tokens = highlightTokens(code, language);

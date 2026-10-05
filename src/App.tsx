@@ -29,6 +29,7 @@ import { homeDir } from "@tauri-apps/api/path";
 import { shortenHomePath } from "./lib/path-utils";
 import { clampTabSize, TAB_SIZE_DEFAULT } from "./lib/tab-size";
 import "./App.css";
+import "./preview-theme.css";
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -57,10 +58,10 @@ import { PREVIEW_THEME_COLORS } from './lib/preview-theme';
 import {
   buildCopyHtml,
   buildExportHtml,
-  describeUnsettledDiagrams,
+  describeUnsettledPreview,
   EXPORT_MODE_ATTR,
   resolveSettleTimeout,
-  waitForDiagramsSettled,
+  waitForPreviewSettled,
 } from './lib/preview-copy';
 import { flushSync } from 'react-dom';
 import { applyPrintStyle, printTitleFor, removePrintStyle, resolvePageMargins } from './lib/print-style';
@@ -1171,8 +1172,8 @@ function App() {
               // A timeout is a failure, never a partial success
               // (REQ-LTTCE-XPT-00009).
               const settleMs = resolveSettleTimeout(initData.exportSettleMs);
-              const unsettled = describeUnsettledDiagrams(
-                await waitForDiagramsSettled(previewRoot, settleMs),
+              const unsettled = describeUnsettledPreview(
+                await waitForPreviewSettled(previewRoot, settleMs),
                 settleMs,
               );
               if (unsettled) {
@@ -1182,14 +1183,17 @@ function App() {
               if (exportFormat === 'pdf') {
                 await invoke('export_ready', { html: null, error: null });
               } else {
-                // REQ-LTTCE-XPT-00013 — a file on disk has no stylesheet but
-                // its own: wrap the preview in a document carrying KaTeX's
-                // sheet and fonts. Loaded here only — ~350 KB of font data
-                // no interactive launch should parse.
-                const { buildExportDocument } = await import('./lib/export-document');
+                // REQ-LTTCE-XPT-00013 / 00014 — a file on disk has no
+                // stylesheet but its own: wrap the preview in a document
+                // carrying the preview's stylesheets and KaTeX's fonts, in
+                // the theme the preview root shows (read from the DOM, not
+                // from React state captured by this closure). Loaded here
+                // only — ~350 KB of font data no interactive launch should parse.
+                const { buildExportDocument, resolveExportTheme } = await import('./lib/export-document');
                 const html = buildExportDocument(
                   buildExportHtml(previewRoot),
                   printTitleFor(initData.path),
+                  resolveExportTheme(previewRoot.getAttribute('data-theme')),
                 );
                 await invoke('export_ready', { html, error: null });
               }

@@ -56,19 +56,19 @@ export const g_exportRoots: {
     settled: Element[];
     built: Element[];
     timeouts: (number | undefined)[];
-    forceResult: { pending: number; failed: number; total: number } | null;
+    forceResult: { pending: number; failed: number; total: number; codePending: number } | null;
 } = { settled: [], built: [], timeouts: [], forceResult: null };
 vi.mock('./lib/preview-copy', async (importOriginal) => {
     const actual = await importOriginal<typeof import('./lib/preview-copy')>();
     return {
         ...actual,
-        waitForDiagramsSettled: (root: Element, timeoutMs?: number) => {
+        waitForPreviewSettled: (root: Element, timeoutMs?: number) => {
             g_exportRoots.settled.push(root);
             g_exportRoots.timeouts.push(timeoutMs);
             if (g_exportRoots.forceResult) {
                 return Promise.resolve(g_exportRoots.forceResult);
             }
-            return actual.waitForDiagramsSettled(root, timeoutMs as any);
+            return actual.waitForPreviewSettled(root, timeoutMs as any);
         },
         buildExportHtml: (root: Element) => {
             g_exportRoots.built.push(root);
@@ -477,7 +477,10 @@ describe('App.css invariants', () => {
         expect(bodyBlocks).not.toMatch(/color-scheme\s*:\s*light\s+dark/);
     });
 
-    it('App.css overrides use current github-markdown-css variable names (not stale ones)', () => {
+    it('preview-theme.css overrides use current github-markdown-css variable names (not stale ones)', () => {
+        // The overrides moved out of App.css into preview-theme.css, which the
+        // HTML export embeds as well (REQ-LTTCE-XPT-00014).
+        const css = readFileSync(resolve(import.meta.dirname, 'preview-theme.css'), 'utf-8');
         // Extract which CSS variables github-markdown-css actually defines in its dark block
         const darkMediaBlock = githubCss.match(/@media\s*\(prefers-color-scheme:\s*dark\)[^{]*\{([\s\S]*?)\}\s*\}/)?.[1] ?? '';
         const libVars = [...darkMediaBlock.matchAll(/--([\w-]+)\s*:/g)].map(m => `--${m[1]}`);
@@ -501,7 +504,7 @@ describe('App.css invariants', () => {
             }
         }
         for (const varName of requiredVars) {
-            expect(ourDarkBlock, `App.css must override ${varName} (used by github-markdown-css)`).toContain(varName);
+            expect(ourDarkBlock, `preview-theme.css must override ${varName} (used by github-markdown-css)`).toContain(varName);
         }
     });
 });
@@ -977,7 +980,7 @@ describe('App — headless export launch', () => {
             // rendered when the wait gave up, and the export still reported
             // success. It must hand back an error and no document.
             const err = vi.spyOn(console, 'error').mockImplementation(() => {});
-            g_exportRoots.forceResult = { pending: 3, failed: 0, total: 5 };
+            g_exportRoots.forceResult = { pending: 3, failed: 0, total: 5, codePending: 0 };
             (window as any).__LATTICE_INIT_DATA__ = {
                 path: '/vault/a.md', content: '# Hi', exportFormat: format, exportSettleMs: 40_000,
             };
@@ -1017,7 +1020,7 @@ describe('App — headless export launch', () => {
 
     it('fails at once with the real cause when a diagram could not be rasterised (REQ-LTTCE-XPT-00010)', async () => {
         const err = vi.spyOn(console, 'error').mockImplementation(() => {});
-        g_exportRoots.forceResult = { pending: 0, failed: 1, total: 4 };
+        g_exportRoots.forceResult = { pending: 0, failed: 1, total: 4, codePending: 0 };
         (window as any).__LATTICE_INIT_DATA__ = {
             path: '/vault/a.md', content: '# Hi', exportFormat: 'html', exportSettleMs: 80_000,
         };
@@ -1074,6 +1077,24 @@ describe('App — headless export launch', () => {
         expect(doc.head.querySelector('style')!.textContent).toContain('.katex .katex-mathml{');
         // The body is what buildExportHtml serialised, nothing else.
         expect(g_exportRoots.built).not.toHaveLength(0);
+    });
+
+    it('exportFormat "html" styles the export in the theme the preview root shows (REQ-LTTCE-XPT-00014)', async () => {
+        // Read from the live DOM, not React state: the article must carry the
+        // same `markdown-body` + data-theme the preview root does, or no
+        // code-token colour rule matches in the exported file.
+        (window as any).__LATTICE_INIT_DATA__ = {
+            path: '/vault/notes/a.md', content: '# Hi', exportFormat: 'html',
+        };
+        const { container } = render(<App />);
+
+        await waitFor(() => expect(readyCalls()).toHaveLength(1));
+        const [, args] = readyCalls()[0] as [string, any];
+        const article = new DOMParser().parseFromString(args.html, 'text/html').querySelector('body > article')!;
+        const previewRoot = container.querySelector('.preview-pane__body')!;
+        expect(article.className).toBe('markdown-body');
+        expect(previewRoot.getAttribute('data-theme')).toBeTruthy();
+        expect(article.getAttribute('data-theme')).toBe(previewRoot.getAttribute('data-theme'));
     });
 
     it('exportFormat "pdf" signals settled without any HTML', async () => {
@@ -1200,7 +1221,7 @@ describe('App — headless export launch', () => {
 
     it('the preview view is committed to the DOM *before* the ready signal, not after', async () => {
         // Regression (found in review, 2026-09-20). The previous code called
-        // setViewMode and then awaited waitForDiagramsSettled, which for a
+        // setViewMode and then awaited waitForPreviewSettled, which for a
         // document with no diagrams returns without ever yielding — so the
         // signal could reach Rust while the DOM still said data-view-mode
         // 'edit', and the host printer would paginate the *editor* pane, raw

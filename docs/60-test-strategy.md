@@ -162,7 +162,7 @@ which were previously compile-verified only.
 
 | Scenario | Asserts |
 |:---------|:--------|
-| `export-html` | exit `0`; `demo.html` beside the input; contains the H1 text, `data-source-line` (the rendered preview, not raw source), `<table`, `class="katex"`, and one rasterised PNG per Mermaid block; is a whole document (`<!DOCTYPE html>`) carrying KaTeX's stylesheet and its fonts as `data:` URLs, with no relative `fonts/` URL (REQ-LTTCE-XPT-00013) |
+| `export-html` | exit `0`; `demo.html` beside the input; contains the H1 text, `data-source-line` (the rendered preview, not raw source), `<table`, `class="katex"`, and one rasterised PNG per Mermaid block; is a whole document (`<!DOCTYPE html>`) carrying KaTeX's stylesheet and its fonts as `data:` URLs, with no relative `fonts/` URL (REQ-LTTCE-XPT-00013); the body in a themed `.markdown-body` article with github-markdown-css, the code-token palette and highlighted tokens, none still pending (REQ-LTTCE-XPT-00014) |
 | `export-pdf (default paper)` | exit `0`; `demo.pdf` beside the input; starts with the `%PDF-` magic number, is not a stub, its page is A4 portrait (`/MediaBox`, ±1.5 pt), and it has at least 2 pages — the demo is paginated, not clipped to one page |
 | `export-pdf --paper a3` | the same on a separate staged copy, with an A3 portrait page — a non-default paper, end to end |
 | `export-pdf --paper letter (relative path)` | the same on its own staged copy, with a US Letter portrait page — and the file given by its bare name, relative to the directory the CLI runs in, as a user types it (Linux refused relative output paths until 2026-09-28) |

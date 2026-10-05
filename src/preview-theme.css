@@ -1,0 +1,89 @@
+/* LEGAL NOTE:
+   LATTICE (tm) - The Portable and standard Markdown Editor
+   Copyright (C) 2026 Owner of blessini.com (a.k.a Blessia)
+   See LICENCE file in GitHUB root folder of the repository.
+   END OF NOTE */
+
+/* The preview's document look per theme: github-markdown-css overrides and
+   the code-token palette. Its own file, not part of App.css, because two
+   consumers need exactly these rules and no others: App.tsx imports it for
+   the preview pane, and lib/export-document.ts embeds it (as text) in every
+   `--export-html` file (REQ-LTTCE-XPT-00014). App.css holds the app chrome,
+   which must never reach an exported document. */
+
+/* Override github-markdown-css per preview theme.
+   Must use the current variable names (--bgColor-*, --fgColor-*) since
+   the old names (--color-canvas-*) are no longer used by the library. */
+.markdown-body[data-theme="dark"] {
+  color-scheme: dark;
+  color: #f0f6fc !important;
+  --bgColor-default: #0d1117 !important;
+  --bgColor-muted: #151b23 !important;
+  --fgColor-default: #f0f6fc !important;
+  --fgColor-muted: #9198a1 !important;
+  --borderColor-default: #3d444d !important;
+  --borderColor-muted: #3d444db3 !important;
+  --bgColor-neutral-muted: #656c7633 !important;
+
+  & table tr    { background-color: #0d1117 !important; }
+  & table tr:nth-child(2n) { background-color: #151b23 !important; }
+  & code, & pre { background-color: #151b23 !important; color: #f0f6fc !important; }
+}
+
+.markdown-body[data-theme="light"] {
+  color-scheme: light;
+  color: #1f2328 !important;
+  --bgColor-default: #ffffff !important;
+  --bgColor-muted: #f6f8fa !important;
+  --fgColor-default: #1f2328 !important;
+  --fgColor-muted: #59636e !important;
+  --borderColor-default: #d1d9e0 !important;
+  --borderColor-muted: #d1d9e0b3 !important;
+  --bgColor-neutral-muted: #818b981f !important;
+
+  & table tr    { background-color: #ffffff !important; }
+  & table tr:nth-child(2n) { background-color: #f6f8fa !important; }
+  & code, & pre { background-color: #f6f8fa !important; color: #1f2328 !important; }
+}
+
+/* IMPL-LTTCE-PRV-00003 — Preview Code Syntax Highlighting token colors.
+   Classes are the stable `tok-*` names emitted by Lezer's classHighlighter
+   (lib/code-highlight.ts). Palettes follow GitHub light/dark so the preview
+   matches both github-markdown-css and the editor pane's githubLight /
+   githubDark themes. */
+.markdown-body[data-theme="light"] {
+  & .tok-keyword, & .tok-modifier, & .tok-operatorKeyword { color: #cf222e !important; }
+  & .tok-string, & .tok-string2, & .tok-regexp { color: #0a3069 !important; }
+  & .tok-comment, & .tok-lineComment, & .tok-blockComment, & .tok-docComment { color: #59636e !important; }
+  & .tok-number, & .tok-bool, & .tok-atom, & .tok-literal { color: #0550ae !important; }
+  & .tok-typeName, & .tok-className, & .tok-namespace { color: #953800 !important; }
+  & .tok-definition.tok-variableName, & .tok-function, & .tok-macroName { color: #8250df !important; }
+  & .tok-propertyName, & .tok-attributeName, & .tok-labelName { color: #0550ae !important; }
+  & .tok-tagName { color: #116329 !important; }
+  & .tok-meta, & .tok-processingInstruction { color: #59636e !important; }
+  & .tok-link, & .tok-url { color: #0969da !important; }
+  & .tok-heading { color: #0550ae !important; font-weight: bold; }
+  & .tok-emphasis { font-style: italic; }
+  & .tok-strong { font-weight: bold; }
+  & .tok-strikethrough { text-decoration: line-through; }
+  & .tok-invalid { color: #82071e !important; }
+}
+
+.markdown-body[data-theme="dark"] {
+  & .tok-keyword, & .tok-modifier, & .tok-operatorKeyword { color: #ff7b72 !important; }
+  & .tok-string, & .tok-string2, & .tok-regexp { color: #a5d6ff !important; }
+  & .tok-comment, & .tok-lineComment, & .tok-blockComment, & .tok-docComment { color: #8b949e !important; }
+  & .tok-number, & .tok-bool, & .tok-atom, & .tok-literal { color: #79c0ff !important; }
+  & .tok-typeName, & .tok-className, & .tok-namespace { color: #ffa657 !important; }
+  & .tok-definition.tok-variableName, & .tok-function, & .tok-macroName { color: #d2a8ff !important; }
+  & .tok-propertyName, & .tok-attributeName, & .tok-labelName { color: #79c0ff !important; }
+  & .tok-tagName { color: #7ee787 !important; }
+  & .tok-meta, & .tok-processingInstruction { color: #8b949e !important; }
+  & .tok-link, & .tok-url { color: #58a6ff !important; }
+  & .tok-heading { color: #79c0ff !important; font-weight: bold; }
+  & .tok-emphasis { font-style: italic; }
+  & .tok-strong { font-weight: bold; }
+  & .tok-strikethrough { text-decoration: line-through; }
+  & .tok-invalid { color: #ffa198 !important; }
+}
+/* IMPL-LTTCE-PRV-00003 END */
