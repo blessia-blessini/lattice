@@ -3,13 +3,20 @@
 All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
+## v0.3.33
+### Changes
+  <!-- INSERT BULLETS UNDER THIS LINE -->
+- FEAT: PRECISE PDF MARGINS - 62851e6 FIX: the actual macOS fix. WebKit fires beforeprint when its   print run starts, and the handler used to overwrite the export margins   with 2 cm. The export now keeps its margins in a ref, and the handler   passes them on. The macOS log from CI confirms it: after printing, the   print settings hold our 28/28/28/57 pt. - 898013f TEST: the automated check. Every exported PDF is rendered with   hayro and each side is compared with the margins the build asked for,   within 3 pt. It's a new dev-only dependency: 27 crates, never in the   shipped app. - 53f48d8 CHORE: the temporary macOS logging is removed. Only CI's macOS   legs compile that code, and they're green.
 
 
-
+---
 
 ## v0.3.32
 ### Changes
-  <!-- INSERT BULLETS UNDER THIS LINE -->
+- FEAT: PRECISE PDF MARGINS
+- FIX: the actual macOS fix. WebKit fires beforeprint when its print run starts, and the handler used to overwrite the export margins with 2 cm. The export now keeps its margins in a ref, and the handler passes them on. The macOS log from CI confirms it: after printing, the print settings hold our 28/28/28/57 pt.
+- TEST: the automated check. Every exported PDF is rendered with hayro and each side is compared with the margins the build asked for, within 3 pt. It's a new dev-only dependency: 27 crates, never in the shipped app.
+- CHORE: the temporary macOS logging is removed. Only CI's macOS legs compile that code, and they're green.
 - CHORE: Remove the temporary macOS print-geometry logging
 - TEST: Fail the CLI export check when a PDF's printed margins are wrong
 - FIX: Keep the export's page margins when macOS fires beforeprint
