@@ -6,6 +6,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.33
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- feat: initialize Tauri backend and bump application version to 0.3.33
 - feat: add build-test orchestration scripts for bash and powershell environments
 - DOCS: Give preview-copy.ts its own trace satellite; trace ARCH-LTTCE-PRV-*
 - FIX: Serialise the HTML export in the same turn the preview settled
