@@ -3,9 +3,13 @@
 All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
-## v0.3.33
+## v0.3.35
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: Update CHangelog for v0.3.33
+
+## v0.3.33
+### Changes
 - feat: initialize Tauri backend and bump application version to 0.3.33
 - feat: add build-test orchestration scripts for bash and powershell environments
 - DOCS: Give preview-copy.ts its own trace satellite; trace ARCH-LTTCE-PRV-*
@@ -14,10 +18,7 @@ Edit the section for your next version **before** pushing the release tag like v
 - DOCS: Record ARCH-LTTCE-XPT-00004 in the architecture trace satellite
 - FIX: Record the HTML export's trace links beside App.tsx and export-document.ts
 - FIX: Export HTML as a self-contained document so KaTeX math renders in a browser
-- CHORE: Corrected CHANGELOG
-
 --- 
-
 - FEAT: PRECISE PDF MARGINS 
 - FIX: the actual macOS fix. WebKit fires beforeprint when its   print run starts, and the handler used to overwrite the export margins   with 2 cm. The export now keeps its margins in a ref, and the handler   passes them on. The macOS log from CI confirms it: after printing, the   print settings hold our 28/28/28/57 pt. 
 - TEST: the automated check. Every exported PDF is rendered with   hayro and each side is compared with the margins the build asked for,   within 3 pt. It's a new dev-only dependency: 27 crates, never in the   shipped app. 
