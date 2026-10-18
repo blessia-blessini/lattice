@@ -3,17 +3,29 @@
 All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
-## v0.3.36
+
+## v0.3.37
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: RELEASE v0.3.36 Doc
+---
+
+## v0.3.36
+### Changes
 - FEAT: Open desktop editor windows 50 pixels wider (850 x 600)
 - FIX: Harden the last-vault memory after review cycle 1
 - FIX: Tell the user when the daily notes folder is not known
 - FEAT: Open the last vault when the app starts without a file
 - FIX: Resolve a vault for a window opened without a file
 - CHORE: Version to v0.3.36
-- FEAT: ADD DAILY NOTE QUICK BTN, FIXES
-- DOCS: update changelog entries for recent releases
+- SUB-RELEASE v0.3.35: ADD DAILY NOTE QUICK BTN, FIXES: 
+  - CHORE: Update dependencies of server-side components
+  - FIX: Capture the Windows app screenshot with PrintWindow, not a screen copy
+  - TEST: Screenshot the running app on every desktop CI leg and publish it
+  - TEST: Click the daily-note button end to end in the E2E harness
+  - FIX: Report a folder named like the daily note as "not a file" on Windows
+  - FEAT: Open today's daily note from the menu or a toolbar button
+  - DOCS: update changelog entries for recent releases
 ---
 
 ## v0.3.35
