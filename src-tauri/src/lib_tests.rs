@@ -60,7 +60,7 @@ fn test_vault_initialization() {
     let doc_path_str = doc_path.to_string_lossy().to_string();
 
     // 1. Initialize Vault
-    let settings_path = initialize_vault_settings(doc_path_str.clone()).unwrap();
+    let settings_path = vault_path::initialize_vault_settings_internal(doc_path_str.clone()).unwrap();
 
     // Verify .lattice/settings.json created
     assert!(Path::new(&settings_path).exists());
@@ -396,7 +396,7 @@ fn test_initialize_vault_settings_with_directory_path() {
     let temp_dir = tempfile::tempdir().unwrap();
     let dir_path = temp_dir.path().to_string_lossy().to_string();
 
-    let result = initialize_vault_settings(dir_path);
+    let result = vault_path::initialize_vault_settings_internal(dir_path);
     assert!(result.is_ok(), "Expected Ok, got {:?}", result);
     let settings_path = result.unwrap();
     assert!(settings_path.contains(".lattice"));
@@ -417,11 +417,83 @@ fn test_initialize_vault_settings_idempotent() {
     fs::write(&file_path, "").unwrap();
     let path_str = file_path.to_string_lossy().to_string();
 
-    let r1 = initialize_vault_settings(path_str.clone()).unwrap();
-    let r2 = initialize_vault_settings(path_str).unwrap();
+    let r1 = vault_path::initialize_vault_settings_internal(path_str.clone()).unwrap();
+    let r2 = vault_path::initialize_vault_settings_internal(path_str).unwrap();
     assert_eq!(r1, r2, "Second call must return the same settings path");
 }
 // test_initialize_vault_settings_idempotent END ***************************
+
+//**************************************************************************
+// test_initialize_vault_remembers_the_new_vault
+//**************************************************************************
+/// REQ-LTTCE-VLT-00002 via "Initialize Vault Here": the new vault becomes
+/// the last vault, so a lookup without a document returns it. Home, vault
+/// and state file all live in the TempDir.
+#[test]
+fn test_initialize_vault_remembers_the_new_vault() {
+    let temp_dir = tempfile::tempdir().unwrap();
+    let home = temp_dir.path().join("home");
+    let state = temp_dir.path().join("app-local-data").join(last_vault::LAST_VAULT_FILE);
+    let doc = temp_dir.path().join("notes").join("doc.md");
+    fs::create_dir_all(doc.parent().unwrap()).unwrap();
+    fs::write(&doc, "").unwrap();
+
+    let created =
+        initialize_vault_and_settle(doc.to_string_lossy().to_string(), &home, Some(&state)).unwrap();
+
+    assert_eq!(last_vault::recall(&state), Some(std::path::PathBuf::from(&created)));
+    let bare = find_vault_and_settle(String::new(), &home, Some(temp_dir.path()), Some(&state))
+        .unwrap()
+        .unwrap();
+    assert_eq!(bare, created, "a window without a document must open the new vault");
+}
+// test_initialize_vault_remembers_the_new_vault END ***********************
+
+//**************************************************************************
+// test_vault_lookup_remembers_and_recalls
+//**************************************************************************
+/// REQ-LTTCE-VLT-00002/-00003 through the command bodies: a document in a
+/// vault is remembered; "no document" gets it back; once it is gone, "no
+/// document" gets the home vault.
+#[test]
+fn test_vault_lookup_remembers_and_recalls() {
+    let temp_dir = tempfile::tempdir().unwrap();
+    let home = temp_dir.path().join("home");
+    let state = temp_dir.path().join("app-local-data").join(last_vault::LAST_VAULT_FILE);
+    let vault_dir = temp_dir.path().join("notes");
+    fs::create_dir_all(vault_dir.join(".lattice")).unwrap();
+    fs::write(vault_dir.join(".lattice").join("settings.json"), "{}").unwrap();
+    let doc = vault_dir.join("doc.md");
+    fs::write(&doc, "").unwrap();
+    // Bounded by the TempDir: the walk must never reach a real vault.
+    let boundary = Some(temp_dir.path());
+
+    let lookup = |path: &str| {
+        find_vault_and_settle(path.to_string(), &home, boundary, Some(&state)).unwrap().unwrap()
+    };
+    let in_vault = lookup(&doc.to_string_lossy());
+    assert!(in_vault.starts_with(&*vault_dir.to_string_lossy()));
+    assert_eq!(lookup(""), in_vault);
+
+    fs::remove_dir_all(vault_dir.join(".lattice")).unwrap();
+    let home_settings = vault_path::home_vault_settings(&home);
+    assert_eq!(std::path::PathBuf::from(lookup("")), home_settings);
+}
+// test_vault_lookup_remembers_and_recalls END ******************************
+
+//**************************************************************************
+// test_headless_export_takes_no_part_in_the_memory
+//**************************************************************************
+/// A headless export neither recalls nor remembers a vault (review cycle 1,
+/// finding 5); a GUI process uses the state file; no location means none.
+#[test]
+fn test_headless_export_takes_no_part_in_the_memory() {
+    let state = std::path::PathBuf::from("state.json");
+    assert_eq!(memory_location(true, Ok(state.clone())), None);
+    assert_eq!(memory_location(false, Ok(state.clone())), Some(state));
+    assert_eq!(memory_location(false, Err("no app data dir".into())), None);
+}
+// test_headless_export_takes_no_part_in_the_memory END *********************
 
 //**************************************************************************
 // test_find_vault_internal_directory_input
@@ -871,7 +943,7 @@ fn test_initialize_vault_settings_readonly() {
     let lattice_file = parent_dir.join(".lattice");
     fs::write(&lattice_file, "blocking file").unwrap();
 
-    let result = initialize_vault_settings(parent_dir.to_string_lossy().to_string());
+    let result = vault_path::initialize_vault_settings_internal(parent_dir.to_string_lossy().to_string());
     assert!(result.is_err());
     let err = result.unwrap_err();
     assert!(err.contains("Cannot Initialize Vault:"));

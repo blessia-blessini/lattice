@@ -19,6 +19,8 @@ implementation artefacts. For the ID schema definition see `11-Traceability-Requ
   - [Chapter SEL — Select All Scope](#chapter-sel-select-all-scope)
   - [Chapter TBL — Spreadsheet Paste](#chapter-tbl-spreadsheet-paste)
   - [Chapter DLN — Daily Note](#chapter-dln-daily-note)
+  - [Chapter VLT — Vault Selection](#chapter-vlt-vault-selection)
+  - [Chapter WIN — Editor Window](#chapter-win-editor-window)
     - [General](#general)
     - [Severity Visualisation](#severity-visualisation)
     - [Rule: Setext Headings](#rule-setext-headings)
@@ -956,6 +958,48 @@ before any file or folder is created.
 **REQ-LTTCE-DLN-00006** — A setting **"Use Calendar Week Title"** (persisted key `useCalendarWeekTitle`)
 SHALL select the title of REQ-LTTCE-DLN-00004. It SHALL be **OFF by default**, SHALL be settable from the
 Settings panel, and SHALL be persisted to the vault `settings.json`.
+
+<!--REQ-LTTCE-DLN-00007-->
+**REQ-LTTCE-DLN-00007** — When the command of REQ-LTTCE-DLN-00001 is used while the Daily Notes Path is not
+known, the application SHALL tell the user so in a visible message that names where to set it
+(Settings ▸ Daily Notes ▸ "Daily Notes Path"), and SHALL create nothing. It SHALL NOT silently do nothing.
+
+## Chapter VLT — Vault Selection
+
+A *vault* is a folder holding a `.lattice/settings.json`; its settings (theme, Daily Notes Path, …) apply to
+the documents below it. A document opens in the nearest vault above it. There is always a *home vault*
+under the user's home folder (on mobile: the app's data folder), created on first use, for documents outside
+any vault.
+
+<!--REQ-LTTCE-VLT-00001-->
+**REQ-LTTCE-VLT-00001** — A window opened **without a document** SHALL select a vault and apply its settings
+before the user's first action, exactly as a window opened with a document does. Every command that depends
+on a setting — the daily note of Chapter DLN, the Settings panel — SHALL work in such a window from its
+first moment, without a document or the Settings panel having to be opened first.
+
+*Rationale*: before this requirement, a window started without a document ran with no vault at all until a
+document or the Settings panel happened to select one; the daily-note button did nothing in the meantime.
+
+<!--REQ-LTTCE-VLT-00002-->
+**REQ-LTTCE-VLT-00002** — The application SHALL remember the **last vault** it selected other than the home
+vault — through a document, "Initialize Vault Here", or a vault in the working directory — per user and per
+device, in the operating system's standard per-user, per-device application data folder. A window opened
+without a document SHALL select that remembered vault, unless its working directory itself holds a vault,
+which then takes precedence. Selecting the home vault SHALL NOT replace the remembered vault, however its
+path is spelled, and a headless export (Chapter XPT) SHALL NOT read or change the remembered vault.
+
+<!--REQ-LTTCE-VLT-00003-->
+**REQ-LTTCE-VLT-00003** — When the remembered vault no longer exists (moved, deleted, its drive not
+connected), a window opened without a document SHALL select the home vault and SHALL record why in the
+application log. A remembered value that does not name a vault's `.lattice/settings.json` SHALL be
+ignored the same way, so that saving settings can never write to any other file.
+
+## Chapter WIN — Editor Window
+
+<!--REQ-LTTCE-WIN-00001-->
+**REQ-LTTCE-WIN-00001** — On desktop, a new editor window SHALL open with a content area of **850 × 600**
+logical pixels (width × height; the operating system's title bar and frame come on top, and display scaling
+multiplies both).
 
 ---
 

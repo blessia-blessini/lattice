@@ -1927,7 +1927,7 @@ No settings-specific code was needed for validation — the field's type carries
 
 | Layer    | File                          | Responsibility                                                                                     |
 | -------- | ----------------------------- | -------------------------------------------------------------------------------------------------- |
-| Command  | `src/App.tsx`                 | `handleOpenDailyNote`: one handler for the menu entry and the toolbar button; passes the loaded settings to `open_daily_note`, then `loadDocument(path)`; alerts on failure. |
+| Command  | `src/App.tsx`                 | `handleOpenDailyNote`: one handler for the menu entry and the toolbar button; passes the loaded settings to `open_daily_note`, then `loadDocument(path)`; alerts on failure, and — instead of doing nothing — when no Daily Notes Path is known yet (REQ-LTTCE-DLN-00007). |
 | Settings | `src/components/Settings.tsx` | "Daily Notes" section: path, prefix input, calendar-week-title toggle; persisted with the whole settings object. |
 | Contract | `src/lib/daily-note.ts`       | Icon, prefix default/length, the keystroke filter, and the defensive read-back of a loaded prefix.  |
 
@@ -1950,6 +1950,82 @@ On the frontend, `lib/daily-note.test.ts` covers the filter, `Settings.test.tsx`
 path.
 
 ---
+
+## Feature: Vault Selection
+
+<!--ARCH-LTTCE-VLT-00001-->
+**ARCH-LTTCE-VLT-00001** — covers REQ-LTTCE-VLT-00001.
+
+Every window resolves its vault once, at launch, in `checkLaunch` (`src/App.tsx`) through
+`enforceVaultPath`, which asks the backend's `find_vault_settings_file` (`vault_path.rs`): walk up from the
+document to the nearest `.lattice`, else the home vault. The resolved `settings.json` path is React state;
+setting it loads the settings (`loadSettings`), which is what every settings-dependent command reads.
+
+```text
+backend: build_window_with_file_ex ── injects __LATTICE_INIT_DATA__ { path, content } into EVERY window
+                                      (path = "" when there is no document)
+frontend checkLaunch:
+  payload with a path  → load the document  → enforceVaultPath(path)  ─┐
+  no path (or none)    → session file after a WebView reload, if any,  ├─▶ find_vault_settings_file
+                         else enforceVaultPath("")  ("no document")    ─┘          │
+                                                                   settings.json path → loadSettings
+```
+
+**The trap this closes.** The backend injects the payload into every window, so on desktop the "no payload"
+branch was unreachable, and the payload branch resolved a vault only for a non-empty path. A window opened
+without a document therefore never resolved one: no settings, an empty Daily Notes Path, a 🗒 button that
+did nothing until a document or Settings resolved a vault as a side effect. The branch test is on the path,
+not on the payload's presence. App tests use the real payload shape (`path: ""`), since the payload-free
+shape the older tests used never occurs on desktop.
+
+<!--ARCH-LTTCE-VLT-00002-->
+**ARCH-LTTCE-VLT-00002** — covers REQ-LTTCE-VLT-00002, REQ-LTTCE-VLT-00003.
+
+The last vault is decided in the backend, at the one place every vault lookup passes through, so the
+frontend needs no change:
+
+```text
+find_vault_settings_file(doc) / initialize_vault_settings(doc)        (lib.rs, thin shims)
+   │  memory = last_vault_memory(app): the state file — None for a headless export
+   ▼
+find_vault_and_settle / initialize_vault_and_settle                    (no AppHandle: unit-tested)
+   │  vault_path walk-up → found  (nearest vault, or for doc = "" the working directory's, else home)
+   ▼
+settle_vault → last_vault::choose_vault(doc, found, home_vault_settings(home), state_file)
+   • found made absolute (the working directory's vault arrives as ".lattice/settings.json")
+   • doc == "" and found is home  → recall(state_file) if it is still a vault, else home (logged)
+   • chosen is not home           → remember(state_file, chosen)   (write only when it changed)
+   "is home" = same file (canonicalised), not byte equality: drive-letter case, "..", "\\?\"
+```
+
+| Part | File | Role |
+| ---- | ---- | ---- |
+| Rule | `src-tauri/src/last_vault.rs` | `recall` / `remember` / `choose_vault` — pure path logic, UTST in a `TempDir` |
+| Where | `lib.rs` `last_vault_state_file` | `app_local_data_dir()/last-vault.json`: `%LOCALAPPDATA%\<id>` (Windows), `~/Library/Application Support/<id>` (macOS), `$XDG_DATA_HOME/<id>` (Linux), the app's private data (Android, iOS) |
+| Home | `vault_path::home_vault_settings` | the single definition of "the home vault", shared with `fallback_vault` |
+
+**Decisions.** *Local, not roaming*: the remembered value is an absolute path, valid on one machine only, so
+it does not belong in a roaming profile (`app_config_dir` is `%APPDATA%` on Windows). *Validated on read*:
+`recall` accepts only an absolute, existing `…/.lattice/settings.json`, because Settings later writes to that
+path. *Atomic write*: temporary file + rename, the temporary name unique per write (process id + a
+counter — all windows share one process), so two windows or a crash never leave half a file. *Headless
+export* takes no part (`memory_location`): a scripted conversion is not the user working in a vault. *Never
+fatal*: without a state-file location the lookup's own result stands. *Mobile*: the code runs, but a
+document there mostly arrives as an opaque `content://` URI with no vault above it, so nothing is remembered
+yet — true vault support on mobile is separate work.
+
+**E2E isolation.** `e2e::isolated_home()` — `LATTICE_E2E_HOME`, honoured only by `--features e2e_test`
+builds and compiled away otherwise — replaces the home folder and the state-file folder, so the harness's
+launches without a document never touch the developer's real home vault or last-vault file.
+
+## Feature: Editor Window Geometry
+
+<!--ARCH-LTTCE-WIN-00001-->
+**ARCH-LTTCE-WIN-00001** — covers REQ-LTTCE-WIN-00001. Every desktop editor window is built by
+`configure_desktop_window` (`src-tauri/src/lib.rs`): inner size from the one constant `EDITOR_WINDOW_SIZE`
+(850 × 600 logical pixels), position from `calculate_cascade_coordinates`, so successive windows step
+diagonally. Tauri applies the size in logical pixels; the OS adds its frame and applies display scaling.
+The Settings window has its own size (600 × 400) and is not an editor window.
 
 ## Architectural Decisions
 

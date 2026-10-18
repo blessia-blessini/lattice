@@ -30,11 +30,18 @@
 //! 5. `daily_note_defaults`, `daily_note_cw_no_prefix` — clicks the 🗒 toolbar
 //!    button twice in the real WebView; the note is created once, opened in
 //!    the editor, and the second click leaves it untouched (STST, Chapter DLN)
+//! 6. `last_vault` — a launch without a document works in the last vault, and
+//!    in the home vault once that vault is gone (STST, Chapter VLT)
+//!
+//! Every launch gets an isolated home (`LATTICE_E2E_HOME`, honoured by E2E
+//! builds only), so no scenario reads or writes the real home vault.
 
 use chrono::{Local, NaiveDate};
 use lattice_lib::daily_note::{
     daily_note_base_name, daily_note_title, DailyNotePrefix, DAILY_NOTE_PREFIX_DEFAULT,
 };
+use lattice_lib::e2e::E2E_HOME_ENV;
+use lattice_lib::last_vault::LAST_VAULT_FILE;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command};
@@ -95,9 +102,23 @@ fn lattice_bin(repo_root: &PathBuf) -> PathBuf {
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Launch the Lattice binary with optional CLI arguments.
-/// Sets LLVM_PROFILE_FILE so each launch writes its own profraw.
+/// The isolated home folder of the launch named `name` — the app's home vault
+/// and its last-vault memory live there instead of in the real home
+/// (`lattice_lib::e2e::isolated_home`, E2E builds only).
+fn e2e_home(root: &Path, name: &str) -> PathBuf {
+    root.join("src-tauri").join("target").join("e2e-home").join(name)
+}
+
+/// Launch the Lattice binary with optional CLI arguments, in its own
+/// isolated home (see [`e2e_home`]).
 fn launch(bin: &PathBuf, root: &PathBuf, args: &[&str], profile_name: &str) -> Child {
+    launch_in_home(bin, root, args, profile_name, &e2e_home(root, profile_name))
+}
+
+/// Launch with an explicit isolated home — for scenarios whose launches
+/// share one, so state written by one launch is seen by the next.
+/// Sets LLVM_PROFILE_FILE so each launch writes its own profraw.
+fn launch_in_home(bin: &PathBuf, root: &PathBuf, args: &[&str], profile_name: &str, home: &Path) -> Child {
     let profraw = root
         .join("src-tauri")
         .join("target")
@@ -108,6 +129,7 @@ fn launch(bin: &PathBuf, root: &PathBuf, args: &[&str], profile_name: &str) -> C
         .args(args)
         .current_dir(root)
         .env("LLVM_PROFILE_FILE", &profraw)
+        .env(E2E_HOME_ENV, home)
         .spawn()
         .unwrap_or_else(|e| panic!("Failed to launch lattice binary: {e}"))
 }
@@ -514,27 +536,8 @@ fn scenario_daily_note(bin: &PathBuf, root: &PathBuf, v: &DailyNoteVariant) -> b
         return false;
     }
 
-    clear_daily_note_signals(root);
-    let _ = fs::remove_file(root.join("e2e_startup_ok.txt"));
-    if let Err(e) = fs::create_dir(root.join(DAILY_NOTE_E2E_MARKER)) {
-        println!(" → FAIL (cannot create scenario marker: {e})");
-        return false;
-    }
-
-    let first_day = Local::now().date_naive();
     let start = vault.join("start.md").to_string_lossy().into_owned();
-    let child = launch(bin, root, &[&start], v.name);
-    let (started, child) = wait_for_startup(root, child, Duration::from_secs(15));
-    let (result, child) = if started {
-        println!(" settling (3 s after startup) …");
-        thread::sleep(Duration::from_secs(3));
-        check_daily_note_clicks(root, &vault, v, first_day, child)
-    } else {
-        (Err("frontend did not signal startup within 15 s".into()), child)
-    };
-
-    shutdown(child, root);
-    clear_daily_note_signals(root);
+    let result = daily_note_launch(bin, root, &e2e_home(root, v.name), &[&start], v.name, &vault, v);
     match result {
         Ok(()) => {
             let _ = fs::remove_dir_all(&vault);
@@ -549,6 +552,134 @@ fn scenario_daily_note(bin: &PathBuf, root: &PathBuf, v: &DailyNoteVariant) -> b
     }
 }
 // scenario_daily_note END *****************************************************
+
+
+//******************************************************************************
+// daily_note_launch
+//******************************************************************************
+/// One launch that clicks the 🗒 button twice and checks the note in
+/// `<notes_root>/daily` (see [`check_daily_note_clicks`]); the notes root is
+/// the vault folder, except for the home vault (`<home>/lattice-notes`).
+/// `args` empty = launch without a document. Signals are cleared before and after.
+fn daily_note_launch(
+    bin: &PathBuf,
+    root: &PathBuf,
+    home: &Path,
+    args: &[&str],
+    profile: &str,
+    vault: &Path,
+    v: &DailyNoteVariant,
+) -> Result<(), String> {
+    clear_daily_note_signals(root);
+    let _ = fs::remove_file(root.join("e2e_startup_ok.txt"));
+    fs::create_dir(root.join(DAILY_NOTE_E2E_MARKER))
+        .map_err(|e| format!("cannot create scenario marker: {e}"))?;
+
+    let first_day = Local::now().date_naive();
+    let child = launch_in_home(bin, root, args, profile, home);
+    let (started, child) = wait_for_startup(root, child, Duration::from_secs(15));
+    let (result, child) = if started {
+        println!(" settling (3 s after startup) …");
+        thread::sleep(Duration::from_secs(3));
+        check_daily_note_clicks(root, vault, v, first_day, child)
+    } else {
+        (Err("frontend did not signal startup within 15 s".into()), child)
+    };
+
+    shutdown(child, root);
+    clear_daily_note_signals(root);
+    result
+}
+// daily_note_launch END *******************************************************
+
+
+//******************************************************************************
+// last_vault_steps
+//******************************************************************************
+/// The three launches of [`scenario_last_vault`], sharing one isolated home.
+fn last_vault_steps(bin: &PathBuf, root: &PathBuf, home: &Path, notes: &Path) -> Result<(), String> {
+    // Both vaults have settings "{}": default prefix, file-name title.
+    let defaults = &DAILY_NOTE_VARIANTS[0];
+
+    // 1. A document inside `notes` makes it the last vault.
+    let start = notes.join("start.md").to_string_lossy().into_owned();
+    let child = launch_in_home(bin, root, &[&start], "last_vault_1_document", home);
+    let (started, child) = wait_for_startup(root, child, Duration::from_secs(15));
+    if started {
+        thread::sleep(Duration::from_secs(3));
+    }
+    shutdown(child, root);
+    if !started {
+        return Err("launch 1: frontend did not signal startup within 15 s".into());
+    }
+    let state = home.join("app-local-data").join(LAST_VAULT_FILE);
+    let text = fs::read_to_string(&state)
+        .map_err(|e| format!("launch 1 left no {}: {e}", state.display()))?;
+    let remembered = serde_json::from_str::<serde_json::Value>(&text)
+        .ok()
+        .and_then(|j| j["vaultSettingsPath"].as_str().map(PathBuf::from));
+    let expected = notes.join(".lattice").join("settings.json");
+    if remembered.as_deref() != Some(expected.as_path()) {
+        return Err(format!("launch 1 remembered {remembered:?}, expected {}", expected.display()));
+    }
+    println!("  launch 1: last vault = {}", expected.display());
+
+    // 2. No document: the window works in `notes` at once (REQ-LTTCE-VLT-00001/-00002).
+    daily_note_launch(bin, root, home, &[], "last_vault_2_no_document", notes, defaults)
+        .map_err(|e| format!("launch 2 (no document): {e}"))?;
+
+    // 3. `notes` is no longer a vault: no document falls back to the home vault (-00003),
+    //    whose notes live under `<home>/lattice-notes` (settings::get_vault_root).
+    fs::remove_dir_all(notes.join(".lattice")).map_err(|e| format!("cannot remove the vault: {e}"))?;
+    let home_notes = home.join("lattice-notes");
+    daily_note_launch(bin, root, home, &[], "last_vault_3_vault_gone", &home_notes, defaults)
+        .map_err(|e| format!("launch 3 (vault gone): {e}"))
+}
+// last_vault_steps END ********************************************************
+
+
+//******************************************************************************
+// scenario_last_vault
+//******************************************************************************
+/// Scenario 6: the last vault (STST, Chapter VLT).
+///
+/// 1. Launch on a document in the fixture vault `notes` → the app remembers
+///    `notes` in `<home>/app-local-data/last-vault.json`.
+/// 2. Launch **without** a document, click 🗒 twice → today's note is created
+///    in `notes/daily`, with no file or Settings opened first.
+/// 3. Remove `notes/.lattice`, launch without a document, click 🗒 twice →
+///    the note goes to the home vault, `<home>/lattice-notes/daily`.
+///
+/// All three launches share one isolated home, so the real home vault and the
+/// real last-vault file are never touched.
+fn scenario_last_vault(bin: &PathBuf, root: &PathBuf) -> bool {
+    println!("\n[SCENARIO] last_vault");
+    let base = root.join("src-tauri").join("target").join("e2e-last-vault");
+    let home = base.join("home");
+    let notes = base.join("notes");
+    let _ = fs::remove_dir_all(&base);
+    let setup = fs::create_dir_all(notes.join(".lattice"))
+        .and_then(|_| fs::write(notes.join(".lattice").join("settings.json"), "{}"))
+        .and_then(|_| fs::write(notes.join("start.md"), "# Last vault E2E\n"))
+        .and_then(|_| fs::create_dir_all(&home));
+    if let Err(e) = setup {
+        println!(" → FAIL (cannot create fixture: {e})");
+        return false;
+    }
+
+    match last_vault_steps(bin, root, &home, &notes) {
+        Ok(()) => {
+            let _ = fs::remove_dir_all(&base);
+            println!(" → PASS");
+            true
+        }
+        Err(e) => {
+            println!("\n → FAIL ({e}); fixture kept at {}", base.display());
+            false
+        }
+    }
+}
+// scenario_last_vault END *****************************************************
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Entry point
@@ -585,6 +716,7 @@ fn main() {
         ("conflict_detection", scenario_conflict(&bin, &root)),
         (DAILY_NOTE_VARIANTS[0].name, scenario_daily_note(&bin, &root, &DAILY_NOTE_VARIANTS[0])),
         (DAILY_NOTE_VARIANTS[1].name, scenario_daily_note(&bin, &root, &DAILY_NOTE_VARIANTS[1])),
+        ("last_vault", scenario_last_vault(&bin, &root)),
     ];
 
     println!("\n══════════════════════════════════════════════════════");

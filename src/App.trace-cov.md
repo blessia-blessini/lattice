@@ -69,3 +69,16 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - IMPL-LTTCE-DLN-00005 **covers** REQ-LTTCE-DLN-00005  (falls back to `DLN` for a malformed loaded prefix) —
   UTST: same suite
 - IMPL-LTTCE-DLN-00005 **covers** ARCH-LTTCE-DLN-00001
+- IMPL-LTTCE-DLN-00007 **covers** REQ-LTTCE-DLN-00007  (`handleOpenDailyNote` alerts, naming Settings ▸ Daily
+  Notes ▸ "Daily Notes Path", when no path is known; no `open_daily_note` call) — UTST:
+  `src/App.coverage.test.tsx`, *App — handleOpenDailyNote*, "tells the user, and does nothing else" (failed
+  before the change)
+- IMPL-LTTCE-DLN-00007 **covers** ARCH-LTTCE-DLN-00001
+- IMPL-LTTCE-VLT-00001 **covers** REQ-LTTCE-VLT-00001  (`checkLaunch` treats a payload with an empty path as
+  "no document": session restore, else the vault for "no document") — UTST: `src/App.coverage.test.tsx`,
+  *App — launch without a file (empty payload)*: vault resolved and settings loaded, 🗒 works with no file
+  opened, session restore still runs; all three failed before the fix
+- IMPL-LTTCE-VLT-00001 **covers** ARCH-LTTCE-VLT-00001
+- STST: `examples/e2e_harness.rs` scenario `last_vault`, launches 2 and 3 — a window opened without a
+  document creates and opens today's note with no file or Settings opened first (Windows only; the
+  isolated E2E home keeps it off the real home vault). See `src-tauri/src/last_vault.trace-cov.md`.
