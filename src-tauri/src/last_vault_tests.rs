@@ -52,6 +52,9 @@ fn world() -> World {
     World { tmp, home, state }
 }
 
+//******************************************************************************
+// recall_and_remember
+//******************************************************************************
 mod recall_and_remember {
     use super::*;
 
@@ -134,10 +137,70 @@ mod recall_and_remember {
             .collect();
         assert_eq!(names, vec![std::ffi::OsString::from(LAST_VAULT_FILE)]);
     }
-}
 
+    #[test]
+    fn concurrent_writers_in_one_process_never_collide() {
+        // All windows share one process: a temporary name derived from the
+        // process id alone made two writers race on the same file (review
+        // cycle 1, finding 1).
+        let w = world();
+        let a = make_vault(w.tmp.path(), "a");
+        let b = make_vault(w.tmp.path(), "b");
+        let errors: Vec<String> = std::thread::scope(|scope| {
+            let handles: Vec<_> = (0..8)
+                .map(|i| {
+                    let (state, vault) = (&w.state, if i % 2 == 0 { &a } else { &b });
+                    scope.spawn(move || {
+                        (0..25).filter_map(|_| remember(state, vault).err()).collect::<Vec<_>>()
+                    })
+                })
+                .collect();
+            handles.into_iter().flat_map(|h| h.join().unwrap()).collect()
+        });
+        assert!(errors.is_empty(), "concurrent remember failed: {errors:?}");
+        let recalled = recall(&w.state).expect("a complete state file");
+        assert!(recalled == a || recalled == b);
+        let leftovers = fs::read_dir(w.state.parent().unwrap()).unwrap().count();
+        assert_eq!(leftovers, 1, "no temporary file may be left behind");
+    }
+}
+// recall_and_remember END *****************************************************
+
+
+//******************************************************************************
+// choose
+//******************************************************************************
 mod choose {
     use super::*;
+
+    #[test]
+    fn a_relative_vault_path_is_remembered_absolute() {
+        // A launch without a document inside a vault folder finds the
+        // working directory's vault as the relative ".lattice/settings.json";
+        // remembered as-is, `recall` could never accept it (finding 2).
+        let w = world();
+        let relative = Path::new("some-folder").join(".lattice").join("settings.json");
+        let chosen = choose_vault("", &relative, &w.home, &w.state);
+        let expected = std::env::current_dir().unwrap().join(&relative);
+        assert_eq!(chosen, expected);
+        let text = fs::read_to_string(&w.state).unwrap();
+        let stored: LastVault = serde_json::from_str(&text).unwrap();
+        assert_eq!(stored.vault_settings_path, expected);
+    }
+
+    #[test]
+    fn the_home_vault_spelled_differently_is_still_the_home_vault() {
+        // A path to the same settings.json that is not byte-identical — on
+        // Windows typically another drive-letter case; here a `..` detour
+        // that works on every OS — must not be remembered (finding 3).
+        let w = world();
+        let home_dir = w.home.parent().unwrap().parent().unwrap();
+        fs::create_dir_all(home_dir.join("sub")).unwrap();
+        let detour = home_dir.join("sub").join("..").join(".lattice").join("settings.json");
+        assert_ne!(detour, w.home, "the test needs a differently spelled path");
+        choose_vault("/home-doc.md", &detour, &w.home, &w.state);
+        assert!(!w.state.exists(), "the home vault must never be remembered");
+    }
 
     #[test]
     fn no_document_gets_the_remembered_vault() {
@@ -203,3 +266,4 @@ mod choose {
         assert_eq!(recall(&w.state), Some(cwd_vault));
     }
 }
+// choose END ******************************************************************

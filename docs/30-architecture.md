@@ -1985,12 +1985,17 @@ The last vault is decided in the backend, at the one place every vault lookup pa
 frontend needs no change:
 
 ```text
-find_vault_settings_file(doc) / initialize_vault_settings(doc)        (lib.rs)
+find_vault_settings_file(doc) / initialize_vault_settings(doc)        (lib.rs, thin shims)
+   │  memory = last_vault_memory(app): the state file — None for a headless export
+   ▼
+find_vault_and_settle / initialize_vault_and_settle                    (no AppHandle: unit-tested)
    │  vault_path walk-up → found  (nearest vault, or for doc = "" the working directory's, else home)
    ▼
 settle_vault → last_vault::choose_vault(doc, found, home_vault_settings(home), state_file)
-   • doc == "" and found == home  → recall(state_file) if it is still a vault, else home (logged)
-   • chosen != home               → remember(state_file, chosen)   (write only when it changed)
+   • found made absolute (the working directory's vault arrives as ".lattice/settings.json")
+   • doc == "" and found is home  → recall(state_file) if it is still a vault, else home (logged)
+   • chosen is not home           → remember(state_file, chosen)   (write only when it changed)
+   "is home" = same file (canonicalised), not byte equality: drive-letter case, "..", "\\?\"
 ```
 
 | Part | File | Role |
@@ -2002,7 +2007,9 @@ settle_vault → last_vault::choose_vault(doc, found, home_vault_settings(home),
 **Decisions.** *Local, not roaming*: the remembered value is an absolute path, valid on one machine only, so
 it does not belong in a roaming profile (`app_config_dir` is `%APPDATA%` on Windows). *Validated on read*:
 `recall` accepts only an absolute, existing `…/.lattice/settings.json`, because Settings later writes to that
-path. *Atomic write*: temporary file + rename, so two windows or a crash never leave half a file. *Never
+path. *Atomic write*: temporary file + rename, the temporary name unique per write (process id + a
+counter — all windows share one process), so two windows or a crash never leave half a file. *Headless
+export* takes no part (`memory_location`): a scripted conversion is not the user working in a vault. *Never
 fatal*: without a state-file location the lookup's own result stands. *Mobile*: the code runs, but a
 document there mostly arrives as an opaque `content://` URI with no vault above it, so nothing is remembered
 yet — true vault support on mobile is separate work.

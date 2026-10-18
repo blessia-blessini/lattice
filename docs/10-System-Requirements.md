@@ -984,7 +984,8 @@ document or the Settings panel happened to select one; the daily-note button did
 vault — through a document, "Initialize Vault Here", or a vault in the working directory — per user and per
 device, in the operating system's standard per-user, per-device application data folder. A window opened
 without a document SHALL select that remembered vault, unless its working directory itself holds a vault,
-which then takes precedence. Selecting the home vault SHALL NOT replace the remembered vault.
+which then takes precedence. Selecting the home vault SHALL NOT replace the remembered vault, however its
+path is spelled, and a headless export (Chapter XPT) SHALL NOT read or change the remembered vault.
 
 <!--REQ-LTTCE-VLT-00003-->
 **REQ-LTTCE-VLT-00003** — When the remembered vault no longer exists (moved, deleted, its drive not

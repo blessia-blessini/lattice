@@ -610,9 +610,25 @@ fn find_vault_settings_file(
     #[cfg(not(desktop))]
     let boundary: Option<&Path> = Some(home_dir);
 
-    let found = vault_path::find_vault_settings_file_bounded(file_path.clone(), home_dir, boundary)?;
-    Ok(found.map(|found| settle_vault(&app, home_dir, &file_path, found)))
+    find_vault_and_settle(file_path, home_dir, boundary, last_vault_memory(&app).as_deref())
 } // find_vault_settings_file END ******************************************
+
+//******************************************************************************
+// find_vault_and_settle
+//******************************************************************************
+/// The body of `find_vault_settings_file` without an `AppHandle`: the walk-up
+/// (`vault_path`), then the last-vault rule against `memory` — the state file,
+/// or `None` to neither recall nor remember. Unit-tested in `lib_tests.rs`.
+pub(crate) fn find_vault_and_settle(
+    file_path: String,
+    home_dir: &Path,
+    boundary: Option<&Path>,
+    memory: Option<&Path>,
+) -> Result<Option<String>, String> {
+    let found = vault_path::find_vault_settings_file_bounded(file_path.clone(), home_dir, boundary)?;
+    Ok(found.map(|found| settle_vault(home_dir, &file_path, found, memory)))
+}
+// find_vault_and_settle END ***************************************************
 
 //******************************************************************************
 // last_vault_state_file
@@ -633,27 +649,62 @@ fn last_vault_state_file(app: &tauri::AppHandle) -> Result<std::path::PathBuf, S
 // last_vault_state_file END ***************************************************
 
 //******************************************************************************
+// last_vault_memory
+//******************************************************************************
+/// The last-vault state file this process may use, if any (see
+/// [`memory_location`]).
+fn last_vault_memory(app: &tauri::AppHandle) -> Option<std::path::PathBuf> {
+    memory_location(
+        platform::cli_args::requested_export_format().is_some(),
+        last_vault_state_file(app),
+    )
+}
+// last_vault_memory END *******************************************************
+
+//******************************************************************************
+// memory_location
+//******************************************************************************
+/// IMPL-LTTCE-VLT-00002 — whether a process takes part in the last-vault
+/// memory. A headless `--export-html` / `--export-pdf` run does not: it is a
+/// scripted conversion, not the user working in a vault, and must not change
+/// which vault their next bare launch opens (REQ-LTTCE-VLT-00002). Without a
+/// state-file location the lookup's own result stands — remembering is a
+/// convenience, never a reason to fail opening a window.
+pub(crate) fn memory_location(
+    headless_export: bool,
+    state_file: Result<std::path::PathBuf, String>,
+) -> Option<std::path::PathBuf> {
+    if headless_export {
+        return None;
+    }
+    match state_file {
+        Ok(state) => Some(state),
+        Err(e) => {
+            log::warn!("vault: no place to remember the last vault ({e})");
+            None
+        }
+    }
+}
+// memory_location END *********************************************************
+
+//******************************************************************************
 // settle_vault
 //******************************************************************************
 /// IMPL-LTTCE-VLT-00002 — apply the last-vault rule to a lookup's result
 /// (`last_vault::choose_vault`): "no document" that found only the home vault
-/// gets the remembered vault; any other vault becomes the memory. Without a
-/// state-file location the lookup's own result stands — remembering is a
-/// convenience, never a reason to fail opening a window.
-fn settle_vault(app: &tauri::AppHandle, home_dir: &Path, document: &str, found: String) -> String {
-    match last_vault_state_file(app) {
-        Ok(state) => last_vault::choose_vault(
+/// gets the remembered vault; any other vault becomes the memory. With no
+/// `memory` the lookup's own result stands.
+fn settle_vault(home_dir: &Path, document: &str, found: String, memory: Option<&Path>) -> String {
+    match memory {
+        Some(state) => last_vault::choose_vault(
             document,
             Path::new(&found),
             &vault_path::home_vault_settings(home_dir),
-            &state,
+            state,
         )
         .to_string_lossy()
         .into_owned(),
-        Err(e) => {
-            log::warn!("vault: no place to remember the last vault ({e}); using {found}");
-            found
-        }
+        None => found,
     }
 }
 // settle_vault END ************************************************************
@@ -684,10 +735,25 @@ fn settle_vault(app: &tauri::AppHandle, home_dir: &Path, document: &str, found: 
 /// The new vault becomes the last vault (REQ-LTTCE-VLT-00002).
 #[tauri::command]
 fn initialize_vault_settings(app: tauri::AppHandle, file_path: String) -> Result<String, String> {
-    let created = vault_path::initialize_vault_settings_internal(file_path.clone())?;
     let str_home_dir = calc_base_path(app.clone())?;
-    Ok(settle_vault(&app, Path::new(&str_home_dir), &file_path, created))
+    initialize_vault_and_settle(file_path, Path::new(&str_home_dir), last_vault_memory(&app).as_deref())
 } // initialize_vault_settings END *****************************************
+
+//******************************************************************************
+// initialize_vault_and_settle
+//******************************************************************************
+/// The body of `initialize_vault_settings` without an `AppHandle`: create the
+/// vault, then remember it (unless it is the home vault, or `memory` is
+/// `None`). Unit-tested in `lib_tests.rs`.
+pub(crate) fn initialize_vault_and_settle(
+    file_path: String,
+    home_dir: &Path,
+    memory: Option<&Path>,
+) -> Result<String, String> {
+    let created = vault_path::initialize_vault_settings_internal(file_path.clone())?;
+    Ok(settle_vault(home_dir, &file_path, created, memory))
+}
+// initialize_vault_and_settle END *********************************************
 
 //******************************************************************************
 // watch_file

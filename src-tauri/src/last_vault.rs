@@ -36,9 +36,14 @@ use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 /// File name of the state file inside the app's local data folder.
 pub const LAST_VAULT_FILE: &str = "last-vault.json";
+
+/// Makes every temporary file name unique within the process: all windows
+/// share one process, so the process id alone is not enough.
+static TEMP_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 
 //******************************************************************************
@@ -122,7 +127,8 @@ pub fn remember(state_file: &Path, settings_path: &Path) -> Result<(), String> {
         fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
     }
     let json = serde_json::to_string_pretty(&entry).map_err(|e| e.to_string())?;
-    let temp = state_file.with_extension(format!("json.{}.tmp", std::process::id()));
+    let n = TEMP_COUNTER.fetch_add(1, Ordering::Relaxed);
+    let temp = state_file.with_extension(format!("json.{}.{n}.tmp", std::process::id()));
     fs::write(&temp, json).map_err(|e| format!("cannot write {}: {e}", temp.display()))?;
     fs::rename(&temp, state_file).map_err(|e| {
         let _ = fs::remove_file(&temp);
@@ -130,6 +136,22 @@ pub fn remember(state_file: &Path, settings_path: &Path) -> Result<(), String> {
     })
 }
 // remember END ****************************************************************
+
+
+//******************************************************************************
+// same_file
+//******************************************************************************
+/// `true` when both paths name the same file, however they are spelled —
+/// drive-letter case, `..` detours, `\\?\` prefixes. Byte equality alone let a
+/// differently spelled home vault count as "another vault".
+fn same_file(a: &Path, b: &Path) -> bool {
+    a == b
+        || matches!(
+            (fs::canonicalize(a), fs::canonicalize(b)),
+            (Ok(x), Ok(y)) if x == y
+        )
+}
+// same_file END ***************************************************************
 
 
 //******************************************************************************
@@ -148,19 +170,25 @@ pub fn remember(state_file: &Path, settings_path: &Path) -> Result<(), String> {
 /// Whatever is chosen, a vault other than the home vault becomes the new
 /// memory. Failing to remember is logged, never fatal: the lookup's answer
 /// does not depend on it.
+///
+/// `found` is made absolute first: for "no document" the walk reports the
+/// working directory's vault as the relative `.lattice/settings.json`, which
+/// would be meaningless once remembered (and `recall` refuses it).
 pub fn choose_vault(document: &str, found: &Path, home_settings: &Path, state_file: &Path) -> PathBuf {
-    let chosen = if document.is_empty() && found == home_settings {
+    let found = std::path::absolute(found).unwrap_or_else(|_| found.to_path_buf());
+    let found_is_home = same_file(&found, home_settings);
+    let chosen = if document.is_empty() && found_is_home {
         match recall(state_file) {
             Some(remembered) => {
                 info!("vault: no document; using the last vault {}", remembered.display());
                 remembered
             }
-            None => found.to_path_buf(),
+            None => found,
         }
     } else {
-        found.to_path_buf()
+        found
     };
-    if chosen != home_settings
+    if !same_file(&chosen, home_settings)
         && let Err(e) = remember(state_file, &chosen)
     {
         warn!("vault: could not remember {}: {e}", chosen.display());
