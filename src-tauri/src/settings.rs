@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::daily_note::DailyNotePrefix;
+
 //**************************************************************
 // Settings
 //**************************************************************
@@ -19,6 +21,19 @@ pub struct Settings {
 
     #[serde(default)]
     pub daily_notes_path: String,
+
+    // IMPL-LTTCE-DLN-00004 — persisted "Daily Note Prefix" (REQ-LTTCE-DLN-00005,
+    // default "DLN", "" = no prefix). The type validates itself while it is
+    // deserialized, so an invalid hand-edited value costs only this field
+    // (parse_settings_lenient drops it back to the default) and an invalid
+    // value arriving over IPC makes save_settings refuse the whole write.
+    #[serde(default)]
+    pub daily_note_prefix: DailyNotePrefix,
+
+    // IMPL-LTTCE-DLN-00004 — persisted "Use Calendar Week Title"
+    // (REQ-LTTCE-DLN-00006, default OFF).
+    #[serde(default)]
+    pub use_calendar_week_title: bool,
 
     #[serde(default = "default_highlight_mark")]
     pub highlight_mark: bool,
@@ -86,6 +101,8 @@ impl Default for Settings {
             word_wrap: default_word_wrap(),
             save_on_blur: default_save_on_blur(),
             daily_notes_path: "".to_string(),
+            daily_note_prefix: DailyNotePrefix::default(),
+            use_calendar_week_title: false,
             highlight_mark: default_highlight_mark(),
             show_whitespace: default_show_whitespace(),
             tab_size: default_tab_size(),

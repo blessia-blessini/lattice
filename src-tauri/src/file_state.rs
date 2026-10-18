@@ -362,56 +362,6 @@ fn write_text_file_internal(
     do_writefile(file_path, &content, wished_format, &mut tracker, false)
 } // write_text_file_internal END *******************************************
 
-//******************************************************************************
-// create_daily_note_file
-//******************************************************************************
-/// Creates an empty markdown file named YYYYMMDD-DDD.md based on current local time.
-/// Returns the full physical path to the file.
-#[tauri::command]
-pub fn create_daily_note_file(daily_notes_path: String) -> Result<String, String> {
-    use chrono::Local;
-
-    let now = Local::now();
-    let base_name = now.format("%Y%m%d-%a").to_string();
-
-    let path = std::path::Path::new(&daily_notes_path);
-    if !path.exists() {
-        std::fs::create_dir_all(path).map_err(|e| e.to_string())?;
-    }
-
-    let mut target_path = path.join(format!("{}.md", base_name));
-
-    if target_path.exists() {
-        if std::fs::read(&target_path).is_ok() {
-            return Ok(target_path.to_string_lossy().to_string());
-        }
-    } else if std::fs::write(&target_path, "").is_ok() {
-        return Ok(target_path.to_string_lossy().to_string());
-    } else {
-        // intentionally do nothing
-    }
-
-    let mut counter = 1;
-    while counter < 100 {
-        let suffix_name = format!("{}-{}.md", base_name, counter);
-        target_path = path.join(&suffix_name);
-
-        if target_path.exists() {
-            if std::fs::read(&target_path).is_ok() {
-                return Ok(target_path.to_string_lossy().to_string());
-            }
-        } else if std::fs::write(&target_path, "").is_ok() {
-            return Ok(target_path.to_string_lossy().to_string());
-        } else {
-            // intentionally do nothing
-        }
-
-        counter += 1;
-    }
-
-    Err("Failed to create daily note file after 100 attempts.".to_string())
-}
-// create_daily_note_file END **************************************************
 
 //******************************************************************************
 // handle_conflict

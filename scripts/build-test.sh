@@ -410,6 +410,28 @@ if [ $EXPORT_RESULT -ne 0 ]; then
 fi
 echo "****************************************************"
 
+# 1e. App screenshot (docs/demo/demo.md in the main window)
+# One PNG of the running release app per desktop leg, so a reader can see
+# what Lattice looks like on every desktop. Written next to the exported demo
+# documents (LATTICE_EXPORT_OUT), so CI step 375 uploads it with them and the
+# release page shows it per platform. Documentation, not a test:
+# src-tauri/examples/app_screenshot.rs warns and exits 0 on any problem, and
+# a failure to even run it is ignored here.
+echo "****************************************************"
+echo "Taking App Screenshot..."
+pushd src-tauri || exit
+_SHOT_ARGS=()
+if [ -n "${LATTICE_EXPORT_OUT}" ]; then
+    _SHOT_ARGS+=(--out "$LATTICE_EXPORT_OUT")
+fi
+if [ -n "${LATTICE_EXPORT_LABEL}" ]; then
+    _SHOT_ARGS+=(--label "$LATTICE_EXPORT_LABEL")
+fi
+gui_run cargo run --example app_screenshot -- "${_SHOT_ARGS[@]}" \
+    || echo "App screenshot could not run (ignored — documentation only)."
+popd || exit
+echo "****************************************************"
+
 pushd src-tauri || exit
   echo "****************************************************"
   echo "Gather and print all data in an output table ..."

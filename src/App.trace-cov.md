@@ -63,3 +63,9 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - IMPL-LTTCE-XPT-00002 **covers** ARCH-LTTCE-XPT-00002
 - IMPL-LTTCE-XPT-00002 **covers** ARCH-LTTCE-XPT-00003
 - IMPL-LTTCE-XPT-00002 **covers** ARCH-LTTCE-XPT-00004
+- IMPL-LTTCE-DLN-00005 **covers** REQ-LTTCE-DLN-00001  (one handler for the menu entry and the 🗒 toolbar
+  button left of the font-size controls; passes the loaded prefix and title mode to `open_daily_note`, then
+  `loadDocument`) — UTST: `src/App.coverage.test.tsx`, *App — handleOpenDailyNote*
+- IMPL-LTTCE-DLN-00005 **covers** REQ-LTTCE-DLN-00005  (falls back to `DLN` for a malformed loaded prefix) —
+  UTST: same suite
+- IMPL-LTTCE-DLN-00005 **covers** ARCH-LTTCE-DLN-00001

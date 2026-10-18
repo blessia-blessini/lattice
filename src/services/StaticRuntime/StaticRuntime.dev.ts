@@ -26,6 +26,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { IStaticRuntime } from "./IStaticRuntime";
 import { listen } from "@tauri-apps/api/event";
+import { runDailyNoteE2EDriver } from "./DailyNoteE2EDriver";
 
 /**
  * DEVELOPMENT Implementation.
@@ -123,6 +124,11 @@ export const StaticRuntime: IStaticRuntime = {
             }
 
         });
+
+        // Daily note scenario (e2e_harness.rs) — inert unless the harness
+        // created its marker directory before launch. Not awaited: it waits
+        // for harness signals for up to a minute.
+        void runDailyNoteE2EDriver();
     }
     // setupTestModeListeners END ***********************************
 

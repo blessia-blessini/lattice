@@ -3,11 +3,25 @@
 All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
-## v0.3.35
+## v0.3.36
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
-- CHORE: Update CHangelog for v0.3.33
+- FEAT: ADD DAILY NOTE QUICK BTN, FIXES
+- DOCS: update changelog entries for recent releases
+---
 
+## v0.3.35
+### Changes
+- CHORE: Update dependencies of server-side components
+- FIX: Capture the Windows app screenshot with PrintWindow, not a screen copy
+- TEST: Screenshot the running app on every desktop CI leg and publish it
+- TEST: Click the daily-note button end to end in the E2E harness
+- FIX: Report a folder named like the daily note as "not a file" on Windows
+- FEAT: Open today's daily note from the menu or a toolbar button
+---
+- CHORE: Bump lattice version to 0.3.35
+- CHORE: Update CHangelog for v0.3.33
+---
 ## v0.3.33
 ### Changes
 - feat: initialize Tauri backend and bump application version to 0.3.33

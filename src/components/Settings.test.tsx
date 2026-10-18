@@ -38,6 +38,10 @@ const DEFAULT_PROPS = {
     saveOnBlur: false,
     dailyNotesPath: '/my/notes',
     onDailyNotesPathChange: vi.fn(),
+    dailyNotePrefix: 'DLN',
+    onDailyNotePrefixChange: vi.fn(),
+    useCalendarWeekTitle: false,
+    onUseCalendarWeekTitleChange: vi.fn(),
     highlightMark: true,
     onHighlightMarkChange: vi.fn(),
     showWhitespace: false,
@@ -290,6 +294,122 @@ describe('Settings', () => {
             'save_settings',
             expect.objectContaining({
                 settings: expect.objectContaining({ dailyNotesPath: '/new' }),
+            })
+        );
+    });
+
+    // -----------------------------------------------------------------------
+    // Daily Note Prefix (REQ-LTTCE-DLN-00005 / IMPL-LTTCE-DLN-00006)
+    // -----------------------------------------------------------------------
+    it('groups the daily-note settings under their own heading', () => {
+        const { getByText, getByLabelText } = render(<Settings {...DEFAULT_PROPS} />);
+        expect(getByText('Daily Notes')).toBeTruthy();
+        const input = getByLabelText('Daily Note Prefix') as HTMLInputElement;
+        expect(input.value).toBe('DLN');
+        expect(input.maxLength).toBe(3);
+    });
+
+    it('propagates and persists a valid prefix', async () => {
+        const onChange = vi.fn();
+        const { getByLabelText } = render(
+            <Settings {...DEFAULT_PROPS} onDailyNotePrefixChange={onChange} />
+        );
+        await act(async () => {
+            fireEvent.change(getByLabelText('Daily Note Prefix'), { target: { value: 'J1' } });
+        });
+        expect(onChange).toHaveBeenCalledWith('J1');
+        expect(TauriCore.invoke).toHaveBeenCalledWith(
+            'save_settings',
+            expect.objectContaining({
+                settings: expect.objectContaining({ dailyNotePrefix: 'J1' }),
+            })
+        );
+    });
+
+    it('accepts and persists the empty prefix (no prefix)', async () => {
+        const onChange = vi.fn();
+        const { getByLabelText } = render(
+            <Settings {...DEFAULT_PROPS} onDailyNotePrefixChange={onChange} />
+        );
+        await act(async () => {
+            fireEvent.change(getByLabelText('Daily Note Prefix'), { target: { value: '' } });
+        });
+        expect(onChange).toHaveBeenCalledWith('');
+        expect(TauriCore.invoke).toHaveBeenCalledWith(
+            'save_settings',
+            expect.objectContaining({
+                settings: expect.objectContaining({ dailyNotePrefix: '' }),
+            })
+        );
+    });
+
+    it('filters characters that are not Latin letters or digits, and caps the length', async () => {
+        const onChange = vi.fn();
+        const { getByLabelText } = render(
+            <Settings {...DEFAULT_PROPS} dailyNotePrefix="" onDailyNotePrefixChange={onChange} />
+        );
+        const input = getByLabelText('Daily Note Prefix');
+        await act(async () => { fireEvent.change(input, { target: { value: 'a/b' } }); });
+        expect(onChange).toHaveBeenLastCalledWith('ab');
+        await act(async () => { fireEvent.change(input, { target: { value: 'ABCDE' } }); });
+        expect(onChange).toHaveBeenLastCalledWith('ABC');
+    });
+
+    it('ignores a keystroke that the filter removes entirely (no change, no save)', async () => {
+        const onChange = vi.fn();
+        const { getByLabelText } = render(
+            <Settings {...DEFAULT_PROPS} dailyNotePrefix="DL" onDailyNotePrefixChange={onChange} />
+        );
+        const input = getByLabelText('Daily Note Prefix') as HTMLInputElement;
+        await act(async () => {
+            fireEvent.change(input, { target: { value: 'DL/' } });
+        });
+        expect(onChange).not.toHaveBeenCalled();
+        expect(TauriCore.invoke).not.toHaveBeenCalledWith('save_settings', expect.anything());
+        // The rejected character must not linger in the field either: the
+        // input is controlled, so the DOM goes back to the prop value.
+        expect(input.value).toBe('DL');
+    });
+
+    it('shows nothing when only rejected characters are typed into an empty field', async () => {
+        const onChange = vi.fn();
+        const { getByLabelText } = render(
+            <Settings {...DEFAULT_PROPS} dailyNotePrefix="" onDailyNotePrefixChange={onChange} />
+        );
+        const input = getByLabelText('Daily Note Prefix') as HTMLInputElement;
+        await act(async () => {
+            fireEvent.change(input, { target: { value: '/ ä-' } });
+        });
+        expect(onChange).not.toHaveBeenCalled();
+        expect(input.value).toBe('');
+    });
+
+    // -----------------------------------------------------------------------
+    // Use Calendar Week Title (REQ-LTTCE-DLN-00006 / IMPL-LTTCE-DLN-00006)
+    // -----------------------------------------------------------------------
+    it('shows the title mode as "File name" when off (default)', () => {
+        const { getByText } = render(<Settings {...DEFAULT_PROPS} />);
+        expect(getByText('File name')).toBeTruthy();
+    });
+
+    it('shows the title mode as "Calendar week" when on', () => {
+        const { getByText } = render(<Settings {...DEFAULT_PROPS} useCalendarWeekTitle={true} />);
+        expect(getByText('Calendar week')).toBeTruthy();
+    });
+
+    it('flips, propagates and persists the calendar-week-title toggle', async () => {
+        const onChange = vi.fn();
+        const { getByText } = render(
+            <Settings {...DEFAULT_PROPS} useCalendarWeekTitle={false} onUseCalendarWeekTitleChange={onChange} />
+        );
+        await act(async () => {
+            fireEvent.click(getByText('File name').previousElementSibling as HTMLElement);
+        });
+        expect(onChange).toHaveBeenCalledWith(true);
+        expect(TauriCore.invoke).toHaveBeenCalledWith(
+            'save_settings',
+            expect.objectContaining({
+                settings: expect.objectContaining({ useCalendarWeekTitle: true }),
             })
         );
     });
@@ -576,6 +696,8 @@ describe('Settings', () => {
                     wordWrap: !DEFAULT_PROPS.wordWrap,
                     saveOnBlur: DEFAULT_PROPS.saveOnBlur,
                     dailyNotesPath: DEFAULT_PROPS.dailyNotesPath,
+                    dailyNotePrefix: DEFAULT_PROPS.dailyNotePrefix,
+                    useCalendarWeekTitle: DEFAULT_PROPS.useCalendarWeekTitle,
                     highlightMark: DEFAULT_PROPS.highlightMark,
                     showWhitespace: DEFAULT_PROPS.showWhitespace,
                     tabSize: DEFAULT_PROPS.tabSize,

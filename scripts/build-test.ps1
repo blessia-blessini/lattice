@@ -296,6 +296,21 @@ try {
     Write-Output "****************************************************"
     # Invoke-ExportCheck END ***************************************
 
+    #**************************************************************
+    # Invoke-AppScreenshot
+    #**************************************************************
+    # 1e. App screenshot (docs/demo/demo.md in the main window) — see the
+    # same step in build-test.sh. Documentation, not a test: the example
+    # warns and exits 0 on any problem, and its exit code is ignored here.
+    Write-Output "****************************************************"
+    Write-Output "Taking App Screenshot..."
+    cargo run --example app_screenshot -- @exportArgs
+    if ($LASTEXITCODE -ne 0) {
+        Write-Output "App screenshot could not run (ignored — documentation only)."
+    }
+    Write-Output "****************************************************"
+    # Invoke-AppScreenshot END *************************************
+
     Write-Output "****************************************************"
     Write-Output "Gather and print all data in an output table ..."
     Write-Output "Print on console this is done later once again after"

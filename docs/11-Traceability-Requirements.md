@@ -79,6 +79,7 @@ related items. Example convention for `LNT`:
 | `SET`   | SSS     | Settings robustness (parsing, validation)             |
 | `CPY`   | SSS     | Preview copy fidelity (clipboard HTML)                |
 | `TBL`   | SSS     | Spreadsheet paste (TSV clipboard → GFM[^gfm] table)   |
+| `DLN`   | SSS     | Daily note (menu/toolbar command, file name, title)   |
 
 ---
 

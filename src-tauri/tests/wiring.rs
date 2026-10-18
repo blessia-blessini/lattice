@@ -209,3 +209,188 @@ fn test_load_then_save_round_trip() {
         assert!(s.word_wrap, "wordWrap must be true after save");
     }
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Daily note (Chapter DLN) — ITST through the real IPC boundary
+// ─────────────────────────────────────────────────────────────────────────────
+// The unit tests in daily_note_tests.rs pin the naming, title and
+// create-or-open rules. These add what they cannot see: the frontend calls
+// `invoke('open_daily_note', { dailyNotesPath, prefix, useCalendarWeekTitle })`,
+// so the camelCase argument names, the prefix validation that happens while
+// those arguments are deserialized, and the String path handed back are all
+// exercised here exactly as the WebView exercises them.
+// ═════════════════════════════════════════════════════════════════════════════
+
+/// A MockRuntime app whose only command is `open_daily_note`, plus a webview
+/// to send IPC requests from.
+fn make_daily_note_app() -> (
+    tauri::App<tauri::test::MockRuntime>,
+    tauri::WebviewWindow<tauri::test::MockRuntime>,
+) {
+    let app = mock_builder()
+        .invoke_handler(tauri::generate_handler![lattice_lib::daily_note::open_daily_note])
+        .build(mock_context(noop_assets()))
+        .expect("MockRuntime app construction failed");
+    let webview = tauri::WebviewWindowBuilder::new(&app, "main", Default::default())
+        .build()
+        .expect("mock webview");
+    (app, webview)
+}
+
+/// Send `open_daily_note` with the given JSON arguments, as the frontend does.
+fn invoke_open_daily_note(
+    webview: &tauri::WebviewWindow<tauri::test::MockRuntime>,
+    args: serde_json::Value,
+) -> Result<String, serde_json::Value> {
+    tauri::test::get_ipc_response(
+        webview,
+        tauri::webview::InvokeRequest {
+            cmd: "open_daily_note".into(),
+            callback: tauri::ipc::CallbackFn(0),
+            error: tauri::ipc::CallbackFn(1),
+            // The webview's own URL is the app's local origin on every
+            // platform (tauri://localhost, or http://tauri.localhost on
+            // Windows/Android). Sending from anywhere else would be a
+            // *remote* origin, which the ACL rightly refuses.
+            url: webview.url().expect("mock webview has a URL"),
+            body: tauri::ipc::InvokeBody::Json(args),
+            headers: Default::default(),
+            invoke_key: tauri::test::INVOKE_KEY.to_string(),
+        },
+    )
+    .map(|body| body.deserialize::<String>().expect("command returns a path string"))
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// test_open_daily_note_ipc_creates_then_reopens
+// ─────────────────────────────────────────────────────────────────────────────
+/// ITST for REQ-LTTCE-DLN-00002 … -00004: first call creates today's note in a
+/// not-yet-existing folder with the calendar-week title; the second call
+/// returns the same path and leaves the content — including the user's edit —
+/// untouched.
+#[test]
+fn test_open_daily_note_ipc_creates_then_reopens() {
+    let (_app, webview) = make_daily_note_app();
+    let temp = tempfile::tempdir().unwrap();
+    let dir = temp.path().join("vault").join("daily");
+
+    let args = serde_json::json!({
+        "dailyNotesPath": dir.to_string_lossy(),
+        "prefix": "DLN",
+        "useCalendarWeekTitle": true,
+    });
+
+    let first = invoke_open_daily_note(&webview, args.clone()).expect("first call must succeed");
+    let first_path = std::path::Path::new(&first);
+    assert!(first_path.starts_with(&dir), "note must be in the daily folder: {first}");
+    let name = first_path.file_name().unwrap().to_string_lossy().into_owned();
+    assert!(name.starts_with("DLN-") && name.ends_with(".md"), "unexpected name {name}");
+
+    let title = fs::read_to_string(first_path).unwrap();
+    assert!(title.starts_with("# Daily Note: ") && title.contains(" CW"), "unexpected title {title:?}");
+
+    // The user writes into today's note, then presses the button again.
+    let edited = format!("{title}\n\nmet the team\n");
+    fs::write(first_path, &edited).unwrap();
+
+    let second = invoke_open_daily_note(&webview, args).expect("second call must succeed");
+    assert_eq!(second, first, "the same note must be opened again");
+    assert_eq!(fs::read_to_string(first_path).unwrap(), edited, "existing note must not be rewritten");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// test_open_daily_note_ipc_empty_prefix
+// ─────────────────────────────────────────────────────────────────────────────
+/// ITST for REQ-LTTCE-DLN-00002 / -00005: an empty prefix crosses the IPC
+/// boundary as "no prefix" — the name starts with the year, not with a dash.
+#[test]
+fn test_open_daily_note_ipc_empty_prefix() {
+    let (_app, webview) = make_daily_note_app();
+    let temp = tempfile::tempdir().unwrap();
+
+    let path = invoke_open_daily_note(
+        &webview,
+        serde_json::json!({
+            "dailyNotesPath": temp.path().to_string_lossy(),
+            "prefix": "",
+            "useCalendarWeekTitle": false,
+        }),
+    )
+    .expect("empty prefix is valid");
+
+    let name = std::path::Path::new(&path).file_name().unwrap().to_string_lossy().into_owned();
+    assert!(name.chars().next().unwrap().is_ascii_digit(), "name must start with the year: {name}");
+    let stem = name.trim_end_matches(".md");
+    assert_eq!(fs::read_to_string(&path).unwrap(), format!("# Daily Note: {stem}"));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// test_open_daily_note_ipc_rejects_invalid_prefix
+// ─────────────────────────────────────────────────────────────────────────────
+/// ITST for REQ-LTTCE-DLN-00005: a prefix that is not 0–3 Latin letters or
+/// digits is refused at the IPC boundary — before any folder or file is made.
+#[test]
+fn test_open_daily_note_ipc_rejects_invalid_prefix() {
+    let (_app, webview) = make_daily_note_app();
+    let temp = tempfile::tempdir().unwrap();
+    let dir = temp.path().join("daily");
+
+    for bad in ["../x", "TOOLONG", "a b"] {
+        let result = invoke_open_daily_note(
+            &webview,
+            serde_json::json!({
+                "dailyNotesPath": dir.to_string_lossy(),
+                "prefix": bad,
+                "useCalendarWeekTitle": false,
+            }),
+        );
+        // Refused for the right reason: the prefix rule, named in the error —
+        // not, say, an ACL or a missing-command error that would make this
+        // test pass while proving nothing.
+        let err = result.expect_err(&format!("prefix {bad:?} must be refused"));
+        let message = err.as_str().unwrap_or_default().to_string();
+        assert!(
+            message.contains("Daily note prefix"),
+            "prefix {bad:?} refused for the wrong reason: {err}"
+        );
+    }
+    assert!(!dir.exists(), "a refused call must not create the folder");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// test_daily_note_settings_round_trip_through_shims
+// ─────────────────────────────────────────────────────────────────────────────
+/// ITST for REQ-LTTCE-DLN-00005 / -00006: both settings survive
+/// save_settings → load_settings through the real command shims, including
+/// the empty prefix that must not come back as the default.
+#[test]
+fn test_daily_note_settings_round_trip_through_shims() {
+    let temp = tempfile::tempdir().unwrap();
+    let lattice_dir = temp.path().join("vault").join(".lattice");
+    fs::create_dir_all(&lattice_dir).unwrap();
+    let settings_path = lattice_dir.join("settings.json");
+    fs::write(&settings_path, "{}").unwrap();
+    let path_str = settings_path.to_string_lossy().to_string();
+
+    {
+        let app = make_app();
+        let s = load_settings(app.handle().clone(), path_str.clone()).unwrap();
+        assert_eq!(s.daily_note_prefix.as_str(), "DLN", "absent key → default prefix");
+        assert!(!s.use_calendar_week_title, "absent key → file-name title");
+    }
+    {
+        let app = make_app();
+        let s = Settings {
+            daily_note_prefix: lattice_lib::daily_note::DailyNotePrefix::new("").unwrap(),
+            use_calendar_week_title: true,
+            ..Default::default()
+        };
+        save_settings(app.handle().clone(), path_str.clone(), s).unwrap();
+    }
+    {
+        let app = make_app();
+        let s = load_settings(app.handle().clone(), path_str.clone()).unwrap();
+        assert_eq!(s.daily_note_prefix.as_str(), "", "empty prefix must survive the round trip");
+        assert!(s.use_calendar_week_title);
+    }
+}

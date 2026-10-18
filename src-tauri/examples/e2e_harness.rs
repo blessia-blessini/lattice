@@ -27,9 +27,16 @@
 //! 2. `cli_single_path`    — app starts with one file path → file window
 //! 3. `cli_multi_path`     — app starts with two paths → two windows
 //! 4. `conflict_detection` — reproduces the conflict scenario (replaces reproduce_conflict.rs)
+//! 5. `daily_note_defaults`, `daily_note_cw_no_prefix` — clicks the 🗒 toolbar
+//!    button twice in the real WebView; the note is created once, opened in
+//!    the editor, and the second click leaves it untouched (STST, Chapter DLN)
 
+use chrono::{Local, NaiveDate};
+use lattice_lib::daily_note::{
+    daily_note_base_name, daily_note_title, DailyNotePrefix, DAILY_NOTE_PREFIX_DEFAULT,
+};
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -325,6 +332,224 @@ fn scenario_conflict(bin: &PathBuf, root: &PathBuf) -> bool {
     ok
 }
 
+
+//******************************************************************************
+// Daily note scenarios (STST, Chapter DLN)
+//******************************************************************************
+// The frontend half is src/services/StaticRuntime/DailyNoteE2EDriver.ts (E2E
+// builds only). Signal names are a documented pairing with that file — keep
+// them in sync. Harness → app signals are directories, so the app can poll
+// them with the side-effect-free `is_dir` command.
+
+/// Created before launch: tells the driver the scenario is active.
+const DAILY_NOTE_E2E_MARKER: &str = "e2e_daily_note";
+
+fn daily_note_click_signal(n: u32) -> String { format!("e2e_daily_note_click_{n}") }
+fn daily_note_done_file(n: u32) -> String { format!("e2e_daily_note_click_{n}_done.txt") }
+
+/// One run of the app with one fixture vault.
+struct DailyNoteVariant {
+    name: &'static str,
+    /// Body of the fixture vault's `.lattice/settings.json`.
+    settings_json: &'static str,
+    /// What that settings file must resolve to.
+    prefix: &'static str,
+    use_calendar_week_title: bool,
+}
+
+/// Defaults (absent keys → `DLN`, file-name title), and both non-defaults at
+/// once (empty prefix → no leading dash, calendar-week title).
+const DAILY_NOTE_VARIANTS: [DailyNoteVariant; 2] = [
+    DailyNoteVariant {
+        name: "daily_note_defaults",
+        settings_json: "{}",
+        prefix: DAILY_NOTE_PREFIX_DEFAULT,
+        use_calendar_week_title: false,
+    },
+    DailyNoteVariant {
+        name: "daily_note_cw_no_prefix",
+        settings_json: r#"{ "dailyNotePrefix": "", "useCalendarWeekTitle": true }"#,
+        prefix: "",
+        use_calendar_week_title: true,
+    },
+];
+
+
+//******************************************************************************
+// clear_daily_note_signals
+//******************************************************************************
+/// Remove every signal of the daily-note protocol from `root`.
+fn clear_daily_note_signals(root: &Path) {
+    let _ = fs::remove_dir(root.join(DAILY_NOTE_E2E_MARKER));
+    for n in [1, 2] {
+        let _ = fs::remove_dir(root.join(daily_note_click_signal(n)));
+        let _ = fs::remove_file(root.join(daily_note_done_file(n)));
+    }
+}
+// clear_daily_note_signals END ************************************************
+
+
+//******************************************************************************
+// click_and_wait
+//******************************************************************************
+/// Signal click `n`, wait for the driver's done file, return its content
+/// (`clicks=<k>\n<window title>`) and the child.
+fn click_and_wait(root: &Path, n: u32, child: Child) -> (Result<String, String>, Child) {
+    if let Err(e) = fs::create_dir(root.join(daily_note_click_signal(n))) {
+        return (Err(format!("cannot create click {n} signal: {e}")), child);
+    }
+    let done = root.join(daily_note_done_file(n));
+    let (ok, child) = wait_for_signal(&done, child, Duration::from_secs(30));
+    if !ok {
+        return (Err(format!("no done file for click {n} within 30 s")), child);
+    }
+    // The driver writes the file in one call; a short pause covers the gap
+    // between the file appearing and its content being flushed.
+    thread::sleep(Duration::from_millis(200));
+    let report = fs::read_to_string(&done).unwrap_or_default();
+    // write_text_file gives the file native line endings — CRLF on Windows.
+    println!("\n  click {n}: {}", report.lines().collect::<Vec<_>>().join(" | "));
+    if report.starts_with("ERROR") {
+        return (Err(format!("driver reported: {report}")), child);
+    }
+    (Ok(report), child)
+}
+// click_and_wait END **********************************************************
+
+
+//******************************************************************************
+// check_daily_note_clicks
+//******************************************************************************
+/// The assertions of one daily-note run, after startup. `days` holds the
+/// local date before launch and now — a run that crosses midnight may
+/// legitimately produce either note.
+fn check_daily_note_clicks(
+    root: &Path,
+    vault: &Path,
+    v: &DailyNoteVariant,
+    first_day: NaiveDate,
+    child: Child,
+) -> (Result<(), String>, Child) {
+    let prefix = match DailyNotePrefix::new(v.prefix) {
+        Ok(p) => p,
+        Err(e) => return (Err(format!("bad variant prefix: {e}")), child),
+    };
+    let daily_dir = vault.join("daily");
+
+    // ── Click 1: the note is created with its title and opened ───────────────
+    let (report, child) = click_and_wait(root, 1, child);
+    let report = match report { Ok(r) => r, Err(e) => return (Err(e), child) };
+
+    let found = [first_day, Local::now().date_naive()].into_iter().find_map(|day| {
+        let base = daily_note_base_name(&prefix, day);
+        let path = daily_dir.join(format!("{base}.md"));
+        path.is_file().then_some((day, base, path))
+    });
+    let Some((day, base, note)) = found else {
+        return (Err(format!("no daily note was created in {}", daily_dir.display())), child);
+    };
+    let file_name = format!("{base}.md");
+    if !report.contains(&file_name) {
+        return (Err(format!("window title does not show {file_name}: {report:?}")), child);
+    }
+
+    let expected = daily_note_title(&base, day, v.use_calendar_week_title);
+    let content = fs::read_to_string(&note).unwrap_or_default();
+    if content != expected {
+        return (Err(format!("note content {content:?}, expected exactly {expected:?}")), child);
+    }
+    let modified = fs::metadata(&note).and_then(|m| m.modified()).ok();
+
+    // Let a rewrite show up in the timestamp even on a coarse filesystem clock.
+    thread::sleep(Duration::from_millis(1500));
+
+    // ── Click 2: same note, still open, not changed on disk ──────────────────
+    let (report, child) = click_and_wait(root, 2, child);
+    let report = match report { Ok(r) => r, Err(e) => return (Err(e), child) };
+    if !report.contains(&file_name) {
+        return (Err(format!("after click 2 the window shows {report:?}")), child);
+    }
+    if report.lines().nth(1).is_some_and(|title| title.starts_with("* ")) {
+        return (Err(format!("click 2 left the document dirty: {report:?}")), child);
+    }
+    if fs::read_to_string(&note).unwrap_or_default() != content {
+        return (Err("click 2 changed the note's content".into()), child);
+    }
+    if fs::metadata(&note).and_then(|m| m.modified()).ok() != modified {
+        return (Err("click 2 rewrote the note (modification time changed)".into()), child);
+    }
+    let notes = fs::read_dir(&daily_dir).map(|d| d.count()).unwrap_or(0);
+    if notes != 1 {
+        return (Err(format!("expected exactly one note in the folder, found {notes}")), child);
+    }
+    (Ok(()), child)
+}
+// check_daily_note_clicks END *************************************************
+
+
+//******************************************************************************
+// scenario_daily_note
+//******************************************************************************
+/// Scenario 5: the 🗒 toolbar button, end to end, for one settings variant.
+///
+/// Flow:
+/// 1. Fixture vault `src-tauri/target/e2e-daily-note/<variant>/` with
+///    `.lattice/settings.json` and `start.md`; the vault walk-up from
+///    `start.md` finds this vault first, so the run never touches a real one.
+/// 2. Marker directory, launch with `start.md`, wait for startup, settle 3 s
+///    so the vault settings are loaded before the first click.
+/// 3. Click 1 → the note `<prefix>-YYYY-MM-DD-ddd.md` exists in `daily/` with
+///    exactly the title line, and the window title shows it.
+/// 4. Click 2 → content and modification time unchanged, still the only
+///    note, window still shows it and is not dirty.
+fn scenario_daily_note(bin: &PathBuf, root: &PathBuf, v: &DailyNoteVariant) -> bool {
+    println!("\n[SCENARIO] {}", v.name);
+    let vault = root.join("src-tauri").join("target").join("e2e-daily-note").join(v.name);
+    let _ = fs::remove_dir_all(&vault);
+    let setup = fs::create_dir_all(vault.join(".lattice"))
+        .and_then(|_| fs::write(vault.join(".lattice").join("settings.json"), v.settings_json))
+        .and_then(|_| fs::write(vault.join("start.md"), "# Daily note E2E\n"));
+    if let Err(e) = setup {
+        println!(" → FAIL (cannot create fixture vault: {e})");
+        return false;
+    }
+
+    clear_daily_note_signals(root);
+    let _ = fs::remove_file(root.join("e2e_startup_ok.txt"));
+    if let Err(e) = fs::create_dir(root.join(DAILY_NOTE_E2E_MARKER)) {
+        println!(" → FAIL (cannot create scenario marker: {e})");
+        return false;
+    }
+
+    let first_day = Local::now().date_naive();
+    let start = vault.join("start.md").to_string_lossy().into_owned();
+    let child = launch(bin, root, &[&start], v.name);
+    let (started, child) = wait_for_startup(root, child, Duration::from_secs(15));
+    let (result, child) = if started {
+        println!(" settling (3 s after startup) …");
+        thread::sleep(Duration::from_secs(3));
+        check_daily_note_clicks(root, &vault, v, first_day, child)
+    } else {
+        (Err("frontend did not signal startup within 15 s".into()), child)
+    };
+
+    shutdown(child, root);
+    clear_daily_note_signals(root);
+    match result {
+        Ok(()) => {
+            let _ = fs::remove_dir_all(&vault);
+            println!(" → PASS");
+            true
+        }
+        Err(e) => {
+            // The fixture stays on disk for inspection; the next run clears it.
+            println!("\n → FAIL ({e}); fixture kept at {}", vault.display());
+            false
+        }
+    }
+}
+// scenario_daily_note END *****************************************************
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Entry point
 // ─────────────────────────────────────────────────────────────────────────────
@@ -358,6 +583,8 @@ fn main() {
         ("cli_single_path", scenario_cli_single_path(&bin, &root)),
         ("cli_multi_path",  scenario_cli_multi_path(&bin, &root)),
         ("conflict_detection", scenario_conflict(&bin, &root)),
+        (DAILY_NOTE_VARIANTS[0].name, scenario_daily_note(&bin, &root, &DAILY_NOTE_VARIANTS[0])),
+        (DAILY_NOTE_VARIANTS[1].name, scenario_daily_note(&bin, &root, &DAILY_NOTE_VARIANTS[1])),
     ];
 
     println!("\n══════════════════════════════════════════════════════");

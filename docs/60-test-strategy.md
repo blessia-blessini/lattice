@@ -139,6 +139,43 @@ once, and launches it directly per scenario (< 5 s startup, no npm at runtime).
 | `cli_single_path` | startup with one file argument | process alive 5 s |
 | `cli_multi_path` | startup with two file arguments | process alive 5 s |
 | `conflict_detection` | conflict detection and resolution | `conflict_success.txt` |
+| `daily_note_defaults` | 🗒 toolbar button clicked twice in the real WebView, default settings: `DLN-YYYY-MM-DD-ddd.md` created with exactly its title, shown in the window; the second click leaves content, mtime and folder unchanged (STST, Chapter DLN) | `e2e_daily_note_click_<n>_done.txt` |
+| `daily_note_cw_no_prefix` | the same with an empty prefix and the calendar-week title (`YYYY-MM-DD-ddd.md`, `# Daily Note: YYYY CWWW ddd`) | `e2e_daily_note_click_<n>_done.txt` |
+
+The daily-note scenarios need the app to *act*, not just start, so they have a frontend half:
+`src/services/StaticRuntime/DailyNoteE2EDriver.ts`, reachable only through `StaticRuntime.dev.ts`
+(release bundles use `StaticRuntime.prod.ts`). The harness talks to it through directories it
+creates in the repo root — `e2e_daily_note/` before launch, `e2e_daily_note_click_<n>/` per
+click — which the driver polls with the side-effect-free `is_dir` command; the driver answers with
+a done file holding the click count and the window title. Each run uses its own fixture vault under
+`src-tauri/target/e2e-daily-note/`, found by the vault walk-up before any real vault. The expected
+file name and title come from `lattice_lib::daily_note`, whose exact formats the unit tests pin;
+the scenario proves the wiring from button to disk. Like the whole harness, these run on Windows
+only, so Linux and macOS evidence for Chapter DLN stays at UTST/ITST and Vitest.
+
+### App screenshot — `examples/app_screenshot.rs` (documentation, not a test)
+
+Step 1e of `build-test.sh` / `build-test.ps1`, on every desktop leg. It starts the same release
+binary the CLI export check below uses (the `.app` inside the `.dmg` on macOS), opens a copy of
+`docs/demo/demo.md`, waits for the main window, gives the preview 10 s to render, captures **that
+window only** to `screenshot-<platform>.png`, and kills the app. In CI the PNG is written next to the
+exported demo documents (`LATTICE_EXPORT_OUT`), so step 375 uploads it in the same
+`DEMO-EXPORT-<platform>` artifact and the release page shows one screenshot per desktop under
+"Lattice on each desktop".
+
+Capturing is per OS, one contract (`capture_main_window(pid, png)`) in
+`examples/support/capture_{windows,macos,linux}.rs`: `PrintWindow(PW_RENDERFULLCONTENT)` cropped to
+the DWM frame bounds on Windows — the window renders itself, so whatever covers it on the runner (the
+runner console, the first-run privacy dialog — both seen in run 39152079347 with a screen copy) does
+not end up in the picture; `CGWindowListCopyWindowInfo` + the system `screencapture -l` on macOS (needs the Screen
+Recording permission); Xlib `XGetImage` of the root window under `xvfb-run` on Linux, the window found
+by `_NET_WM_PID`. The crates are the ones already in the tree on each target (`windows`,
+`core-graphics`/`core-foundation`, `x11-dl`), declared as dev-dependencies only.
+
+It **never fails the build**: a screenshot documents, it does not verify. Any problem — no release
+binary, no window within 60 s, a capture error, a single-colour image — becomes a `::warning::`
+annotation, the file is removed, and the leg stays green. The locating and staging helpers are
+shared with the export check through `examples/support/release_app.rs`.
 
 ### CLI export check — `examples/export_demo.rs` (ITST-LTTCE-XPT-00010)
 

@@ -77,6 +77,7 @@ type InvokeOpts = {
     readThrows?:      boolean;
     newWindowThrows?: boolean;
     dailyNotePath?:   string;
+    dailyNoteThrows?: boolean;
     base64Throws?:    boolean;
     initVaultThrows?: boolean;
 };
@@ -108,8 +109,10 @@ const makeInvoke = (opts: InvokeOpts = {}) => (cmd: string, args: any) => {
         if (opts.newWindowThrows) return Promise.reject(new Error('window failed'));
         return Promise.resolve();
     }
-    if (cmd === 'create_daily_note_file')
-        return Promise.resolve(opts.dailyNotePath ?? '/notes/2026-05-03.md');
+    if (cmd === 'open_daily_note') {
+        if (opts.dailyNoteThrows) return Promise.reject('Daily note prefix "../" may only contain …');
+        return Promise.resolve(opts.dailyNotePath ?? '/notes/DLN-2026-05-03-Sun.md');
+    }
     if (cmd === 'exit_app')   return Promise.resolve();
     return Promise.resolve(null);
 };
@@ -699,10 +702,33 @@ describe('App — handleLoadInNewWindow', () => {
 });
 
 // =============================================================================
-// 18. handleOpenDailyNote  (L653-661)
+// 18. handleOpenDailyNote — menu entry + toolbar button (Chapter DLN)
 // =============================================================================
+// UTST/STST for REQ-LTTCE-DLN-00001 (IMPL-LTTCE-DLN-00005): both entry points
+// reach the same command with the settings as loaded, and the returned path
+// is opened like any other file. The note's name and content are Rust's job
+// (daily_note_tests.rs, tests/wiring.rs).
 describe('App — handleOpenDailyNote', () => {
     beforeEach(resetEnv);
+
+    const DAILY_LABEL = '🗒️ To the Daily Note';
+
+    /** Render with a vault whose settings carry a daily-notes path. */
+    const renderWithDailySettings = async (
+        settings: Record<string, unknown> = {},
+        extra: InvokeOpts = {},
+    ) => {
+        const invoke = makeInvoke({
+            settingsResult: { dailyNotesPath: '/notes', defaultOpenTheme: 'dark', ...settings },
+            dailyNotePath:  '/notes/DLN-2026-05-03-Sun.md',
+            ...extra,
+        });
+        const utils = await renderApp({ path: '/vault/test.md', invoke });
+        await waitForTitle('test.md');
+        // Wait for loadSettings to apply the daily-note settings
+        await act(async () => { await new Promise(r => setTimeout(r, 100)); });
+        return utils;
+    };
 
     it('returns early with error log when dailyNotesPath is empty', async () => {
         const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -711,33 +737,101 @@ describe('App — handleOpenDailyNote', () => {
         await waitForTitle('test.md');
 
         await openMenu(getByText);
-        const daily = await waitFor(() => getByText('To the Daily Note'));
+        const daily = await waitFor(() => getByText(DAILY_LABEL));
         await act(async () => { fireEvent.click(daily); });
 
         await waitFor(() =>
             expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('Daily notes path is not set'))
         );
+        expect(TauriCore.invoke).not.toHaveBeenCalledWith('open_daily_note', expect.anything());
         errSpy.mockRestore();
     });
 
-    it('invokes create_daily_note_file and loads the result when dailyNotesPath is set', async () => {
-        const invoke = makeInvoke({
-            settingsResult: { dailyNotesPath: '/notes', defaultOpenTheme: 'dark' },
-            dailyNotePath:  '/notes/2026-05-03.md',
-        });
-
-        const { getByText } = await renderApp({ path: '/vault/test.md', invoke });
-        await waitForTitle('test.md');
-        // Wait for loadSettings to apply dailyNotesPath
-        await act(async () => { await new Promise(r => setTimeout(r, 100)); });
+    it('menu entry invokes open_daily_note with the default settings and loads the result', async () => {
+        const { getByText } = await renderWithDailySettings();
 
         await openMenu(getByText);
-        const daily = await waitFor(() => getByText('To the Daily Note'));
+        const daily = await waitFor(() => getByText(DAILY_LABEL));
         await act(async () => { fireEvent.click(daily); });
 
         await waitFor(() =>
-            expect(TauriCore.invoke).toHaveBeenCalledWith('create_daily_note_file', expect.anything())
+            expect(TauriCore.invoke).toHaveBeenCalledWith('open_daily_note', {
+                dailyNotesPath: '/notes',
+                prefix: 'DLN',
+                useCalendarWeekTitle: false,
+            })
         );
+        await waitFor(() =>
+            expect(TauriCore.invoke).toHaveBeenCalledWith(
+                'read_text_file', expect.objectContaining({ path: '/notes/DLN-2026-05-03-Sun.md' }))
+        );
+        await waitForTitle('DLN-2026-05-03-Sun.md');
+    });
+
+    it('passes the prefix and title mode exactly as loaded from settings', async () => {
+        const { getByTestId } = await renderWithDailySettings({
+            dailyNotePrefix: '',
+            useCalendarWeekTitle: true,
+        });
+
+        await act(async () => { fireEvent.click(getByTestId('daily-note-button')); });
+
+        await waitFor(() =>
+            expect(TauriCore.invoke).toHaveBeenCalledWith('open_daily_note', {
+                dailyNotesPath: '/notes',
+                prefix: '',
+                useCalendarWeekTitle: true,
+            })
+        );
+    });
+
+    it('falls back to the default prefix when settings carry a malformed one', async () => {
+        const { getByTestId } = await renderWithDailySettings({ dailyNotePrefix: '../x' });
+
+        await act(async () => { fireEvent.click(getByTestId('daily-note-button')); });
+
+        await waitFor(() =>
+            expect(TauriCore.invoke).toHaveBeenCalledWith(
+                'open_daily_note', expect.objectContaining({ prefix: 'DLN' }))
+        );
+    });
+
+    it('toolbar button shows the spiral note pad and sits directly left of the font-size controls', async () => {
+        const { getByTestId } = await renderWithDailySettings();
+        const button = getByTestId('daily-note-button');
+
+        expect(button.textContent).toBe('🗒️');
+        expect(button.getAttribute('title')).toBe("Open today's daily note");
+        const next = button.nextElementSibling as HTMLElement;
+        expect(next.querySelector('button[title="Decrease font size"]')).toBeTruthy();
+        expect(next.querySelector('button[title="Increase font size"]')).toBeTruthy();
+    });
+
+    it('toolbar button opens the same note as the menu entry', async () => {
+        const { getByTestId } = await renderWithDailySettings();
+
+        await act(async () => { fireEvent.click(getByTestId('daily-note-button')); });
+
+        await waitFor(() =>
+            expect(TauriCore.invoke).toHaveBeenCalledWith(
+                'read_text_file', expect.objectContaining({ path: '/notes/DLN-2026-05-03-Sun.md' }))
+        );
+    });
+
+    it('tells the user when the note cannot be opened', async () => {
+        const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+        const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const { getByTestId } = await renderWithDailySettings({}, { dailyNoteThrows: true });
+
+        await act(async () => { fireEvent.click(getByTestId('daily-note-button')); });
+
+        await waitFor(() =>
+            expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to open the daily note'))
+        );
+        expect(TauriCore.invoke).not.toHaveBeenCalledWith(
+            'read_text_file', expect.objectContaining({ path: '/notes/DLN-2026-05-03-Sun.md' }));
+        alertSpy.mockRestore();
+        errSpy.mockRestore();
     });
 });
 

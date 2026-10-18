@@ -18,6 +18,7 @@ implementation artefacts. For the ID schema definition see `11-Traceability-Requ
   - [Chapter CPY — Preview Copy Fidelity](#chapter-cpy-preview-copy-fidelity)
   - [Chapter SEL — Select All Scope](#chapter-sel-select-all-scope)
   - [Chapter TBL — Spreadsheet Paste](#chapter-tbl-spreadsheet-paste)
+  - [Chapter DLN — Daily Note](#chapter-dln-daily-note)
     - [General](#general)
     - [Severity Visualisation](#severity-visualisation)
     - [Rule: Setext Headings](#rule-setext-headings)
@@ -900,6 +901,62 @@ having no unsaved changes.
 sending the caret to the top of a long document loses their place for no reason. A newly opened file is a
 different document, in which the previous offset carries no meaning at all.
 
+## Chapter DLN — Daily Note
+
+A daily note is one Markdown file per calendar day, kept in the folder named by the setting **"Daily Notes
+Path"**. The user reaches today's note with one action, from wherever they are, and finds it either freshly
+started with a title or exactly as they left it.
+
+<!--REQ-LTTCE-DLN-00001-->
+**REQ-LTTCE-DLN-00001** — The application SHALL offer the command "open today's daily note" in two places:
+as an entry of the application menu, and as a single toolbar button placed immediately to the left of the
+font-size controls (`−` / `+`). Both SHALL carry the icon 🗒 (U+1F5D2 SPIRAL NOTE PAD) and SHALL behave
+identically. After the command completes, today's daily note SHALL be the open document, loaded like any
+other file.
+
+<!--REQ-LTTCE-DLN-00002-->
+**REQ-LTTCE-DLN-00002** — Today's daily note SHALL be the file `<prefix>-YYYY-MM-DD-ddd.md` directly inside
+the Daily Notes Path folder, where `<prefix>` is the setting of REQ-LTTCE-DLN-00005, `YYYY-MM-DD` is the
+local date, and `ddd` is the English three-letter weekday (`Mon`, `Tue`, `Wed`, `Thu`, `Fri`, `Sat`, `Sun`)
+regardless of the system language. Example: prefix `DLN` on Tuesday 4 August 2026 gives
+`DLN-2026-08-04-Tue.md`. When the prefix is empty the name SHALL be `YYYY-MM-DD-ddd.md`, with no leading
+hyphen. A missing Daily Notes Path folder SHALL be created, parent folders included.
+
+<!--REQ-LTTCE-DLN-00003-->
+**REQ-LTTCE-DLN-00003** — When today's daily note already exists, it SHALL be opened as it is: its content
+SHALL NOT be changed, truncated, replaced or deleted, whatever the current settings. This SHALL also hold
+when two application windows run the command at the same moment.
+
+<!--REQ-LTTCE-DLN-00004-->
+**REQ-LTTCE-DLN-00004** — When the command creates today's daily note, the new file SHALL contain exactly
+one title line, chosen by the setting of REQ-LTTCE-DLN-00006:
+
+- OFF: `# Daily Note: <name>`, where `<name>` is the file name without `.md`
+  (e.g. `# Daily Note: DLN-2026-08-04-Tue`);
+- ON: `# Daily Note: YYYY CWWW ddd`, where `WW` is the two-digit ISO 8601[^iso8601] calendar week (weeks
+  start on Monday; week 1 is the week containing the year's first Thursday), `YYYY` is the year that
+  calendar week belongs to, and `ddd` is as in REQ-LTTCE-DLN-00002 (e.g. `# Daily Note: 2026 CW42 Sun`).
+
+A file that already existed SHALL NOT receive a title (REQ-LTTCE-DLN-00003).
+
+*Rationale*: for a few days around New Year the calendar week belongs to the neighbouring year — Monday
+29 December 2025 is week 1 of 2026, Friday 1 January 2027 is week 53 of 2026. Pairing the week number with
+the calendar year instead would name a week that does not exist in the year shown.
+
+<!--REQ-LTTCE-DLN-00005-->
+**REQ-LTTCE-DLN-00005** — A setting **"Daily Note Prefix"** (persisted key `dailyNotePrefix`) SHALL hold
+the prefix of REQ-LTTCE-DLN-00002: zero to three characters, each one a Latin letter (`A`–`Z`, `a`–`z`) or
+a digit (`0`–`9`). The default SHALL be `DLN`; an empty value SHALL mean "no prefix" and SHALL be kept as
+such, not replaced by the default. The Settings panel SHALL NOT accept any other character or a fourth
+character. A value in the hand-editable settings file that breaks this rule SHALL fall back to the default
+as described in REQ-LTTCE-SET-00001, and a value breaking it that arrives over IPC[^ipc] SHALL be refused
+before any file or folder is created.
+
+<!--REQ-LTTCE-DLN-00006-->
+**REQ-LTTCE-DLN-00006** — A setting **"Use Calendar Week Title"** (persisted key `useCalendarWeekTitle`)
+SHALL select the title of REQ-LTTCE-DLN-00004. It SHALL be **OFF by default**, SHALL be settable from the
+Settings panel, and SHALL be persisted to the vault `settings.json`.
+
 ---
 
 [^mermaid]: Mermaid — a JavaScript diagramming library rendering text definitions inside fenced code blocks
@@ -947,3 +1004,6 @@ different document, in which the previous offset carries no meaning at all.
 
 [^ipc]: IPC — Inter-Process Communication. In Lattice: the Tauri command channel between the
     WebView frontend and the Rust backend (`invoke`).
+
+[^iso8601]: ISO 8601 — the International Organization for Standardization's standard for representing
+    dates and times, including the week-numbering ("calendar week") scheme used in Europe.

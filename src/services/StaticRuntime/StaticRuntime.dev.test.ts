@@ -178,6 +178,11 @@ describe('StaticRuntime.dev', () => {
             const result = StaticRuntime.setupTestModeListeners();
             expect(result).toBeInstanceOf(Promise);
         });
+
+        it('starts the daily-note E2E driver, which probes only for its marker', async () => {
+            await StaticRuntime.setupTestModeListeners();
+            expect(TauriCore.invoke).toHaveBeenCalledWith('is_dir', { path: 'e2e_daily_note' });
+        });
     });
 });
 

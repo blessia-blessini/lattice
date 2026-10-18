@@ -27,26 +27,10 @@ use crate::test_fs_helpers::{
 };
 
 use super::{
-    DetectedLineEndings, FileTrackerState, create_daily_note_file, read_text_file_internal,
-    scan_content, write_text_file_internal,
+    DetectedLineEndings, FileTrackerState, read_text_file_internal, scan_content,
+    write_text_file_internal,
 };
 
-#[test]
-fn test_create_daily_note_file() {
-    let temp_dir = tempfile::tempdir().unwrap();
-    let notes_path = temp_dir.path().to_string_lossy().to_string();
-
-    let result1 = create_daily_note_file(notes_path.clone());
-    assert!(result1.is_ok());
-    let final_path1 = result1.unwrap();
-
-    // Simulating file creation format e.g. YYYYMMDD-DDD.md
-    assert!(std::path::Path::new(&final_path1).exists());
-
-    // If exact name exists and is readable, should return the exact same path
-    let result2 = create_daily_note_file(notes_path.clone());
-    assert_eq!(result2.unwrap(), final_path1);
-}
 use std::fs;
 use std::path::Path;
 
@@ -563,80 +547,6 @@ fn test_write_twice_no_conflict() {
     assert!(disk.contains("updated"));
 }
 
-// -----------------------------------------------------------------------
-// test_create_daily_note_creates_nonexistent_directory
-// -----------------------------------------------------------------------
-/// create_daily_note_file must call create_dir_all when the target
-/// directory does not yet exist. Passing a nested path that has never
-/// been created verifies this branch.
-#[test]
-fn test_create_daily_note_creates_nonexistent_directory() {
-    let temp_dir = tempfile::tempdir().unwrap();
-    // Build a nested path that does NOT exist yet.
-    let notes_path = temp_dir
-        .path()
-        .join("deep")
-        .join("nested")
-        .join("notes");
-    assert!(!notes_path.exists(), "Pre-condition: directory must not exist");
-
-    let path_str = notes_path.to_string_lossy().to_string();
-    let result = create_daily_note_file(path_str);
-
-    assert!(result.is_ok(), "Expected Ok, got: {:?}", result.err());
-    let file_path = result.unwrap();
-    assert!(
-        std::path::Path::new(&file_path).exists(),
-        "Created daily-note file must exist on disk"
-    );
-    assert!(
-        notes_path.exists(),
-        "Directory must have been created by create_dir_all"
-    );
-}
-
-// -----------------------------------------------------------------------
-// test_create_daily_note_file_collision_counter_loop
-// -----------------------------------------------------------------------
-/// When the base daily-note file exists but cannot be read (permission
-/// denied), create_daily_note_file must walk the counter loop and return
-/// the first suffixed path it can create (e.g. `YYYYMMDD-DDD-1.md`).
-/// The first suffix is always writable (fresh path), so exactly one
-/// iteration is needed.
-#[test]
-fn test_create_daily_note_file_collision_counter_loop() {
-    let temp_dir = tempfile::tempdir().unwrap();
-    let notes_path = temp_dir.path().to_string_lossy().to_string();
-
-    // Create the base daily-note so we know its name.
-    let base_path_str = create_daily_note_file(notes_path.clone()).unwrap();
-    let base_path = std::path::Path::new(&base_path_str);
-
-    // Make the base file unreadable so `fs::read` will fail and the collision
-    // counter is forced to walk to the next suffix.
-    // The guard restores permissions on drop (even on panic).
-    let _guard = make_unreadable(base_path);
-
-    // Call again: on platforms where make_unreadable works, base exists but
-    // is unreadable → loop → creates a -1 variant.
-    let result = create_daily_note_file(notes_path.clone());
-    drop(_guard); // restore permissions before assertions
-
-    if can_test_unreadable() {
-        // On Unix (Linux, macOS, Android, iOS): the collision counter must
-        // find a free slot and return a path different from the base.
-        assert!(result.is_ok(), "collision counter must find a slot: {:?}", result.err());
-        let new_path = result.unwrap();
-        assert_ne!(new_path, base_path_str, "collision must produce a different path");
-        assert!(
-            std::path::Path::new(&new_path).exists(),
-            "collision-resolved file must exist on disk"
-        );
-    }
-    // On platforms where make_unreadable is a no-op (Windows without ACL
-    // elevation) we only verify the function did not panic, which is still a
-    // meaningful check.
-}
 
 // -----------------------------------------------------------------------
 // test_write_conflict_when_file_exists_but_is_unreadable

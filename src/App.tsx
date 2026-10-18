@@ -28,6 +28,7 @@ import { listen } from "@tauri-apps/api/event";
 import { homeDir } from "@tauri-apps/api/path";
 import { shortenHomePath } from "./lib/path-utils";
 import { clampTabSize, TAB_SIZE_DEFAULT } from "./lib/tab-size";
+import { DAILY_NOTE_ICON, DAILY_NOTE_PREFIX_DEFAULT, dailyNotePrefixFromSettings } from "./lib/daily-note";
 import "./App.css";
 import "./preview-theme.css";
 import ReactMarkdown, { type Components } from 'react-markdown';
@@ -252,6 +253,9 @@ function App() {
   // REQ-LTTCE-MRC-00005 — copy diagrams light-on-white regardless of theme.
   const [m_copyDiagramsLight, setCopyDiagramsLight] = useState(true);
   const [m_dailyNotesPath, setDailyNotesPath] = useState<string>('');
+  // REQ-LTTCE-DLN-00005 / -00006 — daily-note file-name prefix and title style.
+  const [m_dailyNotePrefix, setDailyNotePrefix] = useState<string>(DAILY_NOTE_PREFIX_DEFAULT);
+  const [m_useCalendarWeekTitle, setUseCalendarWeekTitle] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(VIEW_EDIT);
   const [splitPct, setSplitPct] = useState(57); // editor share in %, preview gets remainder
   const [m_loadedContent, setLoadedContent] = useState("");
@@ -522,6 +526,10 @@ function App() {
       setWordWrap(settings.wordWrap === true);
       setSaveOnBlur(settings.saveOnBlur !== false); // default true
       setDailyNotesPath(settings.dailyNotesPath || '');
+      // REQ-LTTCE-DLN-00005 — Rust already falls back on an invalid stored
+      // prefix; guard a missing/malformed field the same way (lib/daily-note.ts).
+      setDailyNotePrefix(dailyNotePrefixFromSettings(settings.dailyNotePrefix));
+      setUseCalendarWeekTitle(settings.useCalendarWeekTitle === true); // default OFF (REQ-LTTCE-DLN-00006)
       setHighlightMark(settings.highlightMark !== false); // default true
       setShowWhitespace(settings.showWhitespace === true); // default false — opt-in (REQ-LTTCE-WSP-00002)
       // Rust clamps on load, but guard against a malformed value anyway
@@ -967,16 +975,28 @@ function App() {
   //****************************************************************************
   // handleOpenDailyNote
   //****************************************************************************
+  /**
+   * IMPL-LTTCE-DLN-00005 — the one handler behind both the menu entry and the
+   * toolbar button (REQ-LTTCE-DLN-00001). Rust decides the file name, creates
+   * the note with its title only if it does not exist yet, and hands back the
+   * path (open_daily_note, IMPL-LTTCE-DLN-00003); from there it is loaded like
+   * any other file.
+   */
   const handleOpenDailyNote = async () => {
     if (!m_dailyNotesPath) {
       console.error("Daily notes path is not set.");
       return;
     }
     try {
-      const targetPath = await invoke<string>('create_daily_note_file', { dailyNotesPath: m_dailyNotesPath });
+      const targetPath = await invoke<string>('open_daily_note', {
+        dailyNotesPath: m_dailyNotesPath,
+        prefix: m_dailyNotePrefix,
+        useCalendarWeekTitle: m_useCalendarWeekTitle,
+      });
       await loadDocument(targetPath);
     } catch (err) {
       console.error("Error creating/opening daily note:", err);
+      alert("Failed to open the daily note: " + err);
     }
   };
   // handleOpenDailyNote END ***************************************************
@@ -1995,6 +2015,10 @@ function App() {
       saveOnBlur={saveOnBlur}
       dailyNotesPath={m_dailyNotesPath}
       onDailyNotesPathChange={setDailyNotesPath}
+      dailyNotePrefix={m_dailyNotePrefix}
+      onDailyNotePrefixChange={setDailyNotePrefix}
+      useCalendarWeekTitle={m_useCalendarWeekTitle}
+      onUseCalendarWeekTitleChange={setUseCalendarWeekTitle}
       highlightMark={m_highlightMark}
       onHighlightMarkChange={setHighlightMark}
       showWhitespace={m_showWhitespace}
@@ -2034,6 +2058,10 @@ function App() {
             saveOnBlur={saveOnBlur}
             dailyNotesPath={m_dailyNotesPath}
             onDailyNotesPathChange={setDailyNotesPath}
+            dailyNotePrefix={m_dailyNotePrefix}
+            onDailyNotePrefixChange={setDailyNotePrefix}
+            useCalendarWeekTitle={m_useCalendarWeekTitle}
+            onUseCalendarWeekTitleChange={setUseCalendarWeekTitle}
             highlightMark={m_highlightMark}
             onHighlightMarkChange={setHighlightMark}
             showWhitespace={m_showWhitespace}
@@ -2076,6 +2104,16 @@ function App() {
           display: 'flex',
           gap: '0.5rem'
         }}>
+          {/* IMPL-LTTCE-DLN-00005 — daily note, one click (REQ-LTTCE-DLN-00001);
+              same handler as the menu entry. */}
+          <button
+            data-testid="daily-note-button"
+            onClick={handleOpenDailyNote}
+            title="Open today's daily note"
+            aria-label="Open today's daily note"
+            style={toolbarBtnStyle}
+          >{DAILY_NOTE_ICON}</button>
+
           {/* Font size controls */}
           <div style={{ display: 'flex', alignItems: 'stretch', gap: '2px' }}>
             <button
@@ -2145,7 +2183,7 @@ function App() {
             items={[
               { label: (!m_isDirty ? "(no unsaved changes)" : (m_currentFilePath ? "Save" : "Save ...")), onClick: handleSave, disabled: !m_isDirty },
               { label: "Save as ...", onClick: () => handleSave(false), disabled: !m_currentFilePath },
-              { label: "To the Daily Note", onClick: handleOpenDailyNote },
+              { label: `${DAILY_NOTE_ICON} To the Daily Note`, onClick: handleOpenDailyNote },
               { label: "Open here ...", onClick: handleLoad },
               {
                 label: "Open Recent",

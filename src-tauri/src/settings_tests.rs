@@ -227,6 +227,92 @@ fn test_copy_diagrams_light_corrupt_value_costs_only_itself() {
     assert!(s.word_wrap, "the valid sibling survives");
 }
 
+// -----------------------------------------------------------------------
+// dailyNotePrefix / useCalendarWeekTitle (REQ-LTTCE-DLN-00005 /
+// REQ-LTTCE-DLN-00006 / IMPL-LTTCE-DLN-00004)
+// -----------------------------------------------------------------------
+/// UTST — a settings file that predates the daily-note settings (or omits
+/// them) gets prefix "DLN" and the file-name title.
+#[test]
+fn test_daily_note_settings_defaults() {
+    let s = Settings::default();
+    assert_eq!(s.daily_note_prefix.as_str(), "DLN");
+    assert!(!s.use_calendar_week_title);
+
+    let parsed = parse_settings_lenient(r#"{"wordWrap": true}"#);
+    assert_eq!(parsed.daily_note_prefix.as_str(), "DLN");
+    assert!(!parsed.use_calendar_week_title);
+}
+
+/// UTST — an explicit empty prefix means "no prefix" and must NOT be
+/// replaced by the default; that is what distinguishes "absent" from "empty".
+#[test]
+fn test_daily_note_prefix_empty_is_kept() {
+    let s = parse_settings_lenient(r#"{"dailyNotePrefix": ""}"#);
+    assert_eq!(s.daily_note_prefix.as_str(), "");
+}
+
+/// UTST — valid values round-trip under their camelCase keys.
+#[test]
+fn test_daily_note_settings_round_trip() {
+    let s = parse_settings_lenient(r#"{"dailyNotePrefix": "J1", "useCalendarWeekTitle": true}"#);
+    assert_eq!(s.daily_note_prefix.as_str(), "J1");
+    assert!(s.use_calendar_week_title);
+
+    let v = serde_json::to_value(&s).unwrap();
+    assert_eq!(v["dailyNotePrefix"], "J1");
+    assert_eq!(v["useCalendarWeekTitle"], true);
+}
+
+/// UTST for REQ-LTTCE-SET-00001 applied to the new fields — an invalid
+/// hand-edited prefix (too long, or a path character) costs only itself.
+#[test]
+fn test_daily_note_prefix_invalid_value_costs_only_itself() {
+    for bad in [r#""TOOLONG""#, r#""../""#, r#""a b""#, "7"] {
+        let json = format!(r#"{{"dailyNotePrefix": {bad}, "wordWrap": true, "useCalendarWeekTitle": true}}"#);
+        let s = parse_settings_lenient(&json);
+        assert_eq!(s.daily_note_prefix.as_str(), "DLN", "{bad} must fall back to the default");
+        assert!(s.word_wrap, "the valid sibling survives ({bad})");
+        assert!(s.use_calendar_week_title, "the valid sibling survives ({bad})");
+    }
+}
+
+/// UTST — the write-side gate: an invalid prefix cannot even be turned into
+/// a `Settings` value, so `save_settings` (whose argument is deserialized
+/// from the IPC payload) refuses it before anything touches the disk.
+#[test]
+fn test_daily_note_prefix_invalid_value_is_refused_on_save_payload() {
+    let payload = serde_json::json!({ "dailyNotePrefix": "a/b", "wordWrap": true });
+    assert!(serde_json::from_value::<Settings>(payload).is_err());
+}
+
+/// UTST — the new fields are written to disk by save_settings_internal.
+#[test]
+fn test_save_settings_internal_persists_daily_note_settings() {
+    let temp = tempfile::tempdir().unwrap();
+    let lattice_dir = temp.path().join("vault").join(".lattice");
+    fs::create_dir_all(&lattice_dir).unwrap();
+    let settings_path = lattice_dir.join("settings.json");
+    fs::write(&settings_path, "{}").unwrap();
+    let home = temp.path().join("home");
+
+    let s = Settings {
+        daily_note_prefix: crate::daily_note::DailyNotePrefix::new("").unwrap(),
+        use_calendar_week_title: true,
+        ..Default::default()
+    };
+    save_settings_internal(&settings_path.to_string_lossy(), s, &home).unwrap();
+
+    let v: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(&settings_path).unwrap()).unwrap();
+    assert_eq!(v["dailyNotePrefix"], "");
+    assert_eq!(v["useCalendarWeekTitle"], true);
+
+    let back = load_settings_internal(&settings_path.to_string_lossy(), &home).unwrap();
+    assert_eq!(back.daily_note_prefix.as_str(), "");
+    assert!(back.use_calendar_week_title);
+}
+
 #[test]
 fn test_parse_settings_lenient_valid_file_unchanged() {
     // Fast path: a fully valid file parses exactly as before.

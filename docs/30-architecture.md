@@ -1863,6 +1863,94 @@ different file, rename, clamping).
 
 ---
 
+## Feature: Daily Note
+
+<!--ARCH-LTTCE-DLN-00001-->
+
+### Overview
+
+Covers Chapter DLN of the requirements. One Tauri command, `open_daily_note`, makes sure today's note exists
+and returns its path; the frontend then opens that path through the ordinary `loadDocument` path, so a
+daily note is in every respect an ordinary file (file watching, conflict copies, line endings, MRU). The
+split follows the project rule — **all naming, title and file logic in Rust, a thin `invoke` plus UI in the
+frontend** — with one documented exception for the Settings input filter.
+
+```
+menu entry ─┐
+            ├─▶ App.handleOpenDailyNote ──invoke──▶ open_daily_note(path, prefix, cwTitle)
+🗒 button ──┘        (IMPL-LTTCE-DLN-00005)          │  prefix: DailyNotePrefix — validated while the
+                                                     │  IPC arguments are deserialized
+                                                     ▼
+                                      create_or_open_daily_note(dir, prefix, cwTitle, today)
+                                        create_dir_all(dir)
+                                        open(<prefix>-YYYY-MM-DD-ddd.md, create_new)
+                                          ├─ created        → write title line → path
+                                          └─ AlreadyExists  → is a file? → path (untouched)
+                                                     │
+            App.loadDocument(path) ◀─────────────────┘
+```
+
+### Rust — `daily_note.rs`
+
+- **`DailyNotePrefix`** is a newtype whose only constructors validate (0–3 ASCII letters or digits;
+  `Default` = `DLN`). It deserializes through the same check (`#[serde(try_from = "String")]`), so the rule
+  is enforced at every entry point without being repeated: in `settings.json` the lenient loader
+  (ARCH-LTTCE-SET-00001) drops just that field back to its default; in an `open_daily_note` or
+  `save_settings` call from the WebView, Tauri refuses the arguments before the command body runs. Because
+  the prefix becomes part of a file name, this is also what keeps `/`, `\` and `..` away from `Path::join`.
+- **Name and title are pure functions of a `NaiveDate`** (`daily_note_base_name`, `daily_note_title`) and
+  are tested against fixed dates. The weekday comes from chrono's `%a`, which is never localised. The
+  calendar week is chrono's `iso_week()`, and the title uses *its* `year()` — the ISO week-numbering
+  year — not the calendar year (see the rationale under REQ-LTTCE-DLN-00004).
+- **Create-or-open is one atomic call.** `OpenOptions::create_new` maps to `O_CREAT | O_EXCL` /
+  `CREATE_NEW`: the existence test and the creation cannot be separated by another writer, so a second
+  window pressing the button at the same moment gets `AlreadyExists` and opens the note instead of
+  truncating it. Only the caller that created the file writes the title. A *directory* bearing the note's
+  name is reported as an error rather than "opened".
+- **The title is written without a line ending.** File line endings in Lattice are decided in one place:
+  `file_state` keeps whatever endings a file has and gives a file without any the platform's native ones on
+  its first save. A single unterminated line leaves that decision there — no `\n` hard-coded here and no
+  platform branch.
+- **Only `open_daily_note` reads the clock** (`chrono::Local`, i.e. the user's local date).
+
+`open_daily_note` replaces the former `file_state::create_daily_note_file` (empty `YYYYMMDD-ddd.md`, with a
+`-1`, `-2`, … suffix loop for unreadable files). That command had no other caller and was removed; notes
+created by it are left on disk untouched.
+
+### Settings — `settings.rs`
+
+`Settings` gains `daily_note_prefix: DailyNotePrefix` and `use_calendar_week_title: bool`, both
+`#[serde(default)]`. Absent keys therefore mean `DLN` / OFF, while an explicit `""` survives as "no prefix".
+No settings-specific code was needed for validation — the field's type carries it.
+
+### Frontend Glue
+
+| Layer    | File                          | Responsibility                                                                                     |
+| -------- | ----------------------------- | -------------------------------------------------------------------------------------------------- |
+| Command  | `src/App.tsx`                 | `handleOpenDailyNote`: one handler for the menu entry and the toolbar button; passes the loaded settings to `open_daily_note`, then `loadDocument(path)`; alerts on failure. |
+| Settings | `src/components/Settings.tsx` | "Daily Notes" section: path, prefix input, calendar-week-title toggle; persisted with the whole settings object. |
+| Contract | `src/lib/daily-note.ts`       | Icon, prefix default/length, the keystroke filter, and the defensive read-back of a loaded prefix.  |
+
+**The one piece of the rule that is not in Rust.** The prefix input must decide on every keystroke,
+synchronously, what the field shows; it cannot await an IPC round trip. `sanitizeDailyNotePrefixInput`
+therefore mirrors the character class and the length (a documented pairing, like `lib/tab-size.ts`). It is
+not the gate: a value it let through by mistake would still be refused by `DailyNotePrefix` in Rust.
+
+### Verification
+
+`daily_note_tests.rs` covers the prefix rule, the name, the title (mid-year, two-digit weeks, week 1
+starting in December, week 53 in January) and create-or-open against real folders (new note, reopened note,
+user content byte for byte, empty existing note, other days, folder/file in the way, eight concurrent
+callers). `settings_tests.rs` covers defaults, the kept empty prefix, the lenient fallback and the
+write-side refusal. `tests/wiring.rs` sends real IPC requests to `open_daily_note` through
+`tauri::test::get_ipc_response` — camelCase argument names, the refusal of an invalid prefix *for that
+reason*, and a create → edit → reopen cycle — and round-trips both settings through the command shims.
+On the frontend, `lib/daily-note.test.ts` covers the filter, `Settings.test.tsx` the two controls, and
+`App.coverage.test.tsx` both entry points, the button's position and icon, the arguments sent and the error
+path.
+
+---
+
 ## Architectural Decisions
 
 ### ADR-01: External Image Fetches Blocked by Default

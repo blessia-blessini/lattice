@@ -487,7 +487,9 @@ jobs:
     #
     #       One artifact per DESKTOP leg, each holding demo-<platform>.html,
     #       demo-<platform>.pdf (A4) and demo-<platform>.a3.pdf /
-    #       demo-<platform>.letter.pdf. Step 905 downloads them all by the
+    #       demo-<platform>.letter.pdf, plus screenshot-<platform>.png — the
+    #       running app's main window (build-test step 1e, best effort: a leg
+    #       may lack it, with a warning annotation). Step 905 downloads them all by the
     #       shared "DEMO-EXPORT-" prefix and publishes every one, so the
     #       release page shows each platform's own rendering side by side
     #       (A4 embedded, the other papers linked).
@@ -1191,6 +1193,48 @@ jobs:
           # matrix disappears from the page by itself, with no list here to
           # keep in sync.
           GEN_SRC="demo-export"
+
+          # Human-readable heading for a matrix platform, shared by the
+          # screenshot and the generated-documents sections below. Mirrors
+          # the download-table labels above; an unknown platform still gets
+          # a usable heading rather than being skipped.
+          platform_heading() {
+            case "$1" in
+              windows-desktop)     echo '<span class="material-icons">window</span> Windows — Intel / AMD (x86-64)' ;;
+              windows-arm-desktop) echo '<span class="material-icons">window</span> Windows — ARM64' ;;
+              macos-arm64)         echo '<span class="material-icons">laptop_mac</span> macOS — Apple Silicon (ARM64)' ;;
+              macos-intel)         echo '<span class="material-icons">laptop_mac</span> macOS — Intel (x86-64)' ;;
+              linux-desktop)       echo '<span class="material-icons">terminal</span> Linux — x86-64' ;;
+              linux-arm-desktop)   echo '<span class="material-icons">terminal</span> Linux — ARM64' ;;
+              *)                   echo "$1" ;;
+            esac
+          }
+
+          # ── What Lattice looks like on each desktop ────────────────────
+          # One screenshot of the running release app per desktop build
+          # (examples/app_screenshot.rs, build-test step 1e), shipped in the
+          # same DEMO-EXPORT-<platform> artifact as the documents. Same
+          # rule as below: the loop is over what arrived, so a leg that
+          # produced no screenshot simply has no entry.
+          if compgen -G "$GEN_SRC/screenshot-*.png" > /dev/null; then
+            SHOT_DEST="$DEMO_DEST/screenshots"
+            mkdir -p "$SHOT_DEST"
+            cp -f "$GEN_SRC"/screenshot-*.png "$SHOT_DEST/"
+            printf '%s\n' "### Lattice on each desktop" "" >> "$OUT"
+            printf '%s\n' \
+              "Each desktop build in this release started the app it built, opened \`demo.md\`" \
+              "and took one screenshot of its main window — what you get on that platform." \
+              "" >> "$OUT"
+            for shot in $(ls "$GEN_SRC"/screenshot-*.png 2>/dev/null | sort); do
+              name=$(basename "$shot")
+              plat="${name#screenshot-}"; plat="${plat%.png}"
+              printf '%s\n\n' "#### $(platform_heading "$plat")" >> "$OUT"
+              printf '![Lattice on %s](%s/docs/demo/screenshots/%s)\n\n' "$plat" "$RAW_BASE" "$name" >> "$OUT"
+            done
+          else
+            echo "::warning::No app screenshots were downloaded — the release page will not show them."
+          fi
+
           if compgen -G "$GEN_SRC/demo-*.pdf" > /dev/null || compgen -G "$GEN_SRC/demo-*.html" > /dev/null; then
             GEN_DEST="$DEMO_DEST/generated"
             mkdir -p "$GEN_DEST"
@@ -1243,20 +1287,7 @@ jobs:
               case "$base" in *.*) [ -f "$GEN_SRC/${base%.*}.pdf" ] && continue ;; esac
               plat="${base#demo-}"                  # <platform>
 
-              # Human-readable heading. Mirrors the download-table labels
-              # above; an unknown platform still gets a usable heading
-              # rather than being skipped.
-              case "$plat" in
-                windows-desktop)     nice='<span class="material-icons">window</span> Windows — Intel / AMD (x86-64)' ;;
-                windows-arm-desktop) nice='<span class="material-icons">window</span> Windows — ARM64' ;;
-                macos-arm64)         nice='<span class="material-icons">laptop_mac</span> macOS — Apple Silicon (ARM64)' ;;
-                macos-intel)         nice='<span class="material-icons">laptop_mac</span> macOS — Intel (x86-64)' ;;
-                linux-desktop)       nice='<span class="material-icons">terminal</span> Linux — x86-64' ;;
-                linux-arm-desktop)   nice='<span class="material-icons">terminal</span> Linux — ARM64' ;;
-                *)                   nice="$plat" ;;
-              esac
-
-              printf '%s\n\n' "#### $nice" >> "$OUT"
+              printf '%s\n\n' "#### $(platform_heading "$plat")" >> "$OUT"
 
               PDF_RAW="${GEN_RAW}/${base}.pdf"
               # URL-encode the full PDF URL so it is safe as a query parameter value.

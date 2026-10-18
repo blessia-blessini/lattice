@@ -55,7 +55,7 @@ The lack of native graphycal support is compensated by:
  - **Table of Contents** — auto-generate and refresh a linked heading list with `Ctrl/Cmd+Shift+T`
  - **Table formatting** — align pipe-table columns with `Ctrl/Cmd+Shift+L`
  - **`==highlight==` marks** — `==text==` syntax rendered with a highlighted background
- - **Daily notes** — configurable daily-note directory
+ - **Daily notes** — one click on 🗒 (or the menu) opens today's note, e.g. `DLN-2026-08-04-Tue.md`, creating it with a title if needed; folder, prefix and an optional calendar-week title (`2026 CW32 Tue`) are configurable
  - **Mermaid diagrams** — fenced ` ```mermaid ``` ` blocks rendered inline
  - **Dark / light themes** — editor and preview themes are independent of each other and the OS
  - **Cross-platform** — Windows, macOS (universal), Linux, Android, iOS (the latter not delivered yet)

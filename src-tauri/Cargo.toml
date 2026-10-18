@@ -23,7 +23,7 @@
 
 [package]
 name = "lattice"
-version = "0.3.33"
+version = "0.3.35"
 description = "A Markdown Editor that respects standards"
 authors = ["Blessia Blessini"]
 edition = "2024"
@@ -110,6 +110,30 @@ hayro = { version = "0.8.0", default-features = false }
 tempfile = "3.24.0"
 tauri = { version = "2", features = ["test"] }
 url = "2"
+
+# examples/app_screenshot.rs only (CI screenshot of the main window, one per
+# desktop leg). No new crates: each is already in the tree on its target —
+# `windows` is a dependency above, core-graphics/core-foundation come with tao
+# on macOS, x11-dl with tao on Linux. Cargo's resolver (v2+; edition 2024
+# defaults to v3) enables dev-dependency features only for tests and examples,
+# never for the release build, so the shipped binary is unchanged — checked by
+# comparing `cargo tree -e normal,features` per target before and after.
+[target.'cfg(target_os = "windows")'.dev-dependencies]
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Dwm",
+    "Win32_Graphics_Gdi",
+    "Win32_Storage_Xps", # PrintWindow
+    "Win32_UI_HiDpi",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[target.'cfg(target_os = "macos")'.dev-dependencies]
+core-foundation = "0.10"
+core-graphics = "0.25"
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+x11-dl = "2.21"
 
 [[test]]
 name = "file_open_tests"

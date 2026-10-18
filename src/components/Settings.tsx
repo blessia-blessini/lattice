@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FileSystem } from '../services/FileSystem';
 import { invoke } from '@tauri-apps/api/core';
 import { clampTabSize, TAB_SIZE_MIN, TAB_SIZE_MAX } from '../lib/tab-size';
+import { DAILY_NOTE_PREFIX_MAX_LEN, sanitizeDailyNotePrefixInput } from '../lib/daily-note';
 
 /** Props for the {@link Settings} panel component. */
 export interface SettingsProps {
@@ -19,6 +20,21 @@ export interface SettingsProps {
     dailyNotesPath: string;
     /** Called on every keystroke in the daily-notes path field. */
     onDailyNotesPathChange: (path: string) => void;
+    /**
+     * File-name prefix of a daily note: 0–3 Latin letters or digits, default
+     * "DLN", empty = no prefix (REQ-LTTCE-DLN-00005).
+     */
+    dailyNotePrefix: string;
+    /** Called with the already-sanitized prefix on every edit. IMPL-LTTCE-DLN-00006. */
+    onDailyNotePrefixChange: (prefix: string) => void;
+    /**
+     * When true a new daily note is titled with the ISO calendar week
+     * (`# Daily Note: 2026 CW42 Sun`), otherwise with its file name.
+     * Default OFF (REQ-LTTCE-DLN-00006).
+     */
+    useCalendarWeekTitle: boolean;
+    /** Called when the user flips the calendar-week-title toggle. IMPL-LTTCE-DLN-00006. */
+    onUseCalendarWeekTitleChange: (enabled: boolean) => void;
     /** Current `==highlight mark==` rendering state shown in the toggle. */
     highlightMark: boolean;
     /** Called when the user flips the highlight-mark toggle. */
@@ -119,6 +135,8 @@ interface SettingsPayload {
     wordWrap: boolean;
     saveOnBlur: boolean;
     dailyNotesPath: string;
+    dailyNotePrefix: string;
+    useCalendarWeekTitle: boolean;
     highlightMark: boolean;
     showWhitespace: boolean;
     tabSize: number;
@@ -127,7 +145,7 @@ interface SettingsPayload {
     copyDiagramsLight: boolean;
 }
 
-export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultThemeChange, wordWrap, onWordWrapChange, saveOnBlur, dailyNotesPath, onDailyNotesPathChange, highlightMark, onHighlightMarkChange, showWhitespace, onShowWhitespaceChange, tabSize, onTabSizeChange, blockExternalImages, onBlockExternalImagesChange, defaultMermaidInit, onDefaultMermaidInitChange, copyDiagramsLight, onCopyDiagramsLightChange, onClose, settingsPath }) => {
+export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultThemeChange, wordWrap, onWordWrapChange, saveOnBlur, dailyNotesPath, onDailyNotesPathChange, dailyNotePrefix, onDailyNotePrefixChange, useCalendarWeekTitle, onUseCalendarWeekTitleChange, highlightMark, onHighlightMarkChange, showWhitespace, onShowWhitespaceChange, tabSize, onTabSizeChange, blockExternalImages, onBlockExternalImagesChange, defaultMermaidInit, onDefaultMermaidInitChange, copyDiagramsLight, onCopyDiagramsLightChange, onClose, settingsPath }) => {
     const [status, setStatus] = useState<string>('');
 
     //**************************************************************************
@@ -148,6 +166,8 @@ export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultTheme
             wordWrap,
             saveOnBlur,
             dailyNotesPath,
+            dailyNotePrefix,
+            useCalendarWeekTitle,
             highlightMark,
             showWhitespace,
             tabSize,
@@ -182,6 +202,23 @@ export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultTheme
         const newPath = e.target.value;
         onDailyNotesPathChange(newPath);
         persist({ dailyNotesPath: newPath });
+    };
+
+    // IMPL-LTTCE-DLN-00006 — "Daily Note Prefix": the input can only ever
+    // hold a valid prefix (lib/daily-note.ts); a keystroke that the filter
+    // removes entirely (e.g. "/") changes nothing and is not saved.
+    const handleDailyNotePrefixChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newValue = sanitizeDailyNotePrefixInput(e.target.value);
+        if (newValue === dailyNotePrefix) return;
+        onDailyNotePrefixChange(newValue);
+        persist({ dailyNotePrefix: newValue });
+    };
+
+    // IMPL-LTTCE-DLN-00006 — "Use Calendar Week Title" toggle
+    const handleUseCalendarWeekTitleChange = () => {
+        const newValue = !useCalendarWeekTitle;
+        onUseCalendarWeekTitleChange(newValue);
+        persist({ useCalendarWeekTitle: newValue });
     };
 
     const handleHighlightMarkChange = () => {
@@ -350,7 +387,12 @@ export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultTheme
                     <span>{blockExternalImages ? 'Blocked' : 'Allowed'}</span>
                 </div>
 
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '1.5rem', width: '100%' }}>
+            </div>
+
+            <div style={{ marginBottom: '2rem' }}>
+                <h3>Daily Notes</h3>
+
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', width: '100%' }}>
                     <span style={{ minWidth: '120px' }}>Daily Notes Path:</span>
                     <input
                         type="text"
@@ -367,6 +409,37 @@ export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultTheme
                     />
                 </div>
 
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '1.5rem' }}>
+                    <span title="Put in front of the daily-note file name: DLN gives DLN-2026-08-04-Tue.md. Up to 3 Latin letters or digits; leave empty for no prefix (2026-08-04-Tue.md).">
+                        Daily Note Prefix:
+                    </span>
+                    <input
+                        type="text"
+                        value={dailyNotePrefix}
+                        onChange={handleDailyNotePrefixChange}
+                        maxLength={DAILY_NOTE_PREFIX_MAX_LEN}
+                        spellCheck={false}
+                        autoComplete="off"
+                        aria-label="Daily Note Prefix"
+                        style={{
+                            width: '4rem',
+                            padding: '0.4rem',
+                            borderRadius: '4px',
+                            border: `1px solid ${defaultTheme === 'dark' ? '#30363d' : '#e1e4e8'}`,
+                            backgroundColor: defaultTheme === 'dark' ? '#161b22' : '#f6f8fa',
+                            color: defaultTheme === 'dark' ? '#c9d1d9' : '#24292e',
+                        }}
+                    />
+                    <span style={{ opacity: 0.7 }}>A–Z, a–z, 0–9, up to {DAILY_NOTE_PREFIX_MAX_LEN}; empty = none</span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '1.5rem' }}>
+                    <span title="Title written into a NEW daily note. ON: '# Daily Note: 2026 CW42 Sun' (ISO 8601 calendar week — week 1 is the week holding the year's first Thursday). OFF: '# Daily Note: DLN-2026-10-18-Sun' (the file name). An existing note is never changed.">
+                        Use Calendar Week Title:
+                    </span>
+                    <Toggle on={useCalendarWeekTitle} onClick={handleUseCalendarWeekTitleChange} />
+                    <span>{useCalendarWeekTitle ? 'Calendar week' : 'File name'}</span>
+                </div>
             </div>
 
             <div style={{ marginBottom: '2rem' }}>

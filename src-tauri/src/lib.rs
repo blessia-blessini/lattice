@@ -37,6 +37,9 @@ use base64::{Engine as _, engine::general_purpose};
 // Private Path variable of this module
 static M_PATH: Mutex<String> = Mutex::new(String::new());
 
+// IMPL-LTTCE-DLN-00003 — daily note (Chapter DLN). Public so the wiring tests
+// in tests/wiring.rs drive the real command against a real folder.
+pub mod daily_note;
 pub mod e2e;
 mod export;
 pub mod file_state;
@@ -1109,7 +1112,7 @@ pub fn run() {
             settings::save_settings,
             file_state::read_text_file,
             file_state::write_text_file,
-            file_state::create_daily_note_file,
+            daily_note::open_daily_note,
             file_state::close_file,
             open_new_window,
             open_settings_window,
