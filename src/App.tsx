@@ -1098,7 +1098,12 @@ function App() {
       // CLEANUP MEMORY
       delete (window as any).__LATTICE_INIT_DATA__;
 
-      if (initData) {
+      // IMPL-LTTCE-VLT-00001 — REQ-LTTCE-VLT-00001: the backend injects a
+      // payload into EVERY window, with an empty path when no file was given
+      // (build_window_with_file_ex). That is "no file", not a document: it
+      // must reach the branch below that resolves a vault, or the window runs
+      // without settings until a file or Settings happens to resolve one.
+      if (initData?.path) {
         console.log("DEBUG: Direct Push Data found for:", initData.path);
         try {
           // IMPL-LTTCE-XPT-00002 — REQ-LTTCE-XPT-00010 — mark a headless export window *before* the
@@ -1117,11 +1122,9 @@ function App() {
           }
           setSaveOnBlur(true);
 
-          if (initData.path) {
-            // Strict Enforce
-            await enforceVaultPath(initData.path);
-            FileSystem.watchFile(initData.path);
-          }
+          // Strict Enforce
+          await enforceVaultPath(initData.path);
+          FileSystem.watchFile(initData.path);
 
           // IMPL-LTTCE-XPT-00002 — REQ-LTTCE-XPT-00001 / 00004 — headless
           // `--export-html` / `--export-pdf` launch: this window was built

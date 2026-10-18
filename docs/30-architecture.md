@@ -1951,6 +1951,33 @@ path.
 
 ---
 
+## Feature: Vault Selection
+
+<!--ARCH-LTTCE-VLT-00001-->
+**ARCH-LTTCE-VLT-00001** — covers REQ-LTTCE-VLT-00001.
+
+Every window resolves its vault once, at launch, in `checkLaunch` (`src/App.tsx`) through
+`enforceVaultPath`, which asks the backend's `find_vault_settings_file` (`vault_path.rs`): walk up from the
+document to the nearest `.lattice`, else the home vault. The resolved `settings.json` path is React state;
+setting it loads the settings (`loadSettings`), which is what every settings-dependent command reads.
+
+```text
+backend: build_window_with_file_ex ── injects __LATTICE_INIT_DATA__ { path, content } into EVERY window
+                                      (path = "" when there is no document)
+frontend checkLaunch:
+  payload with a path  → load the document  → enforceVaultPath(path)  ─┐
+  no path (or none)    → session file after a WebView reload, if any,  ├─▶ find_vault_settings_file
+                         else enforceVaultPath("")  ("no document")    ─┘          │
+                                                                   settings.json path → loadSettings
+```
+
+**The trap this closes.** The backend injects the payload into every window, so on desktop the "no payload"
+branch was unreachable, and the payload branch resolved a vault only for a non-empty path. A window opened
+without a document therefore never resolved one: no settings, an empty Daily Notes Path, a 🗒 button that
+did nothing until a document or Settings resolved a vault as a side effect. The branch test is on the path,
+not on the payload's presence. App tests use the real payload shape (`path: ""`), since the payload-free
+shape the older tests used never occurs on desktop.
+
 ## Architectural Decisions
 
 ### ADR-01: External Image Fetches Blocked by Default

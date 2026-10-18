@@ -899,6 +899,57 @@ describe('App — session restore', () => {
 });
 
 // =============================================================================
+// 21b. Launch without a file — the payload the backend really sends
+// =============================================================================
+// REQ-LTTCE-VLT-00001. On desktop the backend injects __LATTICE_INIT_DATA__
+// for EVERY window, with `path: ""` when no file was given
+// (build_window_with_file_ex in lib.rs). The "no payload" tests above never
+// happen on desktop; these use the real shape. Before the fix, the empty path
+// skipped vault resolution entirely: no settings, no daily-notes path, and
+// the 🗒 button silently did nothing until a file or Settings was opened.
+describe('App — launch without a file (empty payload)', () => {
+    beforeEach(resetEnv);
+
+    it('resolves the vault for "no file" and loads its settings', async () => {
+        await renderApp({ path: '', content: '' });
+
+        await waitFor(() =>
+            expect(TauriCore.invoke).toHaveBeenCalledWith('find_vault_settings_file', { filePath: '' })
+        );
+        await waitFor(() =>
+            expect(TauriCore.invoke).toHaveBeenCalledWith(
+                'load_settings', { settingsPath: '/vault/.lattice/settings.json' })
+        );
+    });
+
+    it('lets the 🗒 button open the daily note at once, with no file opened first', async () => {
+        const invoke = makeInvoke({ settingsResult: { dailyNotesPath: '/home/daily' } });
+        const { getByTestId } = await renderApp({ path: '', content: '', invoke });
+        await waitFor(() =>
+            expect(TauriCore.invoke).toHaveBeenCalledWith('load_settings', expect.anything())
+        );
+        await act(async () => { await new Promise(r => setTimeout(r, 50)); });
+
+        await act(async () => { fireEvent.click(getByTestId('daily-note-button')); });
+
+        await waitFor(() =>
+            expect(TauriCore.invoke).toHaveBeenCalledWith(
+                'open_daily_note', expect.objectContaining({ dailyNotesPath: '/home/daily' }))
+        );
+    });
+
+    it('still restores the session file after a WebView reload', async () => {
+        sessionStorage.setItem('lattice-last-open-path', '/vault/restored.md');
+        await renderApp({ path: '', content: '' });
+
+        await waitFor(() =>
+            expect(TauriCore.invoke).toHaveBeenCalledWith(
+                'read_text_file', expect.objectContaining({ path: '/vault/restored.md' }))
+        , { timeout: 5000 });
+    });
+});
+
+// =============================================================================
 // 22. handleNewWindow  (L811-816)
 // =============================================================================
 describe('App — handleNewWindow', () => {

@@ -19,6 +19,7 @@ implementation artefacts. For the ID schema definition see `11-Traceability-Requ
   - [Chapter SEL — Select All Scope](#chapter-sel-select-all-scope)
   - [Chapter TBL — Spreadsheet Paste](#chapter-tbl-spreadsheet-paste)
   - [Chapter DLN — Daily Note](#chapter-dln-daily-note)
+  - [Chapter VLT — Vault Selection](#chapter-vlt-vault-selection)
     - [General](#general)
     - [Severity Visualisation](#severity-visualisation)
     - [Rule: Setext Headings](#rule-setext-headings)
@@ -956,6 +957,22 @@ before any file or folder is created.
 **REQ-LTTCE-DLN-00006** — A setting **"Use Calendar Week Title"** (persisted key `useCalendarWeekTitle`)
 SHALL select the title of REQ-LTTCE-DLN-00004. It SHALL be **OFF by default**, SHALL be settable from the
 Settings panel, and SHALL be persisted to the vault `settings.json`.
+
+## Chapter VLT — Vault Selection
+
+A *vault* is a folder holding a `.lattice/settings.json`; its settings (theme, Daily Notes Path, …) apply to
+the documents below it. A document opens in the nearest vault above it. There is always a *home vault*
+under the user's home folder (on mobile: the app's data folder), created on first use, for documents outside
+any vault.
+
+<!--REQ-LTTCE-VLT-00001-->
+**REQ-LTTCE-VLT-00001** — A window opened **without a document** SHALL select a vault and apply its settings
+before the user's first action, exactly as a window opened with a document does. Every command that depends
+on a setting — the daily note of Chapter DLN, the Settings panel — SHALL work in such a window from its
+first moment, without a document or the Settings panel having to be opened first.
+
+*Rationale*: before this requirement, a window started without a document ran with no vault at all until a
+document or the Settings panel happened to select one; the daily-note button did nothing in the meantime.
 
 ---
 

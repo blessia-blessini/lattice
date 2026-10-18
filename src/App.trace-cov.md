@@ -69,3 +69,12 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - IMPL-LTTCE-DLN-00005 **covers** REQ-LTTCE-DLN-00005  (falls back to `DLN` for a malformed loaded prefix) —
   UTST: same suite
 - IMPL-LTTCE-DLN-00005 **covers** ARCH-LTTCE-DLN-00001
+- IMPL-LTTCE-VLT-00001 **covers** REQ-LTTCE-VLT-00001  (`checkLaunch` treats a payload with an empty path as
+  "no document": session restore, else the vault for "no document") — UTST: `src/App.coverage.test.tsx`,
+  *App — launch without a file (empty payload)*: vault resolved and settings loaded, 🗒 works with no file
+  opened, session restore still runs; all three failed before the fix
+- IMPL-LTTCE-VLT-00001 **covers** ARCH-LTTCE-VLT-00001
+- STST: not yet. A launch without a document uses the home vault of the machine running the harness, so a
+  click would write into the developer's real home; the E2E scenario follows with REQ-LTTCE-VLT-00002,
+  which brings an isolated home folder for E2E builds. Until then the App suite above drives the same
+  launch path with the real payload shape.
