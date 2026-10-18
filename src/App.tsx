@@ -984,7 +984,9 @@ function App() {
    */
   const handleOpenDailyNote = async () => {
     if (!m_dailyNotesPath) {
+      // IMPL-LTTCE-DLN-00007 — REQ-LTTCE-DLN-00007: never a silent no-op.
       console.error("Daily notes path is not set.");
+      alert("The daily notes folder is not known yet. Set \"Daily Notes Path\" in Settings ▸ Daily Notes.");
       return;
     }
     try {

@@ -730,8 +730,11 @@ describe('App — handleOpenDailyNote', () => {
         return utils;
     };
 
-    it('returns early with error log when dailyNotesPath is empty', async () => {
+    it('tells the user, and does nothing else, when dailyNotesPath is empty', async () => {
+        // REQ-LTTCE-DLN-00007: never a silent no-op — the user sees why and
+        // where to fix it.
         const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
 
         const { getByText } = await renderApp({ path: '/vault/test.md' });
         await waitForTitle('test.md');
@@ -741,9 +744,12 @@ describe('App — handleOpenDailyNote', () => {
         await act(async () => { fireEvent.click(daily); });
 
         await waitFor(() =>
-            expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('Daily notes path is not set'))
+            expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('Settings ▸ Daily Notes'))
         );
+        expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('Daily Notes Path'));
+        expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('Daily notes path is not set'));
         expect(TauriCore.invoke).not.toHaveBeenCalledWith('open_daily_note', expect.anything());
+        alertSpy.mockRestore();
         errSpy.mockRestore();
     });
 

@@ -1927,7 +1927,7 @@ No settings-specific code was needed for validation — the field's type carries
 
 | Layer    | File                          | Responsibility                                                                                     |
 | -------- | ----------------------------- | -------------------------------------------------------------------------------------------------- |
-| Command  | `src/App.tsx`                 | `handleOpenDailyNote`: one handler for the menu entry and the toolbar button; passes the loaded settings to `open_daily_note`, then `loadDocument(path)`; alerts on failure. |
+| Command  | `src/App.tsx`                 | `handleOpenDailyNote`: one handler for the menu entry and the toolbar button; passes the loaded settings to `open_daily_note`, then `loadDocument(path)`; alerts on failure, and — instead of doing nothing — when no Daily Notes Path is known yet (REQ-LTTCE-DLN-00007). |
 | Settings | `src/components/Settings.tsx` | "Daily Notes" section: path, prefix input, calendar-week-title toggle; persisted with the whole settings object. |
 | Contract | `src/lib/daily-note.ts`       | Icon, prefix default/length, the keystroke filter, and the defensive read-back of a loaded prefix.  |
 

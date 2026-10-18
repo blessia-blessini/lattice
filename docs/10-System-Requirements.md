@@ -958,6 +958,11 @@ before any file or folder is created.
 SHALL select the title of REQ-LTTCE-DLN-00004. It SHALL be **OFF by default**, SHALL be settable from the
 Settings panel, and SHALL be persisted to the vault `settings.json`.
 
+<!--REQ-LTTCE-DLN-00007-->
+**REQ-LTTCE-DLN-00007** — When the command of REQ-LTTCE-DLN-00001 is used while the Daily Notes Path is not
+known, the application SHALL tell the user so in a visible message that names where to set it
+(Settings ▸ Daily Notes ▸ "Daily Notes Path"), and SHALL create nothing. It SHALL NOT silently do nothing.
+
 ## Chapter VLT — Vault Selection
 
 A *vault* is a folder holding a `.lattice/settings.json`; its settings (theme, Daily Notes Path, …) apply to
