@@ -49,6 +49,7 @@ pub mod paper;
 pub mod settings;
 mod tabify;
 mod vault_path;
+pub mod last_vault;
 // Re-exported so lib_tests.rs (which does `use super::*`) keeps resolving it.
 #[cfg(test)]
 pub(crate) use vault_path::find_vault_settings_file_internal;
@@ -103,6 +104,9 @@ pub(crate) fn calc_base_path_internal<R: tauri::Runtime>(
 
     #[cfg(not(desktop))]
     let home_dir = _app.path().app_data_dir().map_err(|e| e.to_string())?;
+    // E2E runs only: an isolated home, so a harness scenario never touches
+    // the developer's real home vault (always None in production builds).
+    let home_dir = e2e::isolated_home().unwrap_or(home_dir);
     // Lock the mutex to access the "private variable"
     let mut m_path = M_PATH.lock().map_err(|e| e.to_string())?;
 
@@ -591,7 +595,7 @@ fn find_vault_settings_file(
     app: tauri::AppHandle,
     file_path: String,
 ) -> Result<Option<String>, String> {
-    let str_home_dir = calc_base_path(app)?;
+    let str_home_dir = calc_base_path(app.clone())?;
     let home_dir = Path::new(&str_home_dir);
 
     // Log the path for debugging purposes on mobile
@@ -606,8 +610,53 @@ fn find_vault_settings_file(
     #[cfg(not(desktop))]
     let boundary: Option<&Path> = Some(home_dir);
 
-    vault_path::find_vault_settings_file_bounded(file_path, home_dir, boundary)
+    let found = vault_path::find_vault_settings_file_bounded(file_path.clone(), home_dir, boundary)?;
+    Ok(found.map(|found| settle_vault(&app, home_dir, &file_path, found)))
 } // find_vault_settings_file END ******************************************
+
+//******************************************************************************
+// last_vault_state_file
+//******************************************************************************
+/// Where the last vault is remembered: the OS's per-user, per-machine app
+/// data folder (`app_local_data_dir`) — `%LOCALAPPDATA%\<identifier>` on
+/// Windows, `~/Library/Application Support/<identifier>` on macOS,
+/// `$XDG_DATA_HOME/<identifier>` on Linux, the app's private data on mobile.
+/// Local rather than roaming: the remembered path is only valid on this
+/// machine. E2E runs keep it inside their isolated home.
+fn last_vault_state_file(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    let dir = match e2e::isolated_home() {
+        Some(home) => home.join("app-local-data"),
+        None => app.path().app_local_data_dir().map_err(|e| e.to_string())?,
+    };
+    Ok(dir.join(last_vault::LAST_VAULT_FILE))
+}
+// last_vault_state_file END ***************************************************
+
+//******************************************************************************
+// settle_vault
+//******************************************************************************
+/// IMPL-LTTCE-VLT-00002 — apply the last-vault rule to a lookup's result
+/// (`last_vault::choose_vault`): "no document" that found only the home vault
+/// gets the remembered vault; any other vault becomes the memory. Without a
+/// state-file location the lookup's own result stands — remembering is a
+/// convenience, never a reason to fail opening a window.
+fn settle_vault(app: &tauri::AppHandle, home_dir: &Path, document: &str, found: String) -> String {
+    match last_vault_state_file(app) {
+        Ok(state) => last_vault::choose_vault(
+            document,
+            Path::new(&found),
+            &vault_path::home_vault_settings(home_dir),
+            &state,
+        )
+        .to_string_lossy()
+        .into_owned(),
+        Err(e) => {
+            log::warn!("vault: no place to remember the last vault ({e}); using {found}");
+            found
+        }
+    }
+}
+// settle_vault END ************************************************************
 
 //******************************************************************************
 // initialize_vault_settings
@@ -631,9 +680,13 @@ fn find_vault_settings_file(
 /// A `Result` containing the absolute path to `settings.json` as a `String`
 /// on success, or a human-readable error message `String` if the directory
 /// cannot be created.
+///
+/// The new vault becomes the last vault (REQ-LTTCE-VLT-00002).
 #[tauri::command]
-fn initialize_vault_settings(file_path: String) -> Result<String, String> {
-    vault_path::initialize_vault_settings_internal(file_path)
+fn initialize_vault_settings(app: tauri::AppHandle, file_path: String) -> Result<String, String> {
+    let created = vault_path::initialize_vault_settings_internal(file_path.clone())?;
+    let str_home_dir = calc_base_path(app.clone())?;
+    Ok(settle_vault(&app, Path::new(&str_home_dir), &file_path, created))
 } // initialize_vault_settings END *****************************************
 
 //******************************************************************************

@@ -141,6 +141,12 @@ once, and launches it directly per scenario (< 5 s startup, no npm at runtime).
 | `conflict_detection` | conflict detection and resolution | `conflict_success.txt` |
 | `daily_note_defaults` | 🗒 toolbar button clicked twice in the real WebView, default settings: `DLN-YYYY-MM-DD-ddd.md` created with exactly its title, shown in the window; the second click leaves content, mtime and folder unchanged (STST, Chapter DLN) | `e2e_daily_note_click_<n>_done.txt` |
 | `daily_note_cw_no_prefix` | the same with an empty prefix and the calendar-week title (`YYYY-MM-DD-ddd.md`, `# Daily Note: YYYY CWWW ddd`) | `e2e_daily_note_click_<n>_done.txt` |
+| `last_vault` | three launches sharing one isolated home: a document in vault `notes` is remembered; a launch **without** a document opens today's note in `notes/daily` at once; with that vault removed, the next one uses the home vault (STST, Chapter VLT) | `last-vault.json` + `e2e_daily_note_click_<n>_done.txt` |
+
+**Isolated home.** Every harness launch sets `LATTICE_E2E_HOME` to a folder under
+`src-tauri/target/e2e-home/`. E2E builds (`--features e2e_test`, and only those — `e2e::isolated_home`)
+use it as the home folder and for the last-vault memory, so a launch without a document never reads or
+writes the developer's real home vault or `last-vault.json`.
 
 The daily-note scenarios need the app to *act*, not just start, so they have a frontend half:
 `src/services/StaticRuntime/DailyNoteE2EDriver.ts`, reachable only through `StaticRuntime.dev.ts`

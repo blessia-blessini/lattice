@@ -974,6 +974,19 @@ first moment, without a document or the Settings panel having to be opened first
 *Rationale*: before this requirement, a window started without a document ran with no vault at all until a
 document or the Settings panel happened to select one; the daily-note button did nothing in the meantime.
 
+<!--REQ-LTTCE-VLT-00002-->
+**REQ-LTTCE-VLT-00002** — The application SHALL remember the **last vault** it selected other than the home
+vault — through a document, "Initialize Vault Here", or a vault in the working directory — per user and per
+device, in the operating system's standard per-user, per-device application data folder. A window opened
+without a document SHALL select that remembered vault, unless its working directory itself holds a vault,
+which then takes precedence. Selecting the home vault SHALL NOT replace the remembered vault.
+
+<!--REQ-LTTCE-VLT-00003-->
+**REQ-LTTCE-VLT-00003** — When the remembered vault no longer exists (moved, deleted, its drive not
+connected), a window opened without a document SHALL select the home vault and SHALL record why in the
+application log. A remembered value that does not name a vault's `.lattice/settings.json` SHALL be
+ignored the same way, so that saving settings can never write to any other file.
+
 ---
 
 [^mermaid]: Mermaid — a JavaScript diagramming library rendering text definitions inside fenced code blocks

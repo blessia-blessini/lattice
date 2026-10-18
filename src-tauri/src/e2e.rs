@@ -34,3 +34,31 @@ pub const fn is_e2e_tst_build() -> bool {
 pub const fn is_e2e_tst_build() -> bool {
     true
 }
+
+/// Environment variable naming the isolated home folder of an E2E run.
+pub const E2E_HOME_ENV: &str = "LATTICE_E2E_HOME";
+
+//******************************************************************************
+// isolated_home
+//******************************************************************************
+/// The folder an E2E run uses instead of the user's home: the home vault
+/// lives under it, and so does the last-vault memory (Chapter VLT). Without
+/// it, a harness scenario launched without a document would read and write
+/// the developer's real home vault and their real last-vault file.
+///
+/// Always `None` in production builds — like [`is_e2e_tst_build`], the
+/// variable cannot change a production binary's behaviour.
+#[cfg(not(e2e_test))]
+#[inline(always)]
+pub fn isolated_home() -> Option<std::path::PathBuf> {
+    None
+}
+
+/// E2E builds: the value of [`E2E_HOME_ENV`], if set and non-empty.
+#[cfg(e2e_test)]
+pub fn isolated_home() -> Option<std::path::PathBuf> {
+    std::env::var_os(E2E_HOME_ENV)
+        .filter(|v| !v.is_empty())
+        .map(std::path::PathBuf::from)
+}
+// isolated_home END ***********************************************************

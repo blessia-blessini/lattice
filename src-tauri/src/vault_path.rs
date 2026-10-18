@@ -185,14 +185,26 @@ pub(crate) fn describe_vault_io_error(prefix: &str, e: &io::Error) -> String {
 
 
 //******************************************************************************
+// home_vault_settings
+//******************************************************************************
+/// Path of the home (fallback) vault's `settings.json` under `base` — the one
+/// definition shared by [`fallback_vault`] and the last-vault rule, which must
+/// recognise exactly this path as "the home vault" (IMPL-LTTCE-VLT-00002).
+pub(crate) fn home_vault_settings(base: &Path) -> PathBuf {
+    base.join(".lattice").join("settings.json")
+}
+// home_vault_settings END *****************************************************
+
+
+//******************************************************************************
 // fallback_vault
 //******************************************************************************
 /// Ensures `<base>/.lattice/settings.json` exists and returns its path.
 /// `create_dir_all` also creates `base` itself, which matters on iOS where
 /// Application Support does not exist until the app makes it.
 fn fallback_vault(base: &Path) -> Result<String, String> {
-    let lattice_dir = base.join(".lattice");
-    let settings_path = lattice_dir.join("settings.json");
+    let settings_path = home_vault_settings(base);
+    let lattice_dir = settings_path.parent().unwrap_or(base).to_path_buf();
 
     if !settings_path.exists() {
         if !lattice_dir.exists() {

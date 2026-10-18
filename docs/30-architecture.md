@@ -1978,6 +1978,39 @@ did nothing until a document or Settings resolved a vault as a side effect. The 
 not on the payload's presence. App tests use the real payload shape (`path: ""`), since the payload-free
 shape the older tests used never occurs on desktop.
 
+<!--ARCH-LTTCE-VLT-00002-->
+**ARCH-LTTCE-VLT-00002** — covers REQ-LTTCE-VLT-00002, REQ-LTTCE-VLT-00003.
+
+The last vault is decided in the backend, at the one place every vault lookup passes through, so the
+frontend needs no change:
+
+```text
+find_vault_settings_file(doc) / initialize_vault_settings(doc)        (lib.rs)
+   │  vault_path walk-up → found  (nearest vault, or for doc = "" the working directory's, else home)
+   ▼
+settle_vault → last_vault::choose_vault(doc, found, home_vault_settings(home), state_file)
+   • doc == "" and found == home  → recall(state_file) if it is still a vault, else home (logged)
+   • chosen != home               → remember(state_file, chosen)   (write only when it changed)
+```
+
+| Part | File | Role |
+| ---- | ---- | ---- |
+| Rule | `src-tauri/src/last_vault.rs` | `recall` / `remember` / `choose_vault` — pure path logic, UTST in a `TempDir` |
+| Where | `lib.rs` `last_vault_state_file` | `app_local_data_dir()/last-vault.json`: `%LOCALAPPDATA%\<id>` (Windows), `~/Library/Application Support/<id>` (macOS), `$XDG_DATA_HOME/<id>` (Linux), the app's private data (Android, iOS) |
+| Home | `vault_path::home_vault_settings` | the single definition of "the home vault", shared with `fallback_vault` |
+
+**Decisions.** *Local, not roaming*: the remembered value is an absolute path, valid on one machine only, so
+it does not belong in a roaming profile (`app_config_dir` is `%APPDATA%` on Windows). *Validated on read*:
+`recall` accepts only an absolute, existing `…/.lattice/settings.json`, because Settings later writes to that
+path. *Atomic write*: temporary file + rename, so two windows or a crash never leave half a file. *Never
+fatal*: without a state-file location the lookup's own result stands. *Mobile*: the code runs, but a
+document there mostly arrives as an opaque `content://` URI with no vault above it, so nothing is remembered
+yet — true vault support on mobile is separate work.
+
+**E2E isolation.** `e2e::isolated_home()` — `LATTICE_E2E_HOME`, honoured only by `--features e2e_test`
+builds and compiled away otherwise — replaces the home folder and the state-file folder, so the harness's
+launches without a document never touch the developer's real home vault or last-vault file.
+
 ## Architectural Decisions
 
 ### ADR-01: External Image Fetches Blocked by Default

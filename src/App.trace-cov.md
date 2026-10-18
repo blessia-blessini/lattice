@@ -74,7 +74,6 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   *App — launch without a file (empty payload)*: vault resolved and settings loaded, 🗒 works with no file
   opened, session restore still runs; all three failed before the fix
 - IMPL-LTTCE-VLT-00001 **covers** ARCH-LTTCE-VLT-00001
-- STST: not yet. A launch without a document uses the home vault of the machine running the harness, so a
-  click would write into the developer's real home; the E2E scenario follows with REQ-LTTCE-VLT-00002,
-  which brings an isolated home folder for E2E builds. Until then the App suite above drives the same
-  launch path with the real payload shape.
+- STST: `examples/e2e_harness.rs` scenario `last_vault`, launches 2 and 3 — a window opened without a
+  document creates and opens today's note with no file or Settings opened first (Windows only; the
+  isolated E2E home keeps it off the real home vault). See `src-tauri/src/last_vault.trace-cov.md`.

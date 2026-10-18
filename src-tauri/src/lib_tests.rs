@@ -60,7 +60,7 @@ fn test_vault_initialization() {
     let doc_path_str = doc_path.to_string_lossy().to_string();
 
     // 1. Initialize Vault
-    let settings_path = initialize_vault_settings(doc_path_str.clone()).unwrap();
+    let settings_path = vault_path::initialize_vault_settings_internal(doc_path_str.clone()).unwrap();
 
     // Verify .lattice/settings.json created
     assert!(Path::new(&settings_path).exists());
@@ -396,7 +396,7 @@ fn test_initialize_vault_settings_with_directory_path() {
     let temp_dir = tempfile::tempdir().unwrap();
     let dir_path = temp_dir.path().to_string_lossy().to_string();
 
-    let result = initialize_vault_settings(dir_path);
+    let result = vault_path::initialize_vault_settings_internal(dir_path);
     assert!(result.is_ok(), "Expected Ok, got {:?}", result);
     let settings_path = result.unwrap();
     assert!(settings_path.contains(".lattice"));
@@ -417,8 +417,8 @@ fn test_initialize_vault_settings_idempotent() {
     fs::write(&file_path, "").unwrap();
     let path_str = file_path.to_string_lossy().to_string();
 
-    let r1 = initialize_vault_settings(path_str.clone()).unwrap();
-    let r2 = initialize_vault_settings(path_str).unwrap();
+    let r1 = vault_path::initialize_vault_settings_internal(path_str.clone()).unwrap();
+    let r2 = vault_path::initialize_vault_settings_internal(path_str).unwrap();
     assert_eq!(r1, r2, "Second call must return the same settings path");
 }
 // test_initialize_vault_settings_idempotent END ***************************
@@ -871,7 +871,7 @@ fn test_initialize_vault_settings_readonly() {
     let lattice_file = parent_dir.join(".lattice");
     fs::write(&lattice_file, "blocking file").unwrap();
 
-    let result = initialize_vault_settings(parent_dir.to_string_lossy().to_string());
+    let result = vault_path::initialize_vault_settings_internal(parent_dir.to_string_lossy().to_string());
     assert!(result.is_err());
     let err = result.unwrap_err();
     assert!(err.contains("Cannot Initialize Vault:"));
