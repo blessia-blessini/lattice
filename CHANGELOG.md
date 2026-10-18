@@ -6,6 +6,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.36
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FEAT: Open desktop editor windows 50 pixels wider (850 x 600)
 - FIX: Harden the last-vault memory after review cycle 1
 - FIX: Tell the user when the daily notes folder is not known
 - FEAT: Open the last vault when the app starts without a file

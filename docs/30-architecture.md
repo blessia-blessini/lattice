@@ -2018,6 +2018,15 @@ yet — true vault support on mobile is separate work.
 builds and compiled away otherwise — replaces the home folder and the state-file folder, so the harness's
 launches without a document never touch the developer's real home vault or last-vault file.
 
+## Feature: Editor Window Geometry
+
+<!--ARCH-LTTCE-WIN-00001-->
+**ARCH-LTTCE-WIN-00001** — covers REQ-LTTCE-WIN-00001. Every desktop editor window is built by
+`configure_desktop_window` (`src-tauri/src/lib.rs`): inner size from the one constant `EDITOR_WINDOW_SIZE`
+(850 × 600 logical pixels), position from `calculate_cascade_coordinates`, so successive windows step
+diagonally. Tauri applies the size in logical pixels; the OS adds its frame and applies display scaling.
+The Settings window has its own size (600 × 400) and is not an editor window.
+
 ## Architectural Decisions
 
 ### ADR-01: External Image Fetches Blocked by Default

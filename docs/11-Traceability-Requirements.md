@@ -81,6 +81,7 @@ related items. Example convention for `LNT`:
 | `TBL`   | SSS     | Spreadsheet paste (TSV clipboard → GFM[^gfm] table)   |
 | `DLN`   | SSS     | Daily note (menu/toolbar command, file name, title)   |
 | `VLT`   | SSS     | Vault selection (which vault's settings a window uses) |
+| `WIN`   | SSS     | Editor window (initial geometry)                      |
 
 ---
 

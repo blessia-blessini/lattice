@@ -318,9 +318,15 @@ fn configure_desktop_window<R: tauri::Runtime, M: tauri::Manager<R>>(
 
     builder
         .title(window_title(product_name.as_deref(), &get_version_string()))
-        .inner_size(800.0, 600.0)
+        .inner_size(EDITOR_WINDOW_SIZE.0, EDITOR_WINDOW_SIZE.1)
         .position(x, y)
 }
+
+/// IMPL-LTTCE-WIN-00001 — REQ-LTTCE-WIN-00001: initial inner size of a desktop
+/// editor window, (width, height) in logical pixels. 850 wide since v0.3.36
+/// (was 800) — room for the toolbar and a line of text without resizing.
+#[cfg(desktop)]
+const EDITOR_WINDOW_SIZE: (f64, f64) = (850.0, 600.0);
 
 //******************************************************************************
 // build_window_with_file

@@ -20,6 +20,7 @@ implementation artefacts. For the ID schema definition see `11-Traceability-Requ
   - [Chapter TBL — Spreadsheet Paste](#chapter-tbl-spreadsheet-paste)
   - [Chapter DLN — Daily Note](#chapter-dln-daily-note)
   - [Chapter VLT — Vault Selection](#chapter-vlt-vault-selection)
+  - [Chapter WIN — Editor Window](#chapter-win-editor-window)
     - [General](#general)
     - [Severity Visualisation](#severity-visualisation)
     - [Rule: Setext Headings](#rule-setext-headings)
@@ -992,6 +993,13 @@ path is spelled, and a headless export (Chapter XPT) SHALL NOT read or change th
 connected), a window opened without a document SHALL select the home vault and SHALL record why in the
 application log. A remembered value that does not name a vault's `.lattice/settings.json` SHALL be
 ignored the same way, so that saving settings can never write to any other file.
+
+## Chapter WIN — Editor Window
+
+<!--REQ-LTTCE-WIN-00001-->
+**REQ-LTTCE-WIN-00001** — On desktop, a new editor window SHALL open with a content area of **850 × 600**
+logical pixels (width × height; the operating system's title bar and frame come on top, and display scaling
+multiplies both).
 
 ---
 
