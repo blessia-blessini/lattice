@@ -709,3 +709,32 @@ describe('Settings', () => {
         );
     });
 });
+
+// UTST for IMPL-LTTCE-FOS-00003 — REQ-LTTCE-FOS-00003: the footer names
+// Lattice's licence and opens the bundled third-party notices.
+describe('Settings — open-source licences', () => {
+    beforeEach(() => {
+        vi.mocked(TauriCore.invoke).mockReset();
+    });
+
+    it('shows the licence and opens the notices window', async () => {
+        vi.mocked(TauriCore.invoke).mockResolvedValue(undefined);
+        const { getByTestId } = render(<Settings {...DEFAULT_PROPS} />);
+        const link = getByTestId('open-licences');
+        expect(link.parentElement!.textContent).toContain('AGPL-3.0-or-later');
+        expect(getByTestId('settings-footer').contains(link)).toBe(true);
+        await act(async () => {
+            fireEvent.click(link);
+        });
+        expect(TauriCore.invoke).toHaveBeenCalledWith('open_licences_window');
+    });
+
+    it('reports a build packaged without the notices', async () => {
+        vi.mocked(TauriCore.invoke).mockRejectedValue('not found');
+        const { getByTestId, findByText } = render(<Settings {...DEFAULT_PROPS} />);
+        await act(async () => {
+            fireEvent.click(getByTestId('open-licences'));
+        });
+        expect(await findByText('Could not open the licences: not found')).toBeTruthy();
+    });
+});

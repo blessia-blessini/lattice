@@ -296,6 +296,10 @@ function App() {
 
   // File Management State
   const [m_currentFilePath, setCurrentFilePath] = useState<string | null>(null);
+  // IMPL-LTTCE-FOS-00003 — the one document this window shows read-only (the
+  // bundled third-party notices). Tied to the path, not the window: opening
+  // another file here gives an ordinary, editable document again.
+  const [m_readOnlyPath, setReadOnlyPath] = useState<string | null>(null);
 
   const [saveOnBlur, setSaveOnBlur] = useState(true);
 
@@ -1123,6 +1127,7 @@ function App() {
             editorRef.current.markAsSaved();
           }
           setSaveOnBlur(true);
+          if (initData.readOnly === true) setReadOnlyPath(initData.path);
 
           // Strict Enforce
           await enforceVaultPath(initData.path);
@@ -2259,6 +2264,7 @@ function App() {
               onDirtyChange={setIsDirty}
               onChange={handleEditorChange}
               onCursorLineChange={handleCursorLineChange}
+              readOnly={m_readOnlyPath !== null && m_readOnlyPath === m_currentFilePath}
             />
           </div>
           {isDual(viewMode) && (

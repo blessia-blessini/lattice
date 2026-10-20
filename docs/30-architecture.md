@@ -301,7 +301,14 @@ graph TD
     D3 --> E[Upload Artifacts];
 
     D3 --> F[Generate & Upload Documentation];
+
+    A --> G[FOSS Compliance: licence gate, notices drift, SBOMs];
+    E --> H[Publish Release - tags only];
+    G --> H;
 ```
+
+The **FOSS compliance** job and step 390 (licence files inside every installer) are described in
+[Feature: Third-Party Licence Compliance](#feature-third-party-licence-compliance-foss-line).
 
 ### Key CI Steps:
 1.  **Setup Job**: A preliminary job determines which platforms (e.g., `windows-desktop`, `linux-desktop`, `all`) to run on based on the manual trigger input or the branch name. It generates a JSON matrix for the next job.
@@ -2026,6 +2033,105 @@ launches without a document never touch the developer's real home vault or last-
 (850 × 600 logical pixels), position from `calculate_cascade_coordinates`, so successive windows step
 diagonally. Tauri applies the size in logical pixels; the OS adds its frame and applies display scaling.
 The Settings window has its own size (600 × 400) and is not an editor window.
+
+## Feature: Third-Party Licence Compliance (FOSS line)
+
+```text
+ every CI run                            every desktop build leg            tag vX.Y.Z
+┌───────────────────────────────────┐   ┌──────────────────────────────┐   ┌──────────────────────────────┐
+│ job foss-compliance (ubuntu)       │   │ 350 tauri build: bundle      │   │ publish-release-site         │
+│  cargo fetch --locked, npm ci      │   │   .resources = LICENSE +     │   │  needs foss-compliance       │
+│  foss check          (gate) ──FAIL │   │   THIRD-PARTY-NOTICES.md     │   │  903.1 notices + SBOMs into  │
+│  foss notices --check(drift)──FAIL │   │ 355 MSIX: same resource map  │   │        staging/ → attested,  │
+│  foss sbom → artifact FOSS ────────┼───┼──────────────────────────────┼──►│        SHA256SUMS, release   │
+│  144 vitest scripts/foss           │   │ 390 assert-bundled.sh: unpack│   │  905 release page links them │
+└───────────────────────────────────┘   │   every package, cmp files   │   └──────────────────────────────┘
+                                        │ (100/101: built WITHOUT      │
+                                        │  scripts/foss + foss; 389    │
+                                        │  adds scripts/foss for 390)  │
+                                        └──────────────────────────────┘
+```
+
+<!--ARCH-LTTCE-FOS-00004-->
+**ARCH-LTTCE-FOS-00004** — covers REQ-LTTCE-FOS-00004. The gate is one Node 24 script without npm
+dependencies, `scripts/foss/foss.mjs`, next to `scripts/tauri-wrapper.js`: build tooling, not an app
+feature, and both inputs are JSON. It reads the **shipped** graph exactly:
+
+- Rust: `cargo metadata --locked --filter-platform <triple>` for each of the 8 published targets
+  (`cargo-inventory.mjs`). From the app crate, normal edges into non-proc-macro crates are *linked*;
+  build-dependencies, proc-macros and everything below them are *build-time*; dev-dependencies are not
+  followed. Packages without a `source` are Lattice's own code.
+- npm: the production closure of `package.json` `dependencies`, resolved over `package-lock.json` the way
+  Node resolves (`npm-inventory.mjs`); it matches npm's own production flags exactly.
+- `foss/extra-components.json`: what no package manager reports (Rust standard library).
+
+`policy.mjs` evaluates each component's SPDX expression (`spdx-expr.mjs`: `OR`, `AND`, `WITH`,
+parentheses, legacy `/`) against `foss/policy.json`: *allowed*, *obligation* (MPL-2.0 — and a file carrying
+MPL Exhibit B fails, it may not be combined with AGPL code), *denied* (third-party GPL/AGPL would remove the
+commercial option), anything else *review* = fail unless excepted with an expiry date. For `A OR B` the
+best category wins, then a licence whose text the package ships, then the policy's preference order.
+Clarifications name one component version and the SHA-256 of the file that proves the licence.
+
+The job `foss-compliance` runs on every CI run in parallel with the build legs; `publish-release-site`
+needs it, so a violation blocks the release without delaying the builds. Locally, the full
+`build-test` run executes the same two checks (skipped on CI, where the job does it once). The job also
+runs the unit tests of `scripts/foss/` (step 144).
+
+*Build tooling stays out of the product, and CI proves it.* Every build leg checks out the repository
+**without** `scripts/foss/` and `foss/` (sparse checkout, step 100 — their blobs are not even fetched), and
+step 101 fails the leg if either folder is present. So the app is built and its whole test suite passes
+without them; the only FOSS output the product carries is the committed `THIRD-PARTY-NOTICES.md`, a
+resource. Step 389 adds `scripts/foss/` back to the same checkout after build and tests, for step 390.
+
+*Why not cargo-deny / cargo-about / ORT*: one policy for both ecosystems in one file, the exact per-target
+graph, and nothing new to install. The cost — an SPDX evaluator and npm resolution owned here (~600 lines)
+— is bounded and unit-tested. ScanCode (deep scan of the actual sources) is follow-up FU-5, in CI only.
+
+<!--ARCH-LTTCE-FOS-00002-->
+**ARCH-LTTCE-FOS-00002** — covers REQ-LTTCE-FOS-00002. `foss.mjs notices` renders
+`THIRD-PARTY-NOTICES.md` (`notices-render.mjs`, a pure function: no clock, no paths, sorted, LF), the union
+over all targets. Per component, `licence-texts.mjs` picks the text: per-copy licences (MIT, BSD, ISC,
+Zlib, Unicode) carry the holder inside the text, so the component's **own** licence file is used; a package
+shipping none gets the SPDX standard text from `foss/licenses/` (license-list-data v3.27.0) and a copyright
+line from its metadata, marked as such. Standard licences (Apache-2.0, MPL-2.0, CC0, Unlicense, BSL) appear
+once; Apache `NOTICE` files are reproduced verbatim. A "Licences by type" table opens the file (`renderTypeSummary`):
+the type of each licence comes from `types` in `foss/policy.json`, which must classify every admitted licence
+(policy validation fails otherwise); copyleft licences come first and their components are named. Every distinct text is printed once, keyed by its
+content hash, so adding a component does not renumber the others.
+
+The file is **committed**: Tauri refuses to build when a listed resource is missing, a dependency bump shows
+up as a reviewable diff, and `notices --check` (CI, full local suite) fails with the regeneration command
+when it is stale. `foss.mjs sbom` writes one CycloneDX 1.6 document per target; its serial number is derived
+from the content, so it is reproducible too.
+
+<!--ARCH-LTTCE-FOS-00001-->
+**ARCH-LTTCE-FOS-00001** — covers REQ-LTTCE-FOS-00001. `tauri.conf.json` → `bundle.resources` maps
+`../LICENSE` and `../THIRD-PARTY-NOTICES.md` to the root of the resource folder (a map, not a list: a list
+would place `../` sources under `_up_/`). `scripts/build-msix.ps1` reads the same map and copies it next to
+the exe — Tauri's resource folder on Windows — so the Store package can never ship a different set. Step 390
+of every desktop build leg runs `scripts/foss/assert-bundled.sh` on the packages users download: NSIS by a
+silent install into a temporary folder, MSIX by unzipping, deb by `dpkg-deb -x`, AppImage by
+`--appimage-extract`, dmg by a read-only `hdiutil attach`; both files must be byte-identical to the
+repository's.
+
+<!--ARCH-LTTCE-FOS-00003-->
+**ARCH-LTTCE-FOS-00003** — covers REQ-LTTCE-FOS-00003.
+
+```text
+Settings footer "Open-source licences"  → services/Licences.ts → invoke('open_licences_window')
+licences.rs  open_licences_window: resource_dir()/THIRD-PARTY-NOTICES.md (error if absent)
+   └─ lib.rs open_document_window(path, read_only = true)   (open_new_window = same, read_only = false)
+        └─ Direct Push payload { content, hash, path, readOnly: true }
+App.tsx   m_readOnlyPath = path  →  <Editor readOnly={current path == m_readOnlyPath}>
+Editor    readOnlyExtensions: EditorState.readOnly + changeFilter(() => false); paste swallowed
+file_state.rs write_text_file → licences::refuse_write_into_resources(path, resource_dir)
+```
+
+Read-only is tied to the **path**, not the window: opening another file there gives an editable document
+again. The change filter, not a check at each call site, stops the editor's own programmatic edits (TOC,
+table padding, tabify, task toggles). The backend guard is independent of the frontend: it canonicalises
+the nearest existing ancestor of the target, so `..` spellings and not-yet-existing sub-folders cannot
+escape it.
 
 ## Architectural Decisions
 

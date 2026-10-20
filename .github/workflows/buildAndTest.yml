@@ -243,6 +243,73 @@ jobs:
         echo "matrix=$FINAL_JSON" >> "$GITHUB_OUTPUT"
 
   ################################################################
+  # JOB 1b: FOSS COMPLIANCE (REQ-LTTCE-FOS-00002 / 00004)
+  #   Licence gate over every target's Rust graph and the npm
+  #   production closure (foss/policy.json: fits AGPL-3.0-or-later
+  #   AND the commercial licence), the notices drift check, and one
+  #   CycloneDX SBOM per built target. Runs on every workflow run,
+  #   in parallel with the build legs; publish-release-site needs
+  #   it, so a release that breaks the policy is never published.
+  #   No cache on purpose: it only downloads sources (~1 min), and
+  #   the 10 GB cache budget already evicts on every run.
+  ################################################################
+  foss-compliance:
+    runs-on: ubuntu-latest
+    steps:
+    - name: 100. Checkout
+      uses: actions/checkout@v6
+
+    - name: 123. Install Node
+      uses: actions/setup-node@v6
+      with:
+        node-version: '24'
+
+    - name: 130. Fetch sources (all crates, npm production packages)
+      shell: bash
+      run: |
+        set -euo pipefail
+        cargo fetch --locked --manifest-path src-tauri/Cargo.toml
+        npm ci --omit=dev --ignore-scripts --no-audit --no-fund
+
+    - name: 140. Licence gate
+      run: node scripts/foss/foss.mjs check
+
+    - name: 141. Third-party notices up to date
+      run: node scripts/foss/foss.mjs notices --check
+
+    - name: 142. SBOMs (CycloneDX, one per built target)
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Every target of the build matrix except iOS, which is not built yet.
+        node scripts/foss/foss.mjs sbom --out-dir foss-out --targets \
+          x86_64-pc-windows-msvc,aarch64-pc-windows-msvc,x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu,x86_64-apple-darwin,aarch64-apple-darwin,aarch64-linux-android
+        cp THIRD-PARTY-NOTICES.md foss-out/
+        ls -l foss-out
+
+    - name: 143. Upload FOSS compliance files
+      uses: actions/upload-artifact@v7
+      with:
+        name: FOSS
+        path: foss-out/
+        if-no-files-found: error
+
+    ################################################################
+    # 144 / Unit tests of scripts/foss/ (*.test.mjs). Here, not in
+    #       the build legs: those check out without scripts/foss/
+    #       (build-and-test step 100). After 140-142, so the gate
+    #       reads the production-only node_modules it was built for.
+    ################################################################
+    - name: 144. FOSS tooling unit tests
+      shell: bash
+      env:
+        LATTICEBUILD_NO: FOSS-unit-tests
+      run: |
+        set -euo pipefail
+        npm ci --ignore-scripts --no-audit --no-fund
+        npx vitest run scripts/foss
+
+  ################################################################
   # JOB 2: BUILD AND TEST
   ################################################################
   build-and-test:
@@ -272,10 +339,41 @@ jobs:
         echo "download_path2=${{ matrix.config.upload_path2 }}" >> "$GITHUB_OUTPUT"
 
     ################################################################
-    # 100 / Checkout
+    # 100 / Checkout -- WITHOUT the FOSS compliance tooling
+    #       (scripts/foss/ and its data in foss/). The product must
+    #       build and pass its tests without them: they generate
+    #       THIRD-PARTY-NOTICES.md and gate licences, but no line of
+    #       them may reach an installer. A sparse checkout also
+    #       leaves their blobs unfetched. Step 389 adds the one
+    #       script step 390 needs, after build and tests.
     ################################################################
     - name: 100. Checkout
       uses: actions/checkout@v6
+      with:
+        sparse-checkout: |
+          /*
+          !/scripts/foss/
+          !/foss/
+        sparse-checkout-cone-mode: false
+
+    ################################################################
+    # 101 / FOSS tooling really is absent -- otherwise a sparse
+    #       checkout that silently matched nothing would leave the
+    #       independence of step 100 unproven.
+    ################################################################
+    - name: 101. FOSS tooling absent from the product build
+      shell: bash
+      run: |
+        for d in scripts/foss foss; do
+          if [ -e "$d" ]; then
+            echo "::error::$d is checked out; the product build must not see the FOSS tooling (step 100)"
+            exit 1
+          fi
+        done
+        for f in LICENSE THIRD-PARTY-NOTICES.md; do
+          [ -f "$f" ] || { echo "::error::$f missing; it is a bundled product resource"; exit 1; }
+        done
+        echo "scripts/foss and foss absent; LICENSE and THIRD-PARTY-NOTICES.md present"
 
     ################################################################
     # 120 - 125 Cache Dependencies
@@ -569,6 +667,28 @@ jobs:
           coverage/
 
     ################################################################
+    # 390 / FOSS: the installers users download carry LICENSE and
+    #       THIRD-PARTY-NOTICES.md (REQ-LTTCE-FOS-00001, STST).
+    #       Unpacks each package (NSIS: silent install into a temp
+    #       folder) -- after the tests, so an installed copy can never
+    #       meet the E2E harness. Android/iOS: deferred (FU-6).
+    #       Step 389 first brings scripts/foss/ into the sparse
+    #       checkout of step 100 -- same commit, build already done.
+    ################################################################
+    - name: 389. FOSS - fetch the installer check tooling
+      if: matrix.config.platform != 'ios' && matrix.config.platform != 'android'
+      shell: bash
+      env:
+        # Git Bash on Windows would rewrite '/scripts/foss/' into C:/Program Files/Git/...
+        MSYS_NO_PATHCONV: "1"
+      run: git sparse-checkout add '/scripts/foss/'
+
+    - name: 390. FOSS - licence files inside the installers
+      if: matrix.config.platform != 'ios' && matrix.config.platform != 'android'
+      shell: bash
+      run: bash scripts/foss/assert-bundled.sh ${{ matrix.config.upload_path1 }} ${{ matrix.config.upload_path2 }} dist-msix-*.msix
+
+    ################################################################
     # 400 / Upload Artifacts
     ################################################################
     - name: 400. Upload Artifacts (ALL)
@@ -662,7 +782,7 @@ jobs:
   # JOB 4: PUBLISH TO RELEASE SITE  (tag vX.X.X builds only)
   ################################################################################################################################
   publish-release-site:
-    needs: [build-and-test, package-msix-bundle]
+    needs: [build-and-test, package-msix-bundle, foss-compliance]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
@@ -769,6 +889,16 @@ jobs:
         merge-multiple: true
 
     ################################################################
+    # 901.7 / Download the FOSS compliance files (job foss-compliance):
+    #         THIRD-PARTY-NOTICES.md + lattice-<target>.cdx.json
+    ################################################################
+    - name: 901.7. Download FOSS compliance files
+      uses: actions/download-artifact@v8
+      with:
+        name: FOSS
+        path: foss-out
+
+    ################################################################
     # 902 / Checkout lattice-docs-releases
     #       Requires secret RELEASE_SITE_TOKEN (PAT with contents:write
     #       on blessia-blessini/lattice-docs-releases)
@@ -795,6 +925,20 @@ jobs:
              -o -name "*.ipa" -o -name "*.msixbundle" \) \
           -exec cp {} staging/ \;
         echo "--- Collected files ---"
+        ls -lh staging/
+
+    ################################################################
+    # 903.1 / Add the FOSS compliance files (REQ-LTTCE-FOS-00002).
+    #         In staging/ they are attested (903.5), listed in
+    #         SHA256SUMS.txt (903.6) and attached to the release (904)
+    #         like every installer.
+    ################################################################
+    - name: 903.1. Add third-party notices and SBOMs
+      shell: bash
+      run: |
+        set -euo pipefail
+        test -s foss-out/THIRD-PARTY-NOTICES.md
+        cp foss-out/THIRD-PARTY-NOTICES.md foss-out/*.cdx.json staging/
         ls -lh staging/
 
     ################################################################
@@ -986,9 +1130,14 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GH_TOKEN2: ${{ secrets.GH_POST_AVTRIGGER }}
+        # Expressions live HERE, not in the script below: a run: block holding
+        # any ${{ }} is evaluated as ONE expression, capped at 21000 characters
+        # -- this script outgrew that. Plain env vars also rule out template
+        # injection. GITHUB_REPOSITORY / GITHUB_REF_NAME are set by the runner.
+        RELEASE_VERSION: ${{ steps.version.outputs.VERSION }}
       shell: bash
       run: |
-        VERSION="${{ steps.version.outputs.VERSION }}"
+        VERSION="${RELEASE_VERSION}"
         DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
         RELEASE_URL="${RELEASE_URL}"
         OUT_DIR="release-site/Lattice-Releases/assets-${VERSION}"
@@ -1041,11 +1190,11 @@ jobs:
         MS_STORE_LINK+='<a href="https://apps.microsoft.com/detail/9pm3gb09941t">https://apps.microsoft.com/detail/9pm3gb09941t</a></p>'
 
         # Fetch asset download URLs from the GitHub Release API
-        ASSETS_JSON=$(gh api repos/"${{ github.repository }}"/releases/tags/${VERSION} \
+        ASSETS_JSON=$(gh api repos/"${GITHUB_REPOSITORY}"/releases/tags/${VERSION} \
           --jq '.assets[] | [.name, .browser_download_url, .size] | @tsv')
 
         HTPAYLOAD=$(jq -nr \
-          --arg repo "${{ github.repository }}" \
+          --arg repo "${GITHUB_REPOSITORY}" \
           '"https://api.github.com/repos/\($repo)/actions/workflows/AntivirusOnUrl.yml/dispatches"')
 
         printf 'HTTP payload is %s\n' "$HTPAYLOAD"
@@ -1089,6 +1238,10 @@ jobs:
             *.ipa)                 platform='<span class="material-icons">phone_iphone</span> iOS' ;;
             SHA256SUMS.txt)        platform='<span class="material-icons">tag</span> Checksums (SHA-256)' ;;
             SHA256SUMS.txt.asc)    platform='<span class="material-icons">key</span> Checksums - GPG signature' ;;
+            THIRD-PARTY-NOTICES.md) platform='<span class="material-icons">gavel</span> Third-party licences and copyrights'
+                                   NOTICES_URL="$url" ;;
+            lattice-*.cdx.json)    platform="<span class=\"material-icons\">inventory_2</span> SBOM (CycloneDX) — ${name#lattice-}"
+                                   platform="${platform%.cdx.json}" ;;
             *)                     platform='?' ;;
           esac
 
@@ -1115,6 +1268,11 @@ jobs:
 
           printf '| [%s](%s) | %s | %s |\n' "$name" "$dl_url" "$platform" "$size_mb" >> "$OUT"
 
+          # Text documents (licence notices, SBOMs) are nothing to scan.
+          case "$name" in
+            THIRD-PARTY-NOTICES.md|*.cdx.json) continue ;;
+          esac
+
           # Antivirus scans are dispatched AFTER the release site is pushed:
           # a bin-hex URL does not resolve until the Pages deploy completes,
           # and AntivirusOnUrl.yml downloads the file it is handed.
@@ -1127,7 +1285,13 @@ jobs:
         printf '%s\n' "## Notes" >> "$OUT"
         printf '%s\n' "" >> "$OUT"
         printf '%s\n' "- [Full release on GitHub](${RELEASE_URL})" >> "$OUT"
-        printf '%s\n' "- DUAL LICENSE — for terms, see [README.md section Licensing](https://github.com/${{ github.repository }}#licensing)." >> "$OUT"
+        printf '%s\n' "- DUAL LICENSE — for terms, see [README.md section Licensing](https://github.com/${GITHUB_REPOSITORY}#licensing)." >> "$OUT"
+        # REQ-LTTCE-FOS-00002 -- the same file every installer carries.
+        if [ -n "${NOTICES_URL:-}" ]; then
+          printf '%s\n' "- Third-party components and their licences: [THIRD-PARTY-NOTICES.md](${NOTICES_URL})." >> "$OUT"
+        else
+          echo "::warning::THIRD-PARTY-NOTICES.md is not among the release assets."
+        fi
         printf '%s\n' "- Lattice collects no personal data — see the [Privacy Statement](${PRIVACY_URL})." >> "$OUT"
         printf '%s\n' "" >> "$OUT"
 
@@ -1381,7 +1545,7 @@ jobs:
           [ -n "$name" ] || continue
 
           PAYLOAD=$(jq -nc \
-            --arg ref "${{ github.ref_name }}" \
+            --arg ref "${GITHUB_REF_NAME}" \
             --arg url "$dl_url" \
             --arg who "$name" \
             '{ref: $ref, inputs: {url2scan: $url, submitted_by: $who}}')

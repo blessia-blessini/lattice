@@ -4,9 +4,25 @@ All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
 
-## v0.3.37
+## v0.3.38
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FEAT: Add FOSS licence gate and generated third-party notices
+---
+## v0.3.37
+### Changes
+- CHORE: Build every CI leg without the FOSS tooling to prove the product does not need it
+- FIX: Act on review cycle 1 of the licence-type summary
+- FEAT: Summarise the licences by type in the third-party notices
+- CHORE: version 0.3.37
+- FEAT: implement isolated vault path resolution module and unit tests
+- FIX: Act on review cycle 2 of the FOSS compliance line
+- FIX: Act on review cycle 1 of the FOSS compliance line
+- DOCS: Add chapter FOS - third-party licence compliance - and its trace
+- FIX: Keep the release-site script under the CI expression limit
+- FEAT: Add the FOSS compliance line to CI
+- FEAT: Bundle the licence notices and show them read-only in the app
+- FEAT: Add FOSS licence gate and generated third-party notices
 - CHORE: RELEASE v0.3.36 Doc
 ---
 

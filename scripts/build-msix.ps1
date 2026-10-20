@@ -81,6 +81,19 @@ else {
     Copy-Item -Path $manifest -Destination "$msixDir\AppxManifest.xml" -Force
     Copy-Item -Path $exe      -Destination $msixDir -Force
 
+    # IMPL-LTTCE-FOS-00001 -- the bundled resources (LICENSE, third-party
+    # notices) go next to the exe, which is Tauri's resource_dir on Windows.
+    # The map is read from tauri.conf.json so the NSIS installer and the
+    # Store package can never ship different sets.
+    $resources = (Get-Content "src-tauri\tauri.conf.json" -Raw | ConvertFrom-Json).bundle.resources
+    foreach ($res in $resources.PSObject.Properties) {
+        $src = Join-Path "src-tauri" $res.Name
+        if (-not (Test-Path $src)) { throw "Bundled resource $src not found -- cannot build a compliant MSIX." }
+        $dst = Join-Path $msixDir $res.Value
+        New-Item -ItemType Directory -Force -Path (Split-Path $dst) | Out-Null
+        Copy-Item -Path $src -Destination $dst -Force
+    }
+
     # Keep in sync with the Assets\ paths in Package.appxmanifest.
     foreach ($logo in "StoreLogo", "Square44x44Logo", "Square71x71Logo",
                       "Square150x150Logo") {

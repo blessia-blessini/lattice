@@ -17,3 +17,7 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   leg): on the Linux legs (no window manager, so no frame) the captured window is exactly the content area
   and must measure 850 × 600; on Windows and macOS it is that plus the OS frame. Checked by eye, not
   asserted — the screenshot step never fails a build.
+- IMPL-LTTCE-FOS-00003 **covers** REQ-LTTCE-FOS-00003  (`open_document_window(path, read_only)`: the body
+  `open_new_window` and `licences::open_licences_window` share; `readOnly` travels in the Direct Push
+  payload; `licences::open_licences_window` registered in `generate_handler!`)
+- IMPL-LTTCE-FOS-00003 **covers** ARCH-LTTCE-FOS-00003

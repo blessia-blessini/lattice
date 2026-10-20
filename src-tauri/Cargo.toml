@@ -23,8 +23,9 @@
 
 [package]
 name = "lattice"
-version = "0.3.36"
+version = "0.3.37"
 description = "A Markdown Editor that respects standards"
+license = "AGPL-3.0-or-later"
 authors = ["Blessia Blessini"]
 edition = "2024"
 default-run = "lattice"

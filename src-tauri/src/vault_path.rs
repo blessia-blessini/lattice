@@ -87,8 +87,8 @@ pub(crate) enum PathKind {
 /// Decides whether `raw` is a filesystem path or an opaque document URI.
 ///
 /// A filesystem path never contains `"://"`:
-/// * POSIX `/home/leo/a.md` — no scheme separator at all;
-/// * Windows `C:\Users\leo\a.md` — has `':'`, but never `"://"`;
+/// * POSIX `/home/user/a.md` — no scheme separator at all;
+/// * Windows `C:\Users\user\a.md` — has `':'`, but never `"://"`;
 /// * UNC `\\server\share` — no `':'` at all.
 ///
 /// So the separator is a reliable discriminator, provided what precedes it

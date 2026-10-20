@@ -28,3 +28,8 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - IMPL-LTTCE-FWT-00003 **covers** ARCH-LTTCE-FWT-00001
 - IMPL-LTTCE-SEL-00003 **covers** REQ-LTTCE-SEL-00004
 - IMPL-LTTCE-SEL-00003 **covers** ARCH-LTTCE-SEL-00001
+- IMPL-LTTCE-FOS-00003 **covers** REQ-LTTCE-FOS-00003  (`readOnly` prop → `readOnlyExtensions`:
+  `EditorState.readOnly` + a change filter that also stops the editor's own programmatic edits; paste
+  swallowed before the image branch writes a file) — UTST: `src/components/Editor.read-only.test.tsx`
+  (verified to fail with the change filter removed)
+- IMPL-LTTCE-FOS-00003 **covers** ARCH-LTTCE-FOS-00003

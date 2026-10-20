@@ -65,7 +65,7 @@ fn make_file(path: &Path, content: &str) {
 // -----------------------------------------------------------------------
 #[test]
 fn classify_treats_posix_paths_as_filesystem() {
-    assert_eq!(classify_path("/home/leo/note.md"), PathKind::FileSystem);
+    assert_eq!(classify_path("/home/user/note.md"), PathKind::FileSystem);
     assert_eq!(classify_path("note.md"), PathKind::FileSystem);
     assert_eq!(classify_path(""), PathKind::FileSystem);
     assert_eq!(classify_path("/"), PathKind::FileSystem);
@@ -75,7 +75,7 @@ fn classify_treats_posix_paths_as_filesystem() {
 fn classify_treats_windows_paths_as_filesystem() {
     // A drive letter has a ':' but never "://".
     assert_eq!(
-        classify_path(r"C:\Users\leoni\note.md"),
+        classify_path(r"C:\Users\user\note.md"),
         PathKind::FileSystem
     );
     // UNC share.

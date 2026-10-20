@@ -283,6 +283,24 @@ npm run test:coverage
 Vitest runs all React/TypeScript tests (components, hooks, rehype plugins,
 StaticRuntime mock) and produces a separate frontend coverage report.
 
+### Step 2c — FOSS licence gate and notices drift (local runs only)
+```
+node scripts/foss/foss.mjs check            # every shipped component vs foss/policy.json
+node scripts/foss/foss.mjs notices --check  # THIRD-PARTY-NOTICES.md matches the lock files
+```
+REQ-LTTCE-FOS-00002 / 00004. About 45 s (`cargo metadata` for 8 targets). Skipped when
+`GITHUB_ACTIONS=true`: on CI the job `foss-compliance` runs both once instead of once per leg. The unit
+tests of `scripts/foss/` (`*.test.mjs`) run with the frontend suite in step 2b locally; on CI the build legs
+check out without `scripts/foss/` and `foss/` (proving the product does not depend on them, steps 100/101),
+so the `foss-compliance` job runs those tests instead (step 144). A stale notices file is
+fixed with `npm run foss:notices`.
+
+**On CI, step 390 of each desktop leg** (`scripts/foss/assert-bundled.sh`, REQ-LTTCE-FOS-00001) unpacks
+every package users download — NSIS by a silent install into a temp folder, MSIX, deb, AppImage, dmg — and
+requires `LICENSE` and `THIRD-PARTY-NOTICES.md` byte-identical to the repository's. It runs after the
+tests, so the installed copy never meets the E2E harness. Step 389 first adds `scripts/foss/` to that
+leg's sparse checkout.
+
 ### Step 3 — Linter
 ```
 cargo clippy -- -D warnings
@@ -309,6 +327,7 @@ Step 1c   RUSTFLAGS="--cfg e2e_test"                         → build instrumen
           cargo llvm-cov build --bin lattice --no-report
           cargo run --example e2e_harness                    → E2E scenarios (Windows only), profraw merged
 Step 2b   npm run test:coverage                              → frontend coverage (separate)
+Step 2c   node scripts/foss/foss.mjs check / notices --check → FOSS gate + drift (local only)
 Step 3    cargo clippy -- -D warnings                        → linter
 Step 4    cargo llvm-cov report --html                       → combined HTML from 1+1b+1b2+1c
           cargo llvm-cov report                              → text summary to console

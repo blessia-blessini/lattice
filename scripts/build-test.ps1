@@ -86,8 +86,9 @@ try {
             Write-Output "No Rust crate changes detected."
         }
 
-        # Frontend: run only the vitest suites related to changed .ts/.tsx files.
-        $fe = $changed | Where-Object { $_ -match '\.(ts|tsx)$' }
+        # Frontend: run only the vitest suites related to changed .ts/.tsx files,
+        # and .mjs build tooling with its own vitest tests (scripts/foss).
+        $fe = $changed | Where-Object { $_ -match '\.(ts|tsx|mjs)$' }
         if ($fe -and $failed -eq 0) {
             Write-Output "Frontend: vitest related ($($fe.Count) changed file(s))"
             # vite.config.ts requires LATTICEBUILD_NO to be set (it throws otherwise).
@@ -360,6 +361,29 @@ try {
     if ($frontendResult -ne 0) {
         Write-Output "Frontend tests failed!"
         exit $frontendResult
+    }
+
+    # 2c. FOSS: licence gate + notices drift (REQ-LTTCE-FOS-00002 / 00004).
+    #     Local only: on CI the dedicated foss-compliance job runs it once,
+    #     instead of once per build leg (~45 s each: cargo metadata x 8 targets).
+    if ($env:GITHUB_ACTIONS -ne "true") {
+        Write-Output "Running FOSS licence gate and notices check..."
+        Push-Location ..
+        try {
+            node scripts/foss/foss.mjs check
+            $fossResult = $LASTEXITCODE
+            if ($fossResult -eq 0) {
+                node scripts/foss/foss.mjs notices --check
+                $fossResult = $LASTEXITCODE
+            }
+        }
+        finally {
+            Pop-Location
+        }
+        if ($fossResult -ne 0) {
+            Write-Output "FOSS compliance check failed!"
+            exit $fossResult
+        }
     }
 
     # 3. Linter

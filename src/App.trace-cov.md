@@ -82,3 +82,6 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - STST: `examples/e2e_harness.rs` scenario `last_vault`, launches 2 and 3 — a window opened without a
   document creates and opens today's note with no file or Settings opened first (Windows only; the
   isolated E2E home keeps it off the real home vault). See `src-tauri/src/last_vault.trace-cov.md`.
+- IMPL-LTTCE-FOS-00003 **covers** REQ-LTTCE-FOS-00003  (`m_readOnlyPath` from the Direct Push payload's
+  `readOnly`; `<Editor readOnly>` only while that path is the current file)
+- IMPL-LTTCE-FOS-00003 **covers** ARCH-LTTCE-FOS-00003
