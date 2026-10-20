@@ -73,6 +73,13 @@ export interface EditorProps {
      * Used by the dual-view cursor flash (IMPL-LTTCE-DVW-00002).
      */
     onCursorLineChange?: (line: number) => void;
+    /**
+     * When true, the document cannot be changed by typing, paste, or any
+     * programmatic edit (TOC, table padding, task toggles …). Selection,
+     * copy and scrolling still work. Used for the bundled third-party
+     * notices (IMPL-LTTCE-FOS-00003). Defaults to false.
+     */
+    readOnly?: boolean;
 }
 
 //******************************************************************************
@@ -97,6 +104,21 @@ const highlightMarkExtension = ViewPlugin.fromClass(
     { decorations: (v) => v.decorations }
 );
 // highlight extension END ********************************************
+
+//******************************************************************************
+// readOnlyExtensions
+//******************************************************************************
+/**
+ * IMPL-LTTCE-FOS-00003 — `EditorState.readOnly` stops typing and the built-in
+ * commands; the change filter also stops the editor's own programmatic
+ * edits (TOC refresh, table padding, tabify, task toggles), which dispatch
+ * transactions directly. Loading a document is unaffected: it creates a
+ * new state instead of dispatching a change.
+ */
+export function readOnlyExtensions(on: boolean) {
+    return on ? [EditorState.readOnly.of(true), EditorState.changeFilter.of(() => false)] : [];
+}
+// readOnlyExtensions END ******************************************************
 
 const monoHighlightStyle = HighlightStyle.define([
     { tag: tags.monospace, fontFamily: "'Fira Code', 'Consolas', monospace", backgroundColor: "transparent" },
@@ -176,7 +198,7 @@ export interface EditorHandle {
 }
 export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
     theme, wordWrap, fontSize, highlightMark, showWhitespace, tabSize, onChange, initialDoc, docEpoch, currentFilePath, onDirtyChange,
-    onCursorLineChange
+    onCursorLineChange, readOnly = false
 }, ref) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
@@ -187,6 +209,7 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
     const highlightMarkCompartment = useRef(new Compartment());
     const showWhitespaceCompartment = useRef(new Compartment());
     const tabSizeCompartment = useRef(new Compartment());
+    const readOnlyCompartment = useRef(new Compartment());
     // Latest tabSize for closures captured once at extension-build time
     // (same stale-props guard as onCursorLineChangeRef below).
     const tabSizeRef = useRef(tabSize);
@@ -655,6 +678,7 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
         // The indent unit above is one real tab, so indent width and tab
         // width are the same value by construction.
         tabSizeCompartment.current.of(EditorState.tabSize.of(tabSize)),
+        readOnlyCompartment.current.of(readOnlyExtensions(readOnly)),
         EditorView.updateListener.of((update) => {
             if (update.docChanged && onChange && !isRemoteUpdate.current) {
                 onChange(update.state.doc.toString());
@@ -680,6 +704,13 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
         }),
         EditorView.domEventHandlers({
             paste: (event, view) => {
+                // IMPL-LTTCE-FOS-00003 — a read-only document takes no paste.
+                // Swallowed here because the image branch below writes a file
+                // to disk before it ever reaches the change filter.
+                if (view.state.readOnly) {
+                    event.preventDefault();
+                    return true;
+                }
                 //**********************************************************************
                 // paste sction coming from user
                 //**********************************************************************
@@ -889,6 +920,15 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
             });
         }
     }, [tabSize]);
+
+    // Switch read-only on or off when the prop changes (IMPL-LTTCE-FOS-00003)
+    useEffect(() => {
+        if (viewRef.current) {
+            viewRef.current.dispatch({
+                effects: readOnlyCompartment.current.reconfigure(readOnlyExtensions(readOnly))
+            });
+        }
+    }, [readOnly]);
 
     return (
         <>

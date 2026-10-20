@@ -25,6 +25,7 @@ Cargo.lock text eol=lf
 
 # Web & Scripting (JS/TS/CSS/HTML)
 *.js text eol=lf
+*.mjs text eol=lf
 *.jsx text eol=lf
 *.ts text eol=lf
 *.tsx text eol=lf

@@ -47,6 +47,8 @@ pub mod file_state;
 // against the same table the backends print with.
 pub mod paper;
 pub mod settings;
+// IMPL-LTTCE-FOS-00003 — third-party notices window and the resource save guard.
+pub mod licences;
 mod tabify;
 mod vault_path;
 pub mod last_vault;
@@ -160,7 +162,24 @@ fn calc_base_path(_app: tauri::AppHandle) -> Result<String, String> {
 /// the file cannot be read or the window cannot be built.
 #[tauri::command]
 async fn open_new_window(app: tauri::AppHandle, path: Option<String>) -> Result<(), String> {
-    info!("open_new_window called. Path: {:?}", path);
+    open_document_window(app, path, false).await
+} // open_new_window END *****************************************************
+
+//******************************************************************************
+// open_document_window
+//******************************************************************************
+/// The body of [`open_new_window`], shared with
+/// [`licences::open_licences_window`].
+///
+/// `read_only` travels to the window in the Direct Push payload as
+/// `readOnly`; the frontend then refuses edits to that document
+/// (IMPL-LTTCE-FOS-00003). The backend's save guard does not depend on it.
+pub(crate) async fn open_document_window(
+    app: tauri::AppHandle,
+    path: Option<String>,
+    read_only: bool,
+) -> Result<(), String> {
+    info!("open_document_window called. Path: {:?}, read-only: {}", path, read_only);
     let label = generate_new_window_label();
 
     // Read productName before the builder borrows `app`.
@@ -192,7 +211,8 @@ async fn open_new_window(app: tauri::AppHandle, path: Option<String>) -> Result<
         let payload: serde_json::Value = json!({
             "content": internal_content,
             "hash": hash,
-            "path": p // Frontend might want to know which file this is
+            "path": p, // Frontend might want to know which file this is
+            "readOnly": read_only
         });
 
         // Inject as a global variable script
@@ -210,7 +230,7 @@ async fn open_new_window(app: tauri::AppHandle, path: Option<String>) -> Result<
 
     info!("Window '{}' created successfully.", label);
     Ok(())
-} // open_new_window END *****************************************************
+} // open_document_window END ************************************************
 
 //******************************************************************************
 // generate_new_window_label
@@ -1240,6 +1260,7 @@ pub fn run() {
             daily_note::open_daily_note,
             file_state::close_file,
             open_new_window,
+            licences::open_licences_window,
             open_settings_window,
             close_settings_window,
             find_vault_settings_file, //find_vault_path

@@ -71,7 +71,7 @@ if [ "$1" = "fast" ] || [ "$1" = "--fast" ] || [ "$1" = "-Fast" ]; then
     fi
 
     # Frontend: run only the vitest suites related to changed .ts/.tsx files.
-    FE=(); for f in "${CHANGED[@]}"; do case "$f" in *.ts|*.tsx) FE+=("$f") ;; esac; done
+    FE=(); for f in "${CHANGED[@]}"; do case "$f" in *.ts|*.tsx|*.mjs) FE+=("$f") ;; esac; done
     if [ ${#FE[@]} -gt 0 ] && [ $FAILED -eq 0 ]; then
         echo "Frontend: vitest related (${#FE[@]} changed file(s))"
         npx vitest related "${FE[@]}" --run || FAILED=1
@@ -506,6 +506,17 @@ FRONTEND_RESULT=$?
 if [ $FRONTEND_RESULT -ne 0 ]; then
     echo "Frontend tests failed!"
     exit $FRONTEND_RESULT
+fi
+
+# 2c. FOSS: licence gate + notices drift (REQ-LTTCE-FOS-00002 / 00004).
+#     Local only: on CI the dedicated foss-compliance job runs it once,
+#     instead of once per build leg (~45 s each: cargo metadata x 8 targets).
+if [ "${GITHUB_ACTIONS:-}" != "true" ]; then
+    echo "Running FOSS licence gate and notices check..."
+    node scripts/foss/foss.mjs check && node scripts/foss/foss.mjs notices --check || {
+        echo "FOSS compliance check failed!"
+        exit 1
+    }
 fi
 
 # 3. Linter

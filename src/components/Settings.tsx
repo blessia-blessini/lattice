@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FileSystem } from '../services/FileSystem';
+import { Licences, LATTICE_LICENSE } from '../services/Licences';
 import { invoke } from '@tauri-apps/api/core';
 import { clampTabSize, TAB_SIZE_MIN, TAB_SIZE_MAX } from '../lib/tab-size';
 import { DAILY_NOTE_PREFIX_MAX_LEN, sanitizeDailyNotePrefixInput } from '../lib/daily-note';
@@ -529,6 +530,32 @@ export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultTheme
                     opacity: 0.7,
                     overflowWrap: 'anywhere'
                 }}>Settings are saved to: {settingsPath}</p>
+                {/* IMPL-LTTCE-FOS-00003 — REQ-LTTCE-FOS-00003 */}
+                <p style={{
+                    margin: '0.15rem 0 0',
+                    fontSize: '0.8rem',
+                    opacity: 0.7
+                }}>
+                    Licence: {LATTICE_LICENSE} ·{' '}
+                    <button
+                        type="button"
+                        data-testid="open-licences"
+                        onClick={() => {
+                            Licences.openNotices().catch((e) => setStatus(`Could not open the licences: ${e}`));
+                        }}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            padding: 0,
+                            font: 'inherit',
+                            color: 'inherit',
+                            textDecoration: 'underline',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        Open-source licences
+                    </button>
+                </p>
             </div>
         </div >
     );

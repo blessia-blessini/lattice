@@ -294,10 +294,14 @@ fn read_text_file_internal(
 ///    status: status of write operation
 #[tauri::command]
 pub fn write_text_file(
+    app: tauri::AppHandle,
     path: String,
     content: String, // Received as Internal content (\n) from frontend
     state: tauri::State<FileTrackerState>,
 ) -> Result<WriteResponse, String> {
+    // IMPL-LTTCE-FOS-00003 — the installed notices and licence are not documents.
+    let resource_dir = tauri::Manager::path(&app).resource_dir().ok();
+    crate::licences::refuse_write_into_resources(&path, resource_dir.as_deref())?;
     write_text_file_internal(path, content, &state)
 }
 ///
