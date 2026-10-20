@@ -29,9 +29,13 @@ import { invoke } from '@tauri-apps/api/core';
 /** Lattice's own licence, shown next to the link to the notices. */
 export const LATTICE_LICENSE = 'AGPL-3.0-or-later';
 
+//**************************************************************
+// Licences
+//**************************************************************
 export const Licences = {
     /** Opens THIRD-PARTY-NOTICES.md in a new, read-only editor window. */
     openNotices: async (): Promise<void> => {
         await invoke('open_licences_window');
     },
 };
+// Licences END ************************************************

@@ -44,6 +44,18 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 REQUIRED=(LICENSE THIRD-PARTY-NOTICES.md)
 failed=0
 checked=0
+TMP_DIRS=()
+MOUNTS=()
+
+#*******************************************************************************
+# cleanup -- on every exit, also when `set -e` aborts mid-package
+#*******************************************************************************
+cleanup() {
+    local m d
+    for m in "${MOUNTS[@]+"${MOUNTS[@]}"}"; do hdiutil detach -force "$m" >/dev/null 2>&1 || true; done
+    for d in "${TMP_DIRS[@]+"${TMP_DIRS[@]}"}"; do rm -rf "$d" 2>/dev/null || true; done
+} # cleanup END ****************************************************************
+trap cleanup EXIT
 
 #*******************************************************************************
 # check_tree <package label> <unpacked dir>
@@ -76,10 +88,14 @@ for pkg in "$@"; do
     [ -f "$pkg" ] || continue
     label="$(basename "$pkg")"
     tmp="$(mktemp -d)"
+    TMP_DIRS+=("$tmp")
     echo "Checking $label"
     case "$pkg" in
         *-setup.exe)
-            powershell -NoProfile -Command "Start-Process -Wait -FilePath '$(winpath "$pkg")' -ArgumentList '/S','/D=$(winpath "$tmp")\\inst'"
+            # ONE argument string: Start-Process passes it verbatim, whereas
+            # an array element with a space gets quoted -- and NSIS ignores a
+            # quoted /D=, which must also come last.
+            powershell -NoProfile -Command "Start-Process -Wait -FilePath '$(winpath "$pkg")' -ArgumentList '/S /D=$(winpath "$tmp")\\inst'"
             ;;
         *.msix)
             cp "$pkg" "$tmp/package.zip"
@@ -94,9 +110,12 @@ for pkg in "$@"; do
             (cd "$tmp" && "$abs" --appimage-extract >/dev/null)
             ;;
         *.dmg)
+            # hdiutil creates the mount point (verified on both macOS legs).
             hdiutil attach -nobrowse -readonly -mountpoint "$tmp/mnt" "$pkg" >/dev/null
+            MOUNTS+=("$tmp/mnt")
             check_tree "$label" "$tmp/mnt"
             hdiutil detach "$tmp/mnt" >/dev/null
+            unset 'MOUNTS[${#MOUNTS[@]}-1]'
             checked=$((checked + 1))
             continue
             ;;

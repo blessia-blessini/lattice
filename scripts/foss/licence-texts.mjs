@@ -44,7 +44,10 @@ export const PER_COPY = new Set(['MIT', 'MIT-0', '0BSD', 'ISC', 'BSD-2-Clause', 
 const LICENCE_FILE_RE = /^(licen[cs]e|copying|copyright|notice|unlicense)([-._ ].*)?$/i;
 const NOTICE_FILE_RE = /^notice([-._ ].*)?$/i;
 const MAX_LICENCE_FILE_BYTES = 256 * 1024;
-const EXHIBIT_B_RE = /Incompatible With Secondary Licen[cs]es/i;
+// Comment markers may sit between the words of a wrapped source header.
+const EXHIBIT_B_RE = /Incompatible[\s/#*]+With[\s/#*]+Secondary[\s/#*]+Licen[cs]es/i;
+// The heading of Exhibit B inside the full MPL-2.0 text — never in a header.
+const MPL_FULL_TEXT_RE = /Exhibit B\s*[-–—]\s*["“]?Incompatible With Secondary Licen[cs]es["”]?\s*Notice/i;
 
 
 //**************************************************************
@@ -82,7 +85,7 @@ export function listLicenceFiles(dir) {
         .filter((e) => e.isFile() && LICENCE_FILE_RE.test(e.name))
         .filter((e) => fs.statSync(path.join(dir, e.name)).size <= MAX_LICENCE_FILE_BYTES)
         .map((e) => ({ name: e.name, text: normalizeText(fs.readFileSync(path.join(dir, e.name), 'utf8')) }))
-        .sort((a, b) => a.name.localeCompare(b.name));
+        .sort((a, b) => a.name.localeCompare(b.name, 'en'));
 }
 // listLicenceFiles END ****************************************
 
@@ -107,7 +110,11 @@ export function detectLicences(text) {
         else if (/to permit persons to whom the Software is furnished to do so\. THE SOFTWARE IS PROVIDED/i.test(t)) ids.push('MIT-0');
     }
     if (/Redistribution and use in source and binary forms/i.test(t)) {
-        ids.push(/Neither the name|names of (its|the) contributors may be used/i.test(t) ? 'BSD-3-Clause' : 'BSD-2-Clause');
+        // The non-endorsement clause is what BSD-3 adds to BSD-2, in every
+        // wording ("Neither the name ... may be used", "The name X may not be
+        // used"); the advertising clause is what BSD-4 adds on top.
+        if (/All advertising materials mentioning/i.test(t)) ids.push('BSD-4-Clause');
+        else ids.push(/to endorse or promote products/i.test(t) ? 'BSD-3-Clause' : 'BSD-2-Clause');
     }
     if (/Permission to use, copy, modify, and\/?or distribute this software for any purpose/i.test(t)) {
         if (/above copyright notice and this permission notice appear in all copies/i.test(t)) ids.push('ISC');
@@ -149,6 +156,10 @@ export function shippedLicenceIds(files) {
 export function extractCopyrights(texts) {
     const lines = [];
     for (const text of texts) {
+        // Standard licences with lettered list items — Apache "(c) You must
+        // retain ...", MPL "(c) under Patent Claims ..." — make a bare "(c)"
+        // ambiguous; per-copy licences (MIT, BSD ...) have no such items.
+        const hasListProse = detectLicences(text).some((id) => !PER_COPY.has(id));
         for (const raw of text.split('\n')) {
             const line = raw.trim().replace(/\s+/g, ' ');
             // "Copyrights in the X project are retained by their contributors."
@@ -158,14 +169,14 @@ export function extractCopyrights(texts) {
             }
             // Case-sensitive: a lower-case "copyright ..." line continues a
             // sentence of licence prose from the line above.
-            if (!/^(Copyright\b|COPYRIGHT\b|©)/.test(line)) {
-                // A bare "(c)" opens list items in licence prose ("(c) You must
-                // retain ...", MPL "(c) under Patent Claims ..."); only
-                // "(c) <year>" is a copyright line.
-                if (!/^\(c\)\s*\d{4}/i.test(line)) continue;
+            if (!/^((Portions )?Copyright\b|COPYRIGHT\b|©)/.test(line)) {
+                // "(c) <year> ..." is always a copyright line; "(c) <name>" only
+                // outside licence prose that uses "(c)" as a list label.
+                if (!/^\(c\)\s*\d{4}/i.test(line) && !(/^\(c\)\s+\S/i.test(line) && !hasListProse)) continue;
             }
             if (line.length > 200 || /[<[{](yyyy|year|owner|name|copyright holder)/i.test(line)) continue;
-            if (/^copyright (notice|holders?|owners?|law|license|and|of|to|in|for|statement|\(c\) <)/i.test(line)) continue;
+            // Prose about copyright — but "Copyright holder: <name>" names one.
+            if (/^copyright (notice|holders?|owners?|law|license|and|of|to|in|for|statement|\(c\) <)(?!\s*:)/i.test(line)) continue;
             if (!/[\p{L}\d]/u.test(line.replace(/^(copyright|\(c\)|©)/gi, ''))) continue;
             lines.push(line);
         }
@@ -276,9 +287,10 @@ export function findExhibitB(dir, maxFiles = 20000) {
                 count++;
                 if (fs.statSync(full).size > 4 * 1024 * 1024) continue;
                 const text = fs.readFileSync(full, 'utf8');
-                // The MPL text itself quotes the Exhibit B sentence; only a
-                // file that is not the licence can carry it as a notice.
-                if (EXHIBIT_B_RE.test(text) && !detectLicences(text).includes('MPL-2.0')) {
+                // The full MPL text quotes the Exhibit B sentence under its
+                // own heading; a source header carrying the notice also names
+                // the MPL, so "mentions MPL-2.0" cannot tell them apart.
+                if (EXHIBIT_B_RE.test(text) && !MPL_FULL_TEXT_RE.test(text)) {
                     hits.push(path.relative(dir, full).split(path.sep).join('/'));
                 }
             }

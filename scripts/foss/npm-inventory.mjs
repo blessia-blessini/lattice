@@ -135,7 +135,7 @@ export function inventoryFromLockfile(lock, pkgJson, rootDir) {
             linkage: 'linked',
         };
     });
-    return components.sort((a, b) => a.name.localeCompare(b.name) || a.version.localeCompare(b.version));
+    return components.sort((a, b) => a.name.localeCompare(b.name, 'en') || a.version.localeCompare(b.version, 'en'));
 }
 // inventoryFromLockfile END ***********************************
 

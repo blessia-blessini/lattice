@@ -56,6 +56,22 @@ describe('detectLicences', () => {
         expect(detectLicences(`${MIT_OWN}\n\n${std('Apache-2.0')}`)).toEqual(['MIT', 'Apache-2.0']);
     });
 
+    it('reads a BSD-3 with an affirmative non-endorsement clause as BSD-3', () => {
+        // node_modules/rw: "The name Michael Bostock may not be used to endorse ..."
+        // was read as BSD-2 before review cycle 1, and its own text was dropped.
+        const variant = std('BSD-3-Clause').replace(
+            /3\. Neither the name[\s\S]*?permission\./,
+            '3. The name of the author may not be used to endorse or promote products derived from this software without specific prior written permission.',
+        );
+        expect(variant).not.toMatch(/Neither the name/);
+        expect(detectLicences(variant)).toEqual(['BSD-3-Clause']);
+    });
+
+    it('tells BSD-4 by its advertising clause', () => {
+        const bsd4 = std('BSD-3-Clause').replace('3. Neither', '3. All advertising materials mentioning features or use of this software must display an acknowledgement.\n\n4. Neither');
+        expect(detectLicences(bsd4)).toEqual(['BSD-4-Clause']);
+    });
+
     it('returns nothing for an unknown text', () => {
         expect(detectLicences('MIT OR Apache-2.0')).toEqual([]);
     });
@@ -67,13 +83,30 @@ describe('extractCopyrights', () => {
     });
 
     it('skips "(c)" list items and lower-case prose', () => {
-        const prose = '(c) under Patent Claims infringed\n(c) You must retain\ncopyright protection under copyright law';
-        expect(extractCopyrights([prose, std('MPL-2.0')])).toEqual([]);
+        // "(c)" items occur inside Apache / MPL texts, which is what marks them.
+        const prose = '(c) under Patent Claims infringed\n(c) You must retain';
+        expect(extractCopyrights([`${prose}\n${std('MPL-2.0')}`, std('Apache-2.0'), std('MPL-2.0')])).toEqual([]);
+        expect(extractCopyrights(['copyright protection under copyright law'])).toEqual([]);
     });
 
     it('keeps "(c) <year>", "©" and "Copyrights in ... retained by" statements', () => {
         const text = '(c) 2001 Old Corp\n© Kornel\nCopyrights in the demo project are retained by their contributors.';
         expect(extractCopyrights([text])).toEqual(['(c) 2001 Old Corp', '© Kornel', 'Copyrights in the demo project are retained by their contributors.']);
+    });
+
+    it('keeps "(c) <name>" without a year outside list-label prose', () => {
+        // zune-core / zune-jpeg ship "(C) zune-image developers".
+        const own = MIT_OWN.replace('Copyright (c) 2019 Jane Doe', '(C) zune-image developers');
+        expect(extractCopyrights([own])).toEqual(['(C) zune-image developers']);
+        // In a combined MIT + Apache file "(c) You must retain" is still prose.
+        expect(extractCopyrights([`${own}\n\n${std('Apache-2.0')}`])).toEqual([]);
+    });
+
+    it('keeps "Portions Copyright" and "Copyright holder: <name>"', () => {
+        expect(extractCopyrights(['Portions Copyright 2001 Old Corp\nCopyright holder: Jane Doe\nCopyright holders are listed below'])).toEqual([
+            'Portions Copyright 2001 Old Corp',
+            'Copyright holder: Jane Doe',
+        ]);
     });
 
     it('de-duplicates across files', () => {
@@ -154,11 +187,23 @@ describe('files on disk', () => {
     });
 
     it('finds an Exhibit B notice in source but not in the MPL text itself', () => {
+        // The official Exhibit A + B header, wrapped as sources wrap it. It names
+        // the "Mozilla Public License, v. 2.0" — review cycle 1 found that an
+        // earlier rule skipped every file that names the MPL, i.e. every real one.
+        const header = [
+            '// This Source Code Form is subject to the terms of the Mozilla Public',
+            '// License, v. 2.0. If a copy of the MPL was not distributed with this',
+            '// file, You can obtain one at http://mozilla.org/MPL/2.0/.',
+            '//',
+            '// This Source Code Form is "Incompatible With Secondary',
+            '// Licenses", as defined by the Mozilla Public License, v. 2.0.',
+        ].join('\n');
         fs.writeFileSync(path.join(dir, 'LICENSE.md'), std('MPL-2.0'));
+        fs.writeFileSync(path.join(dir, 'COPYING.txt'), std('MPL-2.0'));
         fs.mkdirSync(path.join(dir, 'src'));
-        fs.writeFileSync(path.join(dir, 'src', 'ok.rs'), '// This Source Code Form is subject to the terms of the MPL 2.0.');
+        fs.writeFileSync(path.join(dir, 'src', 'ok.rs'), header.split('\n').slice(0, 3).join('\n'));
         expect(findExhibitB(dir)).toEqual([]);
-        fs.writeFileSync(path.join(dir, 'src', 'bad.rs'), '// This Source Code Form is "Incompatible With Secondary Licenses", as defined by the MPL v. 2.0.');
+        fs.writeFileSync(path.join(dir, 'src', 'bad.rs'), `${header}\nfn main() {}`);
         expect(findExhibitB(dir)).toEqual(['src/bad.rs']);
     });
 });

@@ -136,6 +136,6 @@ export function inventoryFromMetadata(meta) {
             linkage: linked.has(id) ? 'linked' : 'build-time',
         });
     }
-    return components.sort((a, b) => a.name.localeCompare(b.name) || a.version.localeCompare(b.version));
+    return components.sort((a, b) => a.name.localeCompare(b.name, 'en') || a.version.localeCompare(b.version, 'en'));
 }
 // inventoryFromMetadata END ***********************************
