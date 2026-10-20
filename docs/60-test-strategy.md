@@ -290,13 +290,16 @@ node scripts/foss/foss.mjs notices --check  # THIRD-PARTY-NOTICES.md matches the
 ```
 REQ-LTTCE-FOS-00002 / 00004. About 45 s (`cargo metadata` for 8 targets). Skipped when
 `GITHUB_ACTIONS=true`: on CI the job `foss-compliance` runs both once instead of once per leg. The unit
-tests of `scripts/foss/` (`*.test.mjs`) run with the frontend suite in step 2b. A stale notices file is
+tests of `scripts/foss/` (`*.test.mjs`) run with the frontend suite in step 2b locally; on CI the build legs
+check out without `scripts/foss/` and `foss/` (proving the product does not depend on them, steps 100/101),
+so the `foss-compliance` job runs those tests instead (step 144). A stale notices file is
 fixed with `npm run foss:notices`.
 
 **On CI, step 390 of each desktop leg** (`scripts/foss/assert-bundled.sh`, REQ-LTTCE-FOS-00001) unpacks
 every package users download — NSIS by a silent install into a temp folder, MSIX, deb, AppImage, dmg — and
 requires `LICENSE` and `THIRD-PARTY-NOTICES.md` byte-identical to the repository's. It runs after the
-tests, so the installed copy never meets the E2E harness.
+tests, so the installed copy never meets the E2E harness. Step 389 first adds `scripts/foss/` to that
+leg's sparse checkout.
 
 ### Step 3 — Linter
 ```

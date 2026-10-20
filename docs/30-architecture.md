@@ -2044,8 +2044,11 @@ The Settings window has its own size (600 × 400) and is not an editor window.
 │  foss check          (gate) ──FAIL │   │   THIRD-PARTY-NOTICES.md     │   │  903.1 notices + SBOMs into  │
 │  foss notices --check(drift)──FAIL │   │ 355 MSIX: same resource map  │   │        staging/ → attested,  │
 │  foss sbom → artifact FOSS ────────┼───┼──────────────────────────────┼──►│        SHA256SUMS, release   │
-└───────────────────────────────────┘   │ 390 assert-bundled.sh: unpack│   │  905 release page links them │
-                                        │   every package, cmp files   │   └──────────────────────────────┘
+│  144 vitest scripts/foss           │   │ 390 assert-bundled.sh: unpack│   │  905 release page links them │
+└───────────────────────────────────┘   │   every package, cmp files   │   └──────────────────────────────┘
+                                        │ (100/101: built WITHOUT      │
+                                        │  scripts/foss + foss; 389    │
+                                        │  adds scripts/foss for 390)  │
                                         └──────────────────────────────┘
 ```
 
@@ -2071,7 +2074,14 @@ Clarifications name one component version and the SHA-256 of the file that prove
 
 The job `foss-compliance` runs on every CI run in parallel with the build legs; `publish-release-site`
 needs it, so a violation blocks the release without delaying the builds. Locally, the full
-`build-test` run executes the same two checks (skipped on CI, where the job does it once).
+`build-test` run executes the same two checks (skipped on CI, where the job does it once). The job also
+runs the unit tests of `scripts/foss/` (step 144).
+
+*Build tooling stays out of the product, and CI proves it.* Every build leg checks out the repository
+**without** `scripts/foss/` and `foss/` (sparse checkout, step 100 — their blobs are not even fetched), and
+step 101 fails the leg if either folder is present. So the app is built and its whole test suite passes
+without them; the only FOSS output the product carries is the committed `THIRD-PARTY-NOTICES.md`, a
+resource. Step 389 adds `scripts/foss/` back to the same checkout after build and tests, for step 390.
 
 *Why not cargo-deny / cargo-about / ORT*: one policy for both ecosystems in one file, the exact per-target
 graph, and nothing new to install. The cost — an SPDX evaluator and npm resolution owned here (~600 lines)

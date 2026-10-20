@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.37
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: Build every CI leg without the FOSS tooling to prove the product does not need it
 - FIX: Act on review cycle 1 of the licence-type summary
 - FEAT: Summarise the licences by type in the third-party notices
 - version 0.3.37

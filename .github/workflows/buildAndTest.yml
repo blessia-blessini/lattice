@@ -294,6 +294,21 @@ jobs:
         path: foss-out/
         if-no-files-found: error
 
+    ################################################################
+    # 144 / Unit tests of scripts/foss/ (*.test.mjs). Here, not in
+    #       the build legs: those check out without scripts/foss/
+    #       (build-and-test step 100). After 140-142, so the gate
+    #       reads the production-only node_modules it was built for.
+    ################################################################
+    - name: 144. FOSS tooling unit tests
+      shell: bash
+      env:
+        LATTICEBUILD_NO: FOSS-unit-tests
+      run: |
+        set -euo pipefail
+        npm ci --ignore-scripts --no-audit --no-fund
+        npx vitest run scripts/foss
+
   ################################################################
   # JOB 2: BUILD AND TEST
   ################################################################
@@ -324,10 +339,41 @@ jobs:
         echo "download_path2=${{ matrix.config.upload_path2 }}" >> "$GITHUB_OUTPUT"
 
     ################################################################
-    # 100 / Checkout
+    # 100 / Checkout -- WITHOUT the FOSS compliance tooling
+    #       (scripts/foss/ and its data in foss/). The product must
+    #       build and pass its tests without them: they generate
+    #       THIRD-PARTY-NOTICES.md and gate licences, but no line of
+    #       them may reach an installer. A sparse checkout also
+    #       leaves their blobs unfetched. Step 389 adds the one
+    #       script step 390 needs, after build and tests.
     ################################################################
     - name: 100. Checkout
       uses: actions/checkout@v6
+      with:
+        sparse-checkout: |
+          /*
+          !/scripts/foss/
+          !/foss/
+        sparse-checkout-cone-mode: false
+
+    ################################################################
+    # 101 / FOSS tooling really is absent -- otherwise a sparse
+    #       checkout that silently matched nothing would leave the
+    #       independence of step 100 unproven.
+    ################################################################
+    - name: 101. FOSS tooling absent from the product build
+      shell: bash
+      run: |
+        for d in scripts/foss foss; do
+          if [ -e "$d" ]; then
+            echo "::error::$d is checked out; the product build must not see the FOSS tooling (step 100)"
+            exit 1
+          fi
+        done
+        for f in LICENSE THIRD-PARTY-NOTICES.md; do
+          [ -f "$f" ] || { echo "::error::$f missing; it is a bundled product resource"; exit 1; }
+        done
+        echo "scripts/foss and foss absent; LICENSE and THIRD-PARTY-NOTICES.md present"
 
     ################################################################
     # 120 - 125 Cache Dependencies
@@ -626,7 +672,17 @@ jobs:
     #       Unpacks each package (NSIS: silent install into a temp
     #       folder) -- after the tests, so an installed copy can never
     #       meet the E2E harness. Android/iOS: deferred (FU-6).
+    #       Step 389 first brings scripts/foss/ into the sparse
+    #       checkout of step 100 -- same commit, build already done.
     ################################################################
+    - name: 389. FOSS - fetch the installer check tooling
+      if: matrix.config.platform != 'ios' && matrix.config.platform != 'android'
+      shell: bash
+      env:
+        # Git Bash on Windows would rewrite '/scripts/foss/' into C:/Program Files/Git/...
+        MSYS_NO_PATHCONV: "1"
+      run: git sparse-checkout add '/scripts/foss/'
+
     - name: 390. FOSS - licence files inside the installers
       if: matrix.config.platform != 'ios' && matrix.config.platform != 'android'
       shell: bash
