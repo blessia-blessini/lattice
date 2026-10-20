@@ -47,7 +47,7 @@ import { buildSbom } from './cyclonedx.mjs';
 import { fallbackCopyright, findExhibitB, listLicenceFiles, selectTexts, shippedLicenceIds } from './licence-texts.mjs';
 import { enrichFromManifest, inventoryFromLockfile } from './npm-inventory.mjs';
 import { renderNotices } from './notices-render.mjs';
-import { evaluateComponent, loadPolicy, unusedPolicyEntries } from './policy.mjs';
+import { evaluateComponent, licenceTypeMap, loadPolicy, unusedPolicyEntries } from './policy.mjs';
 import { leafKey } from './spdx-expr.mjs';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -200,8 +200,8 @@ export function commandCheck({ policy, entries }, log = console) {
  * Writes THIRD-PARTY-NOTICES.md, or with `check` compares it to the committed copy.
  * @returns {number} exit code
  */
-export function commandNotices({ entries }, { root, targets, check }, log = console) {
-    const markdown = renderNotices({ entries, standardTexts: loadStandardTexts(root), targets });
+export function commandNotices({ policy, entries }, { root, targets, check }, log = console) {
+    const markdown = renderNotices({ entries, standardTexts: loadStandardTexts(root), targets, licenceTypes: licenceTypeMap(policy) });
     const file = path.join(root, NOTICES_FILE);
     if (!check) {
         fs.writeFileSync(file, markdown);

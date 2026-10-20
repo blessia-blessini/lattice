@@ -30,7 +30,7 @@ import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { classifyLeaf, evaluateComponent, loadPolicy, unusedPolicyEntries, validatePolicy } from './policy.mjs';
+import { classifyLeaf, evaluateComponent, licenceTypeMap, loadPolicy, unusedPolicyEntries, validatePolicy } from './policy.mjs';
 
 const TODAY = '2026-10-20';
 const base = () => validatePolicy({
@@ -39,6 +39,7 @@ const base = () => validatePolicy({
     denied: ['GPL-3.0-only', 'AGPL-3.0-or-later'],
     allowedExceptions: ['LLVM-exception'],
     preference: ['MIT', 'BSD-3-Clause', 'Apache-2.0'],
+    types: { permissive: ['MIT', 'Apache-2.0', 'BSD-3-Clause'], 'weak-copyleft': ['MPL-2.0'] },
 });
 const comp = (license, extra = {}) => ({ ecosystem: 'cargo', name: 'demo', version: '1.0.0', license, dir: null, ...extra });
 
@@ -55,6 +56,15 @@ describe('validatePolicy', () => {
 
     it('rejects an exception without an expiry date', () => {
         expect(() => validatePolicy({ exceptions: [{ ecosystem: 'npm', name: 'x', version: '1', reason: 'r' }] })).toThrow(/expires/);
+    });
+
+    it('rejects an admitted licence without a type', () => {
+        expect(() => validatePolicy({ allowed: ['MIT', 'ISC'], obligation: { 'MPL-2.0': 'x' }, types: { permissive: ['MIT'] } }))
+            .toThrow(/no entry in "types" for ISC, MPL-2.0/);
+    });
+
+    it('turns "types" into an id -> type lookup', () => {
+        expect(licenceTypeMap(base())).toMatchObject({ MIT: 'permissive', 'MPL-2.0': 'weak-copyleft' });
     });
 
     it('loads the real policy file', () => {

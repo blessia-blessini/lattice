@@ -2084,7 +2084,9 @@ over all targets. Per component, `licence-texts.mjs` picks the text: per-copy li
 Zlib, Unicode) carry the holder inside the text, so the component's **own** licence file is used; a package
 shipping none gets the SPDX standard text from `foss/licenses/` (license-list-data v3.27.0) and a copyright
 line from its metadata, marked as such. Standard licences (Apache-2.0, MPL-2.0, CC0, Unlicense, BSL) appear
-once; Apache `NOTICE` files are reproduced verbatim. Every distinct text is printed once, keyed by its
+once; Apache `NOTICE` files are reproduced verbatim. A "Licences by type" table opens the file (`renderTypeSummary`):
+the type of each licence comes from `types` in `foss/policy.json`, which must classify every admitted licence
+(policy validation fails otherwise); copyleft licences come first and their components are named. Every distinct text is printed once, keyed by its
 content hash, so adding a component does not renumber the others.
 
 The file is **committed**: Tauri refuses to build when a listed resource is missing, a dependency bump shows

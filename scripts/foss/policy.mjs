@@ -52,6 +52,13 @@ export function validatePolicy(policy) {
     if (typeof policy.obligation !== 'object' || Array.isArray(policy.obligation)) {
         throw new Error('policy: "obligation" must be an object of licence id -> note');
     }
+    policy.types ??= {};
+    if (typeof policy.types !== 'object' || Array.isArray(policy.types)) {
+        throw new Error('policy: "types" must be an object of type -> licence ids');
+    }
+    const typed = new Set(Object.values(policy.types).flat());
+    const untyped = [...policy.allowed, ...Object.keys(policy.obligation)].filter((id) => !typed.has(id));
+    if (untyped.length) throw new Error(`policy: no entry in "types" for ${untyped.join(', ')}`);
     for (const c of policy.clarifications) {
         if (!c.ecosystem || !c.name || !c.version || !c.license || !c.evidence?.file || !c.evidence?.sha256) {
             throw new Error(`policy: clarification ${JSON.stringify(c)} needs ecosystem, name, version, license, evidence.file, evidence.sha256`);
@@ -208,3 +215,21 @@ export function unusedPolicyEntries(policy, components) {
     return unused;
 }
 // unusedPolicyEntries END *************************************
+
+
+//**************************************************************
+// licenceTypeMap
+//**************************************************************
+/**
+ * The policy's "types" as a licence id -> type lookup.
+ * @param {object} policy validated policy
+ * @returns {Record<string, string>}
+ */
+export function licenceTypeMap(policy) {
+    const map = {};
+    for (const [type, ids] of Object.entries(policy.types ?? {})) {
+        for (const id of ids) map[id] = type;
+    }
+    return map;
+}
+// licenceTypeMap END ******************************************

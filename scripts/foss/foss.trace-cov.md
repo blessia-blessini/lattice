@@ -10,7 +10,8 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   against `foss/policy.json`; clarifications tied to a sha256, exceptions with expiry; MPL Exhibit B scan)
 - IMPL-LTTCE-FOS-00004 **covers** ARCH-LTTCE-FOS-00004
 - IMPL-LTTCE-FOS-00002 **covers** REQ-LTTCE-FOS-00002  (`foss.mjs notices [--check]`:
-  `licence-texts.mjs` selection + `notices-render.mjs`; `foss.mjs sbom`: `cyclonedx.mjs`)
+  `licence-texts.mjs` selection + `notices-render.mjs`, opening with the "Licences by type" summary from
+  the policy's `types`; `foss.mjs sbom`: `cyclonedx.mjs`)
 - IMPL-LTTCE-FOS-00002 **covers** ARCH-LTTCE-FOS-00002
 - IMPL-LTTCE-FOS-00001 **covers** REQ-LTTCE-FOS-00001  (`assert-bundled.sh`, the STST of step 390)
 - IMPL-LTTCE-FOS-00001 **covers** ARCH-LTTCE-FOS-00001
@@ -36,6 +37,9 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   metadata`: gate passes; a GPL crate fails (negative test); notices written, then missing / stale / CRLF
   checkout detected correctly; one SBOM per target. Plus renderer determinism and de-duplication, and
   CycloneDX purls and serial number.
+- UTST `policy.test.mjs` / `foss.test.mjs` — an admitted licence without a type fails validation; the type
+  lookup; the type summary orders copyleft first, counts linked components, names copyleft components,
+  marks unknown licences "unclassified".
 - ITST on the real tree: CI job `foss-compliance` (and the full local `build-test`) runs `check` and
   `notices --check` over all 8 targets.
 - STST `assert-bundled.sh`, CI step 390 — locally verified only for MSIX (an old package fails, a package

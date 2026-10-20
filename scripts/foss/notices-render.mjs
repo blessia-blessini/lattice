@@ -106,6 +106,69 @@ export function platformLabel(labels, targets) {
 // platformLabel END *******************************************
 
 
+/** Type order and wording of the "Licences by type" summary; copyleft first. */
+const TYPE_ORDER = Object.freeze([
+    ['strong-copyleft', 'strong copyleft'],
+    ['weak-copyleft', 'weak copyleft'],
+    ['permissive', 'permissive'],
+    ['public-domain', 'public-domain dedication'],
+    ['unclassified', 'unclassified'],
+]);
+
+
+//**************************************************************
+// renderTypeSummary
+//**************************************************************
+/**
+ * The "Licences by type" section: one row per licence in use with its type,
+ * component count and how many of those are linked into the program, then
+ * the components under each copyleft type by name.
+ * @param {{key: string, title: string, linked: boolean}[]} uses one per licence a component is used under
+ * @param {Record<string,string>} licenceTypes id -> type (policy "types")
+ * @returns {string[]} Markdown lines
+ */
+export function renderTypeSummary(uses, licenceTypes) {
+    const typeOf = (key) => licenceTypes[key.split(' WITH ')[0]] ?? 'unclassified';
+    const byKey = new Map();
+    for (const u of uses) {
+        if (!byKey.has(u.key)) byKey.set(u.key, { total: 0, linked: 0, titles: [] });
+        const k = byKey.get(u.key);
+        k.total++;
+        if (u.linked) k.linked++;
+        k.titles.push(u.title);
+    }
+    const rank = (key) => TYPE_ORDER.findIndex(([t]) => t === typeOf(key));
+    const keys = [...byKey.keys()].sort((a, b) =>
+        rank(a) - rank(b) || byKey.get(b).total - byKey.get(a).total || a.localeCompare(b, 'en'));
+
+    const lines = [
+        '## Licences by type',
+        '',
+        '| Licence | Type | Components | Linked into the program |',
+        '| --- | --- | ---: | ---: |',
+        ...keys.map((key) => {
+            const k = byKey.get(key);
+            const label = TYPE_ORDER[rank(key)][1];
+            return `| ${escapeInline(key)} | ${label} | ${k.total} | ${k.linked} |`;
+        }),
+        '',
+    ];
+    for (const [type, label] of TYPE_ORDER.slice(0, 2)) {
+        const ofType = keys.filter((key) => typeOf(key) === type);
+        const head = label.charAt(0).toUpperCase() + label.slice(1);
+        if (!ofType.length) {
+            lines.push(`${head}: none.`, '');
+            continue;
+        }
+        for (const key of ofType) {
+            lines.push(`${head}, ${escapeInline(key)}: ${byKey.get(key).titles.map(escapeInline).join(', ')}.`, '');
+        }
+    }
+    return lines;
+}
+// renderTypeSummary END ***************************************
+
+
 //**************************************************************
 // renderNotices
 //**************************************************************
@@ -120,9 +183,10 @@ export function platformLabel(labels, targets) {
  *   selection  from selectTexts, with `copyrights` already non-empty
  * @param {Record<string,string>} input.standardTexts id -> text (foss/licenses)
  * @param {{triple: string, label: string}[]} input.targets
+ * @param {Record<string,string>} [input.licenceTypes] id -> type, for "Licences by type"
  * @returns {string} Markdown, LF line ends, trailing newline
  */
-export function renderNotices({ entries, standardTexts, targets }) {
+export function renderNotices({ entries, standardTexts, targets, licenceTypes = {} }) {
     const sorted = [...entries].sort((a, b) =>
         a.component.name.localeCompare(b.component.name, 'en') ||
         a.component.version.localeCompare(b.component.version, 'en') ||
@@ -140,9 +204,12 @@ export function renderNotices({ entries, standardTexts, targets }) {
     const counts = { cargo: 0, npm: 0, other: 0 };
     const sections = [];
     const rows = [];
+    const uses = []; // one per licence a component is used under, for the type summary
     for (const { component: c, evaluation: ev, selection: sel, platforms, obligation } of sorted) {
         counts[c.ecosystem in counts ? c.ecosystem : 'other']++;
         const title = `${c.name} ${c.version}`;
+        const usedKeys = [...new Set(ev.chosen.map((l) => (l.exception ? `${l.id} WITH ${l.exception}` : l.id)))];
+        for (const key of usedKeys) uses.push({ key, title, linked: c.linkage === 'linked' });
         const used = ev.chosen.map((l) => (l.exception ? `${l.id} WITH ${l.exception}` : l.id)).join(' AND ');
         const where = platformLabel(platforms, targets);
         rows.push(`| ${escapeInline(c.name)} | ${escapeInline(c.version)} | ${ECOSYSTEM_LABEL[c.ecosystem] ?? ECOSYSTEM_LABEL.other} | ${escapeInline(ev.expression)} | ${escapeInline(used)} | ${c.linkage} | ${where} |`);
@@ -194,6 +261,9 @@ export function renderNotices({ entries, standardTexts, targets }) {
         '',
         'Use: "linked" means the component is part of the shipped program; "build-time" means it only runs while Lattice is built and is listed for completeness.',
         '',
+        'Not yet listed: the system libraries the Linux AppImage carries from its build system (such as GTK and WebKitGTK, mostly LGPL-2.1-or-later, dynamically linked).',
+        '',
+        ...renderTypeSummary(uses, licenceTypes),
         '## Summary',
         '',
         '| Component | Version | Kind | Declared licence | Licence used | Use | Platforms |',

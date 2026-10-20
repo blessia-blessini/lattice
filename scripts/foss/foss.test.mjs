@@ -33,7 +33,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TARGETS } from './cargo-inventory.mjs';
 import { buildSbom, purlFor } from './cyclonedx.mjs';
 import { collect, commandCheck, commandNotices, commandSbom, NOTICES_FILE, parseArgs } from './foss.mjs';
-import { escapeInline, fenced, platformLabel, renderNotices, textKey } from './notices-render.mjs';
+import { escapeInline, fenced, platformLabel, renderNotices, renderTypeSummary, textKey } from './notices-render.mjs';
 
 const REAL_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const TODAY = '2026-10-20';
@@ -184,6 +184,27 @@ describe('renderNotices', () => {
     it('labels a component on every target as "all"', () => {
         expect(platformLabel(TARGETS.map((t) => t.label), TARGETS)).toBe('all');
         expect(platformLabel(['ios', 'win-x64'], TARGETS)).toBe('win-x64, ios');
+    });
+
+    it('summarises licences by type, copyleft first, naming copyleft components', () => {
+        const uses = [
+            { key: 'MIT', title: 'a 1.0.0', linked: true },
+            { key: 'MIT', title: 'b 1.0.0', linked: false },
+            { key: 'MPL-2.0', title: 'c 1.0.0', linked: true },
+            { key: 'Apache-2.0 WITH LLVM-exception', title: 'd 1.0.0', linked: true },
+            { key: 'WTFPL', title: 'e 1.0.0', linked: true },
+        ];
+        const types = { MIT: 'permissive', 'Apache-2.0': 'permissive', 'MPL-2.0': 'weak-copyleft' };
+        const md = renderTypeSummary(uses, types).join('\n');
+        const rows = md.split('\n').filter((l) => /^\| [^-L]/.test(l));
+        expect(rows).toEqual([
+            '| MPL-2.0 | weak copyleft | 1 | 1 |',
+            '| MIT | permissive | 2 | 1 |',
+            '| Apache-2.0 WITH LLVM-exception | permissive | 1 | 1 |',
+            '| WTFPL | unclassified | 1 | 1 |',
+        ]);
+        expect(md).toMatch(/^Strong copyleft: none\.$/m);
+        expect(md).toMatch(/^Weak copyleft, MPL-2\.0: c 1\.0\.0\.$/m);
     });
 });
 

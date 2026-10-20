@@ -1025,7 +1025,9 @@ component built into Lattice for any published target — Rust crates, the npm p
 interface, and components no package manager reports, such as the Rust standard library — each with its
 version, the licence under which Lattice uses it, its copyright notices, and the full licence text that
 licence requires to accompany a copy. They SHALL be generated from the dependency lock files, and the same
-inputs SHALL always produce the same bytes. Each release SHALL publish them, together with one
+inputs SHALL always produce the same bytes. They SHALL open with a summary of the licences in use, each
+with its type — permissive, public-domain dedication, weak copyleft or strong copyleft — and its number of
+components, naming every component used under a copyleft licence. Each release SHALL publish them, together with one
 machine-readable bill of materials (CycloneDX) per built target, next to its installers.
 
 *Rationale*: before this chapter no package carried any third-party notice, so every release fell short of

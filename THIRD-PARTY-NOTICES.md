@@ -12,6 +12,28 @@ Platforms: win-x64 = x86_64-pc-windows-msvc; win-arm64 = aarch64-pc-windows-msvc
 
 Use: "linked" means the component is part of the shipped program; "build-time" means it only runs while Lattice is built and is listed for completeness.
 
+Not yet listed: the system libraries the Linux AppImage carries from its build system (such as GTK and WebKitGTK, mostly LGPL-2.1-or-later, dynamically linked).
+
+## Licences by type
+
+| Licence | Type | Components | Linked into the program |
+| --- | --- | ---: | ---: |
+| MPL-2.0 | weak copyleft | 5 | 4 |
+| MIT | permissive | 753 | 657 |
+| ISC | permissive | 38 | 38 |
+| Unicode-3.0 | permissive | 19 | 16 |
+| BSD-3-Clause | permissive | 16 | 16 |
+| Apache-2.0 | permissive | 6 | 6 |
+| BSD-2-Clause | permissive | 4 | 4 |
+| Zlib | permissive | 2 | 2 |
+| Apache-2.0 WITH LLVM-exception | permissive | 1 | 0 |
+| CC0-1.0 | public-domain dedication | 2 | 2 |
+| Unlicense | public-domain dedication | 1 | 1 |
+
+Strong copyleft: none.
+
+Weak copyleft, MPL-2.0: cssparser 0.37.0, cssparser-macros 0.7.1, dtoa-short 0.3.5, option-ext 0.2.0, selectors 0.38.0.
+
 ## Summary
 
 | Component | Version | Kind | Declared licence | Licence used | Use | Platforms |
