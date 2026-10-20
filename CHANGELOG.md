@@ -7,10 +7,13 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.38
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: updated 3rd party notices with new KaTeX version
+- FIX: updated 3rd party notices
 - FEAT: Add FOSS licence gate and generated third-party notices
 ---
 ## v0.3.37
 ### Changes
+- FIX: updated 3rd party notices with new KaTeX version
 - CHORE: Build every CI leg without the FOSS tooling to prove the product does not need it
 - FIX: Act on review cycle 1 of the licence-type summary
 - FEAT: Summarise the licences by type in the third-party notices
