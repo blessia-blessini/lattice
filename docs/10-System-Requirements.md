@@ -1030,6 +1030,10 @@ with its type — permissive, public-domain dedication, weak copyleft or strong 
 components, naming every component used under a copyleft licence. Each release SHALL publish them, together with one
 machine-readable bill of materials (CycloneDX) per built target, next to its installers.
 
+*Deferred*: the system libraries the Linux AppImage carries from its Ubuntu build image (174 shared
+libraries from 111 packages in v0.3.36 — GTK, WebKitGTK, GLib …) are not listed; the AppImage carries their
+Debian copyright files under `usr/share/doc/`, and the notices say so (follow-up FU-1).
+
 *Rationale*: before this chapter no package carried any third-party notice, so every release fell short of
 the attribution condition of the MIT, BSD, ISC, Apache and similar licences of the components it contains.
 

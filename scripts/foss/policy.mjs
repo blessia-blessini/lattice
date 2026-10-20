@@ -32,6 +32,9 @@ import fs from 'fs';
 import path from 'path';
 import { CATEGORY_RANK, evaluateExpression, formatExpression, parseExpression } from './spdx-expr.mjs';
 
+/** The licence types `types` in policy.json may use, copyleft first. */
+export const LICENCE_TYPES = Object.freeze(['strong-copyleft', 'weak-copyleft', 'permissive', 'public-domain']);
+
 
 //**************************************************************
 // validatePolicy
@@ -55,6 +58,14 @@ export function validatePolicy(policy) {
     policy.types ??= {};
     if (typeof policy.types !== 'object' || Array.isArray(policy.types)) {
         throw new Error('policy: "types" must be an object of type -> licence ids');
+    }
+    for (const [type, ids] of Object.entries(policy.types)) {
+        if (!LICENCE_TYPES.includes(type)) {
+            throw new Error(`policy: unknown licence type "${type}" (known: ${LICENCE_TYPES.join(', ')})`);
+        }
+        if (!Array.isArray(ids) || !ids.every((id) => typeof id === 'string')) {
+            throw new Error(`policy: "types.${type}" must be an array of licence ids`);
+        }
     }
     const typed = new Set(Object.values(policy.types).flat());
     const untyped = [...policy.allowed, ...Object.keys(policy.obligation)].filter((id) => !typed.has(id));

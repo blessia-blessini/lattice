@@ -206,6 +206,14 @@ describe('renderNotices', () => {
         expect(md).toMatch(/^Strong copyleft: none\.$/m);
         expect(md).toMatch(/^Weak copyleft, MPL-2\.0: c 1\.0\.0\.$/m);
     });
+
+    it('names strong-copyleft components, and survives a missing or unknown type map', () => {
+        const uses = [{ key: 'GPL-3.0-only', title: 'g 1.0.0', linked: true }, { key: 'MIT', title: 'a 1.0.0', linked: true }];
+        const md = renderTypeSummary(uses, { 'GPL-3.0-only': 'strong-copyleft', MIT: 'perm' }).join('\n');
+        expect(md).toMatch(/^Strong copyleft, GPL-3\.0-only: g 1\.0\.0\.$/m);
+        expect(md).toMatch(/^\| MIT \| unclassified \| 1 \| 1 \|$/m);
+        expect(renderTypeSummary(uses).join('\n')).toMatch(/^\| GPL-3\.0-only \| unclassified/m);
+    });
 });
 
 describe('buildSbom', () => {

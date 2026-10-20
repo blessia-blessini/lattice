@@ -34,6 +34,7 @@
 
 import crypto from 'crypto';
 import { stripTemplateCopyright } from './licence-texts.mjs';
+import { LICENCE_TYPES } from './policy.mjs';
 
 const ECOSYSTEM_LABEL = Object.freeze({ cargo: 'Rust crate', npm: 'npm package', other: 'other component' });
 
@@ -106,14 +107,16 @@ export function platformLabel(labels, targets) {
 // platformLabel END *******************************************
 
 
-/** Type order and wording of the "Licences by type" summary; copyleft first. */
-const TYPE_ORDER = Object.freeze([
-    ['strong-copyleft', 'strong copyleft'],
-    ['weak-copyleft', 'weak copyleft'],
-    ['permissive', 'permissive'],
-    ['public-domain', 'public-domain dedication'],
-    ['unclassified', 'unclassified'],
-]);
+/** Wording of each licence type in the "Licences by type" summary. */
+const TYPE_LABEL = Object.freeze({
+    'strong-copyleft': 'strong copyleft',
+    'weak-copyleft': 'weak copyleft',
+    permissive: 'permissive',
+    'public-domain': 'public-domain dedication',
+    unclassified: 'unclassified',
+});
+/** [type, label] in summary order: the policy's types (copyleft first), then unclassified. */
+const TYPE_ORDER = Object.freeze([...LICENCE_TYPES, 'unclassified'].map((t) => [t, TYPE_LABEL[t] ?? t]));
 
 
 //**************************************************************
@@ -127,8 +130,13 @@ const TYPE_ORDER = Object.freeze([
  * @param {Record<string,string>} licenceTypes id -> type (policy "types")
  * @returns {string[]} Markdown lines
  */
-export function renderTypeSummary(uses, licenceTypes) {
-    const typeOf = (key) => licenceTypes[key.split(' WITH ')[0]] ?? 'unclassified';
+export function renderTypeSummary(uses, licenceTypes = {}) {
+    // A type the summary does not know is shown as "unclassified" rather than
+    // indexing outside TYPE_ORDER (validatePolicy rejects such types anyway).
+    const typeOf = (key) => {
+        const type = licenceTypes[key.split(' WITH ')[0]];
+        return TYPE_ORDER.some(([t]) => t === type) ? type : 'unclassified';
+    };
     const byKey = new Map();
     for (const u of uses) {
         if (!byKey.has(u.key)) byKey.set(u.key, { total: 0, linked: 0, titles: [] });
@@ -261,7 +269,7 @@ export function renderNotices({ entries, standardTexts, targets, licenceTypes = 
         '',
         'Use: "linked" means the component is part of the shipped program; "build-time" means it only runs while Lattice is built and is listed for completeness.',
         '',
-        'Not yet listed: the system libraries the Linux AppImage carries from its build system (such as GTK and WebKitGTK, mostly LGPL-2.1-or-later, dynamically linked).',
+        'The Linux AppImage additionally carries system libraries from the Ubuntu image it is built on (such as GTK, WebKitGTK and GLib, many of them under LGPL-2.1-or-later, dynamically linked). Their copyright and licence files are inside the AppImage under `usr/share/doc/`; they are not repeated in this file.',
         '',
         ...renderTypeSummary(uses, licenceTypes),
         '## Summary',

@@ -63,6 +63,13 @@ describe('validatePolicy', () => {
             .toThrow(/no entry in "types" for ISC, MPL-2.0/);
     });
 
+    it('rejects an unknown licence type and a non-array type entry', () => {
+        // Review: a typo'd type crashed the renderer; a bare string passed validation.
+        expect(() => validatePolicy({ types: { copyleft: ['GPL-3.0-only'] } })).toThrow(/unknown licence type "copyleft"/);
+        expect(() => validatePolicy({ allowed: ['MIT'], types: { permissive: 'MIT' } })).toThrow(/must be an array/);
+        expect(() => validatePolicy({ types: { permissive: null } })).toThrow(/must be an array/);
+    });
+
     it('turns "types" into an id -> type lookup', () => {
         expect(licenceTypeMap(base())).toMatchObject({ MIT: 'permissive', 'MPL-2.0': 'weak-copyleft' });
     });

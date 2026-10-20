@@ -12,7 +12,7 @@ Platforms: win-x64 = x86_64-pc-windows-msvc; win-arm64 = aarch64-pc-windows-msvc
 
 Use: "linked" means the component is part of the shipped program; "build-time" means it only runs while Lattice is built and is listed for completeness.
 
-Not yet listed: the system libraries the Linux AppImage carries from its build system (such as GTK and WebKitGTK, mostly LGPL-2.1-or-later, dynamically linked).
+The Linux AppImage additionally carries system libraries from the Ubuntu image it is built on (such as GTK, WebKitGTK and GLib, many of them under LGPL-2.1-or-later, dynamically linked). Their copyright and licence files are inside the AppImage under `usr/share/doc/`; they are not repeated in this file.
 
 ## Licences by type
 
