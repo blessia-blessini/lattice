@@ -1074,9 +1074,14 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GH_TOKEN2: ${{ secrets.GH_POST_AVTRIGGER }}
+        # Expressions live HERE, not in the script below: a run: block holding
+        # any ${{ }} is evaluated as ONE expression, capped at 21000 characters
+        # -- this script outgrew that. Plain env vars also rule out template
+        # injection. GITHUB_REPOSITORY / GITHUB_REF_NAME are set by the runner.
+        RELEASE_VERSION: ${{ steps.version.outputs.VERSION }}
       shell: bash
       run: |
-        VERSION="${{ steps.version.outputs.VERSION }}"
+        VERSION="${RELEASE_VERSION}"
         DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
         RELEASE_URL="${RELEASE_URL}"
         OUT_DIR="release-site/Lattice-Releases/assets-${VERSION}"
@@ -1129,11 +1134,11 @@ jobs:
         MS_STORE_LINK+='<a href="https://apps.microsoft.com/detail/9pm3gb09941t">https://apps.microsoft.com/detail/9pm3gb09941t</a></p>'
 
         # Fetch asset download URLs from the GitHub Release API
-        ASSETS_JSON=$(gh api repos/"${{ github.repository }}"/releases/tags/${VERSION} \
+        ASSETS_JSON=$(gh api repos/"${GITHUB_REPOSITORY}"/releases/tags/${VERSION} \
           --jq '.assets[] | [.name, .browser_download_url, .size] | @tsv')
 
         HTPAYLOAD=$(jq -nr \
-          --arg repo "${{ github.repository }}" \
+          --arg repo "${GITHUB_REPOSITORY}" \
           '"https://api.github.com/repos/\($repo)/actions/workflows/AntivirusOnUrl.yml/dispatches"')
 
         printf 'HTTP payload is %s\n' "$HTPAYLOAD"
@@ -1224,7 +1229,7 @@ jobs:
         printf '%s\n' "## Notes" >> "$OUT"
         printf '%s\n' "" >> "$OUT"
         printf '%s\n' "- [Full release on GitHub](${RELEASE_URL})" >> "$OUT"
-        printf '%s\n' "- DUAL LICENSE — for terms, see [README.md section Licensing](https://github.com/${{ github.repository }}#licensing)." >> "$OUT"
+        printf '%s\n' "- DUAL LICENSE — for terms, see [README.md section Licensing](https://github.com/${GITHUB_REPOSITORY}#licensing)." >> "$OUT"
         # REQ-LTTCE-FOS-00002 -- the same file every installer carries.
         if [ -n "${NOTICES_URL:-}" ]; then
           printf '%s\n' "- Third-party components and their licences: [THIRD-PARTY-NOTICES.md](${NOTICES_URL})." >> "$OUT"
@@ -1484,7 +1489,7 @@ jobs:
           [ -n "$name" ] || continue
 
           PAYLOAD=$(jq -nc \
-            --arg ref "${{ github.ref_name }}" \
+            --arg ref "${GITHUB_REF_NAME}" \
             --arg url "$dl_url" \
             --arg who "$name" \
             '{ref: $ref, inputs: {url2scan: $url, submitted_by: $who}}')
