@@ -1,0 +1,16 @@
+{
+  "$comment": "Components that ship in Lattice but that neither Cargo.lock nor package-lock.json reports. Each needs name, version, license (SPDX), copyrights, linkage and platforms ('all' or a list of target labels from scripts/foss/cargo-inventory.mjs). Linux AppImage system libraries are added under follow-up FU-1.",
+  "components": [
+    {
+      "name": "Rust standard library (std, core, alloc)",
+      "version": "toolchain",
+      "license": "MIT OR Apache-2.0",
+      "copyrights": [
+        "Copyrights in the Rust project are retained by their contributors (The Rust Project Developers)."
+      ],
+      "repository": "https://github.com/rust-lang/rust",
+      "linkage": "linked",
+      "platforms": "all"
+    }
+  ]
+}

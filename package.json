@@ -2,6 +2,7 @@
   "name": "lattice",
   "private": true,
   "version": "0.3.36",
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "engines": {
     "node": ">=24"
@@ -16,7 +17,9 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "doc": "typedoc --plugin typedoc-plugin-markdown --out docs/gen/frontend --entryFileName frontend-readme.md --entryPointStrategy expand ./src --exclude \"**/*.test.tsx\" --exclude \"**/test/**\"",
-    "clean": "rimraf dist node_modules/.vite src-tauri/target"
+    "clean": "rimraf dist node_modules/.vite src-tauri/target",
+    "foss:check": "node scripts/foss/foss.mjs check",
+    "foss:notices": "node scripts/foss/foss.mjs notices"
   },
   "dependencies": {
     "@babel/runtime": "^7.28.4",

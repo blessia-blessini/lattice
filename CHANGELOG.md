@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.37
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FEAT: Add FOSS licence gate and generated third-party notices
 - CHORE: RELEASE v0.3.36 Doc
 ---
 
