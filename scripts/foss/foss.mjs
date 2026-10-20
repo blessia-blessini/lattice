@@ -24,6 +24,8 @@
 
 /// FOSS compliance line — command line (foss.mjs)
 ///
+/// IMPL-LTTCE-FOS-00004 (gate) and IMPL-LTTCE-FOS-00002 (notices, SBOM).
+///
 ///   node scripts/foss/foss.mjs check            licence gate, all targets (REQ-LTTCE-FOS-00004)
 ///   node scripts/foss/foss.mjs notices          write THIRD-PARTY-NOTICES.md (REQ-LTTCE-FOS-00002)
 ///   node scripts/foss/foss.mjs notices --check  fail if the committed file is stale

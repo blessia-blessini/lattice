@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.37
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- DOCS: Add chapter FOS - third-party licence compliance - and its trace
 - FIX: Keep the release-site script under the CI expression limit
 - FEAT: Add the FOSS compliance line to CI
 - FEAT: Bundle the licence notices and show them read-only in the app

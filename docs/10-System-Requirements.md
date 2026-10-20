@@ -21,6 +21,7 @@ implementation artefacts. For the ID schema definition see `11-Traceability-Requ
   - [Chapter DLN — Daily Note](#chapter-dln-daily-note)
   - [Chapter VLT — Vault Selection](#chapter-vlt-vault-selection)
   - [Chapter WIN — Editor Window](#chapter-win-editor-window)
+  - [Chapter FOS — Third-Party Licence Compliance](#chapter-fos-third-party-licence-compliance)
     - [General](#general)
     - [Severity Visualisation](#severity-visualisation)
     - [Rule: Setext Headings](#rule-setext-headings)
@@ -1000,6 +1001,50 @@ ignored the same way, so that saving settings can never write to any other file.
 **REQ-LTTCE-WIN-00001** — On desktop, a new editor window SHALL open with a content area of **850 × 600**
 logical pixels (width × height; the operating system's title bar and frame come on top, and display scaling
 multiplies both).
+
+## Chapter FOS — Third-Party Licence Compliance
+
+Lattice is offered under the GNU Affero General Public License, version 3 or any later version
+(AGPL-3.0-or-later), and alternatively under a commercial licence. It is built from several hundred
+third-party open-source components. Their licences allow redistribution on conditions — most of them that
+each copy carries the component's copyright notice and licence text. This chapter makes every copy of
+Lattice meet those conditions, and keeps components out whose licence would conflict with either of
+Lattice's own licences.
+
+<!--REQ-LTTCE-FOS-00001-->
+**REQ-LTTCE-FOS-00001** — Every distributed desktop package — Windows installer, Microsoft Store package,
+Debian package, AppImage and macOS disk image — SHALL contain Lattice's `LICENSE` and the third-party
+notices of REQ-LTTCE-FOS-00002, identical to those of the source tree it was built from.
+
+*Deferred*: the Android and iOS packages do not carry them yet; neither can be tested where Lattice is
+developed (follow-up FU-6).
+
+<!--REQ-LTTCE-FOS-00002-->
+**REQ-LTTCE-FOS-00002** — The third-party notices (`THIRD-PARTY-NOTICES.md`) SHALL list every third-party
+component built into Lattice for any published target — Rust crates, the npm packages of the user
+interface, and components no package manager reports, such as the Rust standard library — each with its
+version, the licence under which Lattice uses it, its copyright notices, and the full licence text that
+licence requires to accompany a copy. They SHALL be generated from the dependency lock files, and the same
+inputs SHALL always produce the same bytes. Each release SHALL publish them, together with one
+machine-readable bill of materials (CycloneDX) per built target, next to its installers.
+
+*Rationale*: before this chapter no package carried any third-party notice, so every release fell short of
+the attribution condition of the MIT, BSD, ISC, Apache and similar licences of the components it contains.
+
+<!--REQ-LTTCE-FOS-00003-->
+**REQ-LTTCE-FOS-00003** — The Settings panel SHALL name Lattice's licence and offer "Open-source licences",
+which opens the bundled third-party notices in an editor window. That window SHALL NOT let the user change
+the document, and saving to any file inside the application's installed resources SHALL be refused.
+
+*Rationale*: a per-user Windows installation puts the resources in a folder the user may write to; without
+the refusal one keystroke and an autosave would alter the installed notices.
+
+<!--REQ-LTTCE-FOS-00004-->
+**REQ-LTTCE-FOS-00004** — A release SHALL NOT be published from a source tree in which any shipped
+third-party component has no licence, a licence the licence policy denies, or a licence the policy does not
+classify. The policy SHALL admit a licence only if it fits **both** of Lattice's licences, and SHALL be one
+versioned file in the repository. A licence clarification for a single component SHALL be tied to the
+content hash of the file that proves it, and an exception SHALL carry an expiry date.
 
 ---
 
