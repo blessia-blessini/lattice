@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.37
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- version 0.3.37
 - feat: implement isolated vault path resolution module and unit tests
 - FIX: Act on review cycle 2 of the FOSS compliance line
 - FIX: Act on review cycle 1 of the FOSS compliance line
