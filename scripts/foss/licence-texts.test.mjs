@@ -98,8 +98,10 @@ describe('extractCopyrights', () => {
         // zune-core / zune-jpeg ship "(C) zune-image developers".
         const own = MIT_OWN.replace('Copyright (c) 2019 Jane Doe', '(C) zune-image developers');
         expect(extractCopyrights([own])).toEqual(['(C) zune-image developers']);
-        // In a combined MIT + Apache file "(c) You must retain" is still prose.
-        expect(extractCopyrights([`${own}\n\n${std('Apache-2.0')}`])).toEqual([]);
+        // A combined MIT + Apache file keeps its holder (review cycle 2: a
+        // file-level rule dropped it) while "(c) You must retain" stays prose.
+        expect(extractCopyrights([`${own}\n\n${std('Apache-2.0')}`])).toEqual(['(C) zune-image developers']);
+        expect(extractCopyrights([`(c) Google LLC\n\n${std('Apache-2.0')}`])).toEqual(['(c) Google LLC']);
     });
 
     it('keeps "Portions Copyright" and "Copyright holder: <name>"', () => {
@@ -107,6 +109,13 @@ describe('extractCopyrights', () => {
             'Portions Copyright 2001 Old Corp',
             'Copyright holder: Jane Doe',
         ]);
+    });
+
+    it('does not take "Copyright notice: ..." prose for a holder', () => {
+        // Review cycle 2: the ":" exemption once covered every prose word.
+        const prose = 'Copyright notice: The above copyright notice shall be included.\nCopyright statement: see below\nCopyright license: granted';
+        expect(extractCopyrights([prose])).toEqual([]);
+        expect(extractCopyrights(['Copyright owner: Old Corp'])).toEqual(['Copyright owner: Old Corp']);
     });
 
     it('de-duplicates across files', () => {
@@ -164,6 +173,15 @@ describe('stripTemplateCopyright and normalizeText', () => {
         expect(stripTemplateCopyright(std('MIT'))).toMatch(/^MIT License/);
     });
 
+    it.each(['0BSD', 'ISC', 'MIT-0', 'BSD-2-Clause', 'BSD-3-Clause', 'Zlib', 'MIT'])(
+        'leaves no copyright line in the %s template',
+        (id) => {
+            // Review cycle 2: 0BSD's "YEAR by AUTHOR EMAIL" survived, and the
+            // ISC template names ISC itself as the holder.
+            expect(stripTemplateCopyright(std(id))).not.toMatch(/^\s*copyright\b/im);
+        },
+    );
+
     it('gives the same text for CRLF, BOM and trailing spaces', () => {
         expect(normalizeText('﻿a  \r\nb\r\n\r\n')).toBe('a\nb');
     });
@@ -205,5 +223,22 @@ describe('files on disk', () => {
         expect(findExhibitB(dir)).toEqual([]);
         fs.writeFileSync(path.join(dir, 'src', 'bad.rs'), `${header}\nfn main() {}`);
         expect(findExhibitB(dir)).toEqual(['src/bad.rs']);
+    });
+
+    it('flags a header that copies the Exhibit B heading, not a reflowed MPL text', () => {
+        // Review cycle 2: the skip rule keyed on the Exhibit B heading, which
+        // a header may copy and a reformatted licence may spell differently.
+        fs.mkdirSync(path.join(dir, 'src'));
+        fs.writeFileSync(path.join(dir, 'src', 'copied.rs'), [
+            '// Exhibit B - "Incompatible With Secondary Licenses" Notice',
+            '//',
+            '//   This Source Code Form is "Incompatible With Secondary Licenses", as',
+            '//   defined by the Mozilla Public License, v. 2.0.',
+        ].join('\n'));
+        const reflowed = std('MPL-2.0')
+            .replace(/Exhibit B - "Incompatible With Secondary Licenses" Notice/, 'Exhibit B -- "Incompatible With\nSecondary Licenses" Notice')
+            .replace(/\n(?!\n)/g, ' ');
+        fs.writeFileSync(path.join(dir, 'MPL.md'), reflowed);
+        expect(findExhibitB(dir)).toEqual(['src/copied.rs']);
     });
 });

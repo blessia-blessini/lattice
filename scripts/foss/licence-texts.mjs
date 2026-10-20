@@ -46,8 +46,16 @@ const NOTICE_FILE_RE = /^notice([-._ ].*)?$/i;
 const MAX_LICENCE_FILE_BYTES = 256 * 1024;
 // Comment markers may sit between the words of a wrapped source header.
 const EXHIBIT_B_RE = /Incompatible[\s/#*]+With[\s/#*]+Secondary[\s/#*]+Licen[cs]es/i;
-// The heading of Exhibit B inside the full MPL-2.0 text — never in a header.
-const MPL_FULL_TEXT_RE = /Exhibit B\s*[-–—]\s*["“]?Incompatible With Secondary Licen[cs]es["”]?\s*Notice/i;
+// "(c)" as a list label in licence prose. Case-sensitive on purpose.
+const PROSE_LIST_ITEM_RE = /^\([cC]\)\s+(You|under|the|a|an|any|if|to|that|when|where|such|for|in|with|from|by|each|all|no|this|its|it)\b/;
+// Section headings of the full MPL-2.0 body. A source header may copy the
+// Exhibit B heading verbatim, but never the licence's numbered sections.
+const MPL_BODY_MARKERS = [
+    /\b1\.\s+Definitions\b/i,
+    /\b2\.\s+License\s+Grants\s+and\s+Conditions\b/i,
+    /\b3\.\s+Responsibilities\b/i,
+    /Exhibit\s+A\W+Source\s+Code\s+Form\s+License\s+Notice/i,
+];
 
 
 //**************************************************************
@@ -156,10 +164,6 @@ export function shippedLicenceIds(files) {
 export function extractCopyrights(texts) {
     const lines = [];
     for (const text of texts) {
-        // Standard licences with lettered list items — Apache "(c) You must
-        // retain ...", MPL "(c) under Patent Claims ..." — make a bare "(c)"
-        // ambiguous; per-copy licences (MIT, BSD ...) have no such items.
-        const hasListProse = detectLicences(text).some((id) => !PER_COPY.has(id));
         for (const raw of text.split('\n')) {
             const line = raw.trim().replace(/\s+/g, ' ');
             // "Copyrights in the X project are retained by their contributors."
@@ -170,13 +174,17 @@ export function extractCopyrights(texts) {
             // Case-sensitive: a lower-case "copyright ..." line continues a
             // sentence of licence prose from the line above.
             if (!/^((Portions )?Copyright\b|COPYRIGHT\b|©)/.test(line)) {
-                // "(c) <year> ..." is always a copyright line; "(c) <name>" only
-                // outside licence prose that uses "(c)" as a list label.
-                if (!/^\(c\)\s*\d{4}/i.test(line) && !(/^\(c\)\s+\S/i.test(line) && !hasListProse)) continue;
+                // "(c)" also labels list items in licence prose: Apache
+                // "(c) You must retain ...", MPL "(c) under Patent Claims ...".
+                // Those open with "You" or a lower-case function word; a holder
+                // ("(c) 2001 X", "(C) zune-image developers", "(c) Google LLC")
+                // does not. Judged per line, so a combined file keeps its holders.
+                if (!/^\(c\)\s+\S/i.test(line) || PROSE_LIST_ITEM_RE.test(line)) continue;
             }
             if (line.length > 200 || /[<[{](yyyy|year|owner|name|copyright holder)/i.test(line)) continue;
-            // Prose about copyright — but "Copyright holder: <name>" names one.
-            if (/^copyright (notice|holders?|owners?|law|license|and|of|to|in|for|statement|\(c\) <)(?!\s*:)/i.test(line)) continue;
+            // Prose about copyright — but "Copyright holder: <name>" /
+            // "Copyright owner: <name>" names one (the ":" exempts only those two).
+            if (/^copyright (notice|law|license|and|of|to|in|for|statement|\(c\) <|holders?(?!\s*:)|owners?(?!\s*:))/i.test(line)) continue;
             if (!/[\p{L}\d]/u.test(line.replace(/^(copyright|\(c\)|©)/gi, ''))) continue;
             lines.push(line);
         }
@@ -208,12 +216,15 @@ export function fallbackCopyright(component) {
 // stripTemplateCopyright
 //**************************************************************
 /**
- * Removes the placeholder copyright line from a standard licence template.
+ * Removes every copyright line from a standard licence template. The SPDX
+ * templates carry placeholders in several spellings ("<year> <owner>",
+ * "YEAR by AUTHOR EMAIL") and, for ISC, the example holder ISC itself; the
+ * component's real holders are listed in its own section instead.
  * @param {string} template
  * @returns {string}
  */
 export function stripTemplateCopyright(template) {
-    return normalizeText(template.split('\n').filter((l) => !/^\s*copyright\b.*[<[]/i.test(l)).join('\n'));
+    return normalizeText(template.split('\n').filter((l) => !/^\s*(copyright\b|©)/i.test(l)).join('\n'));
 }
 // stripTemplateCopyright END **********************************
 
@@ -287,10 +298,12 @@ export function findExhibitB(dir, maxFiles = 20000) {
                 count++;
                 if (fs.statSync(full).size > 4 * 1024 * 1024) continue;
                 const text = fs.readFileSync(full, 'utf8');
-                // The full MPL text quotes the Exhibit B sentence under its
-                // own heading; a source header carrying the notice also names
-                // the MPL, so "mentions MPL-2.0" cannot tell them apart.
-                if (EXHIBIT_B_RE.test(text) && !MPL_FULL_TEXT_RE.test(text)) {
+                // The full MPL text quotes the Exhibit B sentence; a source
+                // header carrying the notice also names the MPL and may copy
+                // the Exhibit B heading. Only the licence body has its
+                // numbered sections (3 of 4 markers: tolerant of reflowing).
+                const isMplBody = MPL_BODY_MARKERS.filter((re) => re.test(text)).length >= 3;
+                if (EXHIBIT_B_RE.test(text) && !isMplBody) {
                     hits.push(path.relative(dir, full).split(path.sep).join('/'));
                 }
             }

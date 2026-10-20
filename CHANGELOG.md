@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.37
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: Act on review cycle 2 of the FOSS compliance line
 - FIX: Act on review cycle 1 of the FOSS compliance line
 - DOCS: Add chapter FOS - third-party licence compliance - and its trace
 - FIX: Keep the release-site script under the CI expression limit
