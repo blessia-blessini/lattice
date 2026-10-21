@@ -1,4 +1,4 @@
-# _Lattice_ &emsp;&emsp;&emsp; [![Build and Test Matrix](https://github.com/blessia-blessini/lattice/actions/workflows/buildAndTest.yml/badge.svg)](https://github.com/blessia-blessini/lattice/actions/workflows/buildAndTest.yml) [![License](https://img.shields.io/badge/License-AGPL--3.0-red.svg)](LICENSE) 
+# _Lattice_ &emsp;&emsp;&emsp; [![Build and Test Matrix](https://github.com/blessia-blessini/lattice/actions/workflows/buildAndTest.yml/badge.svg)](https://github.com/blessia-blessini/lattice/actions/workflows/buildAndTest.yml) [![License](https://img.shields.io/badge/License-AGPL--3.0--or--later%20%7C%20commercial-red.svg)](#licensing) 
 
 **Lattice** is an open-source, local-first Markdown editor and viewer, designed to bridge the gap between Personal Knowledge Management (PKM), and Systems Engineering.
 
@@ -134,29 +134,54 @@ We provide cross-platform scripts to help you build andrun the app, and to autom
 
 ## LICENSING
 
-This software is dual-licensed:
+Lattice is dual-licensed. Its copyright holder, Blessia Blessini, offers it under your choice of:
 
-1. **Personal & Open Source Use**: Licensed under the [GNU AGPLv3](LICENSE). 
-   This ensures the software remains transparent and that improvements 
-   by the community are shared back.
-   
-2. **Commercial Use**: For entities that wish to use this software 
-   without the "share-alike" requirements of the AGPL, a commercial 
-   license is required. Please contact `blessia AT blessini.com` for details.
+1. **The GNU Affero General Public License, version 3 or (at your option) any later version**
+   (AGPL-3.0-or-later, see [LICENSE](LICENSE)) — free of charge, for any purpose: personal,
+   open-source **and commercial** use, in an organisation of any size. In return, the AGPL's
+   conditions apply. In short: if you distribute Lattice or a modified version of it, you pass on
+   the same freedoms and make the corresponding source code available; if you modify Lattice and
+   let others use your version over a network, you offer them its source code. The [LICENSE](LICENSE)
+   text is binding; this summary is not.
 
+2. **A commercial licence** — for anyone who wants to use, modify, embed or distribute Lattice
+   without the AGPL's conditions, for example inside a proprietary product.
+   Contact `blessia AT blessini.com`.
 
-### COMMERCIAL USAGE POLICY
+Lattice also contains third-party components under their own licences; they are listed with their
+copyright notices and licence texts in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
-To encourage individual productivity, Blessia-Blessini grants you the following additional permissions under **Section 7** of the [GNU AGPLv3](LICENSE):
+### WHEN WE ASK YOU TO CHOOSE THE COMMERCIAL LICENCE
 
-  - **Individual Employee Use**: Any individual employee of a corporation is permitted to use the software for their personal work tasks and editing without a paid commercial license.
+Everything below is allowed under the AGPL. Nevertheless, the commercial licence funds Lattice's
+development, so we ask organisations to take one when Lattice is:
 
-  - **Threshold for Commercial Licensing**: A formal Commercial License is only required when the software is:
+- integrated (embedded) into the organisation's automated workflows or production pipelines,
+- distributed as part of a commercial product or service, or
+- used by more than *25 people* within the same organisation.
 
-    - Integrated (embedded) into the company's automated workflows or production pipelines.
-    - Distributed as part of a commercial product or service.
-    - Deployed for use by more than *25 employees* within the same organization
-   
-⇒ If your usage meets these "embedded" or "team-wide" criteria, please contact  `blessia AT blessini.com` for a Commercial License.
+Individual employees who use Lattice for their own work tasks and editing are not asked to.
 
-See the [LICENSE](LICENSE) file for the full AGPLv3 text.
+This is a request, not a condition: it adds no restriction to the AGPL, and the AGPL remains
+available to everyone. Contact `blessia AT blessini.com`.
+
+### YOUR DOCUMENTS
+
+The AGPL covers Lattice itself, not the documents you write with it.
+
+**Additional permission under section 7 of the AGPL — exported documents.** When Lattice exports a
+document (for example to HTML or PDF), it may copy parts of its own stylesheets or other code into
+the exported file. As a special exception, the copyright holder gives you permission to use, copy,
+modify and distribute those copied parts, as part of the exported document, under terms of your
+choice; the AGPL's conditions do not apply to the exported document because of them. This exception
+does not apply to Lattice itself or to any modified version of Lattice. If you modify Lattice, you
+may extend this exception to your version, but you are not obliged to do so; if you do not wish to,
+delete this exception statement from your version.
+
+Third-party parts that an export may contain (such as KaTeX's stylesheet and fonts) remain under
+their own licences, listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
+### CONTRIBUTING
+
+Because Lattice is offered under two licences, contributions can only be accepted under terms that
+allow them to be offered under both. Please open an issue before preparing a pull request.

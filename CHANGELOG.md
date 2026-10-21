@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.38
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- DOCS: Restate Lattice's licensing as a coherent dual licence
 - FIX: updated 3rd party notices with new KaTeX version
 - FIX: updated 3rd party notices
 - FEAT: Add FOSS licence gate and generated third-party notices
