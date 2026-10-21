@@ -37,11 +37,12 @@ const GITHUB_MARKDOWN_CSS = readFileSync(
     'utf8',
 );
 
-/** The generated export notices and the version of the KaTeX package the export imports. */
+/** The generated export notices. */
 const EXPORT_NOTICES = readFileSync(resolve(__dirname, 'export-notices.generated.txt'), 'utf8').replace(/\r\n/g, '\n');
-const KATEX_VERSION: string = JSON.parse(
-    readFileSync(resolve(__dirname, '../../node_modules/katex/package.json'), 'utf8'),
-).version;
+
+/** The installed (hoisted) version of a package — the copy the export imports. */
+const installedVersion = (pkg: string): string =>
+    JSON.parse(readFileSync(resolve(__dirname, '../../node_modules', pkg, 'package.json'), 'utf8')).version;
 
 /** Every font the shipped sheet names in a woff2 `url(...)`. */
 const FONTS_NAMED_BY_SHEET = [...SHIPPED_KATEX_CSS.matchAll(/fonts\/([\w-]+)\.woff2/g)].map((m) => m[1]);
@@ -227,8 +228,8 @@ describe('exportStylesheet (third-party notices — REQ-LTTCE-FOS-00005)', () =>
         expect(comment).toMatch(/Permission is hereby granted, free of charge/);
     });
 
-    it('names the KaTeX version whose stylesheet this build bundles', () => {
-        expect(EXPORT_NOTICES).toContain(`- katex ${KATEX_VERSION} (`);
+    it.each(['katex', 'github-markdown-css'])('names the version of %s this build bundles', (pkg) => {
+        expect(EXPORT_NOTICES).toContain(`- ${pkg} ${installedVersion(pkg)} (`);
     });
 });
 
