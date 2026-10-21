@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.38
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: Address the four nits of the APPROVED FU-1 review cycle 2
 - FIX: Account for every file in the Linux AppImage, its runtime and AppRun included
 - FIX: Show the source URL template and survive unknown packages in the AppImage gate
 - FIX: Carry every copyright file and licence text inside the Linux AppImage

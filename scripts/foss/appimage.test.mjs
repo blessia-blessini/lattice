@@ -217,6 +217,12 @@ describe('renderAppImageSection', () => {
         expect(outsideCode).not.toMatch(/<[A-Za-z/][^>]*>/);
     });
 
+    it('scopes the Ubuntu source pointer to the Ubuntu packages and names the runtime repository', () => {
+        expect(lines).toMatch(/sources of the Ubuntu packages below are also available from Ubuntu/);
+        expect(lines).toContain('`https://github.com/AppImage/type2-runtime`');
+        expect(lines).toMatch(/system libraries and data files below/);
+    });
+
     it('says where the copyright files and the licence texts they point to are', () => {
         expect(lines).toContain('`usr/share/doc/<package>/copyright`');
         expect(lines).toContain('`usr/share/common-licenses/`');
@@ -356,7 +362,7 @@ describe('the reviewed file patterns on the real tree', () => {
     });
 
     it('leave a typelib, a schema, a WebKit helper and AppRun.wrapped to a package or the bundler list', () => {
-        for (const rel of ['usr/lib/girepository-1.0/Gtk-3.0.typelib', 'usr/share/glib-2.0/schemas/org.gtk.Settings.FileChooser.gschema.xml', 'usr/lib/x86_64-linux-gnu/webkit2gtk-4.1/WebKitWebProcess', 'AppRun.wrapped']) {
+        for (const rel of ['usr/lib/x86_64-linux-gnu/vendor/data.cache', 'usr/lib/girepository-1.0/Gtk-3.0.typelib', 'usr/share/glib-2.0/schemas/org.gtk.Settings.FileChooser.gschema.xml', 'usr/lib/x86_64-linux-gnu/webkit2gtk-4.1/WebKitWebProcess', 'AppRun.wrapped']) {
             expect(kind(rel)).toBe('package');
         }
     });

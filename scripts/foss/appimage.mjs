@@ -66,6 +66,8 @@ const LIB_DIR_RE = /\/lib(?:\/|64\/|32\/)/;
 const RUNTIME_COMMIT_RE = /https:\/\/github\.com\/AppImage\/type2-runtime\/commit\/([0-9a-f]{7,40})/;
 /** The runtime is about 1 MB; a larger section-header end means a misread header. */
 const MAX_RUNTIME_BYTES = 16 * 1024 * 1024;
+/** Where the AppImage runtime and the build recipe of its static libraries live. */
+const RUNTIME_REPOSITORY = 'https://github.com/AppImage/type2-runtime';
 
 
 //**************************************************************
@@ -298,11 +300,11 @@ export function renderAppImageSection(evaluated) {
     const lines = [
         '## Linux AppImage system libraries',
         '',
-        'The Linux AppImage also carries the system libraries below, taken from the Ubuntu release it is built on. Each is a separate file that the dynamic linker loads at run time; you may replace it with a modified version. The Debian copyright file of each package is inside the AppImage under `usr/share/doc/<package>/copyright`, and the licence texts those files refer to under `usr/share/common-licenses/`. The exact package versions in an AppImage are listed in its SBOM, published next to the AppImage on the release page.',
+        'The Linux AppImage also carries the system libraries and data files below, taken from the Ubuntu release it is built on. Each library is a separate file that the dynamic linker loads at run time; you may replace it with a modified version. The data files (GSettings schemas) are read by GTK; the notes name them. The Debian copyright file of each package is inside the AppImage under `usr/share/doc/<package>/copyright`, and the licence texts those files refer to under `usr/share/common-licenses/`. The exact package versions in an AppImage are listed in its SBOM, published next to the AppImage on the release page.',
         '',
         'The AppImage runtime (the program that mounts the AppImage, with the libraries statically linked into it), AppRun and its GTK hook are separate programs; they are listed with the other components above.',
         '',
-        `**Written offer.** For every library below that is under the GNU LGPL, the GNU GPL or the MPL, and for the LGPL library in the AppImage runtime, Lattice's copyright holder offers, for at least three years after the release that contains it, to provide the complete corresponding source code of the version in that release, on request to \`${OFFER_CONTACT}\`, for no more than the cost of providing it. The same sources are available from Ubuntu: \`${SOURCE_ARCHIVE}<source package>/<version>\`.`,
+        `**Written offer.** For every library below that is under the GNU LGPL, the GNU GPL or the MPL, and for the LGPL library in the AppImage runtime, Lattice's copyright holder offers, for at least three years after the release that contains it, to provide the complete corresponding source code of the version in that release, on request to \`${OFFER_CONTACT}\`, for no more than the cost of providing it. The sources of the Ubuntu packages below are also available from Ubuntu: \`${SOURCE_ARCHIVE}<source package>/<version>\`; those of the AppImage runtime and its libfuse from \`${RUNTIME_REPOSITORY}\` at the commit named in the component list, with the libfuse version and patch its build scripts name.`,
         '',
         '| Package | Source package | Licence | Platforms | Note |',
         '| --- | --- | --- | --- | --- |',

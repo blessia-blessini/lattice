@@ -10,7 +10,7 @@ Components: 854 (511 Rust crates, 333 npm packages, 10 other).
 
 Platforms: win-x64 = x86_64-pc-windows-msvc; win-arm64 = aarch64-pc-windows-msvc; linux-x64 = x86_64-unknown-linux-gnu; linux-arm64 = aarch64-unknown-linux-gnu; macos-x64 = x86_64-apple-darwin; macos-arm64 = aarch64-apple-darwin; android = aarch64-linux-android; ios = aarch64-apple-ios.
 
-Use: "linked" means the component is part of the shipped program; "build-time" means it only runs while Lattice is built and is listed for completeness.
+Use: "linked" means the component is part of the shipped program; "build-time" means it only runs while Lattice is built and is listed for completeness; "separate-program" means a program of its own inside the Linux AppImage (its runtime, AppRun) that Lattice's code does not link with.
 
 The Linux AppImage additionally carries system libraries from the Ubuntu release it is built on (such as GTK, WebKitGTK and GLib, many of them under the LGPL, each a separate file loaded at run time). They are listed, with the written offer for their source code, in the section "Linux AppImage system libraries" below; their copyright files are inside the AppImage under `usr/share/doc/`, the licence texts those refer to under `usr/share/common-licenses/`.
 
@@ -8742,11 +8742,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ## Linux AppImage system libraries
 
-The Linux AppImage also carries the system libraries below, taken from the Ubuntu release it is built on. Each is a separate file that the dynamic linker loads at run time; you may replace it with a modified version. The Debian copyright file of each package is inside the AppImage under `usr/share/doc/<package>/copyright`, and the licence texts those files refer to under `usr/share/common-licenses/`. The exact package versions in an AppImage are listed in its SBOM, published next to the AppImage on the release page.
+The Linux AppImage also carries the system libraries and data files below, taken from the Ubuntu release it is built on. Each library is a separate file that the dynamic linker loads at run time; you may replace it with a modified version. The data files (GSettings schemas) are read by GTK; the notes name them. The Debian copyright file of each package is inside the AppImage under `usr/share/doc/<package>/copyright`, and the licence texts those files refer to under `usr/share/common-licenses/`. The exact package versions in an AppImage are listed in its SBOM, published next to the AppImage on the release page.
 
 The AppImage runtime (the program that mounts the AppImage, with the libraries statically linked into it), AppRun and its GTK hook are separate programs; they are listed with the other components above.
 
-**Written offer.** For every library below that is under the GNU LGPL, the GNU GPL or the MPL, and for the LGPL library in the AppImage runtime, Lattice's copyright holder offers, for at least three years after the release that contains it, to provide the complete corresponding source code of the version in that release, on request to `blessia AT blessini.com`, for no more than the cost of providing it. The same sources are available from Ubuntu: `https://launchpad.net/ubuntu/+source/<source package>/<version>`.
+**Written offer.** For every library below that is under the GNU LGPL, the GNU GPL or the MPL, and for the LGPL library in the AppImage runtime, Lattice's copyright holder offers, for at least three years after the release that contains it, to provide the complete corresponding source code of the version in that release, on request to `blessia AT blessini.com`, for no more than the cost of providing it. The sources of the Ubuntu packages below are also available from Ubuntu: `https://launchpad.net/ubuntu/+source/<source package>/<version>`; those of the AppImage runtime and its libfuse from `https://github.com/AppImage/type2-runtime` at the commit named in the component list, with the libfuse version and patch its build scripts name.
 
 | Package | Source package | Licence | Platforms | Note |
 | --- | --- | --- | --- | --- |

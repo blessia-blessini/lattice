@@ -281,7 +281,7 @@ export function renderNotices({ entries, standardTexts, targets, licenceTypes = 
         '',
         'Platforms: ' + targets.map((t) => `${t.label} = ${t.triple}`).join('; ') + '.',
         '',
-        'Use: "linked" means the component is part of the shipped program; "build-time" means it only runs while Lattice is built and is listed for completeness.',
+        'Use: "linked" means the component is part of the shipped program; "build-time" means it only runs while Lattice is built and is listed for completeness; "separate-program" means a program of its own inside the Linux AppImage (its runtime, AppRun) that Lattice\'s code does not link with.',
         '',
         'The Linux AppImage additionally carries system libraries from the Ubuntu release it is built on (such as GTK, WebKitGTK and GLib, many of them under the LGPL, each a separate file loaded at run time). They are listed, with the written offer for their source code, in the section "Linux AppImage system libraries" below; their copyright files are inside the AppImage under `usr/share/doc/`, the licence texts those refer to under `usr/share/common-licenses/`.',
         '',
