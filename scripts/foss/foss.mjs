@@ -31,12 +31,16 @@
 ///                                               and the export notices (REQ-LTTCE-FOS-00005)
 ///   node scripts/foss/foss.mjs notices --check  fail if either committed file is stale
 ///   node scripts/foss/foss.mjs sbom --out-dir D one CycloneDX SBOM per target
+///   node scripts/foss/foss.mjs appimage --root R --target linux-x64|linux-arm64 --out-dir D
+///                                               check an unpacked AppImage on its Linux build
+///                                               machine; writes its SBOM (REQ-LTTCE-FOS-00006)
 ///
-/// Option for all commands: --targets <triple,...> limits the Rust graph to
-/// those targets (the default is every published target).
+/// Option for check, notices and sbom: --targets <triple,...> limits the Rust
+/// graph to those targets (the default is every published target).
 ///
-/// Needs the crate sources (`cargo fetch --locked`) and the installed npm
-/// packages (`npm ci --ignore-scripts`). No npm dependencies of its own.
+/// check, notices and sbom need the crate sources (`cargo fetch --locked`) and
+/// the installed npm packages (`npm ci --ignore-scripts`); appimage needs dpkg
+/// and the packages the AppImage was built from. No npm dependencies of its own.
 ///
 /// Exit codes: 0 ok, 1 policy failure or stale notices, 2 usage or environment error.
 
@@ -44,12 +48,13 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { inventoryFromMetadata, runCargoMetadata, TARGETS } from './cargo-inventory.mjs';
+import { APPIMAGE_LIST_FILE, APPIMAGE_TARGETS, evaluateAppImageList, inventoryAppImage, loadAppImageList, renderAppImageSection } from './appimage.mjs';
 import { buildSbom } from './cyclonedx.mjs';
 import { EXPORT_NOTICES_FILE, loadEmbedded, renderExportNotices, selectEmbedded } from './export-notices.mjs';
 import { fallbackCopyright, findExhibitB, listLicenceFiles, selectTexts, shippedLicenceIds } from './licence-texts.mjs';
 import { enrichFromManifest, inventoryFromLockfile } from './npm-inventory.mjs';
 import { renderNotices } from './notices-render.mjs';
-import { evaluateComponent, licenceTypeMap, loadPolicy, unusedPolicyEntries } from './policy.mjs';
+import { evaluateComponent, licenceTypeMap, loadPolicy, obligationNote, unusedPolicyEntries } from './policy.mjs';
 import { leafKey } from './spdx-expr.mjs';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -146,7 +151,7 @@ export async function collect({ root, targets, today, cargoMetadata = runCargoMe
         if (Array.isArray(component.copyrights) && component.copyrights.length) selection.copyrights = component.copyrights;
         if (!selection.copyrights.length) selection.copyrights = [fallbackCopyright(component)];
 
-        const obligations = evaluation.chosen.map((l) => policy.obligation[l.id]).filter(Boolean);
+        const obligations = evaluation.chosen.map((l) => obligationNote(l, policy, component.linkage)).filter(Boolean);
         if (evaluation.chosen.some((l) => l.id === 'MPL-2.0') && component.dir) {
             const hits = findExhibitB(component.dir);
             if (hits.length) {
@@ -162,7 +167,10 @@ export async function collect({ root, targets, today, cargoMetadata = runCargoMe
             obligation: obligations.length ? [...new Set(obligations)].join(' ') : null,
         });
     }
-    return { policy, entries };
+    const appImage = fs.existsSync(path.join(root, APPIMAGE_LIST_FILE))
+        ? evaluateAppImageList(loadAppImageList(root), policy, today)
+        : [];
+    return { policy, entries, appImage };
 }
 // collect END *************************************************
 
@@ -174,19 +182,28 @@ export async function collect({ root, targets, today, cargoMetadata = runCargoMe
  * The licence gate. Prints every failing component with its reasons.
  * @returns {number} exit code
  */
-export function commandCheck({ policy, entries }, log = console) {
+export function commandCheck({ policy, entries, appImage = [] }, log = console) {
     const failures = entries.filter((e) => !e.evaluation.pass);
     const byEco = (eco) => entries.filter((e) => e.component.ecosystem === eco).length;
     log.log(`foss check: ${entries.length} components (${byEco('cargo')} cargo, ${byEco('npm')} npm, ${byEco('other')} other)`);
-    for (const warning of unusedPolicyEntries(policy, entries.map((e) => e.component))) {
+    const components = [...entries.map((e) => e.component), ...appImage.map((a) => ({ ecosystem: 'debian', name: a.item.package, version: '*' }))];
+    for (const warning of unusedPolicyEntries(policy, components)) {
         log.warn(`  [WARN] unused policy entry ${warning}`);
     }
     for (const f of failures) {
         const c = f.component;
         log.error(`  [FAIL] ${c.ecosystem}:${c.name}@${c.version} (${c.linkage}): ${f.evaluation.problems.join('; ')}`);
     }
-    if (failures.length) {
-        log.error(`foss check: ${failures.length} component(s) violate foss/policy.json`);
+    // REQ-LTTCE-FOS-00006: the reviewed AppImage packages are held to the policy
+    // on every run, so a policy change that rejects one fails here, not on a Linux leg.
+    const appImageFailures = appImage.filter((a) => !a.evaluation.pass);
+    log.log(`foss check: ${appImage.length} Linux AppImage system packages (${APPIMAGE_LIST_FILE})`);
+    for (const a of appImageFailures) {
+        log.error(`  [FAIL] debian:${a.item.package} (shared-library): ${a.evaluation.problems.join('; ')}`);
+    }
+    const total = failures.length + appImageFailures.length;
+    if (total) {
+        log.error(`foss check: ${total} component(s) violate foss/policy.json`);
         return 1;
     }
     log.log('foss check: all components fit AGPL-3.0-or-later and the commercial licence');
@@ -203,10 +220,11 @@ export function commandCheck({ policy, entries }, log = console) {
  * compares both to the committed copies.
  * @returns {number} exit code
  */
-export function commandNotices({ policy, entries }, { root, targets, check }, log = console) {
+export function commandNotices({ policy, entries, appImage = [] }, { root, targets, check }, log = console) {
     const standardTexts = loadStandardTexts(root);
+    const extraSections = appImage.length ? renderAppImageSection(appImage) : [];
     const outputs = [
-        [NOTICES_FILE, renderNotices({ entries, standardTexts, targets, licenceTypes: licenceTypeMap(policy) })],
+        [NOTICES_FILE, renderNotices({ entries, standardTexts, targets, licenceTypes: licenceTypeMap(policy), extraSections })],
         [EXPORT_NOTICES_FILE, renderExportNotices(selectEmbedded(entries, loadEmbedded(root), root), standardTexts)],
     ];
     if (!check) {
@@ -256,6 +274,48 @@ export function commandSbom({ entries }, { root, targets, outDir }, log = consol
 
 
 //**************************************************************
+// commandAppImage
+//**************************************************************
+/**
+ * REQ-LTTCE-FOS-00006 — checks an unpacked AppImage on the Linux machine that
+ * built it against foss/appimage-packages.json and writes
+ * lattice-<label>-appimage.cdx.json (the exact package versions) into outDir.
+ * @param {object} options
+ * @param {string} options.root repository root
+ * @param {string} options.appRoot unpacked AppImage (squashfs-root)
+ * @param {string} options.label target label (linux-x64 | linux-arm64)
+ * @param {string} options.outDir
+ * @param {string} options.today YYYY-MM-DD
+ * @param {object} [options.probes] {owners, versions} injectable for tests
+ * @returns {number} exit code
+ */
+export function commandAppImage({ root, appRoot, label, outDir, today, probes = {} }, log = console) {
+    const policy = loadPolicy(path.join(root, 'foss', 'policy.json'));
+    const list = loadAppImageList(root);
+    const { problems, warnings, entries } = inventoryAppImage({ root: appRoot, label, list, policy, today, ...probes });
+    const libraries = entries.reduce((n, e) => n + e.component.libraries.length, 0);
+    log.log(`foss appimage: ${entries.length} packages, ${libraries} libraries in the ${label} AppImage`);
+    for (const w of warnings) log.warn(`  [WARN] ${w}`);
+    for (const p of problems) log.error(`  [FAIL] ${p}`);
+
+    const pkg = readJson(root, 'package.json');
+    const target = TARGETS.find((t) => t.label === label);
+    const bom = buildSbom({ product: { name: 'lattice', version: pkg.version, license: PRODUCT_LICENSE }, target, entries });
+    fs.mkdirSync(outDir, { recursive: true });
+    const file = path.join(outDir, `lattice-${label}-appimage.cdx.json`);
+    fs.writeFileSync(file, JSON.stringify(bom, null, 2) + '\n');
+    log.log(`foss appimage: wrote ${path.basename(file)}`);
+
+    if (problems.length) {
+        log.error(`foss appimage: ${problems.length} problem(s); fix ${APPIMAGE_LIST_FILE} or the build`);
+        return 1;
+    }
+    return 0;
+}
+// commandAppImage END *****************************************
+
+
+//**************************************************************
 // parseArgs
 //**************************************************************
 /**
@@ -265,12 +325,16 @@ export function commandSbom({ entries }, { root, targets, outDir }, log = consol
  */
 export function parseArgs(argv) {
     const [command, ...rest] = argv;
-    if (!['check', 'notices', 'sbom'].includes(command)) throw new Error(`unknown command "${command ?? ''}" (check | notices [--check] | sbom --out-dir <dir>)`);
-    const opts = { command, check: false, outDir: null, targets: [...TARGETS] };
+    if (!['check', 'notices', 'sbom', 'appimage'].includes(command)) {
+        throw new Error(`unknown command "${command ?? ''}" (check | notices [--check] | sbom --out-dir <dir> | appimage --root <dir> --target <label> --out-dir <dir>)`);
+    }
+    const opts = { command, check: false, outDir: null, appRoot: null, label: null, targets: [...TARGETS] };
     for (let i = 0; i < rest.length; i++) {
         const a = rest[i];
         if (a === '--check' && command === 'notices') opts.check = true;
-        else if (a === '--out-dir' && command === 'sbom' && rest[i + 1]) opts.outDir = rest[++i];
+        else if (a === '--out-dir' && (command === 'sbom' || command === 'appimage') && rest[i + 1]) opts.outDir = rest[++i];
+        else if (a === '--root' && command === 'appimage' && rest[i + 1]) opts.appRoot = rest[++i];
+        else if (a === '--target' && command === 'appimage' && rest[i + 1]) opts.label = rest[++i];
         else if (a === '--targets' && rest[i + 1]) {
             const wanted = rest[++i].split(',');
             const unknown = wanted.filter((w) => !TARGETS.some((t) => t.triple === w));
@@ -279,6 +343,10 @@ export function parseArgs(argv) {
         } else throw new Error(`unexpected argument "${a}"`);
     }
     if (command === 'sbom' && !opts.outDir) throw new Error('sbom needs --out-dir <dir>');
+    if (command === 'appimage') {
+        if (!opts.appRoot || !opts.outDir || !opts.label) throw new Error('appimage needs --root <dir> --target <label> --out-dir <dir>');
+        if (!Object.hasOwn(APPIMAGE_TARGETS, opts.label)) throw new Error(`no AppImage for target "${opts.label}" (known: ${Object.keys(APPIMAGE_TARGETS).join(', ')})`);
+    }
     // Partial notices would drop components shipped on other targets.
     if (command === 'notices' && opts.targets.length !== TARGETS.length) throw new Error('notices always covers every target; drop --targets');
     return opts;
@@ -297,6 +365,16 @@ export async function main(argv, { root = ROOT, today = new Date().toISOString()
     } catch (e) {
         console.error(`foss: ${e.message}`);
         return 2;
+    }
+    // The AppImage check needs no cargo/npm inventory: it runs on a Linux build
+    // leg after the bundle exists, against the reviewed list alone.
+    if (opts.command === 'appimage') {
+        try {
+            return commandAppImage({ root, appRoot: path.resolve(opts.appRoot), label: opts.label, outDir: path.resolve(opts.outDir), today });
+        } catch (e) {
+            console.error(`foss appimage: ${e.message}`);
+            return 2;
+        }
     }
     let inventory;
     try {

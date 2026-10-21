@@ -1030,9 +1030,8 @@ with its type — permissive, public-domain dedication, weak copyleft or strong 
 components, naming every component used under a copyleft licence. Each release SHALL publish them, together with one
 machine-readable bill of materials (CycloneDX) per built target, next to its installers.
 
-*Deferred*: the system libraries the Linux AppImage carries from its Ubuntu build image (174 shared
-libraries from 111 packages in v0.3.36 — GTK, WebKitGTK, GLib …) are not listed; the AppImage carries their
-Debian copyright files under `usr/share/doc/`, and the notices say so (follow-up FU-1).
+The system libraries the Linux AppImage carries from its Ubuntu build image are covered by
+REQ-LTTCE-FOS-00006, in their own section of the same notices.
 
 *Rationale*: before this chapter no package carried any third-party notice, so every release fell short of
 the attribution condition of the MIT, BSD, ISC, Apache and similar licences of the components it contains.
@@ -1066,6 +1065,26 @@ rewriting the licensing statement (follow-up FU-11).
 *Open*: a PDF export embeds subsets of the KaTeX fonts and carries no notice; whether one is needed, and
 where a PDF could carry it, is a question for legal review. Diagrams are not affected — they reach an
 export as rendered images, not as Mermaid's code.
+
+<!--REQ-LTTCE-FOS-00006-->
+**REQ-LTTCE-FOS-00006** — Every system library the Linux AppImage carries SHALL come from a package whose
+licence was reviewed for the library it ships, recorded in one versioned file with the content hash of the
+package's copyright file; a package not reviewed, a changed copyright file, or a licence the policy does not
+admit SHALL fail the build of that AppImage. A GPL-only library SHALL NOT be carried. The LGPL and similar
+licences SHALL be admitted only for libraries loaded at run time as separate, replaceable files — never for
+code linked into Lattice's own executable or bundle. The third-party notices SHALL list every reviewed
+package with its licence and source package, and carry a written offer of the corresponding source code for
+every library under the LGPL, the GPL or the MPL, valid for at least three years. Each release SHALL publish,
+per AppImage, a machine-readable bill of materials (CycloneDX) with the exact package versions it contains.
+
+*Rationale*: until v0.3.37 every AppImage carried about 170 libraries from about 110 Ubuntu packages that no
+lock file lists — among them libjbig (GPL-2.0-or-later only), pulled in solely by GTK's TIFF image loader,
+which conflicts with Lattice's commercial licence. Found and removed under follow-up FU-1.
+
+*Open*: whether pointing to Ubuntu's source archive in addition to the written offer suffices, and whether a
+library inside the read-only AppImage counts as "replaceable" (it does once the AppImage is unpacked), are
+questions for legal review. The commercial licence must not forbid reverse engineering for debugging a
+replaced LGPL library (LGPL-2.1 section 6).
 
 ---
 

@@ -2157,6 +2157,48 @@ of `export-document.ts` and fails when it copies material from a package not lis
 (`export_demo.rs` `check_notices`) asserts the notices on the file the real binary writes, on every
 desktop CI leg.
 
+<!--ARCH-LTTCE-FOS-00006-->
+**ARCH-LTTCE-FOS-00006** — covers REQ-LTTCE-FOS-00006.
+
+```text
+ Linux leg (linux-desktop, linux-arm-desktop)                         every CI run (foss-compliance)
+ 340 scripts/appimage-exclude-loaders.sh                              foss check: foss/appimage-packages.json
+     remove gdk-pixbuf TIFF loader, rebuild loader cache                 evaluated as 'shared-library'
+ 350 tauri build → linuxdeploy-plugin-gtk copies loaders + libs       foss notices: section "Linux AppImage
+ 391 --appimage-extract → foss.mjs appimage (appimage.mjs)               system libraries" + written offer
+     usr/share/doc/*/copyright  → reviewed? sha256 unchanged? policy?
+     usr/lib/**/*.so*           → dpkg -S (follow file links) → owner has a copyright folder?
+     dpkg-query versions        → lattice-<label>-appimage.cdx.json (pkg:deb purls)
+ 392 upload FOSS-APPIMAGE-<platform>  → 901.8 → 903.1 release assets
+```
+
+*The reviewed list.* `foss/appimage-packages.json` holds, per Ubuntu package, the SPDX licence of the
+library it ships — read from the paragraph of its Debian copyright file that covers the library, which often
+differs from `Files: *` (util-linux, elfutils, colord, libidn2, keyutils say GPL for the tarball, LGPL for
+the library; the `note` field says so) — and the SHA-256 of that copyright file. The hash replaces a
+version pin: package versions move with every runner image update, the licence statement rarely does, and
+when it does the gate reopens the review. x64 and arm64 carry identical copyright files; `platforms`
+records the one x64-only package (libatomic1).
+
+*Policy scope.* `foss/policy.json` → `sharedLibrary` admits the LGPL family and MPL-1.1 (obligation), and
+`GPL-3.0-or-later WITH GCC-exception-3.1` as a whole leaf, **only** for components of linkage
+`shared-library` (`classifyLeaf`, `obligationNote`). A crate is linked into the executable and an npm
+package into the bundle, where the LGPL would require a relinkable form of Lattice's own build — so for
+them the LGPL stays *review*, and tests hold that line. D-Bus (GPL-2.0-or-later OR AFL-2.1) has no single
+option that fits both outbound licences and passes by a dated exception with version `*`, which
+`validatePolicy` admits for ecosystem `debian` only.
+
+*Owner resolution.* linuxdeploy copies libraries by name and dereferences symlinks, so a file such as
+`libgobject-2.0.so` in the AppImage corresponds to a symlink the -dev package owns. `resolveOwners` follows
+each system path to its real file (`followFileLinks`: file links only — dpkg records some files under
+`/lib`, itself a link to `/usr/lib` on merged-/usr systems) and credits that file's owner.
+
+*Why remove the TIFF loader instead of excepting libjbig*: linuxdeploy-plugin-gtk copies the build
+machine's whole loader folder and offers no exclusion; Lattice never decodes TIFF through GTK (WebKit
+decodes the images a document shows). Removing it on the throwaway CI runner takes libtiff, libjbig,
+liblerc and libdeflate out of the AppImage. The script refuses to run outside CI without `--yes`, since it
+changes the machine's GTK installation.
+
 ## Architectural Decisions
 
 ### ADR-01: External Image Fetches Blocked by Default

@@ -688,12 +688,40 @@ jobs:
       env:
         # Git Bash on Windows would rewrite '/scripts/foss/' into C:/Program Files/Git/...
         MSYS_NO_PATHCONV: "1"
-      run: git sparse-checkout add '/scripts/foss/'
+      # /foss/ too: step 391 checks the AppImage against foss/appimage-packages.json.
+      run: git sparse-checkout add '/scripts/foss/' '/foss/'
 
     - name: 390. FOSS - licence files inside the installers
       if: matrix.config.platform != 'ios' && matrix.config.platform != 'android'
       shell: bash
       run: bash scripts/foss/assert-bundled.sh ${{ matrix.config.upload_path1 }} ${{ matrix.config.upload_path2 }} dist-msix-*.msix
+
+    # REQ-LTTCE-FOS-00006: every library in the AppImage must come from a package
+    # reviewed in foss/appimage-packages.json, with an unchanged copyright file and
+    # a licence the policy admits for shared libraries. Runs on the machine that
+    # built it, so dpkg knows the exact packages; writes the AppImage SBOM.
+    - name: 391. FOSS - AppImage system libraries (Linux)
+      if: matrix.config.platform == 'linux-desktop' || matrix.config.platform == 'linux-arm-desktop'
+      shell: bash
+      env:
+        APPIMAGE_TARGET: ${{ matrix.config.platform == 'linux-desktop' && 'linux-x64' || 'linux-arm64' }}
+      run: |
+        set -euo pipefail
+        shopt -s nullglob
+        images=( ${{ matrix.config.upload_path1 }} )
+        if [ "${#images[@]}" -ne 1 ]; then echo "expected one AppImage, found ${#images[@]}" >&2; exit 1; fi
+        work="$(mktemp -d)"
+        chmod +x "${images[0]}"
+        (cd "$work" && "$GITHUB_WORKSPACE/${images[0]}" --appimage-extract >/dev/null)
+        node scripts/foss/foss.mjs appimage --root "$work/squashfs-root" --target "$APPIMAGE_TARGET" --out-dir foss-appimage
+
+    - name: 392. Upload AppImage SBOM (Linux)
+      if: always() && (matrix.config.platform == 'linux-desktop' || matrix.config.platform == 'linux-arm-desktop')
+      uses: actions/upload-artifact@v7
+      with:
+        name: FOSS-APPIMAGE-${{ matrix.config.platform }}
+        path: foss-appimage/
+        if-no-files-found: warn
 
     ################################################################
     # 400 / Upload Artifacts
@@ -904,6 +932,15 @@ jobs:
       with:
         name: FOSS
         path: foss-out
+
+    # The AppImage SBOMs (lattice-linux-*-appimage.cdx.json) from step 392; 903.1
+    # publishes every *.cdx.json in foss-out.
+    - name: 901.8. Download AppImage SBOMs
+      uses: actions/download-artifact@v8
+      with:
+        pattern: FOSS-APPIMAGE-*
+        path: foss-out
+        merge-multiple: true
 
     ################################################################
     # 902 / Checkout lattice-docs-releases

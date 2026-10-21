@@ -12,7 +12,7 @@ Platforms: win-x64 = x86_64-pc-windows-msvc; win-arm64 = aarch64-pc-windows-msvc
 
 Use: "linked" means the component is part of the shipped program; "build-time" means it only runs while Lattice is built and is listed for completeness.
 
-The Linux AppImage additionally carries system libraries from the Ubuntu image it is built on (such as GTK, WebKitGTK and GLib, many of them under LGPL-2.1-or-later, dynamically linked). Their copyright and licence files are inside the AppImage under `usr/share/doc/`; they are not repeated in this file.
+The Linux AppImage additionally carries system libraries from the Ubuntu release it is built on (such as GTK, WebKitGTK and GLib, many of them under the LGPL, each a separate file loaded at run time). They are listed, with the written offer for their source code, in the section "Linux AppImage system libraries" below; their full copyright and licence files are inside the AppImage under `usr/share/doc/`.
 
 ## Licences by type
 
@@ -8644,6 +8644,122 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Copyright:
   - Copyright (c) 2016 Titus Wormer \<tituswormer@gmail.com\>
 - Licence text (MIT): [text-d9c32f07](#text-d9c32f07), as shipped in the package file license
+
+## Linux AppImage system libraries
+
+The Linux AppImage also carries the system libraries below, taken from the Ubuntu release it is built on. Each is a separate file that the dynamic linker loads at run time; you may replace it with a modified version. The Debian copyright file of each package, with its full licence texts, is inside the AppImage under `usr/share/doc/<package>/copyright`. The exact package versions in an AppImage are listed in its SBOM, published next to the AppImage on the release page.
+
+**Written offer.** For every library below that is under the GNU LGPL, the GNU GPL or the MPL, Lattice's copyright holder offers, for at least three years after the release that contains it, to provide the complete corresponding source code of the version in that release, on request to `blessia AT blessini.com`, for no more than the cost of providing it. The same sources are available from Ubuntu: https://launchpad.net/ubuntu/+source/<source package>/<version>.
+
+| Package | Source package | Licence | Platforms | Note |
+| --- | --- | --- | --- | --- |
+| libatk-bridge2.0-0t64 | at-spi2-core | LGPL-2.0-or-later | all |  |
+| libatk1.0-0t64 | at-spi2-core | LGPL-2.0-or-later | all |  |
+| libatomic1 | gcc-14 | GPL-3.0-or-later WITH GCC-exception-3.1 | linux-x64 | GCC runtime library: GPL-3.0-or-later with the GCC Runtime Library Exception, which permits shipping it with programs under any licence. |
+| libatspi2.0-0t64 | at-spi2-core | LGPL-2.0-or-later | all |  |
+| libavahi-client3 | avahi | LGPL-2.1-or-later | all |  |
+| libavahi-common3 | avahi | LGPL-2.1-or-later | all |  |
+| libblkid1 | util-linux | LGPL-2.1-or-later | all | util-linux: "Files: \*" is GPL-2+, but libblkid/\* is LGPL-2.1+. |
+| libbrotli1 | brotli | MIT | all |  |
+| libbsd0 | libbsd | BSD-3-Clause AND BSD-2-Clause AND ISC AND MIT AND LicenseRef-Public-Domain | all |  |
+| libbz2-1.0 | bzip2 | bzip2-1.0.6 | all |  |
+| libcairo-gobject2 | cairo | LGPL-2.1-only OR MPL-1.1 | all |  |
+| libcairo2 | cairo | LGPL-2.1-only OR MPL-1.1 | all |  |
+| libcap2 | libcap2 | BSD-3-Clause OR GPL-2.0-only | all |  |
+| libcolord2 | colord | LGPL-2.1-or-later | all | colord: "Files: \*" is GPL-2+, but lib/colord/\* (the library) is LGPL-2.1+. |
+| libcups2t64 | cups | Apache-2.0 | all | CUPS: Apache-2.0 with an exception that only adds permissions (GPL2/LGPL2 combination). |
+| libcurl3t64-gnutls | curl | curl | all |  |
+| libdatrie1 | libdatrie | LGPL-2.1-or-later | all |  |
+| libdbus-1-3 | dbus | (GPL-2.0-or-later OR AFL-2.1) AND MIT AND TCL | all | D-Bus: GPL-2+ or AFL-2.1 at the recipient's choice; see the dated exception in foss/policy.json. |
+| libduktape207 | duktape | MIT | all |  |
+| libdw1t64 | elfutils | LGPL-3.0-or-later OR GPL-2.0-or-later | all | elfutils: "Files: \*" is GPL-3+, but lib\*, backends/\* (the libraries) are LGPL-3+ or GPL-2+. |
+| libelf1t64 | elfutils | LGPL-3.0-or-later OR GPL-2.0-or-later | all | elfutils: "Files: \*" is GPL-3+, but lib\*, backends/\* (the libraries) are LGPL-3+ or GPL-2+. |
+| libenchant-2-2 | enchant-2 | LGPL-2.1-or-later | all |  |
+| libepoxy0 | libepoxy | MIT | all |  |
+| libevdev2 | libevdev | MIT | all |  |
+| libffi8 | libffi | MIT | all |  |
+| libgcrypt20 | libgcrypt20 | LGPL-2.1-or-later | all | libgcrypt: library LGPL-2.1+, manual and tools GPL-2+. |
+| libgdk-pixbuf-2.0-0 | gdk-pixbuf | LGPL-2.0-or-later AND LGPL-2.1-or-later AND CC0-1.0 | all |  |
+| libglib2.0-0t64 | glib2.0 | LGPL-2.1-or-later | all |  |
+| libgnutls30t64 | gnutls28 | LGPL-2.1-or-later | all | GnuTLS: main library LGPL-2.1+; utilities and gnutls-extra GPL-3+ (not shipped). |
+| libgraphite2-3 | graphite2 | LGPL-2.1-or-later OR MPL-1.1 OR GPL-2.0-or-later | all |  |
+| libgssapi-krb5-2 | krb5 | MIT | all |  |
+| libgstreamer-gl1.0-0 | gst-plugins-base1.0 | LGPL-2.0-or-later | all |  |
+| libgstreamer-plugins-base1.0-0 | gst-plugins-base1.0 | LGPL-2.0-or-later | all |  |
+| libgstreamer1.0-0 | gstreamer1.0 | LGPL-2.0-or-later | all |  |
+| libgtk-3-0t64 | gtk+3.0 | LGPL-2.0-or-later AND LGPL-2.1-or-later AND MIT | all |  |
+| libgudev-1.0-0 | libgudev | LGPL-2.0-or-later | all |  |
+| libharfbuzz-icu0 | harfbuzz | MIT | all |  |
+| libhogweed6t64 | nettle | LGPL-3.0-or-later OR GPL-2.0-or-later | all |  |
+| libhyphen0 | hyphen | GPL-2.0-or-later OR LGPL-2.1-or-later OR MPL-1.1 | all |  |
+| libicu74 | icu | MIT | all |  |
+| libidn2-0 | libidn2 | LGPL-3.0-or-later OR GPL-2.0-or-later | all | libidn2: "Files: \*" is GPL-3+, but \*.c \*.h (the library) are LGPL-3+ or GPL-2+. |
+| libjavascriptcoregtk-4.1-0 | webkit2gtk | BSD-2-Clause AND LGPL-2.0-or-later | all | WebKitGTK: BSD-2-Clause and LGPL-2+ files (JavaScriptCore, WebCore). |
+| libjpeg-turbo8 | libjpeg-turbo | IJG AND BSD-3-Clause AND Zlib | all |  |
+| libk5crypto3 | krb5 | MIT | all |  |
+| libkeyutils1 | keyutils | LGPL-2.0-or-later | all | keyutils: "Files: \*" is GPL-2+, but keyutils.\* (the library) is LGPL-2+. |
+| libkrb5-3 | krb5 | MIT | all |  |
+| libkrb5support0 | krb5 | MIT | all |  |
+| liblcms2-2 | lcms2 | MIT | all |  |
+| libldap2 | openldap | OLDAP-2.8 | all |  |
+| liblz4-1 | lz4 | BSD-2-Clause | all |  |
+| liblzma5 | xz-utils | LicenseRef-Public-Domain | all |  |
+| libmanette-0.2-0 | libmanette | LGPL-2.1-or-later | all |  |
+| libmd0 | libmd | BSD-3-Clause AND BSD-2-Clause AND LicenseRef-Public-Domain | all |  |
+| libmount1 | util-linux | LGPL-2.1-or-later | all | util-linux: "Files: \*" is GPL-2+, but libmount/\* is LGPL-2.1+. |
+| libnettle8t64 | nettle | LGPL-3.0-or-later OR GPL-2.0-or-later | all |  |
+| libnghttp2-14 | nghttp2 | MIT | all |  |
+| liborc-0.4-0t64 | orc | BSD-2-Clause | all |  |
+| libp11-kit0 | p11-kit | BSD-3-Clause | all |  |
+| libpango-1.0-0 | pango1.0 | LGPL-2.0-or-later AND LGPL-2.1-or-later | all |  |
+| libpangocairo-1.0-0 | pango1.0 | LGPL-2.0-or-later AND LGPL-2.1-or-later | all |  |
+| libpangoft2-1.0-0 | pango1.0 | LGPL-2.0-or-later AND LGPL-2.1-or-later | all |  |
+| libpcre2-8-0 | pcre2 | BSD-3-Clause WITH PCRE2-exception | all |  |
+| libpixman-1-0 | pixman | MIT | all |  |
+| libpng16-16t64 | libpng1.6 | libpng-2.0 | all |  |
+| libproxy1v5 | libproxy | LGPL-2.1-or-later | all |  |
+| libpsl5t64 | libpsl | MIT | all |  |
+| librsvg2-2 | librsvg | LGPL-2.0-or-later | all |  |
+| librtmp1 | rtmpdump | LGPL-2.1-or-later | all | rtmpdump: the librtmp library is LGPL-2.1+; the rtmpdump tools are GPL-2 (not shipped). |
+| libsasl2-2 | cyrus-sasl2 | BSD-3-Clause-Attribution | all |  |
+| libseccomp2 | libseccomp | LGPL-2.1-only | all |  |
+| libsecret-1-0 | libsecret | LGPL-2.1-or-later | all |  |
+| libselinux1 | libselinux | LicenseRef-Public-Domain | all |  |
+| libsharpyuv0 | libwebp | BSD-3-Clause | all |  |
+| libsoup-3.0-0 | libsoup3 | LGPL-2.0-or-later | all |  |
+| libsqlite3-0 | sqlite3 | LicenseRef-Public-Domain | all |  |
+| libssh-4 | libssh | LGPL-2.1-or-later | all | libssh: LGPL-2.1+ with an exception that only adds permissions (OpenSSL linking). |
+| libssl3t64 | openssl | Apache-2.0 | all |  |
+| libsystemd0 | systemd | LGPL-2.1-or-later | all |  |
+| libtasn1-6 | libtasn1-6 | LGPL-2.1-or-later | all | libtasn1: library LGPL-2.1+; build system, tests and tools GPL-3+ (not shipped). |
+| libthai0 | libthai | LGPL-2.1-or-later | all |  |
+| libudev1 | systemd | LGPL-2.1-or-later | all |  |
+| libunistring5 | libunistring | LGPL-3.0-or-later OR GPL-2.0-or-later | all |  |
+| libunwind8 | libunwind | MIT | all |  |
+| libwayland-cursor0 | wayland | MIT | all |  |
+| libwayland-egl1 | wayland | MIT | all |  |
+| libwayland-server0 | wayland | MIT | all |  |
+| libwebkit2gtk-4.1-0 | webkit2gtk | BSD-2-Clause AND LGPL-2.0-or-later | all | WebKitGTK: BSD-2-Clause and LGPL-2+ files (JavaScriptCore, WebCore). |
+| libwebp7 | libwebp | BSD-3-Clause | all |  |
+| libwebpdemux2 | libwebp | BSD-3-Clause | all |  |
+| libwebpmux3 | libwebp | BSD-3-Clause | all |  |
+| libxau6 | libxau | MIT | all |  |
+| libxcb-render0 | libxcb | MIT | all |  |
+| libxcb-shm0 | libxcb | MIT | all |  |
+| libxcomposite1 | libxcomposite | MIT | all |  |
+| libxcursor1 | libxcursor | MIT | all |  |
+| libxdamage1 | libxdamage | MIT | all |  |
+| libxdmcp6 | libxdmcp | MIT | all |  |
+| libxext6 | libxext | MIT | all |  |
+| libxfixes3 | libxfixes | MIT | all |  |
+| libxi6 | libxi | MIT | all |  |
+| libxinerama1 | libxinerama | MIT | all |  |
+| libxkbcommon0 | libxkbcommon | MIT | all |  |
+| libxml2 | libxml2 | MIT | all |  |
+| libxrandr2 | libxrandr | MIT | all |  |
+| libxrender1 | libxrender | MIT | all |  |
+| libxslt1.1 | libxslt | MIT | all |  |
+| libzstd1 | libzstd | BSD-3-Clause OR GPL-2.0-only | all |  |
 
 ## Licence texts
 

@@ -20,6 +20,14 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   `src/lib/export-notices.generated.txt`, written and drift-checked by `foss.mjs notices [--check]`;
   `licenceBody` shared with `notices-render.mjs`. The export side is in `src/lib/export-document.trace-cov.md`)
 - IMPL-LTTCE-FOS-00005 **covers** ARCH-LTTCE-FOS-00005
+- IMPL-LTTCE-FOS-00006 **covers** REQ-LTTCE-FOS-00006  (`appimage.mjs`: `loadAppImageList` /
+  `validateAppImageList` of `foss/appimage-packages.json`, `evaluateAppImageList` as `shared-library`,
+  `renderAppImageSection` with the written offer, `inventoryAppImage` over an unpacked AppImage with
+  `dpkgOwners` → `resolveOwners` / `followFileLinks` and `dpkgVersions`; `foss.mjs check` evaluates the list,
+  `notices` renders the section, `appimage` runs the build-machine check and writes the AppImage SBOM;
+  `policy.mjs` `sharedLibrary` scope in `classifyLeaf` / `obligationNote`, version `*` for debian only;
+  `cyclonedx.mjs` `pkg:deb` purls. `scripts/appimage-exclude-loaders.sh` keeps the TIFF loader out)
+- IMPL-LTTCE-FOS-00006 **covers** ARCH-LTTCE-FOS-00006
 
 ## Tests
 
@@ -59,6 +67,19 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - ITST `foss.test.mjs` (REQ-LTTCE-FOS-00005) — `notices` writes the export notices beside
   THIRD-PARTY-NOTICES.md with only the embedded package; `--check` reports the stale export file alone;
   an embedded package that is not shipped fails the run.
+- UTST `policy.test.mjs` (REQ-LTTCE-FOS-00006) — `sharedLibrary`: the LGPL passes with its obligation for a
+  shared library and stays *review* for cargo / npm / build-time components; a whole `WITH` leaf is admitted
+  for a shared library only; plain GPL stays denied; types by base id; version `*` for debian only. On the
+  real policy: none of the LGPL family or MPL-1.1 passes for a crate or npm package.
+- UTST/ITST `appimage.test.mjs` (REQ-LTTCE-FOS-00006) — list validation (7 malformed shapes, duplicates,
+  platform default); the real list fits the policy and omits the TIFF path; notices section (written offer,
+  rows, platforms); `parseDpkgSearch`; `resolveOwners` credits the real file's owner over the -dev symlink's;
+  `followFileLinks` (POSIX only: chains, directory links untouched, dangling); `inventoryAppImage` on a
+  synthetic unpacked AppImage: pass with warning, platform-only warning, unreviewed package (the libjbig
+  case), changed copyright file, wrong platform, denied licence, unowned library, owner without copyright
+  folder, unknown target; `commandAppImage` writes the SBOM with `pkg:deb` purls and exits 1 on problems.
+- STST CI step 391 on both Linux legs: `foss.mjs appimage` on the AppImage just built, with the runner's dpkg;
+  step 392 uploads its SBOM, 901.8 / 903.1 publish it.
 - ITST on the real tree: CI job `foss-compliance` (and the full local `build-test`) runs `check` and
   `notices --check` over all 8 targets.
 - STST `assert-bundled.sh`, CI step 390 — locally verified only for MSIX (an old package fails, a package

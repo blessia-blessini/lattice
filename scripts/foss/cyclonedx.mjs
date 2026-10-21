@@ -46,6 +46,10 @@ export function purlFor(c) {
         const ns = scope ? `${encodeURIComponent(scope)}/` : '';
         return `pkg:npm/${ns}${encodeURIComponent(name)}@${encodeURIComponent(c.version)}`;
     }
+    if (c.ecosystem === 'debian') {
+        const arch = c.arch ? `?arch=${encodeURIComponent(c.arch)}` : '';
+        return `pkg:deb/ubuntu/${encodeURIComponent(c.name)}@${encodeURIComponent(c.version)}${arch}`;
+    }
     return null;
 }
 // purlFor END *************************************************
@@ -70,7 +74,7 @@ export function buildSbom({ product, target, entries }) {
                 'bom-ref': purl ?? `other:${c.name}@${c.version}`,
                 name: c.name,
                 version: c.version,
-                scope: c.linkage === 'linked' ? 'required' : 'excluded',
+                scope: c.linkage === 'build-time' ? 'excluded' : 'required',
             };
             if (purl) out.purl = purl;
             if (ev.expression) out.licenses = [{ expression: ev.expression }];

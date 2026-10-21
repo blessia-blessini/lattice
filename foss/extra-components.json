@@ -1,5 +1,5 @@
 {
-  "$comment": "Components that ship in Lattice but that neither Cargo.lock nor package-lock.json reports. Each needs name, version, license (SPDX), copyrights, linkage and platforms ('all' or a list of target labels from scripts/foss/cargo-inventory.mjs). Linux AppImage system libraries are added under follow-up FU-1.",
+  "$comment": "Components that ship in Lattice but that neither Cargo.lock nor package-lock.json reports. Each needs name, version, license (SPDX), copyrights, linkage and platforms ('all' or a list of target labels from scripts/foss/cargo-inventory.mjs). Linux AppImage system libraries are reviewed separately, in foss/appimage-packages.json (REQ-LTTCE-FOS-00006).",
   "components": [
     {
       "name": "Rust standard library (std, core, alloc)",

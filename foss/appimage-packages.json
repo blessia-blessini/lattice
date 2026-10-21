@@ -1,0 +1,667 @@
+{
+  "$comment": "Ubuntu packages whose shared libraries the Linux AppImage carries (REQ-LTTCE-FOS-00006), reviewed once each: license = the SPDX licence of the library the package ships, read from the paragraph of its Debian copyright file that covers the library (not the whole source tarball; see note where they differ); copyrightSha256 = SHA-256 of usr/share/doc/<package>/copyright, so a changed file fails the gate until re-reviewed; platforms defaults to every AppImage target. Reviewed 2026-10-21 against the v0.3.37 AppImages (Ubuntu 24.04, x64 and arm64 copyright files identical). libtiff6, libjbig0 (GPL-2.0-or-later), liblerc4 and libdeflate0 are not listed: scripts/appimage-exclude-loaders.sh keeps the TIFF loader that pulled them in out of the AppImage.",
+  "packages": [
+    {
+      "package": "libatk-bridge2.0-0t64",
+      "source": "at-spi2-core",
+      "license": "LGPL-2.0-or-later",
+      "copyrightSha256": "72fbc9d2c44016dd061f3f63f75253e57089bcd23a4f9023039de4631e7cf918"
+    },
+    {
+      "package": "libatk1.0-0t64",
+      "source": "at-spi2-core",
+      "license": "LGPL-2.0-or-later",
+      "copyrightSha256": "72fbc9d2c44016dd061f3f63f75253e57089bcd23a4f9023039de4631e7cf918"
+    },
+    {
+      "package": "libatomic1",
+      "source": "gcc-14",
+      "license": "GPL-3.0-or-later WITH GCC-exception-3.1",
+      "copyrightSha256": "20390f8a6f3b1e4d7cb45dd8652dabb259bbef688cbad839bcdb0b9ba7252f79",
+      "note": "GCC runtime library: GPL-3.0-or-later with the GCC Runtime Library Exception, which permits shipping it with programs under any licence.",
+      "platforms": [
+        "linux-x64"
+      ]
+    },
+    {
+      "package": "libatspi2.0-0t64",
+      "source": "at-spi2-core",
+      "license": "LGPL-2.0-or-later",
+      "copyrightSha256": "72fbc9d2c44016dd061f3f63f75253e57089bcd23a4f9023039de4631e7cf918"
+    },
+    {
+      "package": "libavahi-client3",
+      "source": "avahi",
+      "license": "LGPL-2.1-or-later",
+      "copyrightSha256": "66849d0ab7cbf0d770e40e00276ed8d264ed8974c0e064fb12814c0f80430c5d"
+    },
+    {
+      "package": "libavahi-common3",
+      "source": "avahi",
+      "license": "LGPL-2.1-or-later",
+      "copyrightSha256": "66849d0ab7cbf0d770e40e00276ed8d264ed8974c0e064fb12814c0f80430c5d"
+    },
+    {
+      "package": "libblkid1",
+      "source": "util-linux",
+      "license": "LGPL-2.1-or-later",
+      "copyrightSha256": "3492fb92cb56cf517d9a899828b4f989038421a38736e49e5525ffbd33196eab",
+      "note": "util-linux: \"Files: *\" is GPL-2+, but libblkid/* is LGPL-2.1+."
+    },
+    {
+      "package": "libbrotli1",
+      "source": "brotli",
+      "license": "MIT",
+      "copyrightSha256": "24a64e5bb83d0960d1835696a1e23c0896ad6055b0ca47c66ab0eb9a766324b1"
+    },
+    {
+      "package": "libbsd0",
+      "source": "libbsd",
+      "license": "BSD-3-Clause AND BSD-2-Clause AND ISC AND MIT AND LicenseRef-Public-Domain",
+      "copyrightSha256": "978426553ab7b9cfb4503d98e578a77b8c3142c099100aa9791fd21be5a95f97"
+    },
+    {
+      "package": "libbz2-1.0",
+      "source": "bzip2",
+      "license": "bzip2-1.0.6",
+      "copyrightSha256": "832ed535ff3c3d025a8d2348eb1b697b89addcf2eaadbc17650262040b9145e2"
+    },
+    {
+      "package": "libcairo-gobject2",
+      "source": "cairo",
+      "license": "LGPL-2.1-only OR MPL-1.1",
+      "copyrightSha256": "408fb9e704e875cd42d432e7c9b3b378f568e3c89db2b5c5ef3d11c025319574"
+    },
+    {
+      "package": "libcairo2",
+      "source": "cairo",
+      "license": "LGPL-2.1-only OR MPL-1.1",
+      "copyrightSha256": "408fb9e704e875cd42d432e7c9b3b378f568e3c89db2b5c5ef3d11c025319574"
+    },
+    {
+      "package": "libcap2",
+      "source": "libcap2",
+      "license": "BSD-3-Clause OR GPL-2.0-only",
+      "copyrightSha256": "e60a5642e12e340060e4e519a65b2eb0330be2917854841c644e36268f607d54"
+    },
+    {
+      "package": "libcolord2",
+      "source": "colord",
+      "license": "LGPL-2.1-or-later",
+      "copyrightSha256": "ef303b9a14eccf720e0f1b422776fc0548c374191f88e78e92fe5b66c00b85de",
+      "note": "colord: \"Files: *\" is GPL-2+, but lib/colord/* (the library) is LGPL-2.1+."
+    },
+    {
+      "package": "libcups2t64",
+      "source": "cups",
+      "license": "Apache-2.0",
+      "copyrightSha256": "82dabde9d9e18c5929f320e274095627f2ed1c45153fd4744ab884adac65c425",
+      "note": "CUPS: Apache-2.0 with an exception that only adds permissions (GPL2/LGPL2 combination)."
+    },
+    {
+      "package": "libcurl3t64-gnutls",
+      "source": "curl",
+      "license": "curl",
+      "copyrightSha256": "a7c131b21e6e73b3b085a7d9f1637b68f5f92b832cc6f462e0c978fbe7841ccb"
+    },
+    {
+      "package": "libdatrie1",
+      "source": "libdatrie",
+      "license": "LGPL-2.1-or-later",
+      "copyrightSha256": "7c994f175cb0da0bbe158f729ca43bc6193bb99d3c8bc82b41c46d93904b584d"
+    },
+    {
+      "package": "libdbus-1-3",
+      "source": "dbus",
+      "license": "(GPL-2.0-or-later OR AFL-2.1) AND MIT AND TCL",
+      "copyrightSha256": "20d4fee565b0a0910670b8202c15f040ed5dd488a685a3008eb04b65d987f89c",
+      "note": "D-Bus: GPL-2+ or AFL-2.1 at the recipient's choice; see the dated exception in foss/policy.json."
+    },
+    {
+      "package": "libduktape207",
+      "source": "duktape",
+      "license": "MIT",
+      "copyrightSha256": "ffc72ca2383e76328250b48c18a2c87d551174db0334fee34ca895eae5e1bf6b"
+    },
+    {
+      "package": "libdw1t64",
+      "source": "elfutils",
+      "license": "LGPL-3.0-or-later OR GPL-2.0-or-later",
+      "copyrightSha256": "657e078ed1e718b57ca839cdc38bb93196a0009488bea43cd0f429e7531530fa",
+      "note": "elfutils: \"Files: *\" is GPL-3+, but lib*, backends/* (the libraries) are LGPL-3+ or GPL-2+."
+    },
+    {
+      "package": "libelf1t64",
+      "source": "elfutils",
+      "license": "LGPL-3.0-or-later OR GPL-2.0-or-later",
+      "copyrightSha256": "657e078ed1e718b57ca839cdc38bb93196a0009488bea43cd0f429e7531530fa",
+      "note": "elfutils: \"Files: *\" is GPL-3+, but lib*, backends/* (the libraries) are LGPL-3+ or GPL-2+."
+    },
+    {
+      "package": "libenchant-2-2",
+      "source": "enchant-2",
+      "license": "LGPL-2.1-or-later",
+      "copyrightSha256": "1eb67527e9f1250178522b816961cd7ce09042f38697b60c1865132abdcecb1a"
+    },
+    {
+      "package": "libepoxy0",
+      "source": "libepoxy",
+      "license": "MIT",
+      "copyrightSha256": "a8be83fe8a66a6ecc1a9fbcec9cf1b43aacca69d38220a94fb37632f090b611e"
+    },
+    {
+      "package": "libevdev2",
+      "source": "libevdev",
+      "license": "MIT",
+      "copyrightSha256": "01d0da4919f92dd06e7ec73fee6cf5dccac3c6e475917b9dc57cb22800b732de"
+    },
+    {
+      "package": "libffi8",
+      "source": "libffi",
+      "license": "MIT",
+      "copyrightSha256": "737ff68f0eb104d3b0d96b291c3a8f40a775a3ec2b53f9b2e4bcfe3188bde118"
+    },
+    {
+      "package": "libgcrypt20",
+      "source": "libgcrypt20",
+      "license": "LGPL-2.1-or-later",
+      "copyrightSha256": "40162167dff80843a4b24aa8d0a4ffc50be5338d004ebe38f86ae3397ba9de3e",
+      "note": "libgcrypt: library LGPL-2.1+, manual and tools GPL-2+."
+    },
+    {
+      "package": "libgdk-pixbuf-2.0-0",
+      "source": "gdk-pixbuf",
+      "license": "LGPL-2.0-or-later AND LGPL-2.1-or-later AND CC0-1.0",
+      "copyrightSha256": "a0189e53d508d32aeec6462c4740013de70b40f06e507f5e700d3cceb6e8f178"
+    },
+    {
+      "package": "libglib2.0-0t64",
+      "source": "glib2.0",
+      "license": "LGPL-2.1-or-later",
+      "copyrightSha256": "b52574b109fb876dfa71dea7a98b8aee1bb583f6aa90c327d1e4dc0a1d59f211"
+    },
+    {
+      "package": "libgnutls30t64",
+      "source": "gnutls28",
+      "license": "LGPL-2.1-or-later",
+      "copyrightSha256": "51da5214308b87d6a0a2fbcaea1f7dbd15510be733e5921d9548ff6b88d84dd8",
+      "note": "GnuTLS: main library LGPL-2.1+; utilities and gnutls-extra GPL-3+ (not shipped)."
+    },
+    {
+      "package": "libgraphite2-3",
+      "source": "graphite2",
+      "license": "LGPL-2.1-or-later OR MPL-1.1 OR GPL-2.0-or-later",
+      "copyrightSha256": "a33017ba0308c41bdbde4751bff349ab7b26af45fadbb1e3e7ac67c372985572"
+    },
+    {
+      "package": "libgssapi-krb5-2",
+      "source": "krb5",
+      "license": "MIT",
+      "copyrightSha256": "936728f4181718f42951b881c1e8f1386bf6b2723c4fbc533c374d6f42c71816"
+    },
+    {
+      "package": "libgstreamer-gl1.0-0",
+      "source": "gst-plugins-base1.0",
+      "license": "LGPL-2.0-or-later",
+      "copyrightSha256": "1562456a438eb6d92bd04548bc136c5459edc486eea33230470a2ca13c18a9ed"
+    },
+    {
+      "package": "libgstreamer-plugins-base1.0-0",
+      "source": "gst-plugins-base1.0",
+      "license": "LGPL-2.0-or-later",
+      "copyrightSha256": "1562456a438eb6d92bd04548bc136c5459edc486eea33230470a2ca13c18a9ed"
+    },
+    {
+      "package": "libgstreamer1.0-0",
+      "source": "gstreamer1.0",
+      "license": "LGPL-2.0-or-later",
+      "copyrightSha256": "de00f8e299a9ed1bd23e7a0c2fe31051c8f99546359be75f33b98e3f0328d68a"
+    },
+    {
+      "package": "libgtk-3-0t64",
+      "source": "gtk+3.0",
+      "license": "LGPL-2.0-or-later AND LGPL-2.1-or-later AND MIT",
+      "copyrightSha256": "2be2199cc990913cd94874b6f16fc84f1e3c35aaaa4719ad34b4478f1e69c557"
+    },
+    {
+      "package": "libgudev-1.0-0",
+      "source": "libgudev",
+      "license": "LGPL-2.0-or-later",
+      "copyrightSha256": "e8208610819fd05fca6ea4776156858bb934e29c408ae9bdac4a8266a53178e3"
+    },
+    {
+      "package": "libharfbuzz-icu0",
+      "source": "harfbuzz",
+      "license": "MIT",
+      "copyrightSha256": "6ffcef5a169fca847bc886b052bbe9a478754850621d8661ae4ea424b7eeb26e"
+    },
+    {
+      "package": "libhogweed6t64",
+      "source": "nettle",
+      "license": "LGPL-3.0-or-later OR GPL-2.0-or-later",
+      "copyrightSha256": "2cecdc7ac1913beb31299a41a8092fc936d9e6a1d00872fc3bf6e2263aecf842"
+    },
+    {
+      "package": "libhyphen0",
+      "source": "hyphen",
+      "license": "GPL-2.0-or-later OR LGPL-2.1-or-later OR MPL-1.1",
+      "copyrightSha256": "3419e19f01880c9b319a6e80d89b5975185706a2b568aa634eb0efd6bde0856e"
+    },
+    {
+      "package": "libicu74",
+      "source": "icu",
+      "license": "MIT",
+      "copyrightSha256": "5bbff5f646ce750ac0a347e7f91793279b7422a1119820b5f75d98879c201c68"
+    },
+    {
+      "package": "libidn2-0",
+      "source": "libidn2",
+      "license": "LGPL-3.0-or-later OR GPL-2.0-or-later",
+      "copyrightSha256": "41702469f28e8ff406345e3d1dd0c741f11bdfca319264f67036efd6aaa79e4b",
+      "note": "libidn2: \"Files: *\" is GPL-3+, but *.c *.h (the library) are LGPL-3+ or GPL-2+."
+    },
+    {
+      "package": "libjavascriptcoregtk-4.1-0",
+      "source": "webkit2gtk",
+      "license": "BSD-2-Clause AND LGPL-2.0-or-later",
+      "copyrightSha256": "1f0568073d22552e2ef947912b9ed1169e5b7132a50d54d520f227e9408c3890",
+      "note": "WebKitGTK: BSD-2-Clause and LGPL-2+ files (JavaScriptCore, WebCore)."
+    },
+    {
+      "package": "libjpeg-turbo8",
+      "source": "libjpeg-turbo",
+      "license": "IJG AND BSD-3-Clause AND Zlib",
+      "copyrightSha256": "3821184e23385bf2cdc01f56bd999b34036fc3aa03d5135d41680374eb81bf8a"
+    },
+    {
+      "package": "libk5crypto3",
+      "source": "krb5",
+      "license": "MIT",
+      "copyrightSha256": "936728f4181718f42951b881c1e8f1386bf6b2723c4fbc533c374d6f42c71816"
+    },
+    {
+      "package": "libkeyutils1",
+      "source": "keyutils",
+      "license": "LGPL-2.0-or-later",
+      "copyrightSha256": "c62fe37d22203046611112bc10a9e03a39a7f73bec1b061e7c615326166d9ff5",
+      "note": "keyutils: \"Files: *\" is GPL-2+, but keyutils.* (the library) is LGPL-2+."
+    },
+    {
+      "package": "libkrb5-3",
+      "source": "krb5",
+      "license": "MIT",
+      "copyrightSha256": "936728f4181718f42951b881c1e8f1386bf6b2723c4fbc533c374d6f42c71816"
+    },
+    {
+      "package": "libkrb5support0",
+      "source": "krb5",
+      "license": "MIT",
+      "copyrightSha256": "936728f4181718f42951b881c1e8f1386bf6b2723c4fbc533c374d6f42c71816"
+    },
+    {
+      "package": "liblcms2-2",
+      "source": "lcms2",
+      "license": "MIT",
+      "copyrightSha256": "420fd2c72204652c08a48548a0d1002edab3d9b180d3c416578c61f74092f460"
+    },
+    {
+      "package": "libldap2",
+      "source": "openldap",
+      "license": "OLDAP-2.8",
+      "copyrightSha256": "b4081907f0d9a4110736fa6540dc8ca9d7d60a20878b5d78f84916cc04907bdc"
+    },
+    {
+      "package": "liblz4-1",
+      "source": "lz4",
+      "license": "BSD-2-Clause",
+      "copyrightSha256": "d3be0f43fe14da244f97c451bbae789c0acf868612598a69f5f22a289abeca40"
+    },
+    {
+      "package": "liblzma5",
+      "source": "xz-utils",
+      "license": "LicenseRef-Public-Domain",
+      "copyrightSha256": "a2dc8fac0f496e1c58aff67018cf0c6b88336316afa5642f9335b71642e28aa8"
+    },
+    {
+      "package": "libmanette-0.2-0",
+      "source": "libmanette",
+      "license": "LGPL-2.1-or-later",
+      "copyrightSha256": "f1bf59338bd942d3c75ae49968a0115e5f0bc98359476dbb579f0cd232cd6459"
+    },
+    {
+      "package": "libmd0",
+      "source": "libmd",
+      "license": "BSD-3-Clause AND BSD-2-Clause AND LicenseRef-Public-Domain",
+      "copyrightSha256": "4365ef6255ad553fce69dd4bc0e093472c5d0e41b8ea493a545cc926ce171aa6"
+    },
+    {
+      "package": "libmount1",
+      "source": "util-linux",
+      "license": "LGPL-2.1-or-later",
+      "copyrightSha256": "3492fb92cb56cf517d9a899828b4f989038421a38736e49e5525ffbd33196eab",
+      "note": "util-linux: \"Files: *\" is GPL-2+, but libmount/* is LGPL-2.1+."
+    },
+    {
+      "package": "libnettle8t64",
+      "source": "nettle",
+      "license": "LGPL-3.0-or-later OR GPL-2.0-or-later",
+      "copyrightSha256": "2cecdc7ac1913beb31299a41a8092fc936d9e6a1d00872fc3bf6e2263aecf842"
+    },
+    {
+      "package": "libnghttp2-14",
+      "source": "nghttp2",
+      "license": "MIT",
+      "copyrightSha256": "a34ae32a5eba61e535835a8de7c398f47e420247d339bc400a3b9c618ba29a3d"
+    },
+    {
+      "package": "liborc-0.4-0t64",
+      "source": "orc",
+      "license": "BSD-2-Clause",
+      "copyrightSha256": "3601f6d868864e700ffd87005f75c813a8652db0563f32dc3891f8c3e77ac4ca"
+    },
+    {
+      "package": "libp11-kit0",
+      "source": "p11-kit",
+      "license": "BSD-3-Clause",
+      "copyrightSha256": "d33af1e069981d1c1b576cb22e4bc260a134ffa2fce6ddd3cbbbb5b181113f0c"
+    },
+    {
+      "package": "libpango-1.0-0",
+      "source": "pango1.0",
+      "license": "LGPL-2.0-or-later AND LGPL-2.1-or-later",
+      "copyrightSha256": "10e2b3c2cd6c6ecd7c65ebb7319be463f514096a16e832441ee61dfef72a107f"
+    },
+    {
+      "package": "libpangocairo-1.0-0",
+      "source": "pango1.0",
+      "license": "LGPL-2.0-or-later AND LGPL-2.1-or-later",
+      "copyrightSha256": "10e2b3c2cd6c6ecd7c65ebb7319be463f514096a16e832441ee61dfef72a107f"
+    },
+    {
+      "package": "libpangoft2-1.0-0",
+      "source": "pango1.0",
+      "license": "LGPL-2.0-or-later AND LGPL-2.1-or-later",
+      "copyrightSha256": "10e2b3c2cd6c6ecd7c65ebb7319be463f514096a16e832441ee61dfef72a107f"
+    },
+    {
+      "package": "libpcre2-8-0",
+      "source": "pcre2",
+      "license": "BSD-3-Clause WITH PCRE2-exception",
+      "copyrightSha256": "030511beb4d9d620ad09914c369c36ec0528dcf301d1923cc643c948ee7c6a38"
+    },
+    {
+      "package": "libpixman-1-0",
+      "source": "pixman",
+      "license": "MIT",
+      "copyrightSha256": "1b3fb5690861e15ca4fd6640fd4def4b2576617942eec04b6fcb7d8bc6c4c9da"
+    },
+    {
+      "package": "libpng16-16t64",
+      "source": "libpng1.6",
+      "license": "libpng-2.0",
+      "copyrightSha256": "4620d402b97601a910946acccbbe2e15bdffac11615bf9046520990d3b00f2b9"
+    },
+    {
+      "package": "libproxy1v5",
+      "source": "libproxy",
+      "license": "LGPL-2.1-or-later",
+      "copyrightSha256": "05ea3678d8c213f36b460e689afba075bf3479e166211e238c4b81abebef22b7"
+    },
+    {
+      "package": "libpsl5t64",
+      "source": "libpsl",
+      "license": "MIT",
+      "copyrightSha256": "bbafb0cf52d34465fc69f5ffd22d724224f6a2f28402c88b045c69d88af06aaf"
+    },
+    {
+      "package": "librsvg2-2",
+      "source": "librsvg",
+      "license": "LGPL-2.0-or-later",
+      "copyrightSha256": "2777f2b3753caf1e049a866d79a500467f2d0f066b576c1c754dd55cb38bb73b"
+    },
+    {
+      "package": "librtmp1",
+      "source": "rtmpdump",
+      "license": "LGPL-2.1-or-later",
+      "copyrightSha256": "4302abcc1ea1b6cbe8d19c79b892acf78878030220210707c19006828866207c",
+      "note": "rtmpdump: the librtmp library is LGPL-2.1+; the rtmpdump tools are GPL-2 (not shipped)."
+    },
+    {
+      "package": "libsasl2-2",
+      "source": "cyrus-sasl2",
+      "license": "BSD-3-Clause-Attribution",
+      "copyrightSha256": "ddb128a81d3a140ef5b3574ae000a1a50d0cb9a2ec59917121a155f91b670166"
+    },
+    {
+      "package": "libseccomp2",
+      "source": "libseccomp",
+      "license": "LGPL-2.1-only",
+      "copyrightSha256": "6da0653a365b80ab31478dbfe9e7c358e80d58b6d2b52b4e16b4dbb42d7d9f5c"
+    },
+    {
+      "package": "libsecret-1-0",
+      "source": "libsecret",
+      "license": "LGPL-2.1-or-later",
+      "copyrightSha256": "97852db18d3685e2f694adc44414bdbff697d2ead28dffedfa27ade41f862f99"
+    },
+    {
+      "package": "libselinux1",
+      "source": "libselinux",
+      "license": "LicenseRef-Public-Domain",
+      "copyrightSha256": "864f1bb189f609075d580b8c4aada16d85a44546884f1687989e1cacc8c56751"
+    },
+    {
+      "package": "libsharpyuv0",
+      "source": "libwebp",
+      "license": "BSD-3-Clause",
+      "copyrightSha256": "eee23313fcb4cac326f7a3a5c646474062440bd8665f706747b2eba33d72e97f"
+    },
+    {
+      "package": "libsoup-3.0-0",
+      "source": "libsoup3",
+      "license": "LGPL-2.0-or-later",
+      "copyrightSha256": "d567c723cb0876e3f78a034df36a218b458430a89de287d0974efd1032900bc4"
+    },
+    {
+      "package": "libsqlite3-0",
+      "source": "sqlite3",
+      "license": "LicenseRef-Public-Domain",
+      "copyrightSha256": "78e9df8f8153c91c762ec970b82d224ac4d30f05aa7773e7e17e268141e53873"
+    },
+    {
+      "package": "libssh-4",
+      "source": "libssh",
+      "license": "LGPL-2.1-or-later",
+      "copyrightSha256": "1b33ec0b1d0d521afb21d8e6b98fa4abf52b1ffb69a8461a045db9d586ce141f",
+      "note": "libssh: LGPL-2.1+ with an exception that only adds permissions (OpenSSL linking)."
+    },
+    {
+      "package": "libssl3t64",
+      "source": "openssl",
+      "license": "Apache-2.0",
+      "copyrightSha256": "6a7da622fe0637a334d2a8fc470852d2ffb77d9a2b2f930f854e32a41ad6ef35"
+    },
+    {
+      "package": "libsystemd0",
+      "source": "systemd",
+      "license": "LGPL-2.1-or-later",
+      "copyrightSha256": "a7d06854714a1ca99f6dbd1a1641dde5bcf28635be149f6554449618f8f427f3"
+    },
+    {
+      "package": "libtasn1-6",
+      "source": "libtasn1-6",
+      "license": "LGPL-2.1-or-later",
+      "copyrightSha256": "572ad60ad184d8f52c6dc66d83a61a68f137db560b3452ce00588c9ecf128a65",
+      "note": "libtasn1: library LGPL-2.1+; build system, tests and tools GPL-3+ (not shipped)."
+    },
+    {
+      "package": "libthai0",
+      "source": "libthai",
+      "license": "LGPL-2.1-or-later",
+      "copyrightSha256": "62d2835587b92a6abdbe62fe4524a7b6a59ac478df2c591eb98c3fbce6c3fa08"
+    },
+    {
+      "package": "libudev1",
+      "source": "systemd",
+      "license": "LGPL-2.1-or-later",
+      "copyrightSha256": "a7d06854714a1ca99f6dbd1a1641dde5bcf28635be149f6554449618f8f427f3"
+    },
+    {
+      "package": "libunistring5",
+      "source": "libunistring",
+      "license": "LGPL-3.0-or-later OR GPL-2.0-or-later",
+      "copyrightSha256": "dbbfee567c5eb53ad1c75ce666779e596b5f794b52be7f5834685ddd633185ea"
+    },
+    {
+      "package": "libunwind8",
+      "source": "libunwind",
+      "license": "MIT",
+      "copyrightSha256": "977d981f5677652884b09cccef6b62f992aa9c74b7a748bfe9863a703f5aed58"
+    },
+    {
+      "package": "libwayland-cursor0",
+      "source": "wayland",
+      "license": "MIT",
+      "copyrightSha256": "736bf54141fa9808939ffff2691b817888ea53197484c2099e8d03b954b83e3b"
+    },
+    {
+      "package": "libwayland-egl1",
+      "source": "wayland",
+      "license": "MIT",
+      "copyrightSha256": "736bf54141fa9808939ffff2691b817888ea53197484c2099e8d03b954b83e3b"
+    },
+    {
+      "package": "libwayland-server0",
+      "source": "wayland",
+      "license": "MIT",
+      "copyrightSha256": "736bf54141fa9808939ffff2691b817888ea53197484c2099e8d03b954b83e3b"
+    },
+    {
+      "package": "libwebkit2gtk-4.1-0",
+      "source": "webkit2gtk",
+      "license": "BSD-2-Clause AND LGPL-2.0-or-later",
+      "copyrightSha256": "1f0568073d22552e2ef947912b9ed1169e5b7132a50d54d520f227e9408c3890",
+      "note": "WebKitGTK: BSD-2-Clause and LGPL-2+ files (JavaScriptCore, WebCore)."
+    },
+    {
+      "package": "libwebp7",
+      "source": "libwebp",
+      "license": "BSD-3-Clause",
+      "copyrightSha256": "eee23313fcb4cac326f7a3a5c646474062440bd8665f706747b2eba33d72e97f"
+    },
+    {
+      "package": "libwebpdemux2",
+      "source": "libwebp",
+      "license": "BSD-3-Clause",
+      "copyrightSha256": "eee23313fcb4cac326f7a3a5c646474062440bd8665f706747b2eba33d72e97f"
+    },
+    {
+      "package": "libwebpmux3",
+      "source": "libwebp",
+      "license": "BSD-3-Clause",
+      "copyrightSha256": "eee23313fcb4cac326f7a3a5c646474062440bd8665f706747b2eba33d72e97f"
+    },
+    {
+      "package": "libxau6",
+      "source": "libxau",
+      "license": "MIT",
+      "copyrightSha256": "118dd263a7b91c8f21c489f949bf13281dff9e766deea92b829dac4dce66601a"
+    },
+    {
+      "package": "libxcb-render0",
+      "source": "libxcb",
+      "license": "MIT",
+      "copyrightSha256": "4f7cb9db6bf6542f5417e3d674c780d3a5fd12291a54d63054fb576ee0cfae80"
+    },
+    {
+      "package": "libxcb-shm0",
+      "source": "libxcb",
+      "license": "MIT",
+      "copyrightSha256": "4f7cb9db6bf6542f5417e3d674c780d3a5fd12291a54d63054fb576ee0cfae80"
+    },
+    {
+      "package": "libxcomposite1",
+      "source": "libxcomposite",
+      "license": "MIT",
+      "copyrightSha256": "e37c7a7e4026343c3e5c13990a6d9a8879194ae3ab26bfe420b34f6f206bf35f"
+    },
+    {
+      "package": "libxcursor1",
+      "source": "libxcursor",
+      "license": "MIT",
+      "copyrightSha256": "817abc0ccc9e2591057be256b0f6d80edb134221ced29dd545a9eafaf40b423c"
+    },
+    {
+      "package": "libxdamage1",
+      "source": "libxdamage",
+      "license": "MIT",
+      "copyrightSha256": "09182bc7805ff77a41251e450cebd0d33c48a74ba8ec4b734855a22c86f50417"
+    },
+    {
+      "package": "libxdmcp6",
+      "source": "libxdmcp",
+      "license": "MIT",
+      "copyrightSha256": "1bcbb50f8603fe8b86d330bfa460b772ea04fbd3c70e4499f0768b5340b9fd6e"
+    },
+    {
+      "package": "libxext6",
+      "source": "libxext",
+      "license": "MIT",
+      "copyrightSha256": "bc57e445ca1d9fe082c8d54189dd411ff26caa8552c9c63d44ea06a982f32124"
+    },
+    {
+      "package": "libxfixes3",
+      "source": "libxfixes",
+      "license": "MIT",
+      "copyrightSha256": "051ffe073ab38244c504bb379903b4ecda6081fb3d97d0d3dce44bc11712eef2"
+    },
+    {
+      "package": "libxi6",
+      "source": "libxi",
+      "license": "MIT",
+      "copyrightSha256": "c812f9c54513ae593aab9580b54a4b18219648df7068d49ca1daa47f522ba3fa"
+    },
+    {
+      "package": "libxinerama1",
+      "source": "libxinerama",
+      "license": "MIT",
+      "copyrightSha256": "e49d9732f261b3ffcb50c40914bd9d144de5557dad9b2ae20dbe8e3c5b3d17fb"
+    },
+    {
+      "package": "libxkbcommon0",
+      "source": "libxkbcommon",
+      "license": "MIT",
+      "copyrightSha256": "5eeaeb1b6e029a0274e1573765bb0bae2926ef96a3679203faa4fd00fdaeaa88"
+    },
+    {
+      "package": "libxml2",
+      "source": "libxml2",
+      "license": "MIT",
+      "copyrightSha256": "ee746b96cfa5be73c3ea3e4cfb1285e9b315d4c9267f99b2ee9c5d911d9fe3f4"
+    },
+    {
+      "package": "libxrandr2",
+      "source": "libxrandr",
+      "license": "MIT",
+      "copyrightSha256": "6d8e6239cfe9dd25bbeef06dcf0610d802ebbdc8968db87cf5adf00ff98927d4"
+    },
+    {
+      "package": "libxrender1",
+      "source": "libxrender",
+      "license": "MIT",
+      "copyrightSha256": "ed2a78123a5076b4f11da38cb1ffb85b5cb9fdc26b5746c517b1d7e7a9029704"
+    },
+    {
+      "package": "libxslt1.1",
+      "source": "libxslt",
+      "license": "MIT",
+      "copyrightSha256": "4b82c8dd6e55001a5921bea1d6db20be5c51e5976d892e870324026c23f37b6f"
+    },
+    {
+      "package": "libzstd1",
+      "source": "libzstd",
+      "license": "BSD-3-Clause OR GPL-2.0-only",
+      "copyrightSha256": "35e85e8e9bbb71492c5f5dddf39ed65b68775a02ad8d710c25d097b497f06c49"
+    }
+  ]
+}

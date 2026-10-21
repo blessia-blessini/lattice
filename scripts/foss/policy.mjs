@@ -67,17 +67,30 @@ export function validatePolicy(policy) {
             throw new Error(`policy: "types.${type}" must be an array of licence ids`);
         }
     }
+    policy.sharedLibrary ??= {};
+    policy.sharedLibrary.allowed ??= [];
+    policy.sharedLibrary.obligation ??= {};
+    if (!Array.isArray(policy.sharedLibrary.allowed) || typeof policy.sharedLibrary.obligation !== 'object' || Array.isArray(policy.sharedLibrary.obligation)) {
+        throw new Error('policy: "sharedLibrary" needs "allowed" (array) and "obligation" (licence -> note)');
+    }
     const typed = new Set(Object.values(policy.types).flat());
-    const untyped = [...policy.allowed, ...Object.keys(policy.obligation)].filter((id) => !typed.has(id));
+    const baseId = (key) => key.split(' WITH ')[0];
+    const untyped = [
+        ...policy.allowed, ...Object.keys(policy.obligation),
+        ...policy.sharedLibrary.allowed, ...Object.keys(policy.sharedLibrary.obligation),
+    ].map(baseId).filter((id) => !typed.has(id));
     if (untyped.length) throw new Error(`policy: no entry in "types" for ${untyped.join(', ')}`);
+    // A version wildcard is only for Debian packages, which foss/appimage-packages.json
+    // pins by the hash of their copyright file instead of by version.
+    const wildcardOk = (entry) => entry.version !== '*' || entry.ecosystem === 'debian';
     for (const c of policy.clarifications) {
-        if (!c.ecosystem || !c.name || !c.version || !c.license || !c.evidence?.file || !c.evidence?.sha256) {
-            throw new Error(`policy: clarification ${JSON.stringify(c)} needs ecosystem, name, version, license, evidence.file, evidence.sha256`);
+        if (!c.ecosystem || !c.name || !c.version || !c.license || !c.evidence?.file || !c.evidence?.sha256 || !wildcardOk(c)) {
+            throw new Error(`policy: clarification ${JSON.stringify(c)} needs ecosystem, name, version (no "*" except for ecosystem debian), license, evidence.file, evidence.sha256`);
         }
     }
     for (const e of policy.exceptions) {
-        if (!e.ecosystem || !e.name || !e.version || !e.reason || !/^\d{4}-\d{2}-\d{2}$/.test(e.expires ?? '')) {
-            throw new Error(`policy: exception ${JSON.stringify(e)} needs ecosystem, name, version, reason, expires (YYYY-MM-DD)`);
+        if (!e.ecosystem || !e.name || !e.version || !e.reason || !/^\d{4}-\d{2}-\d{2}$/.test(e.expires ?? '') || !wildcardOk(e)) {
+            throw new Error(`policy: exception ${JSON.stringify(e)} needs ecosystem, name, version (no "*" except for ecosystem debian), reason, expires (YYYY-MM-DD)`);
         }
     }
     return policy;
@@ -106,11 +119,20 @@ export function loadPolicy(file) {
  * The category of a single licence leaf under the policy.
  * A `WITH` exception keeps the base licence's category only when the
  * exception is listed in `allowedExceptions`; otherwise it needs review.
+ * For a library loaded at run time as a separate file (linkage
+ * 'shared-library'), `sharedLibrary` is consulted first — by the whole leaf,
+ * `ID WITH exception` included — and wins over the general lists.
  * @param {{id: string, exception: string|null}} leaf
  * @param {object} policy
+ * @param {string} [linkage] the component's linkage
  * @returns {'allowed'|'obligation'|'review'|'denied'}
  */
-export function classifyLeaf(leaf, policy) {
+export function classifyLeaf(leaf, policy, linkage) {
+    if (linkage === 'shared-library') {
+        const key = leaf.exception ? `${leaf.id} WITH ${leaf.exception}` : leaf.id;
+        if (policy.sharedLibrary?.allowed.includes(key)) return 'allowed';
+        if (policy.sharedLibrary && Object.hasOwn(policy.sharedLibrary.obligation, key)) return 'obligation';
+    }
     let base = 'review';
     if (policy.denied.includes(leaf.id)) base = 'denied';
     else if (policy.allowed.includes(leaf.id)) base = 'allowed';
@@ -124,11 +146,38 @@ export function classifyLeaf(leaf, policy) {
 
 
 //**************************************************************
+// obligationNote
+//**************************************************************
+/**
+ * The obligation note for a licence leaf a component is used under, or null.
+ * Same lookup order as `classifyLeaf`: `sharedLibrary` first for a
+ * shared library, then the general `obligation` list.
+ * @param {{id: string, exception: string|null}} leaf
+ * @param {object} policy
+ * @param {string} [linkage]
+ * @returns {string|null}
+ */
+export function obligationNote(leaf, policy, linkage) {
+    if (linkage === 'shared-library') {
+        const key = leaf.exception ? `${leaf.id} WITH ${leaf.exception}` : leaf.id;
+        const note = policy.sharedLibrary?.obligation[key];
+        if (note) return note;
+    }
+    return policy.obligation[leaf.id] ?? null;
+}
+// obligationNote END ******************************************
+
+
+//**************************************************************
 // sameComponent
 //**************************************************************
-/** True when a policy entry names this exact component version. */
+/**
+ * True when a policy entry names this component version. Version "*" matches
+ * any version; `validatePolicy` admits it for ecosystem "debian" only.
+ */
 function sameComponent(entry, component) {
-    return entry.ecosystem === component.ecosystem && entry.name === component.name && entry.version === component.version;
+    return entry.ecosystem === component.ecosystem && entry.name === component.name
+        && (entry.version === component.version || entry.version === '*');
 }
 // sameComponent END *******************************************
 
@@ -188,7 +237,7 @@ export function evaluateComponent(component, policy, today, shippedIds = new Set
         const i = policy.preference.indexOf(leaf.id);
         return (shippedIds.has(leaf.id) ? 0 : 1000) + (i < 0 ? policy.preference.length : i);
     };
-    const { category, chosen } = evaluateExpression(ast, (leaf) => classifyLeaf(leaf, policy), rankLeaf);
+    const { category, chosen } = evaluateExpression(ast, (leaf) => classifyLeaf(leaf, policy, component.linkage), rankLeaf);
     const expression = formatExpression(ast);
 
     if (category === 'denied') {

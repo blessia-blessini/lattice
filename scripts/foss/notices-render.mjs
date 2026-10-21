@@ -210,9 +210,11 @@ export function renderTypeSummary(uses, licenceTypes = {}) {
  * @param {Record<string,string>} input.standardTexts id -> text (foss/licenses)
  * @param {{triple: string, label: string}[]} input.targets
  * @param {Record<string,string>} [input.licenceTypes] id -> type, for "Licences by type"
+ * @param {string[]} [input.extraSections] Markdown lines placed after the
+ *   components and before the licence texts (the AppImage section)
  * @returns {string} Markdown, LF line ends, trailing newline
  */
-export function renderNotices({ entries, standardTexts, targets, licenceTypes = {} }) {
+export function renderNotices({ entries, standardTexts, targets, licenceTypes = {}, extraSections = [] }) {
     const sorted = [...entries].sort((a, b) =>
         a.component.name.localeCompare(b.component.name, 'en') ||
         a.component.version.localeCompare(b.component.version, 'en') ||
@@ -281,7 +283,7 @@ export function renderNotices({ entries, standardTexts, targets, licenceTypes = 
         '',
         'Use: "linked" means the component is part of the shipped program; "build-time" means it only runs while Lattice is built and is listed for completeness.',
         '',
-        'The Linux AppImage additionally carries system libraries from the Ubuntu image it is built on (such as GTK, WebKitGTK and GLib, many of them under LGPL-2.1-or-later, dynamically linked). Their copyright and licence files are inside the AppImage under `usr/share/doc/`; they are not repeated in this file.',
+        'The Linux AppImage additionally carries system libraries from the Ubuntu release it is built on (such as GTK, WebKitGTK and GLib, many of them under the LGPL, each a separate file loaded at run time). They are listed, with the written offer for their source code, in the section "Linux AppImage system libraries" below; their full copyright and licence files are inside the AppImage under `usr/share/doc/`.',
         '',
         ...renderTypeSummary(uses, licenceTypes),
         '## Summary',
@@ -294,6 +296,7 @@ export function renderNotices({ entries, standardTexts, targets, licenceTypes = 
         '',
         sections.join('\n\n'),
         '',
+        ...extraSections,
         '## Licence texts',
         '',
         'Each distinct licence text appears once. The components above link to the text that applies to them.',
