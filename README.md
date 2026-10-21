@@ -184,4 +184,6 @@ their own licences, listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 ### CONTRIBUTING
 
 Because Lattice is offered under two licences, contributions can only be accepted under terms that
-allow them to be offered under both. Please open an issue before preparing a pull request.
+allow them to be offered under both: the [Contributor Licence Agreement](CLA.md). You keep the
+copyright in your contribution. Please open an issue before preparing a pull request; the steps are
+in [CONTRIBUTING.md](CONTRIBUTING.md).
