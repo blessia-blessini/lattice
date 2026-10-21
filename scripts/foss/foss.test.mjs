@@ -32,6 +32,7 @@ import { fileURLToPath } from 'url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TARGETS } from './cargo-inventory.mjs';
 import { buildSbom, purlFor } from './cyclonedx.mjs';
+import { EXPORT_NOTICES_FILE } from './export-notices.mjs';
 import { collect, commandCheck, commandNotices, commandSbom, NOTICES_FILE, parseArgs } from './foss.mjs';
 import { escapeInline, fenced, platformLabel, renderNotices, renderTypeSummary, textKey } from './notices-render.mjs';
 
@@ -55,6 +56,7 @@ function makeRepo(root, { crateLicense = 'MIT OR Apache-2.0' } = {}) {
     };
     fs.cpSync(path.join(REAL_ROOT, 'foss'), path.join(root, 'foss'), { recursive: true });
     write('foss/policy.json', JSON.stringify({ ...JSON.parse(fs.readFileSync(path.join(REAL_ROOT, 'foss', 'policy.json'), 'utf8')), clarifications: [] }));
+    write('foss/export-embedded.json', JSON.stringify({ components: [{ lockKey: 'node_modules/leftpad', material: 'padding' }] }));
     write('package.json', JSON.stringify({ name: 'lattice', version: '9.9.9', dependencies: { leftpad: '^1' }, devDependencies: { vitest: '*' } }));
     write('package-lock.json', JSON.stringify({
         lockfileVersion: 3,
@@ -135,6 +137,27 @@ describe('the CLI over a synthetic repository', () => {
         const errors = [];
         expect(commandNotices(inv, { root, targets: WIN, check: true }, { ...quiet, error: (m) => errors.push(m) })).toBe(1);
         expect(errors[0]).toMatch(/npm run foss:notices/);
+    });
+
+    it('writes the export notices beside them, and checks them for drift too', async () => {
+        const inv = await collect({ root, targets: WIN, today: TODAY, cargoMetadata: makeRepo(root) });
+        expect(commandNotices(inv, { root, targets: WIN, check: false }, quiet)).toBe(0);
+        const exportFile = path.join(root, EXPORT_NOTICES_FILE);
+        const text = fs.readFileSync(exportFile, 'utf8');
+        expect(text).toMatch(/^- leftpad 1\.2\.0 \(padding\): ISC$/m);
+        expect(text).toMatch(/Copyright 2015 Pad Author/);
+        expect(text).not.toMatch(/democrate/); // only what the export embeds
+        fs.writeFileSync(exportFile, text.replace('padding', 'something else'));
+        const errors = [];
+        expect(commandNotices(inv, { root, targets: WIN, check: true }, { ...quiet, error: (m) => errors.push(m) })).toBe(1);
+        expect(errors).toHaveLength(1);
+        expect(errors[0]).toContain(EXPORT_NOTICES_FILE);
+    });
+
+    it('fails when an embedded package is not shipped', async () => {
+        const inv = await collect({ root, targets: WIN, today: TODAY, cargoMetadata: makeRepo(root) });
+        fs.writeFileSync(path.join(root, 'foss', 'export-embedded.json'), JSON.stringify({ components: [{ lockKey: 'node_modules/vitest', material: 'x' }] }));
+        expect(() => commandNotices(inv, { root, targets: WIN, check: true }, quiet)).toThrow(/node_modules\/vitest.*not a shipped npm package/);
     });
 
     it('writes one SBOM per target', async () => {

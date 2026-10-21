@@ -131,6 +131,16 @@ const GITHUB_MARKDOWN_RULE: &str = ".markdown-body pre {";
 /// A syntax-highlighted keyword token in the exported markup.
 const KEYWORD_TOKEN: &str = "class=\"tok-keyword";
 
+/// How the `<style>` element of an export opens: with the third-party notices
+/// as a preserved CSS comment (REQ-LTTCE-FOS-00005). Mirrors the heading of
+/// `scripts/foss/export-notices.mjs`, which this harness cannot import; if one
+/// changes, change both.
+const NOTICES_OPENING: &str = "<style>\n/*!\nThird-party notices\n";
+
+/// The copyright holders of the two third-party stylesheets an export copies:
+/// KaTeX's and github-markdown-css's, as their licence files name them.
+const EMBEDDED_HOLDERS: [&str; 2] = ["Khan Academy", "Sindre Sorhus"];
+
 /// The attribute a code block carries while its highlighting is still
 /// loading. Mirrors `HIGHLIGHT_PENDING_ATTR` in `src/lib/preview-copy.ts`,
 /// which this harness cannot import; if one changes, change both.
@@ -245,6 +255,7 @@ fn check_html(path: &Path) -> Vec<String> {
     }
     problems.extend(check_standalone(&html));
     problems.extend(check_preview_look(&html));
+    problems.extend(check_notices(&html));
 
     // The expected count comes from the staged source beside the output
     // (`<dir>/demo.md` → `<dir>/demo.html`), not from a constant that has to be
@@ -319,6 +330,39 @@ fn check_preview_look(html: &str) -> Vec<String> {
     problems
 }
 // check_preview_look END ***************************************
+
+
+//**************************************************************
+// check_notices
+//**************************************************************
+/// REQ-LTTCE-FOS-00005 — the export carries the notices of the third-party
+/// stylesheets it copies: the `<style>` element opens with them as a CSS
+/// comment, naming both copyright holders and the MIT permission text.
+/// Pure, so the rule is unit-tested without an app binary.
+fn check_notices(html: &str) -> Vec<String> {
+    let mut problems = Vec::new();
+    let Some(start) = html.find(NOTICES_OPENING) else {
+        problems.push("HTML <style> does not open with the third-party notices comment".into());
+        return problems;
+    };
+    let comment = match html[start..].find("*/") {
+        Some(end) => &html[start..start + end],
+        None => {
+            problems.push("HTML third-party notices comment is never closed".into());
+            return problems;
+        }
+    };
+    for holder in EMBEDDED_HOLDERS {
+        if !comment.contains(holder) {
+            problems.push(format!("HTML third-party notices do not name the copyright holder {holder}"));
+        }
+    }
+    if !comment.contains("Permission is hereby granted") {
+        problems.push("HTML third-party notices carry no licence text".into());
+    }
+    problems
+}
+// check_notices END ********************************************
 
 
 //**************************************************************
@@ -1101,6 +1145,43 @@ mod tests {
         assert!(problems[0].contains("<!DOCTYPE html>"));
         assert!(problems[1].contains("formula twice"));
         assert!(problems[2].contains("system fonts"));
+    }
+
+    // ── third-party notices (REQ-LTTCE-FOS-00005) ───────────────────────────
+
+    const NOTICES: &str = "<head>\n<style>\n/*!\nThird-party notices\n\n\
+        - katex 0.18.2 (stylesheet and fonts): MIT\n  Copyright (c) 2013-2020 Khan Academy\n\
+        - github-markdown-css 5.9.0 (stylesheet): MIT\n  Copyright (c) Sindre Sorhus\n\n\
+        Permission is hereby granted, free of charge\n*/\n.katex{}</style>";
+
+    #[test]
+    fn an_export_with_the_notices_passes() {
+        assert!(check_notices(NOTICES).is_empty(), "{:?}", check_notices(NOTICES));
+    }
+
+    #[test]
+    fn an_export_without_the_notices_is_rejected() {
+        // What every release up to v0.3.37 wrote: the sheets, no notices.
+        let problems = check_notices("<head>\n<style>\n.katex{}</style>");
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert!(problems[0].contains("does not open"));
+    }
+
+    #[test]
+    fn a_holder_named_only_outside_the_comment_does_not_count() {
+        let moved = NOTICES.replace("Sindre Sorhus\n", "\n") + "<p>Sindre Sorhus</p>";
+        let problems = check_notices(&moved);
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert!(problems[0].contains("Sindre Sorhus"));
+    }
+
+    #[test]
+    fn an_unclosed_or_textless_notices_comment_is_rejected() {
+        assert!(check_notices("<style>\n/*!\nThird-party notices\nKhan Academy")[0].contains("never closed"));
+        let textless = NOTICES.replace("Permission is hereby granted", "");
+        let problems = check_notices(&textless);
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert!(problems[0].contains("no licence text"));
     }
 
     // ── preview look (REQ-LTTCE-XPT-00014) ──────────────────────────────────

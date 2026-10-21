@@ -2133,6 +2133,30 @@ table padding, tabify, task toggles). The backend guard is independent of the fr
 the nearest existing ancestor of the target, so `..` spellings and not-yet-existing sub-folders cannot
 escape it.
 
+<!--ARCH-LTTCE-FOS-00005-->
+**ARCH-LTTCE-FOS-00005** — covers REQ-LTTCE-FOS-00005.
+
+```text
+foss/export-embedded.json   lockKey per copied package (node_modules/katex, node_modules/github-markdown-css)
+   └─ foss.mjs notices → export-notices.mjs: selectEmbedded (match the inventory by installed dir)
+        └─ renderExportNotices (licenceBody, shared with notices-render.mjs) → src/lib/export-notices.generated.txt
+             └─ export-document.ts  ?raw import → cssNoticeComment → first item of the export's <style>
+```
+
+The notice text is produced by the same `notices` run, from the same evaluated inventory, as
+`THIRD-PARTY-NOTICES.md`, and `notices --check` holds both to the committed copies — so a KaTeX bump
+that leaves the export notice stale fails the `foss-compliance` job like any other drift. Matching by
+installed directory (the `package-lock.json` key), not by name, picks the copy the export really imports
+when two versions are installed. The generated file sits in `src/lib/`, not in `foss/`: build legs check
+out without the FOSS tooling (step 100), and the export needs only the text.
+
+It is placed as a `/*! … */` comment so a minifier keeps it; the generator and `cssNoticeComment` both
+refuse a `*/` in the text, and `joinStylesheets` keeps refusing `</style`. A unit test parses the imports
+of `export-document.ts` and fails when it copies material from a package not listed in
+`foss/export-embedded.json`, so a new embedded sheet cannot ship without its notice. The CLI export check
+(`export_demo.rs` `check_notices`) asserts the notices on the file the real binary writes, on every
+desktop CI leg.
+
 ## Architectural Decisions
 
 ### ADR-01: External Image Fetches Blocked by Default

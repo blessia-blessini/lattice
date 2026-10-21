@@ -1052,6 +1052,21 @@ classify. The policy SHALL admit a licence only if it fits **both** of Lattice's
 versioned file in the repository. A licence clarification for a single component SHALL be tied to the
 content hash of the file that proves it, and an exception SHALL carry an expiry date.
 
+<!--REQ-LTTCE-FOS-00005-->
+**REQ-LTTCE-FOS-00005** — An HTML document exported by Lattice SHALL carry, inside the file itself, the
+copyright notices and licence texts of every third-party component whose material the export copies into
+it — today KaTeX's stylesheet and fonts and github-markdown-css — generated from the same inputs as the
+notices of REQ-LTTCE-FOS-00002 and naming the version the export actually contains. It SHALL also point
+to the permission under which Lattice's own styles may be used in exported documents.
+
+*Rationale*: an exported file is a copy of that material, handed on by the user; the MIT licence asks
+every copy to carry its notice, and the file travels without Lattice's bundled notices. Found while
+rewriting the licensing statement (follow-up FU-11).
+
+*Open*: a PDF export embeds subsets of the KaTeX fonts and carries no notice; whether one is needed, and
+where a PDF could carry it, is a question for legal review. Diagrams are not affected — they reach an
+export as rendered images, not as Mermaid's code.
+
 ---
 
 [^mermaid]: Mermaid — a JavaScript diagramming library rendering text definitions inside fenced code blocks

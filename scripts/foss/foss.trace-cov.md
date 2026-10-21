@@ -15,6 +15,11 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - IMPL-LTTCE-FOS-00002 **covers** ARCH-LTTCE-FOS-00002
 - IMPL-LTTCE-FOS-00001 **covers** REQ-LTTCE-FOS-00001  (`assert-bundled.sh`, the STST of step 390)
 - IMPL-LTTCE-FOS-00001 **covers** ARCH-LTTCE-FOS-00001
+- IMPL-LTTCE-FOS-00005 **covers** REQ-LTTCE-FOS-00005  (`export-notices.mjs`: `loadEmbedded` of
+  `foss/export-embedded.json`, `selectEmbedded` by installed directory, `renderExportNotices` →
+  `src/lib/export-notices.generated.txt`, written and drift-checked by `foss.mjs notices [--check]`;
+  `licenceBody` shared with `notices-render.mjs`. The export side is in `src/lib/export-document.trace-cov.md`)
+- IMPL-LTTCE-FOS-00005 **covers** ARCH-LTTCE-FOS-00005
 
 ## Tests
 
@@ -40,6 +45,15 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - UTST `policy.test.mjs` / `foss.test.mjs` — an admitted licence without a type fails validation; the type
   lookup; the type summary orders copyleft first, counts linked components, names copyleft components,
   marks unknown licences "unclassified".
+- UTST `export-notices.test.mjs` (REQ-LTTCE-FOS-00005) — `export-embedded.json` validation (5 malformed
+  shapes); matching by installed directory picks the hoisted copy over a nested one of another version; a
+  listed package that is not shipped fails; rendered text names material, licence, copyright and source,
+  prints a shared licence text once, falls back to the standard text without the template copyright line,
+  points at the exported-documents permission, refuses `*/` and `</style`, normalises CRLF. On the real
+  tree: the list equals the packages `export-document.ts` copies (its `?raw` imports and font glob).
+- ITST `foss.test.mjs` (REQ-LTTCE-FOS-00005) — `notices` writes the export notices beside
+  THIRD-PARTY-NOTICES.md with only the embedded package; `--check` reports the stale export file alone;
+  an embedded package that is not shipped fails the run.
 - ITST on the real tree: CI job `foss-compliance` (and the full local `build-test`) runs `check` and
   `notices --check` over all 8 targets.
 - STST `assert-bundled.sh`, CI step 390 — locally verified only for MSIX (an old package fails, a package

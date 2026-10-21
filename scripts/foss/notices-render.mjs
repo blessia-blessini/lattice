@@ -97,6 +97,24 @@ function standardBody(key, standardTexts, asTemplate) {
 
 
 //**************************************************************
+// licenceBody
+//**************************************************************
+/**
+ * The text to reproduce for one entry of a `selectTexts` result: the
+ * package's own file, the standard text, or the standard text as a per-copy
+ * template with its placeholder copyright line removed.
+ * @param {{id: string, source: string, text?: string}} t one of `selection.texts`
+ * @param {Record<string,string>} standardTexts id -> text (foss/licenses)
+ * @returns {string}
+ */
+export function licenceBody(t, standardTexts) {
+    if (t.source === 'package') return t.text;
+    return standardBody(t.id, standardTexts, t.source === 'template');
+}
+// licenceBody END *********************************************
+
+
+//**************************************************************
 // platformLabel
 //**************************************************************
 /** "all" when a component ships on every target, else the labels in target order. */
@@ -232,18 +250,12 @@ export function renderNotices({ entries, standardTexts, targets, licenceTypes = 
         lines.push('- Copyright:');
         for (const line of sel.copyrights) lines.push(`  - ${escapeInline(line)}`);
         for (const t of sel.texts) {
-            let key;
-            let note;
-            if (t.source === 'package') {
-                key = addText(t.text, t.id, title);
-                note = `as shipped in the package file ${escapeInline(t.file)}`;
-            } else if (t.source === 'template') {
-                key = addText(standardBody(t.id, standardTexts, true), t.id, title);
-                note = 'standard text; the package ships no licence file, so the copyright above is taken from its metadata';
-            } else {
-                key = addText(standardBody(t.id, standardTexts, false), t.id, title);
-                note = 'standard text';
-            }
+            const key = addText(licenceBody(t, standardTexts), t.id, title);
+            const note = t.source === 'package'
+                ? `as shipped in the package file ${escapeInline(t.file)}`
+                : t.source === 'template'
+                    ? 'standard text; the package ships no licence file, so the copyright above is taken from its metadata'
+                    : 'standard text';
             lines.push(`- Licence text (${escapeInline(t.id)}): [${key}](#${key}), ${note}`);
         }
         if (obligation) lines.push(`- Obligation: ${escapeInline(obligation)}`);

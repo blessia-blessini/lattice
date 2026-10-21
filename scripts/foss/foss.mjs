@@ -28,7 +28,8 @@
 ///
 ///   node scripts/foss/foss.mjs check            licence gate, all targets (REQ-LTTCE-FOS-00004)
 ///   node scripts/foss/foss.mjs notices          write THIRD-PARTY-NOTICES.md (REQ-LTTCE-FOS-00002)
-///   node scripts/foss/foss.mjs notices --check  fail if the committed file is stale
+///                                               and the export notices (REQ-LTTCE-FOS-00005)
+///   node scripts/foss/foss.mjs notices --check  fail if either committed file is stale
 ///   node scripts/foss/foss.mjs sbom --out-dir D one CycloneDX SBOM per target
 ///
 /// Option for all commands: --targets <triple,...> limits the Rust graph to
@@ -44,6 +45,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { inventoryFromMetadata, runCargoMetadata, TARGETS } from './cargo-inventory.mjs';
 import { buildSbom } from './cyclonedx.mjs';
+import { EXPORT_NOTICES_FILE, loadEmbedded, renderExportNotices, selectEmbedded } from './export-notices.mjs';
 import { fallbackCopyright, findExhibitB, listLicenceFiles, selectTexts, shippedLicenceIds } from './licence-texts.mjs';
 import { enrichFromManifest, inventoryFromLockfile } from './npm-inventory.mjs';
 import { renderNotices } from './notices-render.mjs';
@@ -53,7 +55,7 @@ import { leafKey } from './spdx-expr.mjs';
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const NOTICES_FILE = 'THIRD-PARTY-NOTICES.md';
 export const PRODUCT_LICENSE = 'AGPL-3.0-or-later';
-const REGENERATE_HINT = 'run "npm run foss:notices" and commit THIRD-PARTY-NOTICES.md';
+const REGENERATE_HINT = `run "npm run foss:notices" and commit ${NOTICES_FILE} and ${EXPORT_NOTICES_FILE}`;
 
 
 //**************************************************************
@@ -197,24 +199,36 @@ export function commandCheck({ policy, entries }, log = console) {
 // commandNotices
 //**************************************************************
 /**
- * Writes THIRD-PARTY-NOTICES.md, or with `check` compares it to the committed copy.
+ * Writes THIRD-PARTY-NOTICES.md and the export notices, or with `check`
+ * compares both to the committed copies.
  * @returns {number} exit code
  */
 export function commandNotices({ policy, entries }, { root, targets, check }, log = console) {
-    const markdown = renderNotices({ entries, standardTexts: loadStandardTexts(root), targets, licenceTypes: licenceTypeMap(policy) });
-    const file = path.join(root, NOTICES_FILE);
+    const standardTexts = loadStandardTexts(root);
+    const outputs = [
+        [NOTICES_FILE, renderNotices({ entries, standardTexts, targets, licenceTypes: licenceTypeMap(policy) })],
+        [EXPORT_NOTICES_FILE, renderExportNotices(selectEmbedded(entries, loadEmbedded(root), root), standardTexts)],
+    ];
     if (!check) {
-        fs.writeFileSync(file, markdown);
-        log.log(`foss notices: wrote ${NOTICES_FILE} (${entries.length} components, ${Buffer.byteLength(markdown)} bytes)`);
+        for (const [rel, text] of outputs) {
+            fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
+            fs.writeFileSync(path.join(root, rel), text);
+            log.log(`foss notices: wrote ${rel} (${Buffer.byteLength(text)} bytes)`);
+        }
         return 0;
     }
-    const committed = fs.existsSync(file) ? fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n') : null;
-    if (committed !== markdown) {
-        log.error(`foss notices: ${NOTICES_FILE} is ${committed === null ? 'missing' : 'out of date'}; ${REGENERATE_HINT}`);
-        return 1;
+    let stale = 0;
+    for (const [rel, text] of outputs) {
+        const file = path.join(root, rel);
+        const committed = fs.existsSync(file) ? fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n') : null;
+        if (committed !== text) {
+            log.error(`foss notices: ${rel} is ${committed === null ? 'missing' : 'out of date'}; ${REGENERATE_HINT}`);
+            stale++;
+        } else {
+            log.log(`foss notices: ${rel} is up to date`);
+        }
     }
-    log.log(`foss notices: ${NOTICES_FILE} is up to date`);
-    return 0;
+    return stale ? 1 : 0;
 }
 // commandNotices END ******************************************
 
