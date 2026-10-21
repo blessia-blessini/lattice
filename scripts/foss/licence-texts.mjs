@@ -179,10 +179,10 @@ export function extractCopyrights(texts) {
                 // Those open with "You" or a lower-case function word; a holder
                 // ("(c) 2001 X", "(C) zune-image developers", "(c) Google LLC",
                 // also "(c)2024 X" without the space) does not. Without the
-                // space only a digit or a capital may follow: "(c)." / "(c):" /
-                // "(c)you" are list items. Judged per line, so a combined file
-                // keeps its holders.
-                if (!/^\([cC]\)(\s+\S|[\d\p{Lu}])/u.test(line) || PROSE_LIST_ITEM_RE.test(line)) continue;
+                // space only a year may follow: "(c)." / "(c):" / "(c)You" are
+                // list items. Judged per line, so a combined file keeps its
+                // holders.
+                if (!/^\([cC]\)(\s+\S|\d)/.test(line) || PROSE_LIST_ITEM_RE.test(line)) continue;
             }
             if (line.length > 200 || /[<[{](yyyy|year|owner|name|copyright holder)/i.test(line)) continue;
             // Prose about copyright — but "Copyright holder: <name>" /
