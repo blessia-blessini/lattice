@@ -492,6 +492,13 @@ jobs:
     ################################################################
     # 350 / Build App
     ################################################################
+    # REQ-LTTCE-FOS-00006: the AppImage bundles this runner's gdk-pixbuf loaders
+    # and their libraries; the TIFF loader would bring GPL-2.0+ libjbig along.
+    - name: 340. Keep excluded image loaders out of the AppImage (Linux)
+      if: matrix.config.platform == 'linux-desktop' || matrix.config.platform == 'linux-arm-desktop'
+      shell: bash
+      run: bash scripts/appimage-exclude-loaders.sh
+
     - name: 350. Build App (Desktop AND Mobile)
       if: matrix.config.platform != 'ios' ### && matrix.config.platform != 'android' # see comment in 350.2
       env:

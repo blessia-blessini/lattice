@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.38
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: Keep the GPL-only TIFF image path out of the Linux AppImage
 - TEST: Check the github-markdown-css version in the export notices too
 - DOCS: List the notices check in the CLI export check table
 - TEST: Catch asset imports without a query in the export cross-check
