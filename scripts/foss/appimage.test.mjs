@@ -34,7 +34,8 @@ import { fileURLToPath } from 'url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
     APPIMAGE_LIST_FILE, evaluateAppImageList, followFileLinks, inventoryAppImage, listCopyrightFolders,
-    listShippedLibraries, loadAppImageList, parseDpkgSearch, renderAppImageSection, resolveOwners, validateAppImageList,
+    listShippedLibraries, loadAppImageList, parseDpkgSearch, referencedLicenceTexts, renderAppImageSection, resolveOwners,
+    validateAppImageList,
 } from './appimage.mjs';
 import { commandAppImage } from './foss.mjs';
 import { loadPolicy } from './policy.mjs';
@@ -43,7 +44,7 @@ const REAL_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 
 const TODAY = '2026-10-21';
 const quiet = { log: () => {}, warn: () => {}, error: () => {} };
 const sha = (text) => crypto.createHash('sha256').update(text).digest('hex');
-const COPYRIGHT_A = 'Files: *\nLicense: LGPL-2.1+\n';
+const COPYRIGHT_A = 'Files: *\nLicense: LGPL-2.1+\n On Debian systems, the complete text can be found in /usr/share/common-licenses/LGPL-2.1.\n';
 const COPYRIGHT_B = 'Files: *\nLicense: Expat\n';
 const policy = () => loadPolicy(path.join(REAL_ROOT, 'foss', 'policy.json'));
 
@@ -53,9 +54,10 @@ const policy = () => loadPolicy(path.join(REAL_ROOT, 'foss', 'policy.json'));
 //**************************************************************
 /**
  * An unpacked AppImage with two packages: liba1 (two libraries, one in a
- * module folder) and libb2, plus Lattice's own binary.
+ * module folder; its copyright file points to common-licenses/LGPL-2.1) and
+ * libb2, plus Lattice's own binary.
  */
-function makeAppRoot(root, { extraDoc = null, extraLib = null } = {}) {
+function makeAppRoot(root, { extraDoc = null, extraLib = null, licenceTexts = true } = {}) {
     const write = (rel, text) => {
         fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
         fs.writeFileSync(path.join(root, rel), text);
@@ -67,6 +69,7 @@ function makeAppRoot(root, { extraDoc = null, extraLib = null } = {}) {
     write('usr/lib/libb.so.2.0.1', 'elf');
     write('usr/lib/README.txt', 'not a library');
     write('usr/bin/lattice', 'elf');
+    if (licenceTexts) write('usr/share/common-licenses/LGPL-2.1', 'GNU LESSER GENERAL PUBLIC LICENSE\nVersion 2.1\n');
     if (extraDoc) write(`usr/share/doc/${extraDoc}/copyright`, 'Files: *\nLicense: GPL-2+\n');
     if (extraLib) write(`usr/lib/${extraLib}`, 'elf');
 }
@@ -124,6 +127,28 @@ describe('foss/appimage-packages.json on the real tree', () => {
         const names = list.map((p) => p.package);
         for (const gone of ['libjbig0', 'libtiff6', 'liblerc4', 'libdeflate0']) expect(names).not.toContain(gone);
     });
+
+    it('lists the packages that own only GIO modules or the SVG loader (CI run 39650213160 found them unlisted)', () => {
+        const names = list.map((p) => p.package);
+        for (const pkg of ['dconf-gsettings-backend', 'glib-networking', 'librsvg2-common']) expect(names).toContain(pkg);
+    });
+});
+
+describe('referencedLicenceTexts', () => {
+    it('finds each common-licenses text once, without a sentence-ending dot', () => {
+        const text = [
+            'License: LGPL-2.1+',
+            ' can be found in /usr/share/common-licenses/LGPL-2.1.',
+            'License: GPL-2+',
+            ' see `/usr/share/common-licenses/GPL-2\' and /usr/share/common-licenses/LGPL-2.1,',
+            ' or /usr/share/common-licenses/GPL for the latest version.',
+        ].join('\n');
+        expect(referencedLicenceTexts(text)).toEqual(['GPL', 'GPL-2', 'LGPL-2.1']);
+    });
+
+    it('returns nothing for a file with the licence text inline', () => {
+        expect(referencedLicenceTexts('License: Expat\n Permission is hereby granted, free of charge, …\n')).toEqual([]);
+    });
 });
 
 describe('renderAppImageSection', () => {
@@ -133,6 +158,11 @@ describe('renderAppImageSection', () => {
         expect(lines).toMatch(/^## Linux AppImage system libraries$/m);
         expect(lines).toMatch(/\*\*Written offer\.\*\*.*at least three years.*blessia AT blessini\.com/);
         expect(lines).toContain('https://launchpad.net/ubuntu/+source/');
+    });
+
+    it('says where the copyright files and the licence texts they point to are', () => {
+        expect(lines).toContain('`usr/share/doc/<package>/copyright`');
+        expect(lines).toContain('`usr/share/common-licenses/`');
     });
 
     it('lists one row per package, with "all" or the platforms it ships on', () => {
@@ -256,6 +286,11 @@ describe('an unpacked AppImage', () => {
         makeAppRoot(root);
         fs.writeFileSync(path.join(root, 'usr/share/doc/libb2/copyright'), 'Files: *\nLicense: GPL-2+\n');
         expect(run().problems).toEqual([expect.stringMatching(/^libb2: copyright file changed/)]);
+    });
+
+    it('fails when a copyright file points to a common-licenses text the AppImage does not carry', () => {
+        makeAppRoot(root, { licenceTexts: false });
+        expect(run().problems).toEqual(['liba1: its copyright file refers to /usr/share/common-licenses/LGPL-2.1, which the AppImage does not carry']);
     });
 
     it('fails for a package carried on a platform it is not listed for', () => {

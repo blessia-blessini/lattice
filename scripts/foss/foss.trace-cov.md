@@ -26,7 +26,9 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   `dpkgOwners` → `resolveOwners` / `followFileLinks` and `dpkgVersions`; `foss.mjs check` evaluates the list,
   `notices` renders the section, `appimage` runs the build-machine check and writes the AppImage SBOM;
   `policy.mjs` `sharedLibrary` scope in `classifyLeaf` / `obligationNote`, version `*` for debian only;
-  `cyclonedx.mjs` `pkg:deb` purls. `scripts/appimage-exclude-loaders.sh` keeps the TIFF loader out)
+  `cyclonedx.mjs` `pkg:deb` purls. `scripts/appimage-exclude-loaders.sh` keeps the TIFF loader out;
+  `scripts/appimage-stage-licences.sh` stages the module owners' copyright files and
+  `/usr/share/common-licenses` for the AppImage, checked by `referencedLicenceTexts` in the gate)
 - IMPL-LTTCE-FOS-00006 **covers** ARCH-LTTCE-FOS-00006
 
 ## Tests
@@ -77,7 +79,8 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   `followFileLinks` (POSIX only: chains, directory links untouched, dangling); `inventoryAppImage` on a
   synthetic unpacked AppImage: pass with warning, platform-only warning, unreviewed package (the libjbig
   case), changed copyright file, wrong platform, denied licence, unowned library, owner without copyright
-  folder, unknown target; `commandAppImage` writes the SBOM with `pkg:deb` purls and exits 1 on problems.
+  folder, common-licenses text referenced but not carried, unknown target; `referencedLicenceTexts` (sentence-ending
+  dot, duplicates, none); the real list names the module-only packages; `commandAppImage` writes the SBOM with `pkg:deb` purls and exits 1 on problems.
 - STST CI step 391 on both Linux legs: `foss.mjs appimage` on the AppImage just built, with the runner's dpkg;
   step 392 uploads its SBOM, 901.8 / 903.1 publish it.
 - ITST on the real tree: CI job `foss-compliance` (and the full local `build-test`) runs `check` and

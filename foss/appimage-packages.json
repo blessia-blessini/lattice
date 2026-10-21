@@ -1,6 +1,20 @@
 {
-  "$comment": "Ubuntu packages whose shared libraries the Linux AppImage carries (REQ-LTTCE-FOS-00006), reviewed once each: license = the SPDX licence of the library the package ships, read from the paragraph of its Debian copyright file that covers the library (not the whole source tarball; see note where they differ); copyrightSha256 = SHA-256 of usr/share/doc/<package>/copyright, so a changed file fails the gate until re-reviewed; platforms defaults to every AppImage target. Reviewed 2026-10-21 against the v0.3.37 AppImages (Ubuntu 24.04, x64 and arm64 copyright files identical). libtiff6, libjbig0 (GPL-2.0-or-later), liblerc4 and libdeflate0 are not listed: scripts/appimage-exclude-loaders.sh keeps the TIFF loader that pulled them in out of the AppImage.",
+  "$comment": "Ubuntu packages whose shared libraries the Linux AppImage carries (REQ-LTTCE-FOS-00006), reviewed once each: license = the SPDX licence of the library the package ships, read from the paragraph of its Debian copyright file that covers the library (not the whole source tarball; see note where they differ); copyrightSha256 = SHA-256 of usr/share/doc/<package>/copyright, so a changed file fails the gate until re-reviewed; platforms defaults to every AppImage target. Reviewed 2026-10-21 against the v0.3.37 AppImages (Ubuntu 24.04, x64 and arm64 copyright files identical). libtiff6, libjbig0 (GPL-2.0-or-later), liblerc4 and libdeflate0 are not listed: scripts/appimage-exclude-loaders.sh keeps the TIFF loader that pulled them in out of the AppImage. dconf-gsettings-backend, glib-networking and librsvg2-common own only GIO modules or the SVG image loader, which linuxdeploy-plugin-gtk copies without their copyright file; scripts/appimage-stage-licences.sh adds it, with /usr/share/common-licenses.",
   "packages": [
+    {
+      "package": "dconf-gsettings-backend",
+      "source": "dconf",
+      "license": "LGPL-2.0-or-later",
+      "copyrightSha256": "a9d427b6a6e5cb665da3b4115039750c9d1092f558d6dee391d20800fb5c850e",
+      "note": "GIO module libdconfsettings.so; GPL-3 covers debian/* only."
+    },
+    {
+      "package": "glib-networking",
+      "source": "glib-networking",
+      "license": "LGPL-2.0-or-later AND LGPL-2.1-or-later",
+      "copyrightSha256": "fddac026b2ccc0b629de7afd738f5e0d1fb538d4f43dc55edc6e70b8d24fd7d6",
+      "note": "GIO modules for TLS (GnuTLS) and proxies."
+    },
     {
       "package": "libatk-bridge2.0-0t64",
       "source": "at-spi2-core",
@@ -418,6 +432,13 @@
       "source": "librsvg",
       "license": "LGPL-2.0-or-later",
       "copyrightSha256": "2777f2b3753caf1e049a866d79a500467f2d0f066b576c1c754dd55cb38bb73b"
+    },
+    {
+      "package": "librsvg2-common",
+      "source": "librsvg",
+      "license": "LGPL-2.0-or-later",
+      "copyrightSha256": "2777f2b3753caf1e049a866d79a500467f2d0f066b576c1c754dd55cb38bb73b",
+      "note": "SVG gdk-pixbuf loader; same copyright file as librsvg2-2."
     },
     {
       "package": "librtmp1",

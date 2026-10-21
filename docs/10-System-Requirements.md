@@ -1072,7 +1072,9 @@ licence was reviewed for the library it ships, recorded in one versioned file wi
 package's copyright file; a package not reviewed, a changed copyright file, or a licence the policy does not
 admit SHALL fail the build of that AppImage. A GPL-only library SHALL NOT be carried. The LGPL and similar
 licences SHALL be admitted only for libraries loaded at run time as separate, replaceable files — never for
-code linked into Lattice's own executable or bundle. The third-party notices SHALL list every reviewed
+code linked into Lattice's own executable or bundle. The AppImage SHALL carry the Debian copyright file of
+every package it carries a library from, and every licence text those files refer to; a missing one SHALL
+fail the build. The third-party notices SHALL list every reviewed
 package with its licence and source package, and carry a written offer of the corresponding source code for
 every library under the LGPL, the GPL or the MPL, valid for at least three years. Each release SHALL publish,
 per AppImage, a machine-readable bill of materials (CycloneDX) with the exact package versions it contains.

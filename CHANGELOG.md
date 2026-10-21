@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.38
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: Carry every copyright file and licence text inside the Linux AppImage
 - FEAT: Review and gate the system libraries inside the Linux AppImage
 - FIX: Keep the GPL-only TIFF image path out of the Linux AppImage
 - TEST: Check the github-markdown-css version in the export notices too

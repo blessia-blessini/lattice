@@ -35,8 +35,9 @@
 /// - renders its section of THIRD-PARTY-NOTICES.md with the written offer,
 /// - and, on a Linux build machine, checks an unpacked AppImage against it:
 ///   every library must belong to a listed package (`dpkg -S`), every listed
-///   copyright file must still hash the same, and the exact versions go into
-///   a CycloneDX SBOM.
+///   copyright file must still hash the same, every licence text a copyright
+///   file points to in /usr/share/common-licenses must be carried too, and
+///   the exact versions go into a CycloneDX SBOM.
 
 import crypto from 'crypto';
 import { execFileSync } from 'child_process';
@@ -52,6 +53,18 @@ const OFFER_CONTACT = 'blessia AT blessini.com';
 const SOURCE_ARCHIVE = 'https://launchpad.net/ubuntu/+source/';
 /** A shared library file name: libfoo.so, libfoo.so.1, libfoo.so.1.2.3. */
 const SHARED_LIBRARY_RE = /\.so(\.\d+)*$/;
+/** Where Debian keeps the licence texts its copyright files point to; the AppImage carries a copy at the same path. */
+const COMMON_LICENSES = 'usr/share/common-licenses';
+/** A pointer to one of those texts; a sentence may end right after the name ("…/LGPL-2.1."). */
+const COMMON_LICENSE_REF_RE = /\/usr\/share\/common-licenses\/([A-Za-z0-9][A-Za-z0-9.+_-]*)/g;
+
+
+//**************************************************************
+// copyrightPath
+//**************************************************************
+/** The Debian copyright file of `pkg` inside an unpacked AppImage. */
+const copyrightPath = (root, pkg) => path.join(root, 'usr', 'share', 'doc', pkg, 'copyright');
+// copyrightPath END *******************************************
 
 
 //**************************************************************
@@ -140,7 +153,7 @@ export function renderAppImageSection(evaluated) {
     const lines = [
         '## Linux AppImage system libraries',
         '',
-        'The Linux AppImage also carries the system libraries below, taken from the Ubuntu release it is built on. Each is a separate file that the dynamic linker loads at run time; you may replace it with a modified version. The Debian copyright file of each package, with its full licence texts, is inside the AppImage under `usr/share/doc/<package>/copyright`. The exact package versions in an AppImage are listed in its SBOM, published next to the AppImage on the release page.',
+        'The Linux AppImage also carries the system libraries below, taken from the Ubuntu release it is built on. Each is a separate file that the dynamic linker loads at run time; you may replace it with a modified version. The Debian copyright file of each package is inside the AppImage under `usr/share/doc/<package>/copyright`, and the licence texts those files refer to under `usr/share/common-licenses/`. The exact package versions in an AppImage are listed in its SBOM, published next to the AppImage on the release page.',
         '',
         `**Written offer.** For every library below that is under the GNU LGPL, the GNU GPL or the MPL, Lattice's copyright holder offers, for at least three years after the release that contains it, to provide the complete corresponding source code of the version in that release, on request to \`${OFFER_CONTACT}\`, for no more than the cost of providing it. The same sources are available from Ubuntu: ${SOURCE_ARCHIVE}<source package>/<version>.`,
         '',
@@ -196,12 +209,29 @@ export function listCopyrightFolders(root) {
     const out = new Map();
     if (!fs.existsSync(doc)) return out;
     for (const name of fs.readdirSync(doc).sort()) {
-        const file = path.join(doc, name, 'copyright');
+        const file = copyrightPath(root, name);
         if (fs.existsSync(file)) out.set(name, crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'));
     }
     return out;
 }
 // listCopyrightFolders END ************************************
+
+
+//**************************************************************
+// referencedLicenceTexts
+//**************************************************************
+/**
+ * The names of the /usr/share/common-licenses texts a Debian copyright file
+ * points to ("…can be found in /usr/share/common-licenses/LGPL-2.1.").
+ * @param {string} text copyright file contents
+ * @returns {string[]} sorted, unique
+ */
+export function referencedLicenceTexts(text) {
+    const names = new Set();
+    for (const m of text.matchAll(COMMON_LICENSE_REF_RE)) names.add(m[1].replace(/\.+$/, ''));
+    return [...names].sort();
+}
+// referencedLicenceTexts END **********************************
 
 
 //**************************************************************
@@ -354,9 +384,11 @@ export function dpkgVersions(packages) {
  *
  * Problems (the gate fails): a copyright folder for a package the list does
  * not name, or names only for other platforms; a copyright file whose hash
- * differs from the reviewed one; a listed licence the policy rejects; a
- * library no package owns; a library whose owner has no copyright folder in
- * the AppImage. Warnings: a package listed for this platform but absent.
+ * differs from the reviewed one; a copyright file pointing to a licence text
+ * in /usr/share/common-licenses that the AppImage does not carry; a listed
+ * licence the policy rejects; a library no package owns; a library whose
+ * owner has no copyright folder in the AppImage. Warnings: a package listed
+ * for this platform but absent.
  *
  * @param {object} input
  * @param {string} input.root unpacked AppImage
@@ -385,6 +417,10 @@ export function inventoryAppImage({ root, label, list, policy, today, owners = d
         }
         if (!item.platforms.includes(label)) problems.push(`${pkg}: listed for ${item.platforms.join(', ')} only, but the ${label} AppImage carries it`);
         if (item.copyrightSha256 !== sha) problems.push(`${pkg}: copyright file changed (sha256 ${sha}); re-check the licence and update ${APPIMAGE_LIST_FILE}`);
+        for (const name of referencedLicenceTexts(fs.readFileSync(copyrightPath(root, pkg), 'utf8'))) {
+            const text = path.join(root, COMMON_LICENSES, name);
+            if (!fs.existsSync(text) || !fs.statSync(text).isFile()) problems.push(`${pkg}: its copyright file refers to /${COMMON_LICENSES}/${name}, which the AppImage does not carry`);
+        }
         const ev = evaluated.get(pkg);
         if (!ev.pass) problems.push(`${pkg}: ${ev.problems.join('; ')}`);
     }

@@ -8647,12 +8647,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ## Linux AppImage system libraries
 
-The Linux AppImage also carries the system libraries below, taken from the Ubuntu release it is built on. Each is a separate file that the dynamic linker loads at run time; you may replace it with a modified version. The Debian copyright file of each package, with its full licence texts, is inside the AppImage under `usr/share/doc/<package>/copyright`. The exact package versions in an AppImage are listed in its SBOM, published next to the AppImage on the release page.
+The Linux AppImage also carries the system libraries below, taken from the Ubuntu release it is built on. Each is a separate file that the dynamic linker loads at run time; you may replace it with a modified version. The Debian copyright file of each package is inside the AppImage under `usr/share/doc/<package>/copyright`, and the licence texts those files refer to under `usr/share/common-licenses/`. The exact package versions in an AppImage are listed in its SBOM, published next to the AppImage on the release page.
 
 **Written offer.** For every library below that is under the GNU LGPL, the GNU GPL or the MPL, Lattice's copyright holder offers, for at least three years after the release that contains it, to provide the complete corresponding source code of the version in that release, on request to `blessia AT blessini.com`, for no more than the cost of providing it. The same sources are available from Ubuntu: https://launchpad.net/ubuntu/+source/<source package>/<version>.
 
 | Package | Source package | Licence | Platforms | Note |
 | --- | --- | --- | --- | --- |
+| dconf-gsettings-backend | dconf | LGPL-2.0-or-later | all | GIO module libdconfsettings.so; GPL-3 covers debian/\* only. |
+| glib-networking | glib-networking | LGPL-2.0-or-later AND LGPL-2.1-or-later | all | GIO modules for TLS (GnuTLS) and proxies. |
 | libatk-bridge2.0-0t64 | at-spi2-core | LGPL-2.0-or-later | all |  |
 | libatk1.0-0t64 | at-spi2-core | LGPL-2.0-or-later | all |  |
 | libatomic1 | gcc-14 | GPL-3.0-or-later WITH GCC-exception-3.1 | linux-x64 | GCC runtime library: GPL-3.0-or-later with the GCC Runtime Library Exception, which permits shipping it with programs under any licence. |
@@ -8720,6 +8722,7 @@ The Linux AppImage also carries the system libraries below, taken from the Ubunt
 | libproxy1v5 | libproxy | LGPL-2.1-or-later | all |  |
 | libpsl5t64 | libpsl | MIT | all |  |
 | librsvg2-2 | librsvg | LGPL-2.0-or-later | all |  |
+| librsvg2-common | librsvg | LGPL-2.0-or-later | all | SVG gdk-pixbuf loader; same copyright file as librsvg2-2. |
 | librtmp1 | rtmpdump | LGPL-2.1-or-later | all | rtmpdump: the librtmp library is LGPL-2.1+; the rtmpdump tools are GPL-2 (not shipped). |
 | libsasl2-2 | cyrus-sasl2 | BSD-3-Clause-Attribution | all |  |
 | libseccomp2 | libseccomp | LGPL-2.1-only | all |  |

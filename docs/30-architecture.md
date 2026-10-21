@@ -2164,9 +2164,13 @@ desktop CI leg.
  Linux leg (linux-desktop, linux-arm-desktop)                         every CI run (foss-compliance)
  340 scripts/appimage-exclude-loaders.sh                              foss check: foss/appimage-packages.json
      remove gdk-pixbuf TIFF loader, rebuild loader cache                 evaluated as 'shared-library'
- 350 tauri build → linuxdeploy-plugin-gtk copies loaders + libs       foss notices: section "Linux AppImage
- 391 --appimage-extract → foss.mjs appimage (appimage.mjs)               system libraries" + written offer
-     usr/share/doc/*/copyright  → reviewed? sha256 unchanged? policy?
+ 341 scripts/appimage-stage-licences.sh                               foss notices: section "Linux AppImage
+     copyright files of the module folders' owners,                      system libraries" + written offer
+     /usr/share/common-licenses → <stage>/tauri.conf.json
+ 350 tauri build --config <stage>/tauri.conf.json
+     → linuxdeploy-plugin-gtk copies loaders + libs; Tauri adds <stage>
+ 391 --appimage-extract → foss.mjs appimage (appimage.mjs)
+     usr/share/doc/*/copyright  → reviewed? sha256 unchanged? policy? common-licenses texts it names carried?
      usr/lib/**/*.so*           → dpkg -S (follow file links) → owner has a copyright folder?
      dpkg-query versions        → lattice-<label>-appimage.cdx.json (pkg:deb purls)
  392 upload FOSS-APPIMAGE-<platform>  → 901.8 → 903.1 release assets
@@ -2198,6 +2202,19 @@ machine's whole loader folder and offers no exclusion; Lattice never decodes TIF
 decodes the images a document shows). Removing it on the throwaway CI runner takes libtiff, libjbig,
 liblerc and libdeflate out of the AppImage. The script refuses to run outside CI without `--yes`, since it
 changes the machine's GTK installation.
+
+*Licence files linuxdeploy leaves behind.* linuxdeploy copies the copyright file of each library it deploys
+as a dependency, but linuxdeploy-plugin-gtk copies the gdk-pixbuf loader and GIO module folders whole, and
+packages that own only modules there (librsvg2-common, glib-networking, dconf-gsettings-backend) arrive
+without one — the gate's first CI run found exactly these. And 81 of the 111 copyright files of v0.3.37 give
+the LGPL, GPL or MPL text only as a pointer to `/usr/share/common-licenses`, which no AppImage carried.
+`appimage-stage-licences.sh` copies, from the runner, the copyright file of every owner of those module
+folders (`dpkg -S`) and the whole common-licenses folder (264 KB, links dereferenced), and writes a Tauri
+config mapping both into the AppImage (`bundle.linux.appimage.files`, absolute paths); the Linux legs pass it
+with `--config` in their matrix `args`, so local builds are unaffected. linuxdeploy skips a file that already
+exists, so the overlap (`libgdk-pixbuf-2.0-0`) is harmless and identical. The gate checks the outcome, not the
+script: every owner has its folder, and every `/usr/share/common-licenses/<name>` a carried copyright file
+names exists in the AppImage (`referencedLicenceTexts`).
 
 ## Architectural Decisions
 

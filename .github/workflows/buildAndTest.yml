@@ -130,7 +130,7 @@ jobs:
             "export_mode": "required",
             "bldprefix": "",
             "mobile_build": "",
-            "args": "",
+            "args": "--config src-tauri/target/appimage-licences/tauri.conf.json",
             "download_name": "Linux-Desktop-App-tested-on-Ubuntu-Appimage",
             "upload_path1": "src-tauri/target/release/bundle/appimage/*.AppImage",
             "upload_path2": "src-tauri/target/release/bundle/deb/*.deb"
@@ -141,7 +141,7 @@ jobs:
             "export_mode": "required",
             "bldprefix": "",
             "mobile_build": "",
-            "args": "",
+            "args": "--config src-tauri/target/appimage-licences/tauri.conf.json",
             "download_name": "Linux-ARM64-Desktop-App-tested-on-Ubuntu-Appimage",
             "upload_path1": "src-tauri/target/release/bundle/appimage/*.AppImage",
             "upload_path2": "src-tauri/target/release/bundle/deb/*.deb"
@@ -498,6 +498,15 @@ jobs:
       if: matrix.config.platform == 'linux-desktop' || matrix.config.platform == 'linux-arm-desktop'
       shell: bash
       run: bash scripts/appimage-exclude-loaders.sh
+
+    # REQ-LTTCE-FOS-00006: linuxdeploy-plugin-gtk copies GIO modules and image
+    # loaders without their packages' copyright files, and most copyright files
+    # point to /usr/share/common-licenses; this stages both and writes the Tauri
+    # config the Linux legs pass to 350 (matrix args: --config).
+    - name: 341. Stage licence files for the AppImage (Linux)
+      if: matrix.config.platform == 'linux-desktop' || matrix.config.platform == 'linux-arm-desktop'
+      shell: bash
+      run: bash scripts/appimage-stage-licences.sh
 
     - name: 350. Build App (Desktop AND Mobile)
       if: matrix.config.platform != 'ios' ### && matrix.config.platform != 'android' # see comment in 350.2
