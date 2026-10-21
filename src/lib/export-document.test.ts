@@ -13,6 +13,7 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import {
     buildExportDocument,
+    cssNoticeComment,
     escapeHtmlText,
     exportPageCss,
     exportStylesheet,
@@ -35,6 +36,13 @@ const GITHUB_MARKDOWN_CSS = readFileSync(
     resolve(__dirname, '../../node_modules/github-markdown-css/github-markdown.css'),
     'utf8',
 );
+
+/** The generated export notices. */
+const EXPORT_NOTICES = readFileSync(resolve(__dirname, 'export-notices.generated.txt'), 'utf8').replace(/\r\n/g, '\n');
+
+/** The installed (hoisted) version of a package — the copy the export imports. */
+const installedVersion = (pkg: string): string =>
+    JSON.parse(readFileSync(resolve(__dirname, '../../node_modules', pkg, 'package.json'), 'utf8')).version;
 
 /** Every font the shipped sheet names in a woff2 `url(...)`. */
 const FONTS_NAMED_BY_SHEET = [...SHIPPED_KATEX_CSS.matchAll(/fonts\/([\w-]+)\.woff2/g)].map((m) => m[1]);
@@ -183,6 +191,45 @@ describe('exportStylesheet (the preview\'s look — REQ-LTTCE-XPT-00014)', () =>
     it('carries the code-token palette of both themes — the syntax highlighting', () => {
         expect(css).toMatch(/\.markdown-body\[data-theme="light"\] \{\s*& \.tok-keyword/);
         expect(css).toMatch(/\.markdown-body\[data-theme="dark"\] \{\s*& \.tok-keyword/);
+    });
+});
+
+describe('cssNoticeComment (REQ-LTTCE-FOS-00005)', () => {
+    it('wraps the text in a comment a minifier keeps', () => {
+        expect(cssNoticeComment('Third-party notices\n\n- a 1.0 (x): MIT\n')).toBe('/*!\nThird-party notices\n\n- a 1.0 (x): MIT\n*/');
+    });
+
+    it('normalises CRLF, as a Windows checkout of the generated file may have', () => {
+        expect(cssNoticeComment('a\r\nb\r\n')).toBe('/*!\na\nb\n*/');
+    });
+
+    it('refuses text that would end the comment early', () => {
+        expect(() => cssNoticeComment('Copyright */ x')).toThrow(/\*\//);
+    });
+
+    it('refuses an empty notice — the generated file is missing its content', () => {
+        expect(() => cssNoticeComment(' \n')).toThrow(/foss:notices/);
+    });
+});
+
+describe('exportStylesheet (third-party notices — REQ-LTTCE-FOS-00005)', () => {
+    const css = exportStylesheet();
+
+    it('opens with the generated notices, before any rule', () => {
+        expect(css.startsWith(`/*!\n${EXPORT_NOTICES.trim()}\n*/\n`)).toBe(true);
+    });
+
+    it('names the copyright holders and licence of KaTeX and github-markdown-css', () => {
+        const comment = css.slice(0, css.indexOf('*/'));
+        expect(comment).toMatch(/^- katex [\d.]+ \(stylesheet and fonts\): MIT$/m);
+        expect(comment).toMatch(/Khan Academy/);
+        expect(comment).toMatch(/^- github-markdown-css [\d.]+ \(stylesheet\): MIT$/m);
+        expect(comment).toMatch(/Sindre Sorhus/);
+        expect(comment).toMatch(/Permission is hereby granted, free of charge/);
+    });
+
+    it.each(['katex', 'github-markdown-css'])('names the version of %s this build bundles', (pkg) => {
+        expect(EXPORT_NOTICES).toContain(`- ${pkg} ${installedVersion(pkg)} (`);
     });
 });
 

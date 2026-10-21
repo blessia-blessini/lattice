@@ -205,7 +205,7 @@ which were previously compile-verified only.
 
 | Scenario | Asserts |
 |:---------|:--------|
-| `export-html` | exit `0`; `demo.html` beside the input; contains the H1 text, `data-source-line` (the rendered preview, not raw source), `<table`, `class="katex"`, and one rasterised PNG per Mermaid block; is a whole document (`<!DOCTYPE html>`) carrying KaTeX's stylesheet and its fonts as `data:` URLs, with no relative `fonts/` URL (REQ-LTTCE-XPT-00013); the body in a themed `.markdown-body` article with github-markdown-css, the code-token palette and highlighted tokens, none still pending (REQ-LTTCE-XPT-00014) |
+| `export-html` | exit `0`; `demo.html` beside the input; contains the H1 text, `data-source-line` (the rendered preview, not raw source), `<table`, `class="katex"`, and one rasterised PNG per Mermaid block; is a whole document (`<!DOCTYPE html>`) carrying KaTeX's stylesheet and its fonts as `data:` URLs, with no relative `fonts/` URL (REQ-LTTCE-XPT-00013); the body in a themed `.markdown-body` article with github-markdown-css, the code-token palette and highlighted tokens, none still pending (REQ-LTTCE-XPT-00014); the `<style>` opens with the third-party notices comment, which names the copyright holders of KaTeX and github-markdown-css and carries the licence text (REQ-LTTCE-FOS-00005, `check_notices`) |
 | `export-pdf (default paper)` | exit `0`; `demo.pdf` beside the input; starts with the `%PDF-` magic number, is not a stub, its page is A4 portrait (`/MediaBox`, ±1.5 pt), and it has at least 2 pages — the demo is paginated, not clipped to one page |
 | `export-pdf --paper a3` | the same on a separate staged copy, with an A3 portrait page — a non-default paper, end to end |
 | `export-pdf --paper letter (relative path)` | the same on its own staged copy, with a US Letter portrait page — and the file given by its bare name, relative to the directory the CLI runs in, as a user types it (Linux refused relative output paths until 2026-09-28) |
@@ -300,6 +300,13 @@ every package users download — NSIS by a silent install into a temp folder, MS
 requires `LICENSE` and `THIRD-PARTY-NOTICES.md` byte-identical to the repository's. It runs after the
 tests, so the installed copy never meets the E2E harness. Step 389 first adds `scripts/foss/` to that
 leg's sparse checkout.
+
+**On CI, step 391 of both Linux legs** (`foss.mjs appimage`, REQ-LTTCE-FOS-00006) unpacks the AppImage
+just built and accounts for every file in it: Lattice's own, written by the build, a bundler part named in
+`foss/extra-components.json`, or owned (runner's `dpkg -S`) by a package reviewed in
+`foss/appimage-packages.json` whose copyright file — unchanged — and the licence texts it names are inside.
+The runtime must be the reviewed type2-runtime commit. Its SBOM is uploaded by step 392. The data it reads
+is unit-tested on every run; only the runner's real dpkg and AppImage are left to this step.
 
 ### Step 3 — Linter
 ```

@@ -97,6 +97,24 @@ function standardBody(key, standardTexts, asTemplate) {
 
 
 //**************************************************************
+// licenceBody
+//**************************************************************
+/**
+ * The text to reproduce for one entry of a `selectTexts` result: the
+ * package's own file, the standard text, or the standard text as a per-copy
+ * template with its placeholder copyright line removed.
+ * @param {{id: string, source: string, text?: string}} t one of `selection.texts`
+ * @param {Record<string,string>} standardTexts id -> text (foss/licenses)
+ * @returns {string}
+ */
+export function licenceBody(t, standardTexts) {
+    if (t.source === 'package') return t.text;
+    return standardBody(t.id, standardTexts, t.source === 'template');
+}
+// licenceBody END *********************************************
+
+
+//**************************************************************
 // platformLabel
 //**************************************************************
 /** "all" when a component ships on every target, else the labels in target order. */
@@ -192,9 +210,11 @@ export function renderTypeSummary(uses, licenceTypes = {}) {
  * @param {Record<string,string>} input.standardTexts id -> text (foss/licenses)
  * @param {{triple: string, label: string}[]} input.targets
  * @param {Record<string,string>} [input.licenceTypes] id -> type, for "Licences by type"
+ * @param {string[]} [input.extraSections] Markdown lines placed after the
+ *   components and before the licence texts (the AppImage section)
  * @returns {string} Markdown, LF line ends, trailing newline
  */
-export function renderNotices({ entries, standardTexts, targets, licenceTypes = {} }) {
+export function renderNotices({ entries, standardTexts, targets, licenceTypes = {}, extraSections = [] }) {
     const sorted = [...entries].sort((a, b) =>
         a.component.name.localeCompare(b.component.name, 'en') ||
         a.component.version.localeCompare(b.component.version, 'en') ||
@@ -232,18 +252,12 @@ export function renderNotices({ entries, standardTexts, targets, licenceTypes = 
         lines.push('- Copyright:');
         for (const line of sel.copyrights) lines.push(`  - ${escapeInline(line)}`);
         for (const t of sel.texts) {
-            let key;
-            let note;
-            if (t.source === 'package') {
-                key = addText(t.text, t.id, title);
-                note = `as shipped in the package file ${escapeInline(t.file)}`;
-            } else if (t.source === 'template') {
-                key = addText(standardBody(t.id, standardTexts, true), t.id, title);
-                note = 'standard text; the package ships no licence file, so the copyright above is taken from its metadata';
-            } else {
-                key = addText(standardBody(t.id, standardTexts, false), t.id, title);
-                note = 'standard text';
-            }
+            const key = addText(licenceBody(t, standardTexts), t.id, title);
+            const note = t.source === 'package'
+                ? `as shipped in the package file ${escapeInline(t.file)}`
+                : t.source === 'template'
+                    ? 'standard text; the package ships no licence file, so the copyright above is taken from its metadata'
+                    : 'standard text';
             lines.push(`- Licence text (${escapeInline(t.id)}): [${key}](#${key}), ${note}`);
         }
         if (obligation) lines.push(`- Obligation: ${escapeInline(obligation)}`);
@@ -267,9 +281,9 @@ export function renderNotices({ entries, standardTexts, targets, licenceTypes = 
         '',
         'Platforms: ' + targets.map((t) => `${t.label} = ${t.triple}`).join('; ') + '.',
         '',
-        'Use: "linked" means the component is part of the shipped program; "build-time" means it only runs while Lattice is built and is listed for completeness.',
+        'Use: "linked" means the component is part of the shipped program; "build-time" means it only runs while Lattice is built and is listed for completeness; "separate-program" means a program of its own inside the Linux AppImage (its runtime, AppRun) that Lattice\'s code does not link with.',
         '',
-        'The Linux AppImage additionally carries system libraries from the Ubuntu image it is built on (such as GTK, WebKitGTK and GLib, many of them under LGPL-2.1-or-later, dynamically linked). Their copyright and licence files are inside the AppImage under `usr/share/doc/`; they are not repeated in this file.',
+        'The Linux AppImage additionally carries system libraries from the Ubuntu release it is built on (such as GTK, WebKitGTK and GLib, many of them under the LGPL, each a separate file loaded at run time). They are listed, with the written offer for their source code, in the section "Linux AppImage system libraries" below; their copyright files are inside the AppImage under `usr/share/doc/`, the licence texts those refer to under `usr/share/common-licenses/`.',
         '',
         ...renderTypeSummary(uses, licenceTypes),
         '## Summary',
@@ -282,6 +296,7 @@ export function renderNotices({ entries, standardTexts, targets, licenceTypes = 
         '',
         sections.join('\n\n'),
         '',
+        ...extraSections,
         '## Licence texts',
         '',
         'Each distinct licence text appears once. The components above link to the text that applies to them.',

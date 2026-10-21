@@ -1,5 +1,5 @@
 {
-  "$comment": "Components that ship in Lattice but that neither Cargo.lock nor package-lock.json reports. Each needs name, version, license (SPDX), copyrights, linkage and platforms ('all' or a list of target labels from scripts/foss/cargo-inventory.mjs). Linux AppImage system libraries are added under follow-up FU-1.",
+  "$comment": "Components that ship in Lattice but that neither Cargo.lock nor package-lock.json reports. Each needs name, version, license (SPDX), copyrights, linkage and platforms ('all' or a list of target labels from scripts/foss/cargo-inventory.mjs). Linux AppImage system libraries are reviewed separately, in foss/appimage-packages.json (REQ-LTTCE-FOS-00006). The AppImage bundler parts (linkage 'separate-program': programs of their own that Lattice does not link with) carry \"appImage\": \"files\" names the paths they occupy in the unpacked AppImage, \"runtimeCommit\" the type2-runtime commit whose build recipe (src/runtime/Makefile LIBS, scripts/common/install-dependencies.sh) was reviewed for the runtime and its statically linked parts listed after it; a different commit in a built AppImage fails the gate.",
   "components": [
     {
       "name": "Rust standard library (std, core, alloc)",
@@ -11,6 +11,146 @@
       "repository": "https://github.com/rust-lang/rust",
       "linkage": "linked",
       "platforms": "all"
+    },
+    {
+      "name": "AppImage type 2 runtime",
+      "version": "fedfad5",
+      "license": "MIT",
+      "copyrights": [
+        "Copyright (c) 2004-23 probonopd"
+      ],
+      "repository": "https://github.com/AppImage/type2-runtime",
+      "linkage": "separate-program",
+      "platforms": [
+        "linux-x64",
+        "linux-arm64"
+      ],
+      "appImage": {
+        "runtimeCommit": "fedfad5"
+      }
+    },
+    {
+      "name": "libfuse (in the AppImage type 2 runtime)",
+      "version": "3.15.0, mount.c patched by type2-runtime",
+      "license": "LGPL-2.1-only",
+      "copyrights": [
+        "Copyright (C) 2001-2007 Miklos Szeredi <miklos@szeredi.hu>"
+      ],
+      "repository": "https://github.com/libfuse/libfuse",
+      "linkage": "separate-program",
+      "platforms": [
+        "linux-x64",
+        "linux-arm64"
+      ]
+    },
+    {
+      "name": "squashfuse (in the AppImage type 2 runtime)",
+      "version": "0.5.2",
+      "license": "BSD-2-Clause",
+      "copyrights": [
+        "Copyright (c) 2012 Dave Vasilevsky <dave@vasilevsky.ca>, Phillip Lougher <phillip@squashfs.org.uk>"
+      ],
+      "repository": "https://github.com/vasi/squashfuse",
+      "linkage": "separate-program",
+      "platforms": [
+        "linux-x64",
+        "linux-arm64"
+      ]
+    },
+    {
+      "name": "musl libc (in the AppImage type 2 runtime)",
+      "version": "Alpine 3.21 package, in type2-runtime fedfad5",
+      "license": "MIT",
+      "copyrights": [
+        "Copyright © 2005-2020 Rich Felker, et al."
+      ],
+      "repository": "https://git.musl-libc.org/cgit/musl",
+      "linkage": "separate-program",
+      "platforms": [
+        "linux-x64",
+        "linux-arm64"
+      ]
+    },
+    {
+      "name": "zstd (in the AppImage type 2 runtime)",
+      "version": "Alpine 3.21 package, in type2-runtime fedfad5",
+      "license": "BSD-3-Clause OR GPL-2.0-only",
+      "copyrights": [
+        "Copyright (c) Meta Platforms, Inc. and affiliates."
+      ],
+      "repository": "https://github.com/facebook/zstd",
+      "linkage": "separate-program",
+      "platforms": [
+        "linux-x64",
+        "linux-arm64"
+      ]
+    },
+    {
+      "name": "zlib (in the AppImage type 2 runtime)",
+      "version": "1.3.2",
+      "license": "Zlib",
+      "copyrights": [
+        "Copyright (C) 1995-2026 Jean-loup Gailly and Mark Adler"
+      ],
+      "repository": "https://zlib.net",
+      "linkage": "separate-program",
+      "platforms": [
+        "linux-x64",
+        "linux-arm64"
+      ]
+    },
+    {
+      "name": "mimalloc (in the AppImage type 2 runtime)",
+      "version": "Alpine 3.21 package, in type2-runtime fedfad5",
+      "license": "MIT",
+      "copyrights": [
+        "Copyright (c) 2018-2025 Microsoft Corporation, Daan Leijen"
+      ],
+      "repository": "https://github.com/microsoft/mimalloc",
+      "linkage": "separate-program",
+      "platforms": [
+        "linux-x64",
+        "linux-arm64"
+      ]
+    },
+    {
+      "name": "AppImageKit AppRun",
+      "version": "continuous, mirrored by Tauri (binary-releases apprun-old)",
+      "license": "MIT",
+      "copyrights": [
+        "Copyright (c) 2004-20 Simon Peter"
+      ],
+      "repository": "https://github.com/AppImage/AppImageKit",
+      "linkage": "separate-program",
+      "platforms": [
+        "linux-x64",
+        "linux-arm64"
+      ],
+      "appImage": {
+        "files": [
+          "AppRun.wrapped"
+        ]
+      }
+    },
+    {
+      "name": "linuxdeploy-plugin-gtk AppRun hook",
+      "version": "as vendored by tauri-bundler",
+      "license": "MIT",
+      "copyrights": [
+        "Copyright 2018-2019 TheAssassin and the linuxdeploy contributors",
+        "Copyright (c) 2017 - Present Tauri Apps Contributors"
+      ],
+      "repository": "https://github.com/linuxdeploy/linuxdeploy-plugin-gtk",
+      "linkage": "separate-program",
+      "platforms": [
+        "linux-x64",
+        "linux-arm64"
+      ],
+      "appImage": {
+        "files": [
+          "apprun-hooks/linuxdeploy-plugin-gtk.sh"
+        ]
+      }
     }
   ]
 }

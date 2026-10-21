@@ -1030,9 +1030,8 @@ with its type — permissive, public-domain dedication, weak copyleft or strong 
 components, naming every component used under a copyleft licence. Each release SHALL publish them, together with one
 machine-readable bill of materials (CycloneDX) per built target, next to its installers.
 
-*Deferred*: the system libraries the Linux AppImage carries from its Ubuntu build image (174 shared
-libraries from 111 packages in v0.3.36 — GTK, WebKitGTK, GLib …) are not listed; the AppImage carries their
-Debian copyright files under `usr/share/doc/`, and the notices say so (follow-up FU-1).
+The system libraries the Linux AppImage carries from its Ubuntu build image are covered by
+REQ-LTTCE-FOS-00006, in their own section of the same notices.
 
 *Rationale*: before this chapter no package carried any third-party notice, so every release fell short of
 the attribution condition of the MIT, BSD, ISC, Apache and similar licences of the components it contains.
@@ -1051,6 +1050,48 @@ third-party component has no licence, a licence the licence policy denies, or a 
 classify. The policy SHALL admit a licence only if it fits **both** of Lattice's licences, and SHALL be one
 versioned file in the repository. A licence clarification for a single component SHALL be tied to the
 content hash of the file that proves it, and an exception SHALL carry an expiry date.
+
+<!--REQ-LTTCE-FOS-00005-->
+**REQ-LTTCE-FOS-00005** — An HTML document exported by Lattice SHALL carry, inside the file itself, the
+copyright notices and licence texts of every third-party component whose material the export copies into
+it — today KaTeX's stylesheet and fonts and github-markdown-css — generated from the same inputs as the
+notices of REQ-LTTCE-FOS-00002 and naming the version the export actually contains. It SHALL also point
+to the permission under which Lattice's own styles may be used in exported documents.
+
+*Rationale*: an exported file is a copy of that material, handed on by the user; the MIT licence asks
+every copy to carry its notice, and the file travels without Lattice's bundled notices. Found while
+rewriting the licensing statement (follow-up FU-11).
+
+*Open*: a PDF export embeds subsets of the KaTeX fonts and carries no notice; whether one is needed, and
+where a PDF could carry it, is a question for legal review. Diagrams are not affected — they reach an
+export as rendered images, not as Mermaid's code.
+
+<!--REQ-LTTCE-FOS-00006-->
+**REQ-LTTCE-FOS-00006** — Every file the Linux AppImage carries SHALL be Lattice's own, written by the
+build, a reviewed bundler part (the AppImage runtime, AppRun and its hooks), or come from a package whose
+licence was reviewed for what it ships, recorded in one versioned file with the content hash of the
+package's copyright file; any other file, a package not reviewed, a changed copyright file, a runtime of
+another commit than the reviewed one, or a licence the policy does not admit SHALL fail the build of that
+AppImage. A GPL-only library SHALL NOT be carried. The LGPL and similar licences SHALL be admitted only for
+libraries loaded at run time as separate, replaceable files, and for programs of their own that Lattice's
+code does not link with — never for code linked into Lattice's own executable or bundle. The AppImage SHALL
+carry the Debian copyright file of every package it carries a file from, and every licence text those files
+refer to; a missing one SHALL fail the build. The third-party notices SHALL list every reviewed package with
+its licence and source package and every bundler part, and carry a written offer of the corresponding source
+code for every library under the LGPL, the GPL or the MPL, valid for at least three years. Each release
+SHALL publish, per AppImage, a machine-readable bill of materials (CycloneDX) with the exact package
+versions it contains.
+
+*Rationale*: until v0.3.37 every AppImage carried about 170 libraries from about 110 Ubuntu packages that no
+lock file lists — among them libjbig (GPL-2.0-or-later only), pulled in solely by GTK's TIFF image loader,
+which conflicts with Lattice's commercial licence. Found and removed under follow-up FU-1.
+
+*Open*: whether pointing to Ubuntu's source archive in addition to the written offer suffices, and whether a
+library inside the read-only AppImage counts as "replaceable" (it does once the AppImage is unpacked), are
+questions for legal review. The commercial licence must not forbid reverse engineering for debugging a
+replaced LGPL library (LGPL-2.1 section 6). Also for legal review: the AppImage runtime links libfuse
+(LGPL-2.1-only) statically; Lattice treats it as a separate program whose public source allows a rebuild
+with a modified libfuse.
 
 ---
 

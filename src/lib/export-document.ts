@@ -48,6 +48,13 @@
  * preview loads — and wraps the body in a `.markdown-body` element with the
  * preview's theme, so those rules match exactly as they do in the pane.
  *
+ * REQ-LTTCE-FOS-00005 — KaTeX and github-markdown-css are third-party code
+ * under MIT, whose licence asks every copy to carry its copyright notice and
+ * licence text. An export is such a copy, so the `<style>` element opens with
+ * them as a CSS comment: `export-notices.generated.txt`, written by
+ * `npm run foss:notices` from the same inventory as THIRD-PARTY-NOTICES.md and
+ * kept current by `foss notices --check`.
+ *
  * This module carries ~350 KB of font data, so `App.tsx` loads it with a
  * dynamic `import()` on the export path only; an interactive launch never
  * parses it.
@@ -56,6 +63,7 @@
 import katexCss from 'katex/dist/katex.min.css?raw';
 import githubMarkdownCss from 'github-markdown-css/github-markdown.css?raw';
 import previewThemeCss from '../preview-theme.css?raw';
+import exportNoticesText from './export-notices.generated.txt?raw';
 import { PREVIEW_THEME_COLORS, type PreviewTheme } from './preview-theme';
 
 /**
@@ -187,6 +195,30 @@ export function joinStylesheets(sheets: readonly string[]): string {
 } // joinStylesheets END *******************************************************
 
 
+//******************************************************************************
+// cssNoticeComment
+//******************************************************************************
+/**
+ * REQ-LTTCE-FOS-00005 — `text` as a CSS comment, `/*!` so that a minifier
+ * keeps it. Line ends are normalised to LF (a Windows checkout may give CRLF).
+ *
+ * Throws if `text` is empty or contains `*` + `/`: an empty notice is a broken
+ * build, and the sequence would end the comment and turn the rest of the
+ * notice into CSS. The generator refuses such text already; this guard keeps
+ * a hand-edited file from slipping through.
+ */
+export function cssNoticeComment(text: string): string {
+    const body = text.replace(/\r\n?/g, '\n').trim();
+    if (!body) {
+        throw new Error('the export notices are empty — run "npm run foss:notices"');
+    }
+    if (body.includes('*/')) {
+        throw new Error('the export notices contain "*/" — cannot place them in a CSS comment');
+    }
+    return `/*!\n${body}\n*/`;
+} // cssNoticeComment END ******************************************************
+
+
 /** The theme-independent stylesheets with fonts embedded — built once, on first export. */
 let g_exportCss: string | null = null;
 
@@ -195,15 +227,16 @@ let g_exportCss: string | null = null;
 // exportStylesheet
 //******************************************************************************
 /**
- * The stylesheets every exported document carries, in the order `App.tsx`
- * imports them, so equal-specificity rules resolve as they do in the preview:
- * the preview theme with the code-token palette, KaTeX's with its fonts
- * embedded, then github-markdown-css.
+ * The stylesheets every exported document carries, after the third-party
+ * notices (REQ-LTTCE-FOS-00005), in the order `App.tsx` imports them, so
+ * equal-specificity rules resolve as they do in the preview: the preview theme
+ * with the code-token palette, KaTeX's with its fonts embedded, then
+ * github-markdown-css.
  */
 export function exportStylesheet(): string {
     if (g_exportCss === null) {
         const katex = inlineKatexFonts(katexCss, fontDataUrlsByName(KATEX_WOFF2_DATA_URLS));
-        g_exportCss = joinStylesheets([previewThemeCss, katex, githubMarkdownCss]);
+        g_exportCss = joinStylesheets([cssNoticeComment(exportNoticesText), previewThemeCss, katex, githubMarkdownCss]);
     }
     return g_exportCss;
 } // exportStylesheet END ******************************************************

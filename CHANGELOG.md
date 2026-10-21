@@ -4,9 +4,28 @@ All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
 
-## v0.3.38
+## v0.3.39
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FEAT: FOSS follow-ups: dual licence, CLA, notices in exports and the AppImage
+---
+
+## v0.3.38
+### Changes
+- FIX: Address the four nits of the APPROVED FU-1 review cycle 2
+- FIX: Account for every file in the Linux AppImage, its runtime and AppRun included
+- FIX: Show the source URL template and survive unknown packages in the AppImage gate
+- FIX: Carry every copyright file and licence text inside the Linux AppImage
+- FEAT: Review and gate the system libraries inside the Linux AppImage
+- FIX: Keep the GPL-only TIFF image path out of the Linux AppImage
+- TEST: Check the github-markdown-css version in the export notices too
+- DOCS: List the notices check in the CLI export check table
+- TEST: Catch asset imports without a query in the export cross-check
+- DOCS: Trace the cycle-1 test additions for the export notices
+- FIX: Act on review cycle 1 of the export notices
+- FIX: Carry the third-party notices inside exported HTML documents
+- DOCS: Add a contributor licence agreement and contribution guide
+- DOCS: Restate Lattice's licensing as a coherent dual licence
 - FIX: updated 3rd party notices with new KaTeX version
 - FIX: updated 3rd party notices
 - FEAT: Add FOSS licence gate and generated third-party notices

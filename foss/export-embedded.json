@@ -1,0 +1,7 @@
+{
+  "$comment": "Third-party material that src/lib/export-document.ts copies into every exported HTML document (REQ-LTTCE-FOS-00005). Each entry names the installed npm package by its package-lock.json key, so the version is the one the export really imports. 'foss.mjs notices' renders their notices into src/lib/export-notices.generated.txt; a key that matches no shipped npm package fails the run, and a unit test fails when export-document.ts imports material from a package not listed here.",
+  "components": [
+    { "lockKey": "node_modules/katex", "material": "stylesheet and fonts" },
+    { "lockKey": "node_modules/github-markdown-css", "material": "stylesheet" }
+  ]
+}
