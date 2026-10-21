@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.39
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FEAT: Check licences and notices on every pull request into dev
 - FEAT: FOSS follow-ups: dual licence, CLA, notices in exports and the AppImage
 ---
 

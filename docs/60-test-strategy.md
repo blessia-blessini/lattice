@@ -293,7 +293,9 @@ REQ-LTTCE-FOS-00002 / 00004. About 45 s (`cargo metadata` for 8 targets). Skippe
 tests of `scripts/foss/` (`*.test.mjs`) run with the frontend suite in step 2b locally; on CI the build legs
 check out without `scripts/foss/` and `foss/` (proving the product does not depend on them, steps 100/101),
 so the `foss-compliance` job runs those tests instead (step 144). A stale notices file is
-fixed with `npm run foss:notices`.
+fixed with `npm run foss:notices`. The same job (`foss-compliance.yml`) runs on every pull request into
+`dev`, Dependabot's included; on failure its job summary lists the failing components or the stale files
+and the commands that regenerate them.
 
 **On CI, step 390 of each desktop leg** (`scripts/foss/assert-bundled.sh`, REQ-LTTCE-FOS-00001) unpacks
 every package users download — NSIS by a silent install into a temp folder, MSIX, deb, AppImage, dmg — and

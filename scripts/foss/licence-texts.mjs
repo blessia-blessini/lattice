@@ -177,9 +177,10 @@ export function extractCopyrights(texts) {
                 // "(c)" also labels list items in licence prose: Apache
                 // "(c) You must retain ...", MPL "(c) under Patent Claims ...".
                 // Those open with "You" or a lower-case function word; a holder
-                // ("(c) 2001 X", "(C) zune-image developers", "(c) Google LLC")
-                // does not. Judged per line, so a combined file keeps its holders.
-                if (!/^\(c\)\s+\S/i.test(line) || PROSE_LIST_ITEM_RE.test(line)) continue;
+                // ("(c) 2001 X", "(C) zune-image developers", "(c) Google LLC",
+                // also "(c)2024 X" without the space) does not. Judged per line,
+                // so a combined file keeps its holders.
+                if (!/^\(c\)\s*\S/i.test(line) || PROSE_LIST_ITEM_RE.test(line)) continue;
             }
             if (line.length > 200 || /[<[{](yyyy|year|owner|name|copyright holder)/i.test(line)) continue;
             // Prose about copyright — but "Copyright holder: <name>" /

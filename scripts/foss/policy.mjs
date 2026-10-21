@@ -34,6 +34,8 @@ import { CATEGORY_RANK, evaluateExpression, formatExpression, parseExpression } 
 
 /** The licence types `types` in policy.json may use, copyleft first. */
 export const LICENCE_TYPES = Object.freeze(['strong-copyleft', 'weak-copyleft', 'permissive', 'public-domain']);
+/** The types whose components the notices name one by one. */
+export const COPYLEFT_TYPES = Object.freeze(['strong-copyleft', 'weak-copyleft']);
 /**
  * Linkages that are not part of Lattice's own executable or bundle, and the
  * policy section consulted first for them: a library the dynamic linker

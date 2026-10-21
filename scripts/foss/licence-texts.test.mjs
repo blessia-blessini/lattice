@@ -104,6 +104,11 @@ describe('extractCopyrights', () => {
         expect(extractCopyrights([`(c) Google LLC\n\n${std('Apache-2.0')}`])).toEqual(['(c) Google LLC']);
     });
 
+    it('keeps a holder written "(c)2024" without the space, and still drops "(c)" list prose', () => {
+        expect(extractCopyrights(['(c)2024 Jane Doe\n(C)Example Org'])).toEqual(['(c)2024 Jane Doe', '(C)Example Org']);
+        expect(extractCopyrights([`(c)2024 Jane Doe\n\n${std('Apache-2.0')}`])).toEqual(['(c)2024 Jane Doe']);
+    });
+
     it('keeps "Portions Copyright" and "Copyright holder: <name>"', () => {
         expect(extractCopyrights(['Portions Copyright 2001 Old Corp\nCopyright holder: Jane Doe\nCopyright holders are listed below'])).toEqual([
             'Portions Copyright 2001 Old Corp',

@@ -11,7 +11,10 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - IMPL-LTTCE-FOS-00004 **covers** ARCH-LTTCE-FOS-00004
 - IMPL-LTTCE-FOS-00002 **covers** REQ-LTTCE-FOS-00002  (`foss.mjs notices [--check]`:
   `licence-texts.mjs` selection + `notices-render.mjs`, opening with the "Licences by type" summary from
-  the policy's `types`; `foss.mjs sbom`: `cyclonedx.mjs`)
+  the policy's `types` (copyleft types by `COPYLEFT_TYPES`); `foss.mjs sbom`: `cyclonedx.mjs`; on GitHub Actions
+  `writeStepSummary` explains a failing `check` or a stale `notices --check`. `.github/workflows/foss-compliance.yml`
+  runs gate, notices check and unit tests on every pull request into dev, Dependabot's included, and is
+  called by `buildAndTest.yml`)
 - IMPL-LTTCE-FOS-00002 **covers** ARCH-LTTCE-FOS-00002
 - IMPL-LTTCE-FOS-00001 **covers** REQ-LTTCE-FOS-00001  (`assert-bundled.sh`, the STST of step 390)
 - IMPL-LTTCE-FOS-00001 **covers** ARCH-LTTCE-FOS-00001
@@ -47,13 +50,14 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   lockfile v1 rejected, legacy licence shapes, manifest enrichment.
 - UTST `licence-texts.test.mjs` — every SPDX standard text recognised; the MIT "(including the next
   paragraph)" variant is MIT, not MIT-0 (an earlier rule misread bytemuck); combined files; copyright
-  extraction skips placeholders, "(c)" list items and lower-case prose; text selection (own file, standard,
+  extraction skips placeholders, "(c)" list items and lower-case prose, and keeps "(c)2024 X" without a space; text selection (own file, standard,
   template, reworded variant, single-licence file preferred); Exhibit B found in source but not in the MPL
   text itself.
 - ITST `foss.test.mjs` — the CLI over a synthetic repository in a temp dir with an injected `cargo
   metadata`: gate passes; a GPL crate fails (negative test); notices written, then missing / stale / CRLF
-  checkout detected correctly; one SBOM per target. Plus renderer determinism and de-duplication, and
-  CycloneDX purls and serial number.
+  checkout detected correctly; one SBOM per target; with `GITHUB_STEP_SUMMARY` set, stale notices write the
+  regenerate commands and a failed gate lists its components, a passing run writes nothing, and nothing is
+  written outside Actions. Plus renderer determinism and de-duplication, and CycloneDX purls and serial number.
 - UTST `policy.test.mjs` / `foss.test.mjs` — an admitted licence without a type fails validation; the type
   lookup; the type summary orders copyleft first, counts linked components, names copyleft components,
   marks unknown licences "unclassified".
@@ -101,6 +105,6 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   runner's dpkg — also the end-to-end check of steps 340 (no TIFF loader, no typelib) and 341 (staged files);
   step 392 uploads its SBOM, 901.8 / 903.1 publish it.
 - ITST on the real tree: CI job `foss-compliance` (and the full local `build-test`) runs `check` and
-  `notices --check` over all 8 targets.
+  `notices --check` over all 8 targets — in every build, and on every pull request into dev.
 - STST `assert-bundled.sh`, CI step 390 — locally verified only for MSIX (an old package fails, a package
   with the files passes next to a decoy LICENSE, no package fails); NSIS, deb, AppImage and dmg run on CI.

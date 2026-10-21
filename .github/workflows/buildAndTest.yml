@@ -244,70 +244,12 @@ jobs:
 
   ################################################################
   # JOB 1b: FOSS COMPLIANCE (REQ-LTTCE-FOS-00002 / 00004)
-  #   Licence gate over every target's Rust graph and the npm
-  #   production closure (foss/policy.json: fits AGPL-3.0-or-later
-  #   AND the commercial licence), the notices drift check, and one
-  #   CycloneDX SBOM per built target. Runs on every workflow run,
-  #   in parallel with the build legs; publish-release-site needs
-  #   it, so a release that breaks the policy is never published.
-  #   No cache on purpose: it only downloads sources (~1 min), and
-  #   the 10 GB cache budget already evicts on every run.
+  #   Defined in foss-compliance.yml, which also runs on every pull
+  #   request to dev; here it runs in parallel with the build legs,
+  #   and publish-release-site needs it.
   ################################################################
   foss-compliance:
-    runs-on: ubuntu-latest
-    steps:
-    - name: 100. Checkout
-      uses: actions/checkout@v6
-
-    - name: 123. Install Node
-      uses: actions/setup-node@v6
-      with:
-        node-version: '24'
-
-    - name: 130. Fetch sources (all crates, npm production packages)
-      shell: bash
-      run: |
-        set -euo pipefail
-        cargo fetch --locked --manifest-path src-tauri/Cargo.toml
-        npm ci --omit=dev --ignore-scripts --no-audit --no-fund
-
-    - name: 140. Licence gate
-      run: node scripts/foss/foss.mjs check
-
-    - name: 141. Third-party notices up to date
-      run: node scripts/foss/foss.mjs notices --check
-
-    - name: 142. SBOMs (CycloneDX, one per built target)
-      shell: bash
-      run: |
-        set -euo pipefail
-        # Every target of the build matrix except iOS, which is not built yet.
-        node scripts/foss/foss.mjs sbom --out-dir foss-out --targets \
-          x86_64-pc-windows-msvc,aarch64-pc-windows-msvc,x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu,x86_64-apple-darwin,aarch64-apple-darwin,aarch64-linux-android
-        cp THIRD-PARTY-NOTICES.md foss-out/
-        ls -l foss-out
-
-    - name: 143. Upload FOSS compliance files
-      uses: actions/upload-artifact@v7
-      with:
-        name: FOSS
-        path: foss-out/
-        if-no-files-found: error
-
-    ################################################################
-    # 144 / Unit tests of scripts/foss/ (*.test.mjs). Here, not in
-    #       the build legs: those check out without scripts/foss/
-    #       (build-and-test step 100). After 140-142, so the gate
-    #       reads the production-only node_modules it was built for.
-    ################################################################
-    - name: 144. FOSS tooling unit tests
-      shell: bash
-      env:
-        LATTICEBUILD_NO: FOSS-unit-tests
-      run: |
-        set -euo pipefail
-        npm ci --ignore-scripts --no-audit --no-fund
-        npx vitest run scripts/foss
+    uses: ./.github/workflows/foss-compliance.yml
 
   ################################################################
   # JOB 2: BUILD AND TEST

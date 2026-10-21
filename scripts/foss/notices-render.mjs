@@ -34,7 +34,7 @@
 
 import crypto from 'crypto';
 import { stripTemplateCopyright } from './licence-texts.mjs';
-import { LICENCE_TYPES } from './policy.mjs';
+import { COPYLEFT_TYPES, LICENCE_TYPES } from './policy.mjs';
 
 const ECOSYSTEM_LABEL = Object.freeze({ cargo: 'Rust crate', npm: 'npm package', other: 'other component' });
 
@@ -179,7 +179,7 @@ export function renderTypeSummary(uses, licenceTypes = {}) {
         }),
         '',
     ];
-    for (const [type, label] of TYPE_ORDER.slice(0, 2)) {
+    for (const [type, label] of TYPE_ORDER.filter(([t]) => COPYLEFT_TYPES.includes(t))) {
         const ofType = keys.filter((key) => typeOf(key) === type);
         const head = label.charAt(0).toUpperCase() + label.slice(1);
         if (!ofType.length) {
