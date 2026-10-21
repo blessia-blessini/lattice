@@ -79,8 +79,10 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   `followFileLinks` (POSIX only: chains, directory links untouched, dangling); `inventoryAppImage` on a
   synthetic unpacked AppImage: pass with warning, platform-only warning, unreviewed package (the libjbig
   case), changed copyright file, wrong platform, denied licence, unowned library, owner without copyright
-  folder, common-licenses text referenced but not carried, unknown target; `referencedLicenceTexts` (sentence-ending
-  dot, duplicates, none); the real list names the module-only packages; `commandAppImage` writes the SBOM with `pkg:deb` purls and exits 1 on problems.
+  folder, common-licenses text referenced but not carried, carried package unknown to dpkg-query, unknown target;
+  `referencedLicenceTexts` (sentence-ending dot, duplicates, none); `runDpkgTool` (stdout kept on exit 1, thrown on
+  a missing tool or another status); the notices section keeps placeholders in code spans; the real list names the
+  module-only packages; `commandAppImage` writes the SBOM with `pkg:deb` purls and exits 1 on problems.
 - STST CI step 391 on both Linux legs: `foss.mjs appimage` on the AppImage just built, with the runner's dpkg;
   step 392 uploads its SBOM, 901.8 / 903.1 publish it.
 - ITST on the real tree: CI job `foss-compliance` (and the full local `build-test`) runs `check` and

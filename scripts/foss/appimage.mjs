@@ -155,7 +155,7 @@ export function renderAppImageSection(evaluated) {
         '',
         'The Linux AppImage also carries the system libraries below, taken from the Ubuntu release it is built on. Each is a separate file that the dynamic linker loads at run time; you may replace it with a modified version. The Debian copyright file of each package is inside the AppImage under `usr/share/doc/<package>/copyright`, and the licence texts those files refer to under `usr/share/common-licenses/`. The exact package versions in an AppImage are listed in its SBOM, published next to the AppImage on the release page.',
         '',
-        `**Written offer.** For every library below that is under the GNU LGPL, the GNU GPL or the MPL, Lattice's copyright holder offers, for at least three years after the release that contains it, to provide the complete corresponding source code of the version in that release, on request to \`${OFFER_CONTACT}\`, for no more than the cost of providing it. The same sources are available from Ubuntu: ${SOURCE_ARCHIVE}<source package>/<version>.`,
+        `**Written offer.** For every library below that is under the GNU LGPL, the GNU GPL or the MPL, Lattice's copyright holder offers, for at least three years after the release that contains it, to provide the complete corresponding source code of the version in that release, on request to \`${OFFER_CONTACT}\`, for no more than the cost of providing it. The same sources are available from Ubuntu: \`${SOURCE_ARCHIVE}<source package>/<version>\`.`,
         '',
         '| Package | Source package | Licence | Platforms | Note |',
         '| --- | --- | --- | --- | --- |',
@@ -301,16 +301,33 @@ export function resolveOwners(names, search, realpath) {
  */
 export function dpkgSearch(patterns) {
     if (!patterns.length) return [];
-    let text;
-    try {
-        text = execFileSync('dpkg', ['-S', ...patterns], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 * 1024 * 1024 });
-    } catch (e) {
-        if (typeof e.stdout !== 'string') throw e;
-        text = e.stdout;
-    }
-    return parseDpkgSearch(text);
+    return parseDpkgSearch(runDpkgTool('dpkg', ['-S', ...patterns]));
 }
 // dpkgSearch END **********************************************
+
+
+//**************************************************************
+// runDpkgTool (build machine)
+//**************************************************************
+/**
+ * Runs dpkg or dpkg-query and returns its stdout. Both exit 1 when one of
+ * several queried names is unknown, yet print what they found for the rest;
+ * that output is kept and the caller decides what a missing name means.
+ * Anything else (tool missing, killed) throws.
+ * @param {string} tool
+ * @param {string[]} args
+ * @param {typeof execFileSync} [exec] injectable for tests
+ * @returns {string}
+ */
+export function runDpkgTool(tool, args, exec = execFileSync) {
+    try {
+        return exec(tool, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 * 1024 * 1024 });
+    } catch (e) {
+        if (e.status === 1 && typeof e.stdout === 'string') return e.stdout;
+        throw e;
+    }
+}
+// runDpkgTool END *********************************************
 
 
 //**************************************************************
@@ -360,12 +377,13 @@ export function followFileLinks(file, hops = 16) {
 //**************************************************************
 /**
  * Installed version and source package of each package, from dpkg-query.
+ * A package dpkg-query does not know is simply absent from the result.
  * @param {string[]} packages
  * @returns {Map<string, {version: string, source: string, sourceVersion: string}>}
  */
 export function dpkgVersions(packages) {
     if (!packages.length) return new Map();
-    const text = execFileSync('dpkg-query', ['-W', '-f', '${Package}\t${Version}\t${source:Package}\t${source:Version}\n', ...packages], { encoding: 'utf8' });
+    const text = runDpkgTool('dpkg-query', ['-W', '-f', '${Package}\t${Version}\t${source:Package}\t${source:Version}\n', ...packages]);
     const out = new Map();
     for (const line of text.trim().split('\n')) {
         const [pkg, version, source, sourceVersion] = line.split('\t');
@@ -387,8 +405,9 @@ export function dpkgVersions(packages) {
  * differs from the reviewed one; a copyright file pointing to a licence text
  * in /usr/share/common-licenses that the AppImage does not carry; a listed
  * licence the policy rejects; a library no package owns; a library whose
- * owner has no copyright folder in the AppImage. Warnings: a package listed
- * for this platform but absent.
+ * owner has no copyright folder in the AppImage; a carried package the build
+ * machine's dpkg-query does not know. Warnings: a package listed for this
+ * platform but absent.
  *
  * @param {object} input
  * @param {string} input.root unpacked AppImage
@@ -454,7 +473,11 @@ export function inventoryAppImage({ root, label, list, policy, today, owners = d
     for (const pkg of carried.keys()) {
         const item = byName.get(pkg);
         if (!item) continue;
-        const v = installed.get(pkg) ?? { version: 'unknown', source: item.source, sourceVersion: 'unknown' };
+        const v = installed.get(pkg);
+        if (!v) {
+            problems.push(`${pkg}: dpkg-query does not know this package on the build machine, so its version cannot be recorded`);
+            continue;
+        }
         entries.push({
             component: {
                 ecosystem: 'debian', name: pkg, version: v.version, arch: APPIMAGE_TARGETS[label],

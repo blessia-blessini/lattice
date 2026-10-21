@@ -8649,7 +8649,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 The Linux AppImage also carries the system libraries below, taken from the Ubuntu release it is built on. Each is a separate file that the dynamic linker loads at run time; you may replace it with a modified version. The Debian copyright file of each package is inside the AppImage under `usr/share/doc/<package>/copyright`, and the licence texts those files refer to under `usr/share/common-licenses/`. The exact package versions in an AppImage are listed in its SBOM, published next to the AppImage on the release page.
 
-**Written offer.** For every library below that is under the GNU LGPL, the GNU GPL or the MPL, Lattice's copyright holder offers, for at least three years after the release that contains it, to provide the complete corresponding source code of the version in that release, on request to `blessia AT blessini.com`, for no more than the cost of providing it. The same sources are available from Ubuntu: https://launchpad.net/ubuntu/+source/<source package>/<version>.
+**Written offer.** For every library below that is under the GNU LGPL, the GNU GPL or the MPL, Lattice's copyright holder offers, for at least three years after the release that contains it, to provide the complete corresponding source code of the version in that release, on request to `blessia AT blessini.com`, for no more than the cost of providing it. The same sources are available from Ubuntu: `https://launchpad.net/ubuntu/+source/<source package>/<version>`.
 
 | Package | Source package | Licence | Platforms | Note |
 | --- | --- | --- | --- | --- |

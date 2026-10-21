@@ -35,7 +35,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
     APPIMAGE_LIST_FILE, evaluateAppImageList, followFileLinks, inventoryAppImage, listCopyrightFolders,
     listShippedLibraries, loadAppImageList, parseDpkgSearch, referencedLicenceTexts, renderAppImageSection, resolveOwners,
-    validateAppImageList,
+    runDpkgTool, validateAppImageList,
 } from './appimage.mjs';
 import { commandAppImage } from './foss.mjs';
 import { loadPolicy } from './policy.mjs';
@@ -134,6 +134,23 @@ describe('foss/appimage-packages.json on the real tree', () => {
     });
 });
 
+describe('runDpkgTool', () => {
+    const failing = (props) => () => { throw Object.assign(new Error('failed'), props); };
+
+    it('returns stdout of a successful run', () => {
+        expect(runDpkgTool('dpkg-query', ['-W'], () => 'a\t1\n')).toBe('a\t1\n');
+    });
+
+    it('keeps what was found when exit status 1 only means one name was unknown', () => {
+        expect(runDpkgTool('dpkg-query', ['-W', 'a', 'gone'], failing({ status: 1, stdout: 'a\t1\n' }))).toBe('a\t1\n');
+    });
+
+    it('throws when the tool is missing or fails otherwise', () => {
+        expect(() => runDpkgTool('dpkg-query', [], failing({ code: 'ENOENT' }))).toThrow('failed');
+        expect(() => runDpkgTool('dpkg-query', [], failing({ status: 2, stdout: '' }))).toThrow('failed');
+    });
+});
+
 describe('referencedLicenceTexts', () => {
     it('finds each common-licenses text once, without a sentence-ending dot', () => {
         const text = [
@@ -158,6 +175,12 @@ describe('renderAppImageSection', () => {
         expect(lines).toMatch(/^## Linux AppImage system libraries$/m);
         expect(lines).toMatch(/\*\*Written offer\.\*\*.*at least three years.*blessia AT blessini\.com/);
         expect(lines).toContain('https://launchpad.net/ubuntu/+source/');
+    });
+
+    it('keeps every placeholder in a code span, where Markdown cannot take it for an HTML tag', () => {
+        expect(lines).toContain('`https://launchpad.net/ubuntu/+source/<source package>/<version>`');
+        const outsideCode = lines.replace(/`[^`]*`/g, '');
+        expect(outsideCode).not.toMatch(/<[A-Za-z/][^>]*>/);
     });
 
     it('says where the copyright files and the licence texts they point to are', () => {
@@ -286,6 +309,14 @@ describe('an unpacked AppImage', () => {
         makeAppRoot(root);
         fs.writeFileSync(path.join(root, 'usr/share/doc/libb2/copyright'), 'Files: *\nLicense: GPL-2+\n');
         expect(run().problems).toEqual([expect.stringMatching(/^libb2: copyright file changed/)]);
+    });
+
+    it('fails for a carried package the build machine\'s dpkg-query does not know, instead of guessing a version', () => {
+        makeAppRoot(root);
+        const partial = (pkgs) => new Map([...versions(pkgs)].filter(([p]) => p !== 'libb2'));
+        const r = inventoryAppImage({ root, label: 'linux-x64', list: LIST(), policy: policy(), today: TODAY, owners: owners(), versions: partial });
+        expect(r.problems).toEqual(['libb2: dpkg-query does not know this package on the build machine, so its version cannot be recorded']);
+        expect(r.entries.map((e) => e.component.name)).toEqual(['liba1']);
     });
 
     it('fails when a copyright file points to a common-licenses text the AppImage does not carry', () => {
