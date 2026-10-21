@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.38
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- DOCS: List the notices check in the CLI export check table
 - TEST: Catch asset imports without a query in the export cross-check
 - DOCS: Trace the cycle-1 test additions for the export notices
 - FIX: Act on review cycle 1 of the export notices
