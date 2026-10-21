@@ -49,8 +49,11 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   shapes); matching by installed directory picks the hoisted copy over a nested one of another version; a
   listed package that is not shipped fails; rendered text names material, licence, copyright and source,
   prints a shared licence text once, falls back to the standard text without the template copyright line,
-  points at the exported-documents permission, refuses `*/` and `</style`, normalises CRLF. On the real
-  tree: the list equals the packages `export-document.ts` copies (its `?raw` imports and font glob).
+  points at the exported-documents permission, refuses `*/` and `</style`, normalises CRLF, names a
+  component once under a text it uses twice. The cross-check parser (`packagesCopiedBy`): asset imports in
+  both quote styles and template literals, any Vite query, static `from`, `import()`, `new URL()`, scoped
+  packages, `/node_modules/` globs; Lattice's own files and plain code imports ignored. On the real tree:
+  `foss/export-embedded.json` equals the packages the parser finds in `export-document.ts`.
 - ITST `foss.test.mjs` (REQ-LTTCE-FOS-00005) — `notices` writes the export notices beside
   THIRD-PARTY-NOTICES.md with only the embedded package; `--check` reports the stale export file alone;
   an embedded package that is not shipped fails the run.
