@@ -34,6 +34,20 @@ import { CATEGORY_RANK, evaluateExpression, formatExpression, parseExpression } 
 
 /** The licence types `types` in policy.json may use, copyleft first. */
 export const LICENCE_TYPES = Object.freeze(['strong-copyleft', 'weak-copyleft', 'permissive', 'public-domain']);
+/**
+ * Linkages that are not part of Lattice's own executable or bundle, and the
+ * policy section consulted first for them: a library the dynamic linker
+ * loads as a separate file, and a program of its own (the AppImage runtime).
+ */
+export const LINKAGE_SECTIONS = Object.freeze({ 'shared-library': 'sharedLibrary', 'separate-program': 'separateProgram' });
+
+
+//**************************************************************
+// linkageKey
+//**************************************************************
+/** The key a linkage section uses for a leaf: the whole `ID WITH exception`, or the id. */
+const linkageKey = (leaf) => (leaf.exception ? `${leaf.id} WITH ${leaf.exception}` : leaf.id);
+// linkageKey END **********************************************
 
 
 //**************************************************************
@@ -67,17 +81,20 @@ export function validatePolicy(policy) {
             throw new Error(`policy: "types.${type}" must be an array of licence ids`);
         }
     }
-    policy.sharedLibrary ??= {};
-    policy.sharedLibrary.allowed ??= [];
-    policy.sharedLibrary.obligation ??= {};
-    if (!Array.isArray(policy.sharedLibrary.allowed) || typeof policy.sharedLibrary.obligation !== 'object' || Array.isArray(policy.sharedLibrary.obligation)) {
-        throw new Error('policy: "sharedLibrary" needs "allowed" (array) and "obligation" (licence -> note)');
+    const sections = Object.values(LINKAGE_SECTIONS);
+    for (const name of sections) {
+        policy[name] ??= {};
+        policy[name].allowed ??= [];
+        policy[name].obligation ??= {};
+        if (!Array.isArray(policy[name].allowed) || typeof policy[name].obligation !== 'object' || Array.isArray(policy[name].obligation)) {
+            throw new Error(`policy: "${name}" needs "allowed" (array) and "obligation" (licence -> note)`);
+        }
     }
     const typed = new Set(Object.values(policy.types).flat());
     const baseId = (key) => key.split(' WITH ')[0];
     const untyped = [
         ...policy.allowed, ...Object.keys(policy.obligation),
-        ...policy.sharedLibrary.allowed, ...Object.keys(policy.sharedLibrary.obligation),
+        ...sections.flatMap((name) => [...policy[name].allowed, ...Object.keys(policy[name].obligation)]),
     ].map(baseId).filter((id) => !typed.has(id));
     if (untyped.length) throw new Error(`policy: no entry in "types" for ${untyped.join(', ')}`);
     // A version wildcard is only for Debian packages, which foss/appimage-packages.json
@@ -119,19 +136,20 @@ export function loadPolicy(file) {
  * The category of a single licence leaf under the policy.
  * A `WITH` exception keeps the base licence's category only when the
  * exception is listed in `allowedExceptions`; otherwise it needs review.
- * For a library loaded at run time as a separate file (linkage
- * 'shared-library'), `sharedLibrary` is consulted first — by the whole leaf,
- * `ID WITH exception` included — and wins over the general lists.
+ * For a component outside Lattice's own executable and bundle (a linkage in
+ * `LINKAGE_SECTIONS`), that linkage's section is consulted first — by the
+ * whole leaf, `ID WITH exception` included — and wins over the general lists.
  * @param {{id: string, exception: string|null}} leaf
  * @param {object} policy
  * @param {string} [linkage] the component's linkage
  * @returns {'allowed'|'obligation'|'review'|'denied'}
  */
 export function classifyLeaf(leaf, policy, linkage) {
-    if (linkage === 'shared-library') {
-        const key = leaf.exception ? `${leaf.id} WITH ${leaf.exception}` : leaf.id;
-        if (policy.sharedLibrary?.allowed.includes(key)) return 'allowed';
-        if (policy.sharedLibrary && Object.hasOwn(policy.sharedLibrary.obligation, key)) return 'obligation';
+    const section = policy[LINKAGE_SECTIONS[linkage]];
+    if (section) {
+        const key = linkageKey(leaf);
+        if (section.allowed.includes(key)) return 'allowed';
+        if (Object.hasOwn(section.obligation, key)) return 'obligation';
     }
     let base = 'review';
     if (policy.denied.includes(leaf.id)) base = 'denied';
@@ -150,19 +168,16 @@ export function classifyLeaf(leaf, policy, linkage) {
 //**************************************************************
 /**
  * The obligation note for a licence leaf a component is used under, or null.
- * Same lookup order as `classifyLeaf`: `sharedLibrary` first for a
- * shared library, then the general `obligation` list.
+ * Same lookup order as `classifyLeaf`: the linkage's section first, then
+ * the general `obligation` list.
  * @param {{id: string, exception: string|null}} leaf
  * @param {object} policy
  * @param {string} [linkage]
  * @returns {string|null}
  */
 export function obligationNote(leaf, policy, linkage) {
-    if (linkage === 'shared-library') {
-        const key = leaf.exception ? `${leaf.id} WITH ${leaf.exception}` : leaf.id;
-        const note = policy.sharedLibrary?.obligation[key];
-        if (note) return note;
-    }
+    const note = policy[LINKAGE_SECTIONS[linkage]]?.obligation[linkageKey(leaf)];
+    if (note) return note;
     return policy.obligation[leaf.id] ?? null;
 }
 // obligationNote END ******************************************

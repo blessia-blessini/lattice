@@ -235,8 +235,41 @@ describe('sharedLibrary — licences only for libraries loaded at run time (REQ-
     });
 });
 
-describe('foss/policy.json on the real tree — sharedLibrary scope', () => {
+describe('separateProgram — licences only for programs Lattice does not link with (REQ-LTTCE-FOS-00006)', () => {
+    const separate = () => validatePolicy({
+        ...base(),
+        sharedLibrary: { allowed: [], obligation: { 'LGPL-2.1-or-later': 'replaceable file' } },
+        separateProgram: { allowed: [], obligation: { 'LGPL-2.1-only': 'separate program; source public' } },
+        types: { permissive: ['MIT', 'Apache-2.0', 'BSD-3-Clause'], 'weak-copyleft': ['MPL-2.0', 'LGPL-2.1-only', 'LGPL-2.1-or-later'] },
+    });
+    const part = (license, linkage = 'separate-program') => ({ ecosystem: 'other', name: 'libfuse (in the runtime)', version: '3.15.0', license, linkage, dir: null });
+
+    it('admits its own licences for a separate program, with its own obligation note', () => {
+        expect(evaluateComponent(part('LGPL-2.1-only'), separate(), TODAY)).toMatchObject({ pass: true, category: 'obligation' });
+        expect(obligationNote({ id: 'LGPL-2.1-only', exception: null }, separate(), 'separate-program')).toBe('separate program; source public');
+    });
+
+    it('keeps each linkage to its own section', () => {
+        expect(evaluateComponent(part('LGPL-2.1-or-later'), separate(), TODAY)).toMatchObject({ pass: false, category: 'review' });
+        expect(evaluateComponent(part('LGPL-2.1-only', 'shared-library'), separate(), TODAY)).toMatchObject({ pass: false, category: 'review' });
+        expect(evaluateComponent(part('LGPL-2.1-only', 'linked'), separate(), TODAY)).toMatchObject({ pass: false, category: 'review' });
+    });
+
+    it('validates the section like sharedLibrary', () => {
+        expect(() => validatePolicy({ separateProgram: { allowed: 'LGPL-2.1-only' } })).toThrow(/"separateProgram" needs/);
+        expect(() => validatePolicy({ separateProgram: { allowed: [], obligation: { 'X-1.0': 'n' } } })).toThrow(/no entry in "types" for X-1\.0/);
+    });
+});
+
+describe('foss/policy.json on the real tree — sharedLibrary and separateProgram scope', () => {
     const real = loadPolicy(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'foss', 'policy.json'));
+
+    it('admits the runtime\'s LGPL-2.1-only libfuse as a separate program, and not for a crate', () => {
+        const fuse = { ecosystem: 'other', name: 'libfuse', version: '3.15.0', license: 'LGPL-2.1-only', linkage: 'separate-program', dir: null };
+        expect(evaluateComponent(fuse, real, TODAY).pass).toBe(true);
+        expect(obligationNote({ id: 'LGPL-2.1-only', exception: null }, real, 'separate-program')).toMatch(/separate program/);
+        expect(evaluateComponent({ ...fuse, ecosystem: 'cargo', linkage: 'linked' }, real, TODAY).pass).toBe(false);
+    });
 
     it.each(['LGPL-2.0-or-later', 'LGPL-2.1-only', 'LGPL-2.1-or-later', 'LGPL-3.0-or-later', 'MPL-1.1'])(
         'does not admit %s for a crate or npm package', (id) => {

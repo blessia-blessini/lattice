@@ -2162,16 +2162,19 @@ desktop CI leg.
 
 ```text
  Linux leg (linux-desktop, linux-arm-desktop)                         every CI run (foss-compliance)
- 340 scripts/appimage-exclude-loaders.sh                              foss check: foss/appimage-packages.json
-     remove gdk-pixbuf TIFF loader, rebuild loader cache                 evaluated as 'shared-library'
- 341 scripts/appimage-stage-licences.sh                               foss notices: section "Linux AppImage
-     copyright files of the module folders' owners,                      system libraries" + written offer
-     /usr/share/common-licenses → <stage>/tauri.conf.json
- 350 tauri build --config <stage>/tauri.conf.json
-     → linuxdeploy-plugin-gtk copies loaders + libs; Tauri adds <stage>
- 391 --appimage-extract → foss.mjs appimage (appimage.mjs)
+ 340 scripts/appimage-exclude.sh                                     foss check: foss/appimage-packages.json
+     remove the TIFF loader (rebuild loader cache), empty typelibs      evaluated as 'shared-library';
+ 341 scripts/appimage-stage-licences.sh                                 extra-components (runtime, AppRun) as
+     copyright files of the owners of loader, GIO-module and schema     'separate-program'
+     folders; /usr/share/common-licenses → <stage>/tauri.conf.json    foss notices: section "Linux AppImage
+ 350 tauri build --config <stage>/tauri.conf.json                         system libraries" + written offer
+     → linuxdeploy-plugin-gtk copies loaders, modules, schemas + libs; Tauri adds <stage>
+ 391 --appimage-extract → foss.mjs appimage --appimage <file> (appimage.mjs)
+     runtime (ELF before the squashfs) → type2-runtime commit = the reviewed one?
      usr/share/doc/*/copyright  → reviewed? sha256 unchanged? policy? common-licenses texts it names carried?
-     usr/lib/**/*.so*           → dpkg -S (follow file links) → owner has a copyright folder?
+     every other file           → Lattice's own / generated (globs) / bundler part (extra-components)?
+                                  else dpkg -S (usr/lib: by name in lib dirs; else exact path; this
+                                  arch only; follow file links) → owner has a copyright folder?
      dpkg-query versions        → lattice-<label>-appimage.cdx.json (pkg:deb purls)
  392 upload FOSS-APPIMAGE-<platform>  → 901.8 → 903.1 release assets
 ```
@@ -2215,6 +2218,31 @@ with `--config` in their matrix `args`, so local builds are unaffected. linuxdep
 exists, so the overlap (`libgdk-pixbuf-2.0-0`) is harmless and identical. The gate checks the outcome, not the
 script: every owner has its folder, and every `/usr/share/common-licenses/<name>` a carried copyright file
 names exists in the AppImage (`referencedLicenceTexts`).
+
+*Every file, not every library.* The first form of the gate looked only at `usr/lib/**/*.so*`; review
+cycle 1 asked for the whole AppImage, and walking it found three more kinds of third-party content:
+- **Data files** — GSettings schemas (gsettings-desktop-schemas, libgtk-3-common, one DTD from
+  libglib2.0-dev) and 41 GObject-introspection typelibs from 17 `gir1.2-*` packages, all without copyright
+  files. The schemas stay (GTK reads them) and their owners' copyright files are staged. The typelibs serve
+  language bindings Lattice, a Rust program, never uses; `appimage-exclude.sh` empties their folder on the
+  runner (the plugin copies it unconditionally, so the folder itself must stay).
+- **Bundler parts** — `AppRun.wrapped` is AppImageKit's AppRun (MIT), downloaded by Tauri;
+  `apprun-hooks/linuxdeploy-plugin-gtk.sh` comes from the GTK plugin (MIT). Both are listed in
+  `foss/extra-components.json` with the paths they occupy (`appImage.files`).
+- **The runtime** — the ELF program in front of the squashfs, from AppImage/type2-runtime (MIT), statically
+  linked with libfuse (LGPL-2.1-only), squashfuse, musl, zstd, zlib and mimalloc. The runtime prints a licence
+  list of its own, but it omits mimalloc, so the gate pins the type2-runtime **commit** the runtime names
+  (`readRuntimeCommit`), whose build recipe (`src/runtime/Makefile` `LIBS`,
+  `scripts/common/install-dependencies.sh`) was reviewed — a new commit reopens the review, as a changed
+  copyright file does. These parts carry linkage `separate-program`: programs of their own that Lattice
+  does not link with, under their own policy section `separateProgram`. libfuse's LGPL is met there by the
+  runtime's public source, from which it can be rebuilt with a modified libfuse.
+
+Each file is sorted by `classifyShippedFile` into licence file, Lattice's own (`lattice` globs), written by
+the build (`generated` globs: AppRun, module caches, compiled schemas), bundler part, or package file. A
+package file is looked up by `resolveOwners`: under `usr/lib/` by name in the system's library directories
+(linuxdeploy flattens them), elsewhere at its exact system path; owners of another architecture are dropped
+(`parseDpkgSearch` with the Debian architecture), so a multiarch copy cannot vouch for a file.
 
 ## Architectural Decisions
 

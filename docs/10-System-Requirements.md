@@ -1067,17 +1067,20 @@ where a PDF could carry it, is a question for legal review. Diagrams are not aff
 export as rendered images, not as Mermaid's code.
 
 <!--REQ-LTTCE-FOS-00006-->
-**REQ-LTTCE-FOS-00006** — Every system library the Linux AppImage carries SHALL come from a package whose
-licence was reviewed for the library it ships, recorded in one versioned file with the content hash of the
-package's copyright file; a package not reviewed, a changed copyright file, or a licence the policy does not
-admit SHALL fail the build of that AppImage. A GPL-only library SHALL NOT be carried. The LGPL and similar
-licences SHALL be admitted only for libraries loaded at run time as separate, replaceable files — never for
-code linked into Lattice's own executable or bundle. The AppImage SHALL carry the Debian copyright file of
-every package it carries a library from, and every licence text those files refer to; a missing one SHALL
-fail the build. The third-party notices SHALL list every reviewed
-package with its licence and source package, and carry a written offer of the corresponding source code for
-every library under the LGPL, the GPL or the MPL, valid for at least three years. Each release SHALL publish,
-per AppImage, a machine-readable bill of materials (CycloneDX) with the exact package versions it contains.
+**REQ-LTTCE-FOS-00006** — Every file the Linux AppImage carries SHALL be Lattice's own, written by the
+build, a reviewed bundler part (the AppImage runtime, AppRun and its hooks), or come from a package whose
+licence was reviewed for what it ships, recorded in one versioned file with the content hash of the
+package's copyright file; any other file, a package not reviewed, a changed copyright file, a runtime of
+another commit than the reviewed one, or a licence the policy does not admit SHALL fail the build of that
+AppImage. A GPL-only library SHALL NOT be carried. The LGPL and similar licences SHALL be admitted only for
+libraries loaded at run time as separate, replaceable files, and for programs of their own that Lattice's
+code does not link with — never for code linked into Lattice's own executable or bundle. The AppImage SHALL
+carry the Debian copyright file of every package it carries a file from, and every licence text those files
+refer to; a missing one SHALL fail the build. The third-party notices SHALL list every reviewed package with
+its licence and source package and every bundler part, and carry a written offer of the corresponding source
+code for every library under the LGPL, the GPL or the MPL, valid for at least three years. Each release
+SHALL publish, per AppImage, a machine-readable bill of materials (CycloneDX) with the exact package
+versions it contains.
 
 *Rationale*: until v0.3.37 every AppImage carried about 170 libraries from about 110 Ubuntu packages that no
 lock file lists — among them libjbig (GPL-2.0-or-later only), pulled in solely by GTK's TIFF image loader,
@@ -1086,7 +1089,9 @@ which conflicts with Lattice's commercial licence. Found and removed under follo
 *Open*: whether pointing to Ubuntu's source archive in addition to the written offer suffices, and whether a
 library inside the read-only AppImage counts as "replaceable" (it does once the AppImage is unpacked), are
 questions for legal review. The commercial licence must not forbid reverse engineering for debugging a
-replaced LGPL library (LGPL-2.1 section 6).
+replaced LGPL library (LGPL-2.1 section 6). Also for legal review: the AppImage runtime links libfuse
+(LGPL-2.1-only) statically; Lattice treats it as a separate program whose public source allows a rebuild
+with a modified libfuse.
 
 ---
 

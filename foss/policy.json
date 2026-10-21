@@ -24,6 +24,13 @@
       "MPL-1.1": "File-level copyleft: these files stay under MPL-1.1 and their source is offered (see the written offer)."
     }
   },
+  "separateProgram": {
+    "allowed": [],
+    "obligation": {
+      "LGPL-2.1-only": "Statically linked into a separate program (the AppImage runtime) that Lattice's code does not link with: that program's complete source and build scripts are public, so it can be rebuilt with a modified library; its source is offered (see the written offer)."
+    }
+  },
+  "$comment_separateProgram": "Applies ONLY to components with linkage 'separate-program': programs of their own inside the Linux AppImage that Lattice's executable does not link with — the AppImage runtime and the libraries statically linked into it, AppRun (foss/extra-components.json, REQ-LTTCE-FOS-00006). Lattice is merely aggregated with them, so their licence does not reach Lattice's code; the LGPL's relinking duty concerns the runtime, whose source (MIT) is public.",
   "$comment_sharedLibrary": "Applies ONLY to components with linkage 'shared-library': system libraries the Linux AppImage carries as separate files the dynamic linker loads at run time (foss/appimage-packages.json, REQ-LTTCE-FOS-00006). There the LGPL is met by the recipient's ability to replace the file. Rust crates are linked into Lattice's executable and npm packages into its bundle; an LGPL licence there would oblige Lattice to hand out a relinkable form of its own build, which the commercial licence cannot, so for them the LGPL stays 'review'. An entry here may also name a whole 'ID WITH exception' leaf, which then wins over the base licence's category.",
 
   "denied": [

@@ -1,5 +1,19 @@
 {
-  "$comment": "Ubuntu packages whose shared libraries the Linux AppImage carries (REQ-LTTCE-FOS-00006), reviewed once each: license = the SPDX licence of the library the package ships, read from the paragraph of its Debian copyright file that covers the library (not the whole source tarball; see note where they differ); copyrightSha256 = SHA-256 of usr/share/doc/<package>/copyright, so a changed file fails the gate until re-reviewed; platforms defaults to every AppImage target. Reviewed 2026-10-21 against the v0.3.37 AppImages (Ubuntu 24.04, x64 and arm64 copyright files identical). libtiff6, libjbig0 (GPL-2.0-or-later), liblerc4 and libdeflate0 are not listed: scripts/appimage-exclude-loaders.sh keeps the TIFF loader that pulled them in out of the AppImage. dconf-gsettings-backend, glib-networking and librsvg2-common own only GIO modules or the SVG image loader, which linuxdeploy-plugin-gtk copies without their copyright file; scripts/appimage-stage-licences.sh adds it, with /usr/share/common-licenses.",
+  "$comment": "Ubuntu packages whose files the Linux AppImage carries (REQ-LTTCE-FOS-00006), reviewed once each: license = the SPDX licence of what the package ships, read from the paragraph of its Debian copyright file that covers it (not the whole source tarball; see note where they differ); copyrightSha256 = SHA-256 of usr/share/doc/<package>/copyright, so a changed file fails the gate until re-reviewed; platforms defaults to every AppImage target. Reviewed 2026-10-21 against the v0.3.37 AppImages (Ubuntu 24.04, x64 and arm64 copyright files identical). libtiff6, libjbig0 (GPL-2.0-or-later), liblerc4 and libdeflate0 are not listed: scripts/appimage-exclude.sh keeps the TIFF loader that pulled them in out of the AppImage, and with it the GObject-introspection typelibs nothing in Lattice loads. Packages owning only GIO modules, image loaders or GSettings schemas arrive without their copyright file; scripts/appimage-stage-licences.sh adds it, with /usr/share/common-licenses. Every other file of the AppImage must match \"lattice\" (Lattice's own) or \"generated\" (written by the build), or be named by an \"appImage\" entry in foss/extra-components.json (AppRun, its hook); globs: * within a path segment, ** across segments.",
+  "lattice": [
+    ".DirIcon",
+    "lattice.desktop",
+    "lattice.png",
+    "usr/bin/lattice",
+    "usr/lib/lattice/**",
+    "usr/share/applications/lattice.desktop",
+    "usr/share/icons/hicolor/*/apps/lattice.png"
+  ],
+  "generated": [
+    "AppRun",
+    "usr/lib/**/*.cache",
+    "usr/share/glib-2.0/schemas/gschemas.compiled"
+  ],
   "packages": [
     {
       "package": "dconf-gsettings-backend",
@@ -14,6 +28,13 @@
       "license": "LGPL-2.0-or-later AND LGPL-2.1-or-later",
       "copyrightSha256": "fddac026b2ccc0b629de7afd738f5e0d1fb538d4f43dc55edc6e70b8d24fd7d6",
       "note": "GIO modules for TLS (GnuTLS) and proxies."
+    },
+    {
+      "package": "gsettings-desktop-schemas",
+      "source": "gsettings-desktop-schemas",
+      "license": "LGPL-2.1-or-later",
+      "copyrightSha256": "85f4e45fb9f0d2540a3f87a3e37d4d880043f4d83fb6ec039221b2758623b4fb",
+      "note": "GSettings schemas (data), read by GTK."
     },
     {
       "package": "libatk-bridge2.0-0t64",
@@ -195,6 +216,13 @@
       "copyrightSha256": "b52574b109fb876dfa71dea7a98b8aee1bb583f6aa90c327d1e4dc0a1d59f211"
     },
     {
+      "package": "libglib2.0-dev",
+      "source": "glib2.0",
+      "license": "LGPL-2.1-or-later",
+      "copyrightSha256": "b52574b109fb876dfa71dea7a98b8aee1bb583f6aa90c327d1e4dc0a1d59f211",
+      "note": "Only gschema.dtd (data); same copyright file as libglib2.0-0t64."
+    },
+    {
       "package": "libgnutls30t64",
       "source": "gnutls28",
       "license": "LGPL-2.1-or-later",
@@ -236,6 +264,13 @@
       "source": "gtk+3.0",
       "license": "LGPL-2.0-or-later AND LGPL-2.1-or-later AND MIT",
       "copyrightSha256": "2be2199cc990913cd94874b6f16fc84f1e3c35aaaa4719ad34b4478f1e69c557"
+    },
+    {
+      "package": "libgtk-3-common",
+      "source": "gtk+3.0",
+      "license": "LGPL-2.0-or-later AND LGPL-2.1-or-later AND MIT",
+      "copyrightSha256": "2be2199cc990913cd94874b6f16fc84f1e3c35aaaa4719ad34b4478f1e69c557",
+      "note": "GTK GSettings schemas (data); same copyright file as libgtk-3-0t64."
     },
     {
       "package": "libgudev-1.0-0",

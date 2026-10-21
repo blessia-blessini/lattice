@@ -26,15 +26,16 @@
 # linuxdeploy does not copy (REQ-LTTCE-FOS-00006).
 #
 # linuxdeploy copies the Debian copyright file of each library it deploys as a
-# dependency. linuxdeploy-plugin-gtk, however, copies whole module folders —
-# the gdk-pixbuf loaders and the GIO modules — and the packages owning only
-# those modules (librsvg2-common, glib-networking, dconf-gsettings-backend)
+# dependency. linuxdeploy-plugin-gtk, however, copies whole folders — the
+# gdk-pixbuf loaders, the GIO modules and the GSettings schemas — and the
+# packages owning only files there (librsvg2-common, glib-networking,
+# dconf-gsettings-backend, gsettings-desktop-schemas, libgtk-3-common, ...)
 # arrive without their copyright file. And most Debian copyright files give
 # the LGPL, GPL or MPL text only as a pointer to /usr/share/common-licenses,
 # which no AppImage carries.
 #
 # This script copies, from the build machine, the copyright file of every
-# package owning a file in those module folders, and the whole of
+# package owning a file in those folders, and the whole of
 # /usr/share/common-licenses (links dereferenced). It writes a Tauri config
 # that maps both into the AppImage; the build passes it with
 #   npm run tauri build -- --config <stage>/tauri.conf.json
@@ -51,36 +52,38 @@ stage="${1:-$repo/src-tauri/target/appimage-licences}"
 mkdir -p "$stage"
 stage="$(cd "$stage" && pwd)"
 
-# The module folders linuxdeploy-plugin-gtk copies whole, by the same
-# pkg-config variables the plugin reads.
-module_dirs=(
+# The folders linuxdeploy-plugin-gtk copies whole, by the same pkg-config
+# variables the plugin reads. (Its typelib folder is emptied by
+# appimage-exclude.sh.)
+copied_dirs=(
     "$(pkg-config --variable=gdk_pixbuf_moduledir gdk-pixbuf-2.0)"
     "$(pkg-config --variable=giomoduledir gio-2.0)"
+    "$(pkg-config --variable=schemasdir gio-2.0)"
 )
 
 rm -rf "$stage/doc" "$stage/common-licenses"
 mkdir -p "$stage/doc" "$stage/common-licenses"
 
-modules=()
-for dir in "${module_dirs[@]}"; do
+files=()
+for dir in "${copied_dirs[@]}"; do
     if [ -z "$dir" ] || [ ! -d "$dir" ]; then
-        echo "appimage-stage-licences: module folder '$dir' not found" >&2
+        echo "appimage-stage-licences: folder '$dir' not found" >&2
         exit 1
     fi
-    for f in "$dir"/*.so; do
-        [ -f "$f" ] && modules+=("$f")
+    for f in "$dir"/*; do
+        [ -f "$f" ] && [ ! -L "$f" ] && files+=("$f")
     done
 done
-if [ "${#modules[@]}" -eq 0 ]; then
-    echo "appimage-stage-licences: no modules found in ${module_dirs[*]}" >&2
+if [ "${#files[@]}" -eq 0 ]; then
+    echo "appimage-stage-licences: no files found in ${copied_dirs[*]}" >&2
     exit 1
 fi
 
 # "pkg:arch[, pkg2:arch]: /path" -> one package name per line.
-mapfile -t packages < <(dpkg -S "${modules[@]}" | grep -v '^diversion by' \
+mapfile -t packages < <(dpkg -S "${files[@]}" | grep -v '^diversion by' \
     | sed 's/: \/.*$//; s/, /\n/g' | sed 's/:.*$//' | sort -u)
 if [ "${#packages[@]}" -eq 0 ]; then
-    echo "appimage-stage-licences: dpkg knows no owner of the modules" >&2
+    echo "appimage-stage-licences: dpkg knows no owner of those files" >&2
     exit 1
 fi
 

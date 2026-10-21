@@ -301,6 +301,13 @@ requires `LICENSE` and `THIRD-PARTY-NOTICES.md` byte-identical to the repository
 tests, so the installed copy never meets the E2E harness. Step 389 first adds `scripts/foss/` to that
 leg's sparse checkout.
 
+**On CI, step 391 of both Linux legs** (`foss.mjs appimage`, REQ-LTTCE-FOS-00006) unpacks the AppImage
+just built and accounts for every file in it: Lattice's own, written by the build, a bundler part named in
+`foss/extra-components.json`, or owned (runner's `dpkg -S`) by a package reviewed in
+`foss/appimage-packages.json` whose copyright file — unchanged — and the licence texts it names are inside.
+The runtime must be the reviewed type2-runtime commit. Its SBOM is uploaded by step 392. The data it reads
+is unit-tested on every run; only the runner's real dpkg and AppImage are left to this step.
+
 ### Step 3 — Linter
 ```
 cargo clippy -- -D warnings

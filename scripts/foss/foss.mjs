@@ -31,9 +31,9 @@
 ///                                               and the export notices (REQ-LTTCE-FOS-00005)
 ///   node scripts/foss/foss.mjs notices --check  fail if either committed file is stale
 ///   node scripts/foss/foss.mjs sbom --out-dir D one CycloneDX SBOM per target
-///   node scripts/foss/foss.mjs appimage --root R --target linux-x64|linux-arm64 --out-dir D
-///                                               check an unpacked AppImage on its Linux build
-///                                               machine; writes its SBOM (REQ-LTTCE-FOS-00006)
+///   node scripts/foss/foss.mjs appimage --appimage F --root R --target linux-x64|linux-arm64 --out-dir D
+///                                               check a built AppImage F, unpacked at R, on its
+///                                               Linux build machine; writes its SBOM (REQ-LTTCE-FOS-00006)
 ///
 /// Option for check, notices and sbom: --targets <triple,...> limits the Rust
 /// graph to those targets (the default is every published target).
@@ -48,7 +48,10 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { inventoryFromMetadata, runCargoMetadata, TARGETS } from './cargo-inventory.mjs';
-import { APPIMAGE_LIST_FILE, APPIMAGE_TARGETS, evaluateAppImageList, inventoryAppImage, loadAppImageList, renderAppImageSection } from './appimage.mjs';
+import {
+    APPIMAGE_LIST_FILE, APPIMAGE_TARGETS, bundlerParts, evaluateAppImageList, inventoryAppImage, loadAppImageFiles, loadAppImageList,
+    readRuntimeCommit, renderAppImageSection,
+} from './appimage.mjs';
 import { buildSbom } from './cyclonedx.mjs';
 import { EXPORT_NOTICES_FILE, loadEmbedded, renderExportNotices, selectEmbedded } from './export-notices.mjs';
 import { fallbackCopyright, findExhibitB, listLicenceFiles, selectTexts, shippedLicenceIds } from './licence-texts.mjs';
@@ -60,6 +63,7 @@ import { leafKey } from './spdx-expr.mjs';
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const NOTICES_FILE = 'THIRD-PARTY-NOTICES.md';
 export const PRODUCT_LICENSE = 'AGPL-3.0-or-later';
+const EXTRA_COMPONENTS_FILE = 'foss/extra-components.json';
 const REGENERATE_HINT = `run "npm run foss:notices" and commit ${NOTICES_FILE} and ${EXPORT_NOTICES_FILE}`;
 
 
@@ -137,7 +141,7 @@ export async function collect({ root, targets, today, cargoMetadata = runCargoMe
         for (const label of labels) mergeComponent(merged, c, label);
     }
 
-    for (const x of readJson(root, 'foss/extra-components.json').components ?? []) {
+    for (const x of readJson(root, EXTRA_COMPONENTS_FILE).components ?? []) {
         const component = { ecosystem: 'other', licenseFile: null, authors: [], homepage: null, dir: null, ...x };
         const on = x.platforms === 'all' ? labels : labels.filter((l) => (x.platforms ?? []).includes(l));
         for (const label of on) mergeComponent(merged, component, label);
@@ -277,24 +281,29 @@ export function commandSbom({ entries }, { root, targets, outDir }, log = consol
 // commandAppImage
 //**************************************************************
 /**
- * REQ-LTTCE-FOS-00006 — checks an unpacked AppImage on the Linux machine that
- * built it against foss/appimage-packages.json and writes
- * lattice-<label>-appimage.cdx.json (the exact package versions) into outDir.
+ * REQ-LTTCE-FOS-00006 — checks a built AppImage on the Linux machine that
+ * built it against foss/appimage-packages.json and the AppImage parts of
+ * foss/extra-components.json, and writes lattice-<label>-appimage.cdx.json
+ * (the exact package versions) into outDir.
  * @param {object} options
  * @param {string} options.root repository root
- * @param {string} options.appRoot unpacked AppImage (squashfs-root)
+ * @param {string} options.appImage the AppImage file (its runtime is checked)
+ * @param {string} options.appRoot the same AppImage, unpacked (squashfs-root)
  * @param {string} options.label target label (linux-x64 | linux-arm64)
  * @param {string} options.outDir
  * @param {string} options.today YYYY-MM-DD
  * @param {object} [options.probes] {owners, versions} injectable for tests
  * @returns {number} exit code
  */
-export function commandAppImage({ root, appRoot, label, outDir, today, probes = {} }, log = console) {
+export function commandAppImage({ root, appImage, appRoot, label, outDir, today, probes = {} }, log = console) {
     const policy = loadPolicy(path.join(root, 'foss', 'policy.json'));
     const list = loadAppImageList(root);
-    const { problems, warnings, entries } = inventoryAppImage({ root: appRoot, label, list, policy, today, ...probes });
-    const libraries = entries.reduce((n, e) => n + e.component.libraries.length, 0);
-    log.log(`foss appimage: ${entries.length} packages, ${libraries} libraries in the ${label} AppImage`);
+    const globs = loadAppImageFiles(root);
+    const bundler = bundlerParts(readJson(root, EXTRA_COMPONENTS_FILE).components);
+    const runtimeCommit = readRuntimeCommit(appImage);
+    const { problems, warnings, entries } = inventoryAppImage({ root: appRoot, label, list, globs, bundler, runtimeCommit, policy, today, ...probes });
+    const files = entries.reduce((n, e) => n + e.component.files.length, 0);
+    log.log(`foss appimage: ${entries.length} packages, ${files} of their files in the ${label} AppImage; runtime type2-runtime ${runtimeCommit ?? 'unknown'}`);
     for (const w of warnings) log.warn(`  [WARN] ${w}`);
     for (const p of problems) log.error(`  [FAIL] ${p}`);
 
@@ -326,13 +335,14 @@ export function commandAppImage({ root, appRoot, label, outDir, today, probes = 
 export function parseArgs(argv) {
     const [command, ...rest] = argv;
     if (!['check', 'notices', 'sbom', 'appimage'].includes(command)) {
-        throw new Error(`unknown command "${command ?? ''}" (check | notices [--check] | sbom --out-dir <dir> | appimage --root <dir> --target <label> --out-dir <dir>)`);
+        throw new Error(`unknown command "${command ?? ''}" (check | notices [--check] | sbom --out-dir <dir> | appimage --appimage <file> --root <dir> --target <label> --out-dir <dir>)`);
     }
-    const opts = { command, check: false, outDir: null, appRoot: null, label: null, targets: [...TARGETS] };
+    const opts = { command, check: false, outDir: null, appImage: null, appRoot: null, label: null, targets: [...TARGETS] };
     for (let i = 0; i < rest.length; i++) {
         const a = rest[i];
         if (a === '--check' && command === 'notices') opts.check = true;
         else if (a === '--out-dir' && (command === 'sbom' || command === 'appimage') && rest[i + 1]) opts.outDir = rest[++i];
+        else if (a === '--appimage' && command === 'appimage' && rest[i + 1]) opts.appImage = rest[++i];
         else if (a === '--root' && command === 'appimage' && rest[i + 1]) opts.appRoot = rest[++i];
         else if (a === '--target' && command === 'appimage' && rest[i + 1]) opts.label = rest[++i];
         else if (a === '--targets' && rest[i + 1]) {
@@ -344,7 +354,7 @@ export function parseArgs(argv) {
     }
     if (command === 'sbom' && !opts.outDir) throw new Error('sbom needs --out-dir <dir>');
     if (command === 'appimage') {
-        if (!opts.appRoot || !opts.outDir || !opts.label) throw new Error('appimage needs --root <dir> --target <label> --out-dir <dir>');
+        if (!opts.appImage || !opts.appRoot || !opts.outDir || !opts.label) throw new Error('appimage needs --appimage <file> --root <dir> --target <label> --out-dir <dir>');
         if (!Object.hasOwn(APPIMAGE_TARGETS, opts.label)) throw new Error(`no AppImage for target "${opts.label}" (known: ${Object.keys(APPIMAGE_TARGETS).join(', ')})`);
     }
     // Partial notices would drop components shipped on other targets.
@@ -370,7 +380,7 @@ export async function main(argv, { root = ROOT, today = new Date().toISOString()
     // leg after the bundle exists, against the reviewed list alone.
     if (opts.command === 'appimage') {
         try {
-            return commandAppImage({ root, appRoot: path.resolve(opts.appRoot), label: opts.label, outDir: path.resolve(opts.outDir), today });
+            return commandAppImage({ root, appImage: path.resolve(opts.appImage), appRoot: path.resolve(opts.appRoot), label: opts.label, outDir: path.resolve(opts.outDir), today });
         } catch (e) {
             console.error(`foss appimage: ${e.message}`);
             return 2;

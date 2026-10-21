@@ -493,11 +493,12 @@ jobs:
     # 350 / Build App
     ################################################################
     # REQ-LTTCE-FOS-00006: the AppImage bundles this runner's gdk-pixbuf loaders
-    # and their libraries; the TIFF loader would bring GPL-2.0+ libjbig along.
-    - name: 340. Keep excluded image loaders out of the AppImage (Linux)
+    # and their libraries, and its typelibs; the TIFF loader would bring
+    # GPL-2.0+ libjbig along, and nothing in Lattice loads a typelib.
+    - name: 340. Keep the TIFF loader and typelibs out of the AppImage (Linux)
       if: matrix.config.platform == 'linux-desktop' || matrix.config.platform == 'linux-arm-desktop'
       shell: bash
-      run: bash scripts/appimage-exclude-loaders.sh
+      run: bash scripts/appimage-exclude.sh
 
     # REQ-LTTCE-FOS-00006: linuxdeploy-plugin-gtk copies GIO modules and image
     # loaders without their packages' copyright files, and most copyright files
@@ -722,7 +723,7 @@ jobs:
         work="$(mktemp -d)"
         chmod +x "${images[0]}"
         (cd "$work" && "$GITHUB_WORKSPACE/${images[0]}" --appimage-extract >/dev/null)
-        node scripts/foss/foss.mjs appimage --root "$work/squashfs-root" --target "$APPIMAGE_TARGET" --out-dir foss-appimage
+        node scripts/foss/foss.mjs appimage --appimage "${images[0]}" --root "$work/squashfs-root" --target "$APPIMAGE_TARGET" --out-dir foss-appimage
 
     - name: 392. Upload AppImage SBOM (Linux)
       if: always() && (matrix.config.platform == 'linux-desktop' || matrix.config.platform == 'linux-arm-desktop')
