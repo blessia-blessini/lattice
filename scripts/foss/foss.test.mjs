@@ -206,6 +206,13 @@ describe('the CLI over a synthetic repository', () => {
         expect(fs.readFileSync(file, 'utf8')).toBe('# x\n\n');
     });
 
+    it('warns and carries on when the job summary cannot be written', () => {
+        // Review FU-8 cycle 1: a directory as summary path makes the append throw.
+        const warn = vi.fn();
+        expect(() => writeStepSummary(['# x'], { GITHUB_STEP_SUMMARY: root }, { warn })).not.toThrow();
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining('cannot write the job summary'));
+    });
+
     it('writes one SBOM per target', async () => {
         const inv = await collect({ root, targets: WIN, today: TODAY, cargoMetadata: makeRepo(root) });
         const out = path.join(root, 'sbom');

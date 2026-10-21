@@ -223,7 +223,7 @@ export function commandCheck({ policy, entries, appImage = [] }, log = console) 
             ...failed.map((line) => `- \`${line.replace(/`/g, "'")}\``),
             '',
             'Review each licence; then record the outcome in `foss/policy.json` (a clarification with evidence, or a dated exception), or drop the dependency.',
-        ]);
+        ], process.env, log);
         return 1;
     }
     log.log('foss check: all components fit AGPL-3.0-or-later and the commercial licence');
@@ -279,7 +279,7 @@ export function commandNotices({ policy, entries, appImage = [] }, { root, targe
         '```',
         '',
         `and commit \`${NOTICES_FILE}\` and \`${EXPORT_NOTICES_FILE}\`.`,
-    ]);
+    ], process.env, log);
     return 1;
 }
 // commandNotices END ******************************************
@@ -291,13 +291,19 @@ export function commandNotices({ policy, entries, appImage = [] }, { root, targe
 /**
  * Appends Markdown to the GitHub Actions job summary, so a failing gate says
  * on the run page what to do. Does nothing outside Actions (no
- * GITHUB_STEP_SUMMARY).
+ * GITHUB_STEP_SUMMARY). The summary only explains: failing to write it is a
+ * warning and never changes the outcome of the check that called it.
  * @param {string[]} lines Markdown
  * @param {Record<string, string|undefined>} [env]
+ * @param {{warn: Function}} [log]
  */
-export function writeStepSummary(lines, env = process.env) {
+export function writeStepSummary(lines, env = process.env, log = console) {
     if (!env.GITHUB_STEP_SUMMARY) return;
-    fs.appendFileSync(env.GITHUB_STEP_SUMMARY, `${lines.join('\n')}\n\n`);
+    try {
+        fs.appendFileSync(env.GITHUB_STEP_SUMMARY, `${lines.join('\n')}\n\n`);
+    } catch (e) {
+        log.warn(`  [WARN] cannot write the job summary: ${e.message}`);
+    }
 }
 // writeStepSummary END ****************************************
 

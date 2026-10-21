@@ -107,6 +107,9 @@ describe('extractCopyrights', () => {
     it('keeps a holder written "(c)2024" without the space, and still drops "(c)" list prose', () => {
         expect(extractCopyrights(['(c)2024 Jane Doe\n(C)Example Org'])).toEqual(['(c)2024 Jane Doe', '(C)Example Org']);
         expect(extractCopyrights([`(c)2024 Jane Doe\n\n${std('Apache-2.0')}`])).toEqual(['(c)2024 Jane Doe']);
+        // Review FU-8 cycle 1: without the space, punctuation or a lower-case
+        // word after "(c)" is a list item, not a holder.
+        expect(extractCopyrights(['(c). You must retain', '(c): the software', '(c)-under', '(c)you must'])).toEqual([]);
     });
 
     it('keeps "Portions Copyright" and "Copyright holder: <name>"', () => {
