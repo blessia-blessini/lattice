@@ -112,7 +112,7 @@ export function renderExportNotices(selected, standardTexts) {
         'text follow.',
         '',
     ];
-    const texts = new Map(); // body -> {ids: Set, users: string[]}
+    const texts = new Map(); // body -> {ids: Set, users: Set}
     for (const { entry: { component: c, evaluation: ev, selection: sel }, material } of selected) {
         const used = ev.chosen.map((l) => (l.exception ? `${l.id} WITH ${l.exception}` : l.id)).join(' AND ');
         lines.push(`- ${c.name} ${c.version} (${material}): ${used}`);
@@ -121,9 +121,9 @@ export function renderExportNotices(selected, standardTexts) {
         if (source) lines.push(`  Source: ${source}`);
         for (const t of sel.texts) {
             const body = licenceBody(t, standardTexts).replace(/\r\n?/g, '\n').trim();
-            if (!texts.has(body)) texts.set(body, { ids: new Set(), users: [] });
+            if (!texts.has(body)) texts.set(body, { ids: new Set(), users: new Set() });
             texts.get(body).ids.add(t.id);
-            texts.get(body).users.push(c.name);
+            texts.get(body).users.add(c.name);
         }
     }
     lines.push(
@@ -132,7 +132,7 @@ export function renderExportNotices(selected, standardTexts) {
         `documents in Lattice's licensing statement: ${README_LICENSING}`,
     );
     for (const [body, { ids, users }] of texts) {
-        lines.push('', `---- ${[...ids].join(', ')} licence text (${users.join(', ')}) ----`, '', body);
+        lines.push('', `---- ${[...ids].join(', ')} licence text (${[...users].join(', ')}) ----`, '', body);
     }
     const text = lines.join('\n') + '\n';
     if (text.includes('*/') || /<\/style/i.test(text)) {

@@ -46,21 +46,26 @@ const entry = ({ name, version = '1.0.0', ecosystem = 'npm', texts, copyrights =
 
 
 //**************************************************************
-// packagesCopiedByExport (cross-check helper)
+// packagesCopiedBy (cross-check helper)
 //**************************************************************
 /**
- * The npm packages src/lib/export-document.ts copies into an export: every
- * bare-specifier `?raw` import and every `/node_modules/<pkg>/` glob.
+ * The npm packages a module's source pulls in as assets — the material an
+ * export copies into the user's file:
+ * - a bare specifier with a Vite query (`?raw`, `?url`, `?inline`, `?raw&…`)
+ *   in a static `from`, a dynamic `import(…)` or a `new URL(…)`;
+ * - any string literal naming `/node_modules/<pkg>/` (an `import.meta.glob`).
+ * Both quote styles and template literals. Relative paths are Lattice's own.
+ * A plain `from 'pkg'` is code bundled into the app, not material in a file.
  */
-function packagesCopiedByExport() {
-    const source = fs.readFileSync(path.join(REAL_ROOT, 'src', 'lib', 'export-document.ts'), 'utf8');
+function packagesCopiedBy(source) {
     const names = new Set();
     const pkgOf = (spec) => (spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0]);
-    for (const m of source.matchAll(/from\s+'([^.'/][^']*)\?raw'/g)) names.add(pkgOf(m[1]));
-    for (const m of source.matchAll(/'\/node_modules\/((?:@[^/']+\/)?[^/']+)\//g)) names.add(m[1]);
+    const asset = /(?:\bfrom\s*|\bimport\s*\(\s*|\bnew\s+URL\s*\(\s*)(['"`])([^.'"`/][^'"`?]*)\?[^'"`]*\1/g;
+    for (const m of source.matchAll(asset)) names.add(pkgOf(m[2]));
+    for (const m of source.matchAll(/(['"`])\/node_modules\/((?:@[^/'"`]+\/)?[^/'"`]+)\//g)) names.add(m[2]);
     return [...names].sort();
 }
-// packagesCopiedByExport END **********************************
+// packagesCopiedBy END ****************************************
 
 
 describe('loadEmbedded', () => {
@@ -135,6 +140,15 @@ describe('renderExportNotices', () => {
         expect(text).toMatch(/---- MIT licence text \(a, b\) ----/);
     });
 
+    it('names a component once under a text it uses twice', () => {
+        const twice = [
+            { id: 'MIT', source: 'package', file: 'LICENSE', text: 'same body' },
+            { id: 'MIT', source: 'package', file: 'LICENSE.md', text: 'same body' },
+        ];
+        const text = renderExportNotices([{ entry: entry({ name: 'a', texts: twice }), material: 'x' }], std);
+        expect(text).toMatch(/---- MIT licence text \(a\) ----/);
+    });
+
     it('uses the standard text for a package that ships no licence file', () => {
         const text = renderExportNotices([{ entry: entry({ name: 'a', texts: [{ id: 'MIT', source: 'template' }] }), material: 'x' }], std);
         expect(text).toMatch(/Permission is hereby granted, free of charge/);
@@ -156,11 +170,38 @@ describe('renderExportNotices', () => {
     });
 });
 
+describe('packagesCopiedBy (the cross-check parser)', () => {
+    it.each([
+        ["import a from 'katex/dist/katex.min.css?raw';", ['katex']],
+        ['import a from "katex/dist/katex.min.css?raw";', ['katex']],
+        ["import a from 'pkg/font.woff2?url';", ['pkg']],
+        ["import a from 'pkg/a.css?raw&inline';", ['pkg']],
+        ["const a = await import('pkg/a.css?inline');", ['pkg']],
+        ['const a = await import(`pkg/a.css?raw`);', ['pkg']],
+        ["const u = new URL('pkg/f.woff2?url', import.meta.url);", ['pkg']],
+        ["import a from '@scope/pkg/a.css?raw';", ['@scope/pkg']],
+        ["import.meta.glob('/node_modules/katex/dist/fonts/*.woff2');", ['katex']],
+        ['import.meta.glob("/node_modules/@scope/pkg/x/*.css");', ['@scope/pkg']],
+    ])('finds the package in %s', (source, expected) => {
+        expect(packagesCopiedBy(source)).toEqual(expected);
+    });
+
+    it.each([
+        ["import a from '../preview-theme.css?raw';"],
+        ["import a from './export-notices.generated.txt?raw';"],
+        ["import { x } from 'some-library';"],
+        ["import { y } from './preview-theme';"],
+    ])('ignores Lattice\'s own files and plain code imports: %s', (source) => {
+        expect(packagesCopiedBy(source)).toEqual([]);
+    });
+});
+
 describe('foss/export-embedded.json on the real tree', () => {
-    it('lists every package export-document.ts copies into an export', () => {
-        const copied = packagesCopiedByExport();
-        expect(copied).toEqual(['github-markdown-css', 'katex']);
+    it('lists exactly the packages export-document.ts copies into an export', () => {
+        const source = fs.readFileSync(path.join(REAL_ROOT, 'src', 'lib', 'export-document.ts'), 'utf8');
+        const copied = packagesCopiedBy(source);
         const listed = loadEmbedded(REAL_ROOT).map((c) => c.lockKey.slice('node_modules/'.length)).sort();
+        expect(copied.length).toBeGreaterThan(0); // the parser still sees the imports at all
         expect(listed).toEqual(copied);
     });
 });
