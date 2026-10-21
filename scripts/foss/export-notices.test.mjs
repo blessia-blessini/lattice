@@ -50,18 +50,37 @@ const entry = ({ name, version = '1.0.0', ecosystem = 'npm', texts, copyrights =
 //**************************************************************
 /**
  * The npm packages a module's source pulls in as assets — the material an
- * export copies into the user's file:
- * - a bare specifier with a Vite query (`?raw`, `?url`, `?inline`, `?raw&…`)
- *   in a static `from`, a dynamic `import(…)` or a `new URL(…)`;
- * - any string literal naming `/node_modules/<pkg>/` (an `import.meta.glob`).
- * Both quote styles and template literals. Relative paths are Lattice's own.
- * A plain `from 'pkg'` is code bundled into the app, not material in a file.
+ * export copies into the user's file. A bare specifier in a static `from`, a
+ * side-effect `import '…'`, a dynamic `import(…)` or a `new URL(…)` counts
+ * when it
+ * - carries a Vite query (`?raw`, `?url`, `?inline`, `?raw&…`), or
+ * - is the target of `new URL(…)`, which always resolves an asset, or
+ * - names a file inside the package whose extension is not code
+ *   (`pkg/font.woff2`, `pkg/a.css`, `pkg/template.json`) — Vite turns those
+ *   into URLs or data without any query.
+ * Any string literal naming `/node_modules/<pkg>/` counts too (an
+ * `import.meta.glob`). Both quote styles and template literals; relative paths
+ * are Lattice's own. A bare package (`from 'pkg'`) or a code file inside one is
+ * code bundled into the app, not material in a file.
+ *
+ * Known limits, beyond what a parse of one file can see: a package that exports
+ * CSS or markup as a JavaScript string, and assets imported through another
+ * local module. Both would be a new kind of export material and need this
+ * helper extended at the same time.
  */
 function packagesCopiedBy(source) {
     const names = new Set();
     const pkgOf = (spec) => (spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0]);
-    const asset = /(?:\bfrom\s*|\bimport\s*\(\s*|\bnew\s+URL\s*\(\s*)(['"`])([^.'"`/][^'"`?]*)\?[^'"`]*\1/g;
-    for (const m of source.matchAll(asset)) names.add(pkgOf(m[2]));
+    const CODE_EXT = /\.(?:[cm]?[jt]sx?)$/;
+    const specifier = /(\bfrom\s*|\bimport\s*\(\s*|\bimport\s+|\bnew\s+URL\s*\(\s*)(['"`])([^'"`]+)\2/g;
+    for (const [, kind, , spec] of source.matchAll(specifier)) {
+        if (spec.startsWith('.') || spec.startsWith('/')) continue;
+        const [file, query] = spec.split('?');
+        const pkg = pkgOf(file);
+        const inside = file.slice(pkg.length + 1); // path within the package, '' for the bare package
+        const assetFile = /\.[A-Za-z0-9]+$/.test(inside) && !CODE_EXT.test(inside);
+        if (query !== undefined || /URL/.test(kind) || assetFile) names.add(pkg);
+    }
     for (const m of source.matchAll(/(['"`])\/node_modules\/((?:@[^/'"`]+\/)?[^/'"`]+)\//g)) names.add(m[2]);
     return [...names].sort();
 }
@@ -182,6 +201,11 @@ describe('packagesCopiedBy (the cross-check parser)', () => {
         ["import a from '@scope/pkg/a.css?raw';", ['@scope/pkg']],
         ["import.meta.glob('/node_modules/katex/dist/fonts/*.woff2');", ['katex']],
         ['import.meta.glob("/node_modules/@scope/pkg/x/*.css");', ['@scope/pkg']],
+        ["const u = new URL('pkg/f.woff2', import.meta.url);", ['pkg']],
+        ["import font from 'pkg/fonts/a.woff2';", ['pkg']],
+        ["import 'pkg/a.css?raw';", ['pkg']],
+        ["import data from 'pkg/template.json';", ['pkg']],
+        ["import sheet from '@scope/pkg/dist/a.css';", ['@scope/pkg']],
     ])('finds the package in %s', (source, expected) => {
         expect(packagesCopiedBy(source)).toEqual(expected);
     });
@@ -191,6 +215,11 @@ describe('packagesCopiedBy (the cross-check parser)', () => {
         ["import a from './export-notices.generated.txt?raw';"],
         ["import { x } from 'some-library';"],
         ["import { y } from './preview-theme';"],
+        ["import Chart from 'chart.js';"],
+        ["import { z } from 'pkg/dist/module.js';"],
+        ["import { z } from 'pkg/sub/module';"],
+        ["import type { T } from '@scope/pkg';"],
+        ["const m = await import('pkg/lazy.mjs');"],
     ])('ignores Lattice\'s own files and plain code imports: %s', (source) => {
         expect(packagesCopiedBy(source)).toEqual([]);
     });
