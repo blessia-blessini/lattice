@@ -64,6 +64,7 @@
     "vitest": "^4.0.16"
   },
   "overrides": {
-    "uuid": "^14.0.0"
+    "uuid": "^14.0.0",
+    "katex": "$katex"
   }
 }

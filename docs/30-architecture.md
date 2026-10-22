@@ -1370,6 +1370,15 @@ unstyled layout spans as a line of text beside it, and every root bar as a page-
   nowhere beside the exported file. A font the sheet names but the build did not embed throws, which
   fails that file (REQ-LTTCE-XPT-00003) rather than writing one that quietly renders in system fonts.
 
+**One KaTeX release, renderer and sheet alike.** A KaTeX sheet lays out only the HTML of its own release:
+0.18 renamed its layout classes (`base` → `katex-base`, `strut`, `sizing`, `root`, `overline`, …). When
+Dependabot moved Lattice's own `katex` to 0.18 (PR #39), `rehype-katex`, `micromark-extension-math` and
+`mermaid` still declared `^0.16` and kept nested 0.16.47 copies, so the preview rendered 0.16 HTML under
+the 0.18 sheet — sub/superscript sizes, root indices and overlines unstyled, in the preview and in every
+export — and shipped a KaTeX with a published advisory (GHSA-238p-pmpm-9mq7). `package.json`'s
+`overrides` maps every `katex` to `$katex`, the version of the direct dependency, so a bump moves all of
+them together; a unit test fails if `package-lock.json` ever holds a second copy again.
+
 **Embed, do not link.** Linking KaTeX from a CDN would cost ~1 KB instead of ~370 KB per file, but the
 file would then render correctly only online, and opening it would make the reader's browser contact a
 third-party server — for a local-first editor, a privacy leak the user never asked for.
