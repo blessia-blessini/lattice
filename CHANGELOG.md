@@ -4,9 +4,16 @@ All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
 
-## v0.3.39
+## v0.3.50
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- chore: update of changelog
+- Update dependecies with licences and version bump
+- integrated Dependabot PR
+---
+
+## v0.3.39
+### Changes
 - Update dependecies with licences and version bump
 - CHORE: Set version to 0.3.39
 - FIX: Admit only a year after an unspaced "(c)" in copyright lines
