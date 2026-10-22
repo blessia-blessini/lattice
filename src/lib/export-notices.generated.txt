@@ -4,7 +4,7 @@ This document was exported by Lattice, which copied material from the following 
 components into it. Each is used under the licence shown; its copyright notices and licence
 text follow.
 
-- katex 0.18.2 (stylesheet and fonts): MIT
+- katex 0.18.10 (stylesheet and fonts): MIT
   Copyright (c) 2013-2020 Khan Academy and other contributors
   Source: https://github.com/KaTeX/KaTeX
 - github-markdown-css 5.9.0 (stylesheet): MIT
