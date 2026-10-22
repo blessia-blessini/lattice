@@ -46,7 +46,7 @@ All fields are uppercase. Fields are separated by hyphens.
 
 | Field   | Length | Content                                                                     |
 | ------- | ------ | --------------------------------------------------------------------------- |
-| `TYPE`  | 3–4    | Artefact type: `REQ` (requirement), `ARCH` (architecture), `IMPL` (impl.)   |
+| `TYPE`  | 3–4    | Artefact type: `REQ` (requirement), `CSTR` (constraint), `ARCH` (architecture), `IMPL` (impl.) |
 | `PPPPP` | 5      | Product code — identifies the product or repository (e.g. `LTTCE`)          |
 | `SSS`   | 3      | Subsystem code — identifies the feature or chapter (e.g. `LNT`, `TRC`)      |
 | `NNNNN` | 5      | 5-digit **uppercase hexadecimal** sequence number (range `00001`–`FFFFF`)   |
@@ -83,6 +83,8 @@ related items. Example convention for `LNT`:
 | `VLT`   | SSS     | Vault selection (which vault's settings a window uses) |
 | `WIN`   | SSS     | Editor window (initial geometry)                      |
 | `FOS`   | SSS     | Third-party licence compliance (gate, notices, SBOM)  |
+| `XPT`   | SSS     | Headless CLI export (HTML and PDF)                    |
+| `PLT`   | SSS     | Platform layer (`Platform` trait, per-OS selection)   |
 
 ---
 
@@ -182,6 +184,13 @@ file) in the `docs/` folder, capturing both the normative ID schema and the verb
 **REQ-LTTCE-TRC-00009** — All Markdown documents in the `docs/` and `src/` trees that are part of the
 traceability system SHALL use a maximum line length of 120 characters, and SHALL include MD footnotes
 for abbreviations on their first occurrence within each document.
+
+<!--REQ-LTTCE-TRC-0000A-->
+**REQ-LTTCE-TRC-0000A** — The project SHALL maintain a `12-System-Constraints.md` document in the `docs/`
+folder for internal constraints: limits the implementation must respect that are not user-observable
+behaviour. Each constraint SHALL be tagged with an anchor comment of the form `<!--CSTR-PPPPP-SSS-NNNNN-->`
+immediately preceding its statement. Satellite trace files SHALL list `ARCH-ID` / `IMPL-ID` **covers**
+`CSTR-ID` in the same way as for requirements.
 
 ---
 
