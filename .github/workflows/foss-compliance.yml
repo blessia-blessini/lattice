@@ -1,0 +1,116 @@
+# LEGAL NOTE:
+# LATTICE (tm) - The Portable and standard Markdown Editor
+# Copyright (C) 2026 Owner of blessini.com (a.k.a Blessia)
+# email: blessia AT blessini.com
+#
+# GNU AFFERO GENERAL PUBLIC LICENSE V3 NOTICE:
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# See LICENCE file in GitHUB root folder of the repository.
+# END OF NOTE
+
+################################################################
+# FOSS COMPLIANCE (REQ-LTTCE-FOS-00002 / 00004)
+#   Licence gate over every target's Rust graph and the npm
+#   production closure (foss/policy.json: fits AGPL-3.0-or-later
+#   AND the commercial licence), the notices drift check, the
+#   tooling's unit tests and, in a build, one CycloneDX SBOM per
+#   built target. One definition, two ways in:
+#   - called by "Build and Test Matrix" (job foss-compliance), in
+#     parallel with the build legs; publish-release-site needs it,
+#     so a release that breaks the policy is never published;
+#   - on every pull request to dev, Dependabot's included, so a
+#     dependency update that changes the notices is caught before
+#     it is merged (FU-8: katex, PR #39). It only reads: a failure
+#     says in the job summary what to run and commit.
+#   No cache on purpose: it only downloads sources (~1 min), and
+#   the 10 GB cache budget already evicts on every run.
+#   No concurrency group: when called, github.workflow is the
+#   caller's name, and a shared group would deadlock with it.
+################################################################
+name: FOSS Compliance
+
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+  pull_request:
+    branches: [ "dev" ]
+
+jobs:
+  foss-compliance:
+    runs-on: ubuntu-latest
+    steps:
+    - name: 100. Checkout
+      uses: actions/checkout@v6
+
+    - name: 123. Install Node
+      uses: actions/setup-node@v6
+      with:
+        node-version: '24'
+
+    # --ignore-scripts: no code of a dependency runs here, which matters
+    # on a pull request that brings a new version of one.
+    - name: 130. Fetch sources (all crates, npm production packages)
+      id: fetch
+      shell: bash
+      run: |
+        set -euo pipefail
+        cargo fetch --locked --manifest-path src-tauri/Cargo.toml
+        npm ci --omit=dev --ignore-scripts --no-audit --no-fund
+
+    - name: 140. Licence gate
+      run: node scripts/foss/foss.mjs check
+
+    # 141 and 144 also run after a failed gate, so one run reports everything.
+    - name: 141. Third-party notices up to date
+      if: (success() || failure()) && steps.fetch.outcome == 'success'
+      run: node scripts/foss/foss.mjs notices --check
+
+    - name: 142. SBOMs (CycloneDX, one per built target)
+      if: github.event_name != 'pull_request'
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Every target of the build matrix except iOS, which is not built yet.
+        node scripts/foss/foss.mjs sbom --out-dir foss-out --targets \
+          x86_64-pc-windows-msvc,aarch64-pc-windows-msvc,x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu,x86_64-apple-darwin,aarch64-apple-darwin,aarch64-linux-android
+        cp THIRD-PARTY-NOTICES.md foss-out/
+        ls -l foss-out
+
+    - name: 143. Upload FOSS compliance files
+      if: github.event_name != 'pull_request'
+      uses: actions/upload-artifact@v7
+      with:
+        name: FOSS
+        path: foss-out/
+        if-no-files-found: error
+
+    ################################################################
+    # 144 / Unit tests of scripts/foss/ (*.test.mjs). Here, not in
+    #       the build legs: those check out without scripts/foss/
+    #       (build-and-test step 100). After 140-142, so the gate
+    #       reads the production-only node_modules it was built for.
+    ################################################################
+    - name: 144. FOSS tooling unit tests
+      if: (success() || failure()) && steps.fetch.outcome == 'success'
+      shell: bash
+      env:
+        LATTICEBUILD_NO: FOSS-unit-tests
+      run: |
+        set -euo pipefail
+        npm ci --ignore-scripts --no-audit --no-fund
+        npx vitest run scripts/foss

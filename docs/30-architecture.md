@@ -2072,10 +2072,21 @@ commercial option), anything else *review* = fail unless excepted with an expiry
 best category wins, then a licence whose text the package ships, then the policy's preference order.
 Clarifications name one component version and the SHA-256 of the file that proves the licence.
 
-The job `foss-compliance` runs on every CI run in parallel with the build legs; `publish-release-site`
-needs it, so a violation blocks the release without delaying the builds. Locally, the full
-`build-test` run executes the same two checks (skipped on CI, where the job does it once). The job also
-runs the unit tests of `scripts/foss/` (step 144).
+The job `foss-compliance` (`.github/workflows/foss-compliance.yml`) runs on every CI run in parallel with
+the build legs — `buildAndTest.yml` calls it as a reusable workflow; `publish-release-site` needs it, so a
+violation blocks the release without delaying the builds. Locally, the full `build-test` run executes the
+same two checks (skipped on CI, where the job does it once). The job also runs the unit tests of
+`scripts/foss/` (step 144).
+
+*Pull requests.* The same file also triggers on every pull request into `dev`, Dependabot's included: the
+Dependabot security update of KaTeX (PR #39) was merged without any check and left the notices stale on
+`dev`. On a pull request the job skips the SBOMs (142/143) and only reads — its token has `contents: read`,
+and `npm ci --ignore-scripts` keeps a new dependency version's own scripts from running. Gate, notices
+check and unit tests each run even when an earlier one failed, so one run reports all three. A failing
+`check` or `notices --check` writes to the GitHub job summary (`writeStepSummary`, only when
+`GITHUB_STEP_SUMMARY` is set): the failing components, or the stale files with the commands to regenerate
+them. The fix stays a commit by a person: committing on Dependabot's branch from CI would need a write
+token on dependency-update runs and would author commits in the maintainer's name.
 
 *Build tooling stays out of the product, and CI proves it.* Every build leg checks out the repository
 **without** `scripts/foss/` and `foss/` (sparse checkout, step 100 — their blobs are not even fetched), and

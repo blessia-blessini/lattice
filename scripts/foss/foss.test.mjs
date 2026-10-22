@@ -29,11 +29,11 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TARGETS } from './cargo-inventory.mjs';
 import { buildSbom, purlFor } from './cyclonedx.mjs';
 import { EXPORT_NOTICES_FILE } from './export-notices.mjs';
-import { collect, commandCheck, commandNotices, commandSbom, NOTICES_FILE, parseArgs } from './foss.mjs';
+import { collect, commandCheck, commandNotices, commandSbom, NOTICES_FILE, parseArgs, writeStepSummary } from './foss.mjs';
 import { escapeInline, fenced, platformLabel, renderNotices, renderTypeSummary, textKey } from './notices-render.mjs';
 
 const REAL_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -158,6 +158,59 @@ describe('the CLI over a synthetic repository', () => {
         const inv = await collect({ root, targets: WIN, today: TODAY, cargoMetadata: makeRepo(root) });
         fs.writeFileSync(path.join(root, 'foss', 'export-embedded.json'), JSON.stringify({ components: [{ lockKey: 'node_modules/vitest', material: 'x' }] }));
         expect(() => commandNotices(inv, { root, targets: WIN, check: true }, quiet)).toThrow(/node_modules\/vitest.*not a shipped npm package/);
+    });
+
+    describe('on GitHub Actions, the job summary (REQ-LTTCE-FOS-00002, FU-8)', () => {
+        let summary;
+        beforeEach(() => {
+            summary = path.join(root, 'step-summary.md');
+            vi.stubEnv('GITHUB_STEP_SUMMARY', summary);
+        });
+        afterEach(() => vi.unstubAllEnvs());
+        const read = () => (fs.existsSync(summary) ? fs.readFileSync(summary, 'utf8') : '');
+
+        it('says how to regenerate stale notices — the Dependabot case', async () => {
+            const inv = await collect({ root, targets: WIN, today: TODAY, cargoMetadata: makeRepo(root) });
+            expect(commandNotices(inv, { root, targets: WIN, check: false }, quiet)).toBe(0);
+            expect(commandNotices(inv, { root, targets: WIN, check: true }, quiet)).toBe(0);
+            expect(read()).toBe('');
+            fs.appendFileSync(path.join(root, NOTICES_FILE), 'drift\n');
+            expect(commandNotices(inv, { root, targets: WIN, check: true }, quiet)).toBe(1);
+            const md = read();
+            expect(md).toMatch(/^### Third-party notices are out of date$/m);
+            expect(md).toContain(`Stale: \`${NOTICES_FILE}\`.`);
+            expect(md).toMatch(/^npm ci --ignore-scripts$/m);
+            expect(md).toMatch(/^npm run foss:notices$/m);
+            expect(md).toContain(`commit \`${NOTICES_FILE}\` and \`${EXPORT_NOTICES_FILE}\``);
+        });
+
+        it('lists the components that fail the licence gate', async () => {
+            const inv = await collect({ root, targets: WIN, today: TODAY, cargoMetadata: makeRepo(root, { crateLicense: 'GPL-3.0-only' }) });
+            expect(commandCheck(inv, quiet)).toBe(1);
+            expect(read()).toMatch(/^### Licence gate failed$/m);
+            expect(read()).toMatch(/^- `cargo:democrate@0\.1\.0 \(linked\): .*denied.*`$/m);
+        });
+
+        it('stays silent when the gate passes', async () => {
+            const inv = await collect({ root, targets: WIN, today: TODAY, cargoMetadata: makeRepo(root) });
+            expect(commandCheck(inv, quiet)).toBe(0);
+            expect(read()).toBe('');
+        });
+    });
+
+    it('writes no job summary outside GitHub Actions', () => {
+        const file = path.join(root, 'nowhere.md');
+        writeStepSummary(['# x'], {});
+        expect(fs.existsSync(file)).toBe(false);
+        writeStepSummary(['# x'], { GITHUB_STEP_SUMMARY: file });
+        expect(fs.readFileSync(file, 'utf8')).toBe('# x\n\n');
+    });
+
+    it('warns and carries on when the job summary cannot be written', () => {
+        // Review FU-8 cycle 1: a directory as summary path makes the append throw.
+        const warn = vi.fn();
+        expect(() => writeStepSummary(['# x'], { GITHUB_STEP_SUMMARY: root }, { warn })).not.toThrow();
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining('cannot write the job summary'));
     });
 
     it('writes one SBOM per target', async () => {

@@ -1028,7 +1028,10 @@ licence requires to accompany a copy. They SHALL be generated from the dependenc
 inputs SHALL always produce the same bytes. They SHALL open with a summary of the licences in use, each
 with its type — permissive, public-domain dedication, weak copyleft or strong copyleft — and its number of
 components, naming every component used under a copyleft licence. Each release SHALL publish them, together with one
-machine-readable bill of materials (CycloneDX) per built target, next to its installers.
+machine-readable bill of materials (CycloneDX) per built target, next to its installers. Every pull request
+into the development branch — an automated dependency update included — SHALL be checked against the
+licence policy and the committed notices before it is merged; a mismatch SHALL fail that check and state
+how to regenerate the notices.
 
 The system libraries the Linux AppImage carries from its Ubuntu build image are covered by
 REQ-LTTCE-FOS-00006, in their own section of the same notices.

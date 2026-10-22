@@ -65,6 +65,12 @@ export const NOTICES_FILE = 'THIRD-PARTY-NOTICES.md';
 export const PRODUCT_LICENSE = 'AGPL-3.0-or-later';
 const EXTRA_COMPONENTS_FILE = 'foss/extra-components.json';
 const REGENERATE_HINT = `run "npm run foss:notices" and commit ${NOTICES_FILE} and ${EXPORT_NOTICES_FILE}`;
+/** What `notices` needs before it can regenerate: the sources it reads, without running any package scripts. */
+const REGENERATE_STEPS = Object.freeze([
+    'npm ci --ignore-scripts',
+    'cargo fetch --locked --manifest-path src-tauri/Cargo.toml',
+    'npm run foss:notices',
+]);
 
 
 //**************************************************************
@@ -194,20 +200,30 @@ export function commandCheck({ policy, entries, appImage = [] }, log = console) 
     for (const warning of unusedPolicyEntries(policy, components)) {
         log.warn(`  [WARN] unused policy entry ${warning}`);
     }
-    for (const f of failures) {
+    const failed = failures.map((f) => {
         const c = f.component;
-        log.error(`  [FAIL] ${c.ecosystem}:${c.name}@${c.version} (${c.linkage}): ${f.evaluation.problems.join('; ')}`);
-    }
+        return `${c.ecosystem}:${c.name}@${c.version} (${c.linkage}): ${f.evaluation.problems.join('; ')}`;
+    });
+    for (const line of failed) log.error(`  [FAIL] ${line}`);
     // REQ-LTTCE-FOS-00006: the reviewed AppImage packages are held to the policy
     // on every run, so a policy change that rejects one fails here, not on a Linux leg.
-    const appImageFailures = appImage.filter((a) => !a.evaluation.pass);
     log.log(`foss check: ${appImage.length} Linux AppImage system packages (${APPIMAGE_LIST_FILE})`);
-    for (const a of appImageFailures) {
-        log.error(`  [FAIL] debian:${a.item.package} (shared-library): ${a.evaluation.problems.join('; ')}`);
+    for (const a of appImage.filter((x) => !x.evaluation.pass)) {
+        const line = `debian:${a.item.package} (shared-library): ${a.evaluation.problems.join('; ')}`;
+        log.error(`  [FAIL] ${line}`);
+        failed.push(line);
     }
-    const total = failures.length + appImageFailures.length;
-    if (total) {
-        log.error(`foss check: ${total} component(s) violate foss/policy.json`);
+    if (failed.length) {
+        log.error(`foss check: ${failed.length} component(s) violate foss/policy.json`);
+        writeStepSummary([
+            '### Licence gate failed',
+            '',
+            `${failed.length} component(s) do not fit AGPL-3.0-or-later and the commercial licence:`,
+            '',
+            ...failed.map((line) => `- \`${line.replace(/`/g, "'")}\``),
+            '',
+            'Review each licence; then record the outcome in `foss/policy.json` (a clarification with evidence, or a dated exception), or drop the dependency.',
+        ], process.env, log);
         return 1;
     }
     log.log('foss check: all components fit AGPL-3.0-or-later and the commercial licence');
@@ -239,20 +255,57 @@ export function commandNotices({ policy, entries, appImage = [] }, { root, targe
         }
         return 0;
     }
-    let stale = 0;
+    const stale = [];
     for (const [rel, text] of outputs) {
         const file = path.join(root, rel);
         const committed = fs.existsSync(file) ? fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n') : null;
         if (committed !== text) {
             log.error(`foss notices: ${rel} is ${committed === null ? 'missing' : 'out of date'}; ${REGENERATE_HINT}`);
-            stale++;
+            stale.push(rel);
         } else {
             log.log(`foss notices: ${rel} is up to date`);
         }
     }
-    return stale ? 1 : 0;
+    if (!stale.length) return 0;
+    // A dependency update (Dependabot's included) changes what must be noticed;
+    // the run page says how to bring the generated files up to date.
+    writeStepSummary([
+        '### Third-party notices are out of date',
+        '',
+        `Stale: ${stale.map((rel) => `\`${rel}\``).join(', ')}. A dependency change alters what Lattice must ship as notices. On this branch run:`,
+        '',
+        '```sh',
+        ...REGENERATE_STEPS,
+        '```',
+        '',
+        `and commit \`${NOTICES_FILE}\` and \`${EXPORT_NOTICES_FILE}\`.`,
+    ], process.env, log);
+    return 1;
 }
 // commandNotices END ******************************************
+
+
+//**************************************************************
+// writeStepSummary
+//**************************************************************
+/**
+ * Appends Markdown to the GitHub Actions job summary, so a failing gate says
+ * on the run page what to do. Does nothing outside Actions (no
+ * GITHUB_STEP_SUMMARY). The summary only explains: failing to write it is a
+ * warning and never changes the outcome of the check that called it.
+ * @param {string[]} lines Markdown
+ * @param {Record<string, string|undefined>} [env]
+ * @param {{warn: Function}} [log]
+ */
+export function writeStepSummary(lines, env = process.env, log = console) {
+    if (!env.GITHUB_STEP_SUMMARY) return;
+    try {
+        fs.appendFileSync(env.GITHUB_STEP_SUMMARY, `${lines.join('\n')}\n\n`);
+    } catch (e) {
+        log.warn(`  [WARN] cannot write the job summary: ${e.message}`);
+    }
+}
+// writeStepSummary END ****************************************
 
 
 //**************************************************************
