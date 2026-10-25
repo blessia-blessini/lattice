@@ -4,9 +4,16 @@ All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
 
-## v0.3.50
+## v0.3.51
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- v0.3.50 RELEASE PREP
+- CHORE: update dev dependencies and their licence notes
+--- 
+
+## v0.3.50
+### Changes
+- CHORE: update dev dependencies and their licence notes
 - FIX: Act on the five review nits of the vulnerability audit (FU-9)
 - docs: Correct (A)SPICE reference
 - docs: add foundational traceability requirements, system constraints, and coverage documentation
