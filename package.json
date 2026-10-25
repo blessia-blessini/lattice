@@ -18,6 +18,7 @@
     "test:coverage": "vitest run --coverage",
     "doc": "typedoc --plugin typedoc-plugin-markdown --out docs/gen/frontend --entryFileName frontend-readme.md --entryPointStrategy expand ./src --exclude \"**/*.test.tsx\" --exclude \"**/test/**\"",
     "clean": "rimraf dist node_modules/.vite src-tauri/target",
+    "foss:audit": "node scripts/foss/foss.mjs audit",
     "foss:check": "node scripts/foss/foss.mjs check",
     "foss:notices": "node scripts/foss/foss.mjs notices"
   },
@@ -64,6 +65,7 @@
     "vitest": "^4.0.16"
   },
   "overrides": {
-    "uuid": "^14.0.0"
+    "uuid": "^14.0.0",
+    "katex": "$katex"
   }
 }

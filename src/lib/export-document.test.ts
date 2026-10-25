@@ -73,6 +73,16 @@ describe('exportStylesheet (the bundled KaTeX sheet)', () => {
     it('is built once and reused', () => {
         expect(exportStylesheet()).toBe(css);
     });
+
+    // The sheet lays out only the HTML of its own KaTeX release: 0.18 renamed
+    // layout classes (base → katex-base, …), so when rehype-katex rendered with
+    // a nested 0.16 copy while App.tsx loaded the 0.18 sheet, sizes, roots and
+    // overlines lost their styling. package.json's `overrides` keeps one copy.
+    it('ships exactly one KaTeX release, so the renderer and this sheet always match', () => {
+        const lock = JSON.parse(readFileSync(resolve(__dirname, '../../package-lock.json'), 'utf8'));
+        const copies = Object.keys(lock.packages).filter((key) => /(^|\/)node_modules\/katex$/.test(key));
+        expect(copies).toEqual(['node_modules/katex']);
+    });
 });
 
 describe('fontDataUrlsByName', () => {

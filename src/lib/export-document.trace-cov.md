@@ -20,8 +20,9 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 
 ## Test coverage
 
-- UTST: `src/lib/export-document.test.ts` — 37 cases, run against the stylesheets and fonts this build
-  bundles. REQ-LTTCE-XPT-00013 (18): the MathML-hiding and root-bar-clipping rules survive; one
+- UTST: `src/lib/export-document.test.ts` — 38 cases, run against the stylesheets and fonts this build
+  bundles. REQ-LTTCE-XPT-00013 (19): one KaTeX release in `package-lock.json`, so the renderer's HTML
+  is the sheet's own; the MathML-hiding and root-bar-clipping rules survive; one
   embedded woff2 per `@font-face` and no relative font URL left; `fontDataUrlsByName` on both path
   separators; `inlineKatexFonts` on minified and quoted `src:` lists, the declaration boundary, a
   missing font throws; `escapeHtmlText`; `buildExportDocument` structure and escaped title.

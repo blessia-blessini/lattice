@@ -302,7 +302,7 @@ graph TD
 
     D3 --> F[Generate & Upload Documentation];
 
-    A --> G[FOSS Compliance: licence gate, notices drift, SBOMs];
+    A --> G[FOSS Compliance: licence gate, notices drift, SBOMs, vulnerability audit];
     E --> H[Publish Release - tags only];
     G --> H;
 ```
@@ -1370,6 +1370,15 @@ unstyled layout spans as a line of text beside it, and every root bar as a page-
   nowhere beside the exported file. A font the sheet names but the build did not embed throws, which
   fails that file (REQ-LTTCE-XPT-00003) rather than writing one that quietly renders in system fonts.
 
+**One KaTeX release, renderer and sheet alike.** A KaTeX sheet lays out only the HTML of its own release:
+0.18 renamed its layout classes (`base` → `katex-base`, `strut`, `sizing`, `root`, `overline`, …). When
+Dependabot moved Lattice's own `katex` to 0.18 (PR #39), `rehype-katex`, `micromark-extension-math` and
+`mermaid` still declared `^0.16` and kept nested 0.16.47 copies, so the preview rendered 0.16 HTML under
+the 0.18 sheet — sub/superscript sizes, root indices and overlines unstyled, in the preview and in every
+export — and shipped a KaTeX with a published advisory (GHSA-238p-pmpm-9mq7). `package.json`'s
+`overrides` maps every `katex` to `$katex`, the version of the direct dependency, so a bump moves all of
+them together; a unit test fails if `package-lock.json` ever holds a second copy again.
+
 **Embed, do not link.** Linking KaTeX from a CDN would cost ~1 KB instead of ~370 KB per file, but the
 file would then render correctly only online, and opening it would make the reader's browser contact a
 third-party server — for a local-first editor, a privacy leak the user never asked for.
@@ -2045,8 +2054,8 @@ The Settings window has its own size (600 × 400) and is not an editor window.
 │  foss notices --check(drift)──FAIL │   │ 355 MSIX: same resource map  │   │        staging/ → attested,  │
 │  foss sbom → artifact FOSS ────────┼───┼──────────────────────────────┼──►│        SHA256SUMS, release   │
 │  144 vitest scripts/foss           │   │ 390 assert-bundled.sh: unpack│   │  905 release page links them │
-└───────────────────────────────────┘   │   every package, cmp files   │   └──────────────────────────────┘
-                                        │ (100/101: built WITHOUT      │
+│  145 foss audit (on tags) ──FAIL   │   │   every package, cmp files   │   └──────────────────────────────┘
+└───────────────────────────────────┘   │ (100/101: built WITHOUT      │
                                         │  scripts/foss + foss; 389    │
                                         │  adds scripts/foss for 390)  │
                                         └──────────────────────────────┘
@@ -2254,6 +2263,44 @@ the build (`generated` globs: AppRun, module caches, compiled schemas), bundler 
 package file is looked up by `resolveOwners`: under `usr/lib/` by name in the system's library directories
 (linuxdeploy flattens them), elsewhere at its exact system path; owners of another architecture are dropped
 (`parseDpkgSearch` with the Debian architecture), so a multiarch copy cannot vouch for a file.
+
+<!--ARCH-LTTCE-FOS-00007-->
+**ARCH-LTTCE-FOS-00007** — covers REQ-LTTCE-FOS-00007. `foss.mjs audit [--block]` (`audit.mjs`), step 145
+of `foss-compliance.yml`, so it runs on every pull request into `dev` and in every build:
+
+```text
+ npm audit --json --package-lock-only ─► parseNpmAudit   ─┐   shipped = collect() over all 8 targets
+ cargo audit --json --file Cargo.lock ─► parseCargoAudit ─┼─► evaluateFindings ◄── foss/advisory-exceptions.json
+                                                           │     blocking | excepted | development | informational
+                                                           └─► console, ::warning / ::error annotations, job summary
+ exit: no --block → 0 always;  --block (tag v*) → 1 blocking finding, 2 an audit could not run
+```
+
+- **npm**: the whole lock file, development packages included. One finding per installed copy (`nodes`,
+  version from `package-lock.json`) and advisory (the GHSA id from its URL). An entry whose `via` names only
+  other packages is vulnerable through them and is reported there.
+- **Rust**: `vulnerabilities.list` are vulnerabilities; `warnings` — unmaintained, unsound, yanked, notice —
+  are *informational* and never block.
+- **Shipped** is the licence inventory `collect` already builds over the exact per-target graphs: a finding
+  whose `ecosystem:name@version` is not in it (a dev-dependency, a crate of no published target) is
+  *development* and never blocks. One definition of "shipped" for the notices, the SBOMs and the audit,
+  instead of each tool's own idea of production — `cargo audit` has none.
+- **Exceptions** name an advisory for one package, with a reason and an expiry date, like the licence
+  policy's exceptions: a crate's by its RUSTSEC id or an alias (GHSA, CVE), an npm package's by its GHSA id
+  only — npm audit reports no aliases, so validation refuses any other id there. No version: the advisory's
+  own range decides, and a fixed version simply stops matching. An entry that excepts no shipped finding —
+  fixed, or for a development package, where it changes nothing — is reported as unused.
+- **Mode**: the step passes `--block` when `github.ref` starts with `refs/tags/v`, the condition of
+  `publish-release-site`, which needs this job. Without it every would-block finding is a `::warning`
+  annotation (visible on the pull request although the check stays green) and all findings go to the job
+  summary.
+- **cargo-audit** comes from its GitHub release binary, pinned by version and SHA-256 in the step: no
+  compile, no third-party action. A failed install is left to the audit, whose "not audited" warns on a pull
+  request and blocks a release. The audit needs the network (advisory database, crates.io index), so it is
+  not part of `build-test`; locally `npm run foss:audit` works with cargo-audit on `PATH`.
+
+*Why cargo-audit, not cargo-deny*: cargo-deny's other checks (licences, sources) duplicate the gate; the
+RustSec project's own reader is one binary. *Why npm audit*: it ships with Node; nothing new to install.
 
 ## Architectural Decisions
 
