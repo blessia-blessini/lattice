@@ -64,7 +64,8 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   metadata`: gate passes; a GPL crate fails (negative test); notices written, then missing / stale / CRLF
   checkout detected correctly; one SBOM per target; with `GITHUB_STEP_SUMMARY` set, stale notices write the
   regenerate commands and a failed gate lists its components, a passing run writes nothing, and nothing is
-  written outside Actions. Plus renderer determinism and de-duplication, and CycloneDX purls and serial number.
+  written outside Actions. Every test starts with `GITHUB_STEP_SUMMARY` cleared, so the fixtures' failing
+  gate and stale notices never reach the real summary of the CI job they run in (step 144). Plus renderer determinism and de-duplication, and CycloneDX purls and serial number.
 - UTST `policy.test.mjs` / `foss.test.mjs` — an admitted licence without a type fails validation; the type
   lookup; the type summary orders copyleft first, counts linked components, names copyleft components,
   marks unknown licences "unclassified".

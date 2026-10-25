@@ -42,6 +42,14 @@ const WIN = TARGETS.filter((t) => t.label === 'win-x64');
 const quiet = { log: () => {}, warn: () => {}, error: () => {} };
 const MIT = (holder) => fs.readFileSync(path.join(REAL_ROOT, 'foss', 'licenses', 'MIT.txt'), 'utf8').replace('<year> <copyright holders>', holder);
 
+// Hermetic job summary: on CI these tests run inside the foss-compliance job
+// (step 144), where GITHUB_STEP_SUMMARY is that job's real summary. A fixture's
+// failing gate or stale notices must never land there — they did, as a "Licence
+// gate failed: democrate GPL-3.0-only" on a green run. Tests of the summary
+// point it at a temp file themselves.
+beforeEach(() => vi.stubEnv('GITHUB_STEP_SUMMARY', ''));
+afterEach(() => vi.unstubAllEnvs());
+
 //**************************************************************
 // makeRepo (fixture builder)
 //**************************************************************

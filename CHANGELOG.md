@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.51
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: FIX FOSS compliance tooling scripts, tests, and documentation for false positives
 - feat: add FOSS compliance workflow, test documentation, and system requirements specification
 - v0.3.50
 - v0.3.50 RELEASE PREP
