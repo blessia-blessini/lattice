@@ -1,0 +1,4 @@
+{
+  "$comment": "Accepted vulnerability advisories (scripts/foss/foss.mjs audit, REQ-LTTCE-FOS-00007). A release is blocked while a shipped component has a known vulnerability (npm audit: GitHub advisory database; cargo audit: RustSec), unless an exception here names that advisory for that package. Each entry: ecosystem (npm | cargo), package, advisory (GHSA-…, RUSTSEC-… or CVE-…, the id or one of its aliases), reason (why Lattice is not affected, or why the risk is accepted until a fix ships), expires (YYYY-MM-DD; afterwards the release is blocked again). Outside a release the audit only reports, so nothing here is needed to merge a pull request.",
+  "exceptions": []
+}

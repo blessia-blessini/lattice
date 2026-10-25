@@ -22,11 +22,12 @@
 # END OF NOTE
 
 ################################################################
-# FOSS COMPLIANCE (REQ-LTTCE-FOS-00002 / 00004)
+# FOSS COMPLIANCE (REQ-LTTCE-FOS-00002 / 00004 / 00007)
 #   Licence gate over every target's Rust graph and the npm
 #   production closure (foss/policy.json: fits AGPL-3.0-or-later
 #   AND the commercial licence), the notices drift check, the
-#   tooling's unit tests and, in a build, one CycloneDX SBOM per
+#   tooling's unit tests, the vulnerability audit (blocking on a
+#   release tag only) and, in a build, one CycloneDX SBOM per
 #   built target. One definition, two ways in:
 #   - called by "Build and Test Matrix" (job foss-compliance), in
 #     parallel with the build legs; publish-release-site needs it,
@@ -114,3 +115,37 @@ jobs:
         set -euo pipefail
         npm ci --ignore-scripts --no-audit --no-fund
         npx vitest run scripts/foss
+
+    ################################################################
+    # 145 / Vulnerability audit (REQ-LTTCE-FOS-00007): npm audit
+    #       (GitHub advisory database) and cargo audit (RustSec)
+    #       against the shipped components. Reports only -- job
+    #       summary and annotations -- except on a release tag, where
+    #       a vulnerable shipped component without an exception in
+    #       foss/advisory-exceptions.json, or an audit that could not
+    #       run, fails the job and so blocks publish-release-site.
+    #       cargo-audit is its release binary, pinned by version and
+    #       SHA-256 (no build, no third-party action). A failed
+    #       install is left to the audit: "not audited" warns here
+    #       and blocks only a release.
+    ################################################################
+    - name: 145. Vulnerability audit (npm, RustSec)
+      if: (success() || failure()) && steps.fetch.outcome == 'success'
+      shell: bash
+      env:
+        CARGO_AUDIT_VERSION: '0.22.2'
+        CARGO_AUDIT_SHA256: ab28a1bdb54db4d5d8ad5981cf1f959410370b3d28250dbd35f6a44248620e39
+        AUDIT_MODE: ${{ startsWith(github.ref, 'refs/tags/v') && '--block' || '' }}
+      run: |
+        set -uo pipefail
+        name="cargo-audit-x86_64-unknown-linux-gnu-v${CARGO_AUDIT_VERSION}"
+        if curl -fsSL --retry 3 -o "$RUNNER_TEMP/$name.tgz" \
+             "https://github.com/rustsec/rustsec/releases/download/cargo-audit%2Fv${CARGO_AUDIT_VERSION}/$name.tgz" \
+           && echo "${CARGO_AUDIT_SHA256}  $RUNNER_TEMP/$name.tgz" | sha256sum -c --quiet - \
+           && tar -xzf "$RUNNER_TEMP/$name.tgz" -C "$RUNNER_TEMP" \
+           && install -m 755 "$RUNNER_TEMP/$name/cargo-audit" "$HOME/.cargo/bin/cargo-audit"; then
+          cargo audit --version
+        else
+          echo "::warning::cargo-audit ${CARGO_AUDIT_VERSION} could not be installed"
+        fi
+        node scripts/foss/foss.mjs audit $AUDIT_MODE

@@ -297,6 +297,13 @@ fixed with `npm run foss:notices`. The same job (`foss-compliance.yml`) runs on 
 `dev`, Dependabot's included; on failure its job summary lists the failing components or the stale files
 and the commands that regenerate them.
 
+**On CI, step 145 of `foss-compliance`** (`foss.mjs audit`, REQ-LTTCE-FOS-00007) runs `npm audit` and
+`cargo audit` against the shipped components: on a pull request and in a branch build it only reports (job
+summary, `::warning` annotations); on a `v*` tag it fails on a vulnerable shipped component without an
+exception in `foss/advisory-exceptions.json`, and so blocks the release. It needs the network and
+cargo-audit, so `build-test` does not run it; `npm run foss:audit` does, with cargo-audit on `PATH`. Its
+unit and CLI tests (`audit.test.mjs`, `foss.test.mjs`) run with the others in step 144 and locally in 2b.
+
 **On CI, step 390 of each desktop leg** (`scripts/foss/assert-bundled.sh`, REQ-LTTCE-FOS-00001) unpacks
 every package users download — NSIS by a silent install into a temp folder, MSIX, deb, AppImage, dmg — and
 requires `LICENSE` and `THIRD-PARTY-NOTICES.md` byte-identical to the repository's. It runs after the

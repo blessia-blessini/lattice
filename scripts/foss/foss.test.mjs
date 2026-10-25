@@ -33,7 +33,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TARGETS } from './cargo-inventory.mjs';
 import { buildSbom, purlFor } from './cyclonedx.mjs';
 import { EXPORT_NOTICES_FILE } from './export-notices.mjs';
-import { collect, commandCheck, commandNotices, commandSbom, NOTICES_FILE, parseArgs, writeStepSummary } from './foss.mjs';
+import { collect, commandAudit, commandCheck, commandNotices, commandSbom, NOTICES_FILE, parseArgs, writeStepSummary } from './foss.mjs';
 import { escapeInline, fenced, platformLabel, renderNotices, renderTypeSummary, textKey } from './notices-render.mjs';
 
 const REAL_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -90,12 +90,19 @@ describe('parseArgs', () => {
         expect(parseArgs(['sbom', '--out-dir', 'x', '--targets', 'x86_64-pc-windows-msvc']).targets).toEqual(WIN);
     });
 
+    it('reports only by default and blocks with --block (audit)', () => {
+        expect(parseArgs(['audit'])).toMatchObject({ command: 'audit', block: false });
+        expect(parseArgs(['audit', '--block'])).toMatchObject({ command: 'audit', block: true });
+    });
+
     it.each([
         [[], /unknown command/],
         [['notices', '--out-dir', 'x'], /unexpected/],
         [['sbom'], /out-dir/],
         [['check', '--targets', 'riscv64gc-unknown-linux-gnu'], /unknown target/],
         [['notices', '--targets', 'x86_64-pc-windows-msvc'], /every target/],
+        [['audit', '--targets', 'x86_64-pc-windows-msvc'], /audit always covers every target/],
+        [['check', '--block'], /unexpected/],
     ])('rejects %j', (argv, message) => {
         expect(() => parseArgs(argv)).toThrow(message);
     });
@@ -220,6 +227,93 @@ describe('the CLI over a synthetic repository', () => {
         const bom = JSON.parse(fs.readFileSync(path.join(out, 'lattice-win-x64.cdx.json'), 'utf8'));
         expect(bom.metadata.component).toMatchObject({ name: 'lattice', version: '9.9.9' });
         expect(bom.components.map((c) => c.purl ?? c.name)).toEqual(expect.arrayContaining(['pkg:cargo/democrate@0.1.0', 'pkg:npm/leftpad@1.2.0']));
+    });
+
+    describe('the vulnerability audit (REQ-LTTCE-FOS-00007)', () => {
+        // leftpad and democrate ship; vitest is a development package.
+        const npmReport = {
+            auditReportVersion: 2,
+            vulnerabilities: {
+                leftpad: { via: [{ source: 1, name: 'leftpad', title: 'Pads too far', url: 'https://github.com/advisories/GHSA-2222-3333-4444', severity: 'high' }], nodes: ['node_modules/leftpad'] },
+                vitest: { via: [{ source: 2, name: 'vitest', title: 'Mock injection', url: 'https://github.com/advisories/GHSA-qxg6-89mg-rqv8', severity: 'moderate' }], nodes: ['node_modules/vitest'] },
+            },
+        };
+        const cargoReport = {
+            vulnerabilities: { list: [{ advisory: { id: 'RUSTSEC-2026-0001', title: 'Overflow', aliases: ['CVE-2026-1234'] }, package: { name: 'democrate', version: '0.1.0' } }] },
+            warnings: { unmaintained: [{ kind: 'unmaintained', advisory: { id: 'RUSTSEC-2024-0436', title: 'no longer maintained' }, package: { name: 'paste', version: '1.0.15' } }] },
+        };
+        const runners = { npm: async () => npmReport, cargo: async () => cargoReport };
+        const exceptions = (list) => fs.writeFileSync(path.join(root, 'foss', 'advisory-exceptions.json'), JSON.stringify({ exceptions: list }));
+        const capture = () => {
+            const lines = { log: [], warn: [], error: [] };
+            return { lines, log: { log: (m) => lines.log.push(m), warn: (m) => lines.warn.push(m), error: (m) => lines.error.push(m) } };
+        };
+        let inv;
+        beforeEach(async () => {
+            inv = await collect({ root, targets: WIN, today: TODAY, cargoMetadata: makeRepo(root) });
+        });
+
+        it('only reports outside a release: warnings, annotations and the job summary', async () => {
+            const summary = path.join(root, 'step-summary.md');
+            const { lines, log } = capture();
+            const env = { GITHUB_ACTIONS: 'true', GITHUB_STEP_SUMMARY: summary };
+            expect(await commandAudit(inv, { root, block: false, today: TODAY, env, runners }, log)).toBe(0);
+            expect(lines.warn).toEqual(expect.arrayContaining([
+                '  [WARN] npm:leftpad@1.2.0 GHSA-2222-3333-4444 (high) Pads too far',
+                '  [WARN] cargo:democrate@0.1.0 RUSTSEC-2026-0001 Overflow',
+            ]));
+            expect(lines.error).toEqual([]);
+            expect(lines.log).toContain('::warning title=Vulnerable shipped component::npm:leftpad@1.2.0 GHSA-2222-3333-4444 (high) Pads too far');
+            expect(lines.log).toContain('  [DEVELOPMENT] npm:vitest@4.0.0 GHSA-qxg6-89mg-rqv8 (moderate) Mock injection');
+            expect(lines.log).toContain('  [INFORMATIONAL] cargo:paste@1.0.15 RUSTSEC-2024-0436 no longer maintained');
+            const md = fs.readFileSync(summary, 'utf8');
+            expect(md).toMatch(/^### Vulnerability audit$/m);
+            expect(md).toMatch(/^\| blocking \| npm:leftpad@1\.2\.0 \|/m);
+            expect(md).toMatch(/^\| development \| npm:vitest@4\.0\.0 \|/m);
+        });
+
+        it('annotates nothing outside GitHub Actions', async () => {
+            const { lines, log } = capture();
+            expect(await commandAudit(inv, { root, block: false, today: TODAY, env: {}, runners }, log)).toBe(0);
+            expect(lines.log.some((l) => l.startsWith('::'))).toBe(false);
+        });
+
+        it('blocks a release on a vulnerable shipped component', async () => {
+            const { lines, log } = capture();
+            expect(await commandAudit(inv, { root, block: true, today: TODAY, env: { GITHUB_ACTIONS: 'true' }, runners }, log)).toBe(1);
+            expect(lines.error).toContain('  [FAIL] npm:leftpad@1.2.0 GHSA-2222-3333-4444 (high) Pads too far');
+            expect(lines.error.at(-1)).toMatch(/2 vulnerable shipped component\(s\); a release is blocked/);
+            expect(lines.log).toContain('::error title=Vulnerable shipped component::cargo:democrate@0.1.0 RUSTSEC-2026-0001 Overflow');
+        });
+
+        it('lets a release through with a valid exception for each, and not once one expired', async () => {
+            const leftpad = { ecosystem: 'npm', package: 'leftpad', advisory: 'GHSA-2222-3333-4444', reason: 'padding never user-controlled', expires: '2026-12-31' };
+            const democrate = { ecosystem: 'cargo', package: 'democrate', advisory: 'CVE-2026-1234', reason: 'function not called', expires: TODAY };
+            exceptions([leftpad, democrate]);
+            expect(await commandAudit(inv, { root, block: true, today: TODAY, env: {}, runners }, quiet)).toBe(0);
+            expect(await commandAudit(inv, { root, block: true, today: '2027-01-01', env: {}, runners }, quiet)).toBe(1);
+        });
+
+        it('blocks a release it could not audit, and only warns elsewhere', async () => {
+            const offline = { npm: async () => npmReport, cargo: async () => { throw new Error('cargo audit failed: error: no such command: `audit`'); } };
+            exceptions([{ ecosystem: 'npm', package: 'leftpad', advisory: 'GHSA-2222-3333-4444', reason: 'r', expires: '2099-01-01' }]);
+            const { lines, log } = capture();
+            expect(await commandAudit(inv, { root, block: false, today: TODAY, env: {}, runners: offline }, log)).toBe(0);
+            expect(lines.warn).toContain('  [WARN] not audited: cargo audit failed: error: no such command: `audit`');
+            expect(await commandAudit(inv, { root, block: true, today: TODAY, env: {}, runners: offline }, quiet)).toBe(2);
+        });
+
+        it('warns about an exception that matches nothing', async () => {
+            exceptions([{ ecosystem: 'cargo', package: 'gone', advisory: 'RUSTSEC-2020-0001', reason: 'r', expires: '2099-01-01' }]);
+            const { lines, log } = capture();
+            await commandAudit(inv, { root, block: false, today: TODAY, env: {}, runners }, log);
+            expect(lines.warn).toContain('  [WARN] unused advisory exception cargo:gone RUSTSEC-2020-0001');
+        });
+
+        it('refuses a malformed exceptions file', async () => {
+            exceptions([{ ecosystem: 'npm', package: 'leftpad', advisory: 'GHSA-2222-3333-4444', reason: 'no expiry' }]);
+            await expect(commandAudit(inv, { root, block: false, today: TODAY, env: {}, runners }, quiet)).rejects.toThrow(/needs ecosystem/);
+        });
     });
 });
 

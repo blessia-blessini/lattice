@@ -1096,6 +1096,23 @@ replaced LGPL library (LGPL-2.1 section 6). Also for legal review: the AppImage 
 (LGPL-2.1-only) statically; Lattice treats it as a separate program whose public source allows a rebuild
 with a modified libfuse.
 
+<!--REQ-LTTCE-FOS-00007-->
+**REQ-LTTCE-FOS-00007** — Every CI run, and every pull request into the development branch, SHALL check the
+third-party components of both lock files against public vulnerability advisories — the GitHub advisory
+database for the npm packages, the RustSec database for the Rust crates — and report each finding with its
+advisory, its severity where the database gives one, and whether a published target ships the component. A
+release SHALL NOT be published while a component shipped for any published target has a known
+vulnerability, unless one versioned file in the repository records an exception for that advisory and that
+package, with a reason and an expiry date; an expired exception SHALL NOT count, and an audit that could not
+run SHALL block the release as well. Outside a release, findings SHALL only be reported. Advisories that
+report no vulnerability — an unmaintained or unsound crate, a yanked version — and vulnerabilities of
+components no published target ships SHALL be reported and SHALL NOT block.
+
+*Rationale*: the licence gate (REQ-LTTCE-FOS-00004) says nothing about known vulnerabilities, and
+Dependabot alerts do not stop a release. The block sits where a vulnerable component would reach users: a
+new advisory appears without any change to the code, and failing every pull request on it would stop
+unrelated work until the dependency is fixed (follow-up FU-9).
+
 ---
 
 [^mermaid]: Mermaid — a JavaScript diagramming library rendering text definitions inside fenced code blocks

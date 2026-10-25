@@ -34,15 +34,20 @@
 ///   node scripts/foss/foss.mjs appimage --appimage F --root R --target linux-x64|linux-arm64 --out-dir D
 ///                                               check a built AppImage F, unpacked at R, on its
 ///                                               Linux build machine; writes its SBOM (REQ-LTTCE-FOS-00006)
+///   node scripts/foss/foss.mjs audit [--block]  npm audit + cargo audit against the shipped components
+///                                               (REQ-LTTCE-FOS-00007); reports only, unless --block
 ///
 /// Option for check, notices and sbom: --targets <triple,...> limits the Rust
 /// graph to those targets (the default is every published target).
 ///
-/// check, notices and sbom need the crate sources (`cargo fetch --locked`) and
-/// the installed npm packages (`npm ci --ignore-scripts`); appimage needs dpkg
-/// and the packages the AppImage was built from. No npm dependencies of its own.
+/// check, notices, sbom and audit need the crate sources (`cargo fetch --locked`)
+/// and the installed npm packages (`npm ci --ignore-scripts`); audit also needs
+/// cargo-audit on PATH and network access; appimage needs dpkg and the packages
+/// the AppImage was built from. No npm dependencies of its own.
 ///
-/// Exit codes: 0 ok, 1 policy failure or stale notices, 2 usage or environment error.
+/// Exit codes: 0 ok, 1 policy failure, stale notices or (with --block) a vulnerable
+/// shipped component, 2 usage or environment error (with --block: a tool that
+/// could not audit).
 
 import fs from 'fs';
 import path from 'path';
@@ -52,6 +57,10 @@ import {
     APPIMAGE_LIST_FILE, APPIMAGE_TARGETS, bundlerParts, evaluateAppImageList, inventoryAppImage, loadAppImageFiles, loadAppImageList,
     readRuntimeCommit, renderAppImageSection,
 } from './appimage.mjs';
+import {
+    annotation, evaluateFindings, findingLabel, loadAdvisoryExceptions, parseCargoAudit, parseNpmAudit, renderAuditSummary,
+    runCargoAudit, runNpmAudit,
+} from './audit.mjs';
 import { buildSbom } from './cyclonedx.mjs';
 import { EXPORT_NOTICES_FILE, loadEmbedded, renderExportNotices, selectEmbedded } from './export-notices.mjs';
 import { fallbackCopyright, findExhibitB, listLicenceFiles, selectTexts, shippedLicenceIds } from './licence-texts.mjs';
@@ -378,6 +387,74 @@ export function commandAppImage({ root, appImage, appRoot, label, outDir, today,
 
 
 //**************************************************************
+// commandAudit
+//**************************************************************
+/**
+ * REQ-LTTCE-FOS-00007 — `npm audit` and `cargo audit` against the shipped
+ * components of the inventory and foss/advisory-exceptions.json. Without
+ * `block` it only reports (job summary, and annotations on GitHub Actions);
+ * with `block` (a release) a vulnerable shipped component without a valid
+ * exception fails, and so does a tool that could not audit.
+ * @param {{entries: object[]}} inventory from `collect`, every target
+ * @param {object} options
+ * @param {string} options.root repository root
+ * @param {boolean} options.block release mode
+ * @param {string} options.today YYYY-MM-DD
+ * @param {Record<string, string|undefined>} [options.env]
+ * @param {{npm: Function, cargo: Function}} [options.runners] injectable for tests
+ * @returns {Promise<number>} exit code
+ */
+export async function commandAudit({ entries }, { root, block, today, env = process.env, runners = { npm: runNpmAudit, cargo: runCargoAudit } }, log = console) {
+    const exceptions = loadAdvisoryExceptions(root);
+    const lock = readJson(root, 'package-lock.json');
+    const findings = [];
+    const errors = [];
+    const sources = [
+        async () => parseNpmAudit(await runners.npm(root), lock),
+        async () => parseCargoAudit(await runners.cargo(root)),
+    ];
+    for (const source of sources) {
+        try {
+            findings.push(...await source());
+        } catch (e) {
+            errors.push(e.message);
+        }
+    }
+    const { findings: evaluated, unused } = evaluateFindings({ findings, shipped: entries.map((e) => e.component), exceptions, today });
+    const of = (status) => evaluated.filter((f) => f.status === status);
+    const blocking = of('blocking');
+    log.log(`foss audit: ${blocking.length} blocking, ${of('excepted').length} excepted, ${of('development').length} development only, `
+        + `${of('informational').length} informational${block ? '' : ' (report only, no --block)'}`);
+
+    // A finding that would block a release is an error on a release and a
+    // warning anywhere else; on Actions it is also annotated, so a green pull
+    // request check still shows it.
+    const [level, tag, write] = block ? ['error', 'FAIL', log.error] : ['warning', 'WARN', log.warn];
+    const actions = env.GITHUB_ACTIONS === 'true';
+    for (const f of blocking) {
+        write(`  [${tag}] ${findingLabel(f)}${f.note ? ` — ${f.note}` : ''}`);
+        if (actions) log.log(annotation(level, 'Vulnerable shipped component', findingLabel(f)));
+    }
+    for (const e of errors) {
+        write(`  [${tag}] not audited: ${e}`);
+        if (actions) log.log(annotation(level, 'Vulnerability audit incomplete', e));
+    }
+    for (const f of evaluated.filter((x) => x.status !== 'blocking')) log.log(`  [${f.status.toUpperCase()}] ${findingLabel(f)}`);
+    for (const e of unused) log.warn(`  [WARN] unused advisory exception ${e.ecosystem}:${e.package} ${e.advisory}`);
+
+    const summary = renderAuditSummary({ findings: evaluated, unused, errors, block });
+    if (summary.length) writeStepSummary(summary, env, log);
+    if (!block) return 0;
+    if (blocking.length) {
+        log.error(`foss audit: ${blocking.length} vulnerable shipped component(s); a release is blocked`);
+        return 1;
+    }
+    return errors.length ? 2 : 0;
+}
+// commandAudit END ********************************************
+
+
+//**************************************************************
 // parseArgs
 //**************************************************************
 /**
@@ -387,13 +464,14 @@ export function commandAppImage({ root, appImage, appRoot, label, outDir, today,
  */
 export function parseArgs(argv) {
     const [command, ...rest] = argv;
-    if (!['check', 'notices', 'sbom', 'appimage'].includes(command)) {
-        throw new Error(`unknown command "${command ?? ''}" (check | notices [--check] | sbom --out-dir <dir> | appimage --appimage <file> --root <dir> --target <label> --out-dir <dir>)`);
+    if (!['check', 'notices', 'sbom', 'appimage', 'audit'].includes(command)) {
+        throw new Error(`unknown command "${command ?? ''}" (check | notices [--check] | sbom --out-dir <dir> | appimage --appimage <file> --root <dir> --target <label> --out-dir <dir> | audit [--block])`);
     }
-    const opts = { command, check: false, outDir: null, appImage: null, appRoot: null, label: null, targets: [...TARGETS] };
+    const opts = { command, check: false, block: false, outDir: null, appImage: null, appRoot: null, label: null, targets: [...TARGETS] };
     for (let i = 0; i < rest.length; i++) {
         const a = rest[i];
         if (a === '--check' && command === 'notices') opts.check = true;
+        else if (a === '--block' && command === 'audit') opts.block = true;
         else if (a === '--out-dir' && (command === 'sbom' || command === 'appimage') && rest[i + 1]) opts.outDir = rest[++i];
         else if (a === '--appimage' && command === 'appimage' && rest[i + 1]) opts.appImage = rest[++i];
         else if (a === '--root' && command === 'appimage' && rest[i + 1]) opts.appRoot = rest[++i];
@@ -410,8 +488,9 @@ export function parseArgs(argv) {
         if (!opts.appImage || !opts.appRoot || !opts.outDir || !opts.label) throw new Error('appimage needs --appimage <file> --root <dir> --target <label> --out-dir <dir>');
         if (!Object.hasOwn(APPIMAGE_TARGETS, opts.label)) throw new Error(`no AppImage for target "${opts.label}" (known: ${Object.keys(APPIMAGE_TARGETS).join(', ')})`);
     }
-    // Partial notices would drop components shipped on other targets.
-    if (command === 'notices' && opts.targets.length !== TARGETS.length) throw new Error('notices always covers every target; drop --targets');
+    // Partial notices would drop components shipped on other targets; a partial
+    // audit would call a component shipped elsewhere "development only".
+    if ((command === 'notices' || command === 'audit') && opts.targets.length !== TARGETS.length) throw new Error(`${command} always covers every target; drop --targets`);
     return opts;
 }
 // parseArgs END ***********************************************
@@ -449,6 +528,7 @@ export async function main(argv, { root = ROOT, today = new Date().toISOString()
     if (opts.command === 'check') return commandCheck(inventory);
     try {
         if (opts.command === 'notices') return commandNotices(inventory, { root, targets: opts.targets, check: opts.check });
+        if (opts.command === 'audit') return await commandAudit(inventory, { root, block: opts.block, today });
         return commandSbom(inventory, { root, targets: opts.targets, outDir: path.resolve(opts.outDir) });
     } catch (e) {
         console.error(`foss ${opts.command}: ${e.message}`);
