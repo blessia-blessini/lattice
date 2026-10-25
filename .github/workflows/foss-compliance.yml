@@ -28,14 +28,20 @@
 #   AND the commercial licence), the notices drift check, the
 #   tooling's unit tests, the vulnerability audit (blocking on a
 #   release tag only) and, in a build, one CycloneDX SBOM per
-#   built target. One definition, two ways in:
+#   built target. One definition, three ways in:
 #   - called by "Build and Test Matrix" (job foss-compliance), in
 #     parallel with the build legs; publish-release-site needs it,
-#     so a release that breaks the policy is never published;
+#     so a release that breaks the policy is never published.
+#     Only this way writes the SBOMs (input sbom, default true);
 #   - on every pull request to dev, Dependabot's included, so a
 #     dependency update that changes the notices is caught before
-#     it is merged (FU-8: katex, PR #39). It only reads: a failure
-#     says in the job summary what to run and commit.
+#     it is merged (FU-8: katex, PR #39);
+#   - on every push to dev, so what the maintainer integrates
+#     directly (pull requests are for outside contributors) is
+#     checked too. It cannot stop that push, it reports right
+#     after it: a red check on the commit.
+#   It only reads: a failure says in the job summary what to run
+#   and commit.
 #   No cache on purpose: it only downloads sources (~1 min), and
 #   the 10 GB cache budget already evicts on every run.
 #   No concurrency group: when called, github.workflow is the
@@ -48,7 +54,14 @@ permissions:
 
 on:
   workflow_call:
+    inputs:
+      sbom:
+        description: 'Write and upload the SBOMs (artifact FOSS) for the release'
+        type: boolean
+        default: true
   pull_request:
+    branches: [ "dev" ]
+  push:
     branches: [ "dev" ]
 
 jobs:
@@ -81,8 +94,12 @@ jobs:
       if: (success() || failure()) && steps.fetch.outcome == 'success'
       run: node scripts/foss/foss.mjs notices --check
 
+    # 142/143 only when called by a build: inputs exist only for
+    # workflow_call, so on a pull request or a push to dev inputs.sbom
+    # is empty. github.event_name cannot tell them apart -- a called
+    # workflow sees the caller's event, and builds start on push too.
     - name: 142. SBOMs (CycloneDX, one per built target)
-      if: github.event_name != 'pull_request'
+      if: inputs.sbom
       shell: bash
       run: |
         set -euo pipefail
@@ -93,7 +110,7 @@ jobs:
         ls -l foss-out
 
     - name: 143. Upload FOSS compliance files
-      if: github.event_name != 'pull_request'
+      if: inputs.sbom
       uses: actions/upload-artifact@v7
       with:
         name: FOSS

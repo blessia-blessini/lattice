@@ -1030,8 +1030,9 @@ with its type — permissive, public-domain dedication, weak copyleft or strong 
 components, naming every component used under a copyleft licence. Each release SHALL publish them, together with one
 machine-readable bill of materials (CycloneDX) per built target, next to its installers. Every pull request
 into the development branch — an automated dependency update included — SHALL be checked against the
-licence policy and the committed notices before it is merged; a mismatch SHALL fail that check and state
-how to regenerate the notices.
+licence policy and the committed notices before it is merged, and so SHALL every change pushed to the
+development branch directly, right after it arrives; a mismatch SHALL fail that check and state how to
+regenerate the notices.
 
 The system libraries the Linux AppImage carries from its Ubuntu build image are covered by
 REQ-LTTCE-FOS-00006, in their own section of the same notices.
@@ -1097,8 +1098,9 @@ replaced LGPL library (LGPL-2.1 section 6). Also for legal review: the AppImage 
 with a modified libfuse.
 
 <!--REQ-LTTCE-FOS-00007-->
-**REQ-LTTCE-FOS-00007** — Every CI run, and every pull request into the development branch, SHALL check the
-third-party components of both lock files against public vulnerability advisories — the GitHub advisory
+**REQ-LTTCE-FOS-00007** — Every CI run, every pull request into the development branch and every change
+pushed to it SHALL check the third-party components of both lock files against public vulnerability
+advisories — the GitHub advisory
 database for the npm packages, the RustSec database for the Rust crates — and report each finding with its
 advisory, its severity where the database gives one, and whether a published target ships the component. A
 release SHALL NOT be published while a component shipped for any published target has a known

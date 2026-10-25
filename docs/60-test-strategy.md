@@ -294,11 +294,11 @@ tests of `scripts/foss/` (`*.test.mjs`) run with the frontend suite in step 2b l
 check out without `scripts/foss/` and `foss/` (proving the product does not depend on them, steps 100/101),
 so the `foss-compliance` job runs those tests instead (step 144). A stale notices file is
 fixed with `npm run foss:notices`. The same job (`foss-compliance.yml`) runs on every pull request into
-`dev`, Dependabot's included; on failure its job summary lists the failing components or the stale files
-and the commands that regenerate them.
+`dev`, Dependabot's included, and on every push to `dev`; on failure its job summary lists the failing
+components or the stale files and the commands that regenerate them.
 
 **On CI, step 145 of `foss-compliance`** (`foss.mjs audit`, REQ-LTTCE-FOS-00007) runs `npm audit` and
-`cargo audit` against the shipped components: on a pull request and in a branch build it only reports (job
+`cargo audit` against the shipped components: on a pull request, a push to `dev` and in a branch build it only reports (job
 summary, `::warning` annotations); on a `v*` tag it fails on a vulnerable shipped component without an
 exception in `foss/advisory-exceptions.json`, and so blocks the release. It needs the network and
 cargo-audit, so `build-test` does not run it; `npm run foss:audit` does, with cargo-audit on `PATH`. Its

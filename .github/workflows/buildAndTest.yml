@@ -243,13 +243,16 @@ jobs:
         echo "matrix=$FINAL_JSON" >> "$GITHUB_OUTPUT"
 
   ################################################################
-  # JOB 1b: FOSS COMPLIANCE (REQ-LTTCE-FOS-00002 / 00004)
+  # JOB 1b: FOSS COMPLIANCE (REQ-LTTCE-FOS-00002 / 00004 / 00007)
   #   Defined in foss-compliance.yml, which also runs on every pull
-  #   request to dev; here it runs in parallel with the build legs,
-  #   and publish-release-site needs it.
+  #   request to dev and every push to dev; here it runs in parallel
+  #   with the build legs, writes the SBOMs (sbom: true, which only a
+  #   build passes), and publish-release-site needs it.
   ################################################################
   foss-compliance:
     uses: ./.github/workflows/foss-compliance.yml
+    with:
+      sbom: true
 
   ################################################################
   # JOB 2: BUILD AND TEST

@@ -13,8 +13,8 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   `licence-texts.mjs` selection + `notices-render.mjs`, opening with the "Licences by type" summary from
   the policy's `types` (copyleft types by `COPYLEFT_TYPES`); `foss.mjs sbom`: `cyclonedx.mjs`; on GitHub Actions
   `writeStepSummary` explains a failing `check` or a stale `notices --check`. `.github/workflows/foss-compliance.yml`
-  runs gate, notices check and unit tests on every pull request into dev, Dependabot's included, and is
-  called by `buildAndTest.yml`)
+  runs gate, notices check, unit tests and audit on every pull request into dev, Dependabot's included, and
+  on every push to dev, and is called by `buildAndTest.yml` with `sbom: true`, the only way that writes the SBOMs)
 - IMPL-LTTCE-FOS-00002 **covers** ARCH-LTTCE-FOS-00002
 - IMPL-LTTCE-FOS-00001 **covers** REQ-LTTCE-FOS-00001  (`assert-bundled.sh`, the STST of step 390)
 - IMPL-LTTCE-FOS-00001 **covers** ARCH-LTTCE-FOS-00001

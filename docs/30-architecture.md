@@ -2089,7 +2089,12 @@ same two checks (skipped on CI, where the job does it once). The job also runs t
 
 *Pull requests.* The same file also triggers on every pull request into `dev`, Dependabot's included: the
 Dependabot security update of KaTeX (PR #39) was merged without any check and left the notices stale on
-`dev`. On a pull request the job skips the SBOMs (142/143) and only reads — its token has `contents: read`,
+`dev`. It also triggers on every **push** to `dev`: pull requests are for outside contributors, and the
+maintainer's own work reaches `dev` by direct pushes, which the pull-request trigger never sees. That run cannot
+stop the push — it reports right after it, as a red check on the commit. Only a build writes the SBOMs
+(142/143): the caller passes the `workflow_call` input `sbom: true`, and on a pull request or a push to `dev`
+there are no inputs. `github.event_name` cannot tell these apart — a called workflow sees the caller's
+event, and builds also start on a push. On a pull request the job only reads — its token has `contents: read`,
 and `npm ci --ignore-scripts` keeps a new dependency version's own scripts from running. Gate, notices
 check and unit tests each run even when an earlier one failed, so one run reports all three. A failing
 `check` or `notices --check` writes to the GitHub job summary (`writeStepSummary`, only when
@@ -2266,7 +2271,7 @@ package file is looked up by `resolveOwners`: under `usr/lib/` by name in the sy
 
 <!--ARCH-LTTCE-FOS-00007-->
 **ARCH-LTTCE-FOS-00007** — covers REQ-LTTCE-FOS-00007. `foss.mjs audit [--block]` (`audit.mjs`), step 145
-of `foss-compliance.yml`, so it runs on every pull request into `dev` and in every build:
+of `foss-compliance.yml`, so it runs on every pull request into `dev`, every push to `dev` and in every build:
 
 ```text
  npm audit --json --package-lock-only ─► parseNpmAudit   ─┐   shipped = collect() over all 8 targets
