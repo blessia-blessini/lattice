@@ -136,6 +136,11 @@ describe('parseCargoAudit', () => {
     it.each([[{}], [{ vulnerabilities: { list: [] } }], [null]])('rejects %j', (report) => {
         expect(() => parseCargoAudit(report)).toThrow(/unknown report format/);
     });
+
+    it('skips a warnings entry that is not a list (review cycle 1, F3)', () => {
+        const report = { ...CARGO_REPORT, warnings: { ...CARGO_REPORT.warnings, count: 2, note: 'x', none: null } };
+        expect(parseCargoAudit(report).map((f) => f.name)).toEqual(['democrate', 'glib', 'oldcrate']);
+    });
 });
 
 describe('runJsonTool', () => {
@@ -185,6 +190,15 @@ describe('validateAdvisoryExceptions', () => {
     it('rejects a file without a list', () => {
         expect(() => validateAdvisoryExceptions({})).toThrow(/must be a list/);
     });
+
+    it('names an npm advisory by its GHSA id only; cargo by any id (review cycle 1, F1)', () => {
+        // npm audit reports no aliases, so a CVE or RUSTSEC id for npm could never match.
+        for (const advisory of ['CVE-2026-12345', 'RUSTSEC-2024-0429']) {
+            expect(() => validateAdvisoryExceptions({ exceptions: [{ ...ok, advisory }] })).toThrow(/npm advisory must be named by its GHSA id/);
+        }
+        const cargo = { ...ok, ecosystem: 'cargo', package: 'democrate', advisory: 'CVE-2026-12345' };
+        expect(validateAdvisoryExceptions({ exceptions: [cargo] })).toEqual([cargo]);
+    });
 });
 
 describe('evaluateFindings', () => {
@@ -233,6 +247,13 @@ describe('evaluateFindings', () => {
         expect(result.unused).toEqual(exceptions);
     });
 
+    it('reports an exception for a development package as unused (review cycle 1, F5)', () => {
+        const exceptions = [{ ecosystem: 'npm', package: '@vitest/mocker', advisory: 'GHSA-qxg6-89mg-rqv8', reason: 'test only', expires: '2099-01-01' }];
+        const result = evaluateFindings({ findings, shipped, exceptions, today: TODAY });
+        expect(result.findings.find((f) => f.advisory === 'GHSA-qxg6-89mg-rqv8').status).toBe('development');
+        expect(result.unused).toEqual(exceptions);
+    });
+
     it('treats a copy without a version as shipped when any version of it ships', () => {
         const f = { ecosystem: 'npm', name: 'katex', version: null, kind: 'vulnerability', advisory: 'GHSA-2222-3333-4444', aliases: [], title: 't' };
         expect(evaluateFindings({ findings: [f], shipped, exceptions: [], today: TODAY }).findings[0].status).toBe('blocking');
@@ -270,6 +291,15 @@ describe('summary and annotations', () => {
     it('escapes table cells', () => {
         const f = { ...evaluated.findings[0], title: 'a | b `c`' };
         expect(renderAuditSummary({ findings: [f], unused: [], errors: [], block: false }).join('\n')).toMatch(/a \\\| b \\`c\\`/);
+    });
+
+    it('keeps each table row and list item on one line (review cycle 1, F2)', () => {
+        const f = { ...evaluated.findings[0], title: 'first\r\n  second\nthird', note: 'excepted until 2099-01-01: line one\nline two' };
+        const lines = renderAuditSummary({ findings: [f], unused: [], errors: ['npm audit failed:\nnetwork'], block: false });
+        expect(lines).toContain('- **Not audited:** npm audit failed: network');
+        const row = lines.find((l) => l.startsWith('| blocking |'));
+        expect(row).toMatch(/\| first second third — excepted until 2099-01-01: line one line two \|$/);
+        expect(lines.some((l) => /^(second|third|line two)/.test(l))).toBe(false);
     });
 
     it('escapes workflow-command data and properties', () => {

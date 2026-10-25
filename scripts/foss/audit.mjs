@@ -171,7 +171,8 @@ export function parseCargoAudit(report) {
     };
     const findings = report.vulnerabilities.list.map((v) => finding(v, 'vulnerability'));
     for (const [kind, list] of Object.entries(report.warnings)) {
-        for (const w of list ?? []) findings.push(finding(w, w.kind ?? kind));
+        if (!Array.isArray(list)) continue; // a count or other metadata in a later format, not findings
+        for (const w of list) findings.push(finding(w, w.kind ?? kind));
     }
     return findings;
 }
@@ -197,8 +198,10 @@ export function loadAdvisoryExceptions(root) {
 // validateAdvisoryExceptions
 //**************************************************************
 /**
- * Every exception names one advisory (GHSA, RUSTSEC or CVE id) for one
- * package, why it is accepted, and when that must be looked at again.
+ * Every exception names one advisory for one package, why it is accepted,
+ * and when that must be looked at again. A cargo advisory may be named by
+ * its RUSTSEC id or an alias (GHSA, CVE); an npm advisory only by its GHSA
+ * id, because npm audit reports no aliases — a CVE could never match.
  * @param {object} data parsed file
  * @returns {object[]}
  * @throws {Error} naming the first bad entry
@@ -210,6 +213,9 @@ export function validateAdvisoryExceptions(data) {
             || !ADVISORY_ID_RE.test(e.advisory ?? '') || typeof e.reason !== 'string' || !e.reason.trim()
             || !/^\d{4}-\d{2}-\d{2}$/.test(e.expires ?? '')) {
             throw new Error(`${ADVISORY_EXCEPTIONS_FILE}: exception ${JSON.stringify(e)} needs ecosystem (npm | cargo), package, advisory (GHSA-…, RUSTSEC-…, CVE-…), reason, expires (YYYY-MM-DD)`);
+        }
+        if (e.ecosystem === 'npm' && !e.advisory.startsWith('GHSA-')) {
+            throw new Error(`${ADVISORY_EXCEPTIONS_FILE}: exception ${JSON.stringify(e)}: an npm advisory must be named by its GHSA id (npm audit reports no aliases)`);
         }
     }
     return data.exceptions;
@@ -240,9 +246,11 @@ export function evaluateFindings({ findings, shipped, exceptions, today }) {
 
     const out = findings.map((f) => {
         if (f.kind !== 'vulnerability') return { ...f, status: 'informational', note: null };
+        if (!isShipped(f)) return { ...f, status: 'development', note: null };
+        // Only a shipped finding uses an exception: one for a development
+        // package changes nothing and is reported as unused.
         const exception = exceptions.find((e) => matches(e, f)) ?? null;
         if (exception) used.add(exception);
-        if (!isShipped(f)) return { ...f, status: 'development', note: null };
         if (exception && exception.expires >= today) return { ...f, status: 'excepted', note: `excepted until ${exception.expires}: ${exception.reason}` };
         return { ...f, status: 'blocking', note: exception ? `exception expired on ${exception.expires}` : null };
     });
@@ -298,6 +306,8 @@ export function annotation(level, title, message) {
  */
 export function renderAuditSummary({ findings, unused, errors, block }) {
     if (!findings.length && !unused.length && !errors.length) return [];
+    // A line break would end the table row or list item: one line per value.
+    const cell = (s) => escapeInline(String(s).replace(/\s*[\r\n]+\s*/g, ' '));
     const count = (s) => findings.filter((f) => f.status === s).length;
     const blocking = count('blocking');
     const failed = block && (blocking > 0 || errors.length > 0);
@@ -309,18 +319,18 @@ export function renderAuditSummary({ findings, unused, errors, block }) {
             + (block ? '' : ' Outside a release this check only reports.'),
         '',
     ];
-    for (const e of errors) lines.push(`- **Not audited:** ${escapeInline(e)}`);
+    for (const e of errors) lines.push(`- **Not audited:** ${cell(e)}`);
     if (errors.length) lines.push('');
     if (findings.length) {
         lines.push('| Status | Component | Advisory | Severity | Title |', '|---|---|---|---|---|');
         for (const f of findings) {
             const advisory = f.advisory ? (f.url ? `[${f.advisory}](${f.url})` : f.advisory) : '–';
-            const title = escapeInline(f.title) + (f.note ? ` — ${escapeInline(f.note)}` : '');
-            lines.push(`| ${f.status} | ${escapeInline(`${f.ecosystem}:${f.name}@${f.version ?? '?'}`)} | ${advisory} | ${f.severity ?? '–'} | ${title} |`);
+            const title = cell(f.title) + (f.note ? ` — ${cell(f.note)}` : '');
+            lines.push(`| ${f.status} | ${cell(`${f.ecosystem}:${f.name}@${f.version ?? '?'}`)} | ${advisory} | ${f.severity ?? '–'} | ${title} |`);
         }
         lines.push('');
     }
-    for (const e of unused) lines.push(`- Unused exception: ${escapeInline(`${e.ecosystem}:${e.package} ${e.advisory}`)} — remove it from \`${ADVISORY_EXCEPTIONS_FILE}\`.`);
+    for (const e of unused) lines.push(`- Unused exception: ${cell(`${e.ecosystem}:${e.package} ${e.advisory}`)} — remove it from \`${ADVISORY_EXCEPTIONS_FILE}\`.`);
     if (unused.length) lines.push('');
     if (blocking) {
         lines.push(`A release is blocked while a shipped component has a known vulnerability: update it, or record a reasoned, dated exception in \`${ADVISORY_EXCEPTIONS_FILE}\`.`);

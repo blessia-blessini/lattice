@@ -143,7 +143,7 @@ jobs:
              "https://github.com/rustsec/rustsec/releases/download/cargo-audit%2Fv${CARGO_AUDIT_VERSION}/$name.tgz" \
            && echo "${CARGO_AUDIT_SHA256}  $RUNNER_TEMP/$name.tgz" | sha256sum -c --quiet - \
            && tar -xzf "$RUNNER_TEMP/$name.tgz" -C "$RUNNER_TEMP" \
-           && install -m 755 "$RUNNER_TEMP/$name/cargo-audit" "$HOME/.cargo/bin/cargo-audit"; then
+           && install -D -m 755 "$RUNNER_TEMP/$name/cargo-audit" "$HOME/.cargo/bin/cargo-audit"; then
           cargo audit --version
         else
           echo "::warning::cargo-audit ${CARGO_AUDIT_VERSION} could not be installed"

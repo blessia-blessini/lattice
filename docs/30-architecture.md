@@ -2285,9 +2285,11 @@ of `foss-compliance.yml`, so it runs on every pull request into `dev` and in eve
   whose `ecosystem:name@version` is not in it (a dev-dependency, a crate of no published target) is
   *development* and never blocks. One definition of "shipped" for the notices, the SBOMs and the audit,
   instead of each tool's own idea of production — `cargo audit` has none.
-- **Exceptions** name an advisory (its id or an alias: GHSA, RUSTSEC or CVE) for one package, with a reason
-  and an expiry date, like the licence policy's exceptions. No version: the advisory's own range decides,
-  and a fixed version simply stops matching — then the entry is reported as unused.
+- **Exceptions** name an advisory for one package, with a reason and an expiry date, like the licence
+  policy's exceptions: a crate's by its RUSTSEC id or an alias (GHSA, CVE), an npm package's by its GHSA id
+  only — npm audit reports no aliases, so validation refuses any other id there. No version: the advisory's
+  own range decides, and a fixed version simply stops matching. An entry that excepts no shipped finding —
+  fixed, or for a development package, where it changes nothing — is reported as unused.
 - **Mode**: the step passes `--block` when `github.ref` starts with `refs/tags/v`, the condition of
   `publish-release-site`, which needs this job. Without it every would-block finding is a `::warning`
   annotation (visible on the pull request although the check stays green) and all findings go to the job

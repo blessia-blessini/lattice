@@ -118,12 +118,15 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - UTST `audit.test.mjs` (REQ-LTTCE-FOS-00007) — npm report: one finding per installed copy and advisory with
   the lockfile version, a dependency-only entry skipped, an advisory without GHSA url, an advisory naming
   another package ignored, error report and unknown formats refused; cargo report: vulnerabilities, unsound and
-  yanked (no advisory) as informational, clean report, unknown formats; `runJsonTool` keeps a report printed
-  with exit 1, names the last stderr line when the tool cannot run, refuses non-JSON; exceptions file (the real
-  one loads, GHSA / RUSTSEC / CVE ids, 7 malformed entries); `evaluateFindings`: shipped → blocking,
-  development and informational never, exception by id or alias until its expiry day, an expired one blocks,
-  ecosystem and package must match, a copy without version counts as shipped; summary only says "release
-  blocked" with `--block`, lists tools not audited and unused exceptions, escapes cells; annotation escaping.
+  yanked (no advisory) as informational, clean report, unknown formats, a warnings entry that is not a list
+  skipped; `runJsonTool` keeps a report printed with exit 1, names the error line of stderr (else its last line)
+  when the tool cannot run, refuses non-JSON; exceptions file (the real one loads, GHSA / RUSTSEC / CVE ids, 7
+  malformed entries, an npm exception only by GHSA id); `evaluateFindings`: shipped → blocking, development and
+  informational never, exception by id or alias until its expiry day, an expired one blocks, ecosystem and
+  package must match, an exception for a development package is unused, a copy without version counts as
+  shipped; summary only says "release blocked" with `--block`, lists tools not audited and unused exceptions,
+  escapes cells and keeps every row and list item on one line; annotation escaping. The four review-cycle-1
+  tests (F1, F2, F3, F5) were run against the unfixed module and failed there.
 - ITST `foss.test.mjs` (REQ-LTTCE-FOS-00007) — `commandAudit` over the synthetic repository with injected
   reports: report-only exits 0 with warnings, annotations (only on Actions) and the job summary; `--block`
   exits 1 on a vulnerable shipped component (negative test), 0 with valid exceptions and 1 again after their
