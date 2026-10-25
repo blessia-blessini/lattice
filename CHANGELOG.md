@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.50
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- docs: Correct (A)SPICE reference
 - docs: add foundational traceability requirements, system constraints, and coverage documentation
 - chore: update of changelog
 - Update dependecies with licences and version bump

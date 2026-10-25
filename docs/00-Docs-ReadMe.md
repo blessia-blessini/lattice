@@ -6,7 +6,7 @@
 | --- | ------------------------------------------------------------ | -------------------------------------------------------------------- |
 | 00  | [00-Docs-ReadMe.md](00-Docs-ReadMe.md)                       | List of formal Documents and general remarks for the documentation   |
 | 10  | [10-System-Requirements.md](10-System-Requirements.md)       | System requirements by subsystem chapter; REQ-LTTCE-… anchors        |
-| 11  | [11-Traceability-Requirements.md](11-Traceability-Requirements.md) | Traceability system rules and ASPICE compliance founding doc   |
+| 11  | [11-Traceability-Requirements.md](11-Traceability-Requirements.md) | Traceability system rules and SPICE/CMMI compliance doc   |
 | 12  | [12-System-Constraints.md](12-System-Constraints.md)         | Internal constraints the implementation must respect; CSTR-LTTCE-… anchors |
 | 30  | [30-architecture.md](30-architecture.md)                     | Architecture, technology stack, data flow, CI, feature design        |
 | 30t | [30-architecture.trace-cov.md](30-architecture.trace-cov.md) | Trace satellite: ARCH → REQ coverage for 30-architecture.md         |
