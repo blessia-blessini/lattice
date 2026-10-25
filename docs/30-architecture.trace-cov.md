@@ -1,7 +1,7 @@
 # Trace Coverage — 30-architecture.md
 
-Satellite file: records which architecture sections cover which system requirements.
-Format: `ARCH-ID` **covers** `REQ-ID`
+Satellite file: records which architecture sections cover which system requirements and constraints.
+Format: `ARCH-ID` **covers** `REQ-ID` (or `CSTR-ID`, from `12-System-Constraints.md`)
 
 ---
 
@@ -80,3 +80,8 @@ Format: `ARCH-ID` **covers** `REQ-ID`
 - ARCH-LTTCE-FOS-00004 **covers** REQ-LTTCE-FOS-00004
 - ARCH-LTTCE-FOS-00005 **covers** REQ-LTTCE-FOS-00005
 - ARCH-LTTCE-FOS-00006 **covers** REQ-LTTCE-FOS-00006
+- ARCH-LTTCE-XPT-00002 **covers** CSTR-LTTCE-PLT-00001
+- ARCH-LTTCE-XPT-00002 **covers** CSTR-LTTCE-PLT-00002
+- ARCH-LTTCE-XPT-00002 **covers** CSTR-LTTCE-PLT-00003
+- ARCH-LTTCE-XPT-00002 **covers** CSTR-LTTCE-XPT-00001
+- ARCH-LTTCE-FOS-00004 **covers** CSTR-LTTCE-FOS-00001
