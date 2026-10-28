@@ -166,10 +166,13 @@ describe('renderExportNotices', () => {
     });
 
     it('adds the licence, copyright lines and standard text of a notice addition (REQ-LTTCE-FOS-00008)', () => {
-        const fonts = { topic: 'LT-cb1928bbb9', licences: ['OFL-1.1'], copyrights: ['Copyright (c) 2009-2010 Design Science, Inc.'], quotes: [], unquoted: ['fonts/a.ttf'], fileCount: 1 };
+        const fonts = { topic: 'LT-cb1928bbb9', licences: ['OFL-1.1'], copyrights: ['Copyright (c) 2009-2010 Design Science, Inc.'], quotes: [{ text: 'Font: SIL Open Font License', files: ['src/a.ts'] }], unquoted: ['fonts/a.ttf'], fileCount: 2 };
         const text = renderExportNotices([{ entry: entry({ name: 'katex' }), material: 'fonts', additions: [fonts] }], std);
         expect(text).toMatch(/^ {2}Also: OFL-1\.1\n {4}Copyright \(c\) 2009-2010 Design Science, Inc\.$/m);
         expect(text).toMatch(/^---- OFL-1\.1 licence text \(katex\) ----\n\nSIL OPEN FONT LICENSE/m);
+        // An excerpt from the code is labelled as one, not as a licence text (review cycle 1).
+        expect(text).toMatch(/^---- OFL-1\.1 as found in the code \(katex\) ----\n\nFont: SIL Open Font License$/m);
+        expect(text.match(/^---- OFL-1\.1 licence text/gm)).toHaveLength(1);
     });
 
     it('prints an identical licence text once, naming every component that uses it', () => {

@@ -26,7 +26,9 @@
 ///
 /// IMPL-LTTCE-FOS-00004 (gate) and IMPL-LTTCE-FOS-00002 (notices, SBOM).
 ///
-///   node scripts/foss/foss.mjs check            licence gate, all targets (REQ-LTTCE-FOS-00004)
+///   node scripts/foss/foss.mjs check [--block]  licence gate, all targets (REQ-LTTCE-FOS-00004); --block
+///                                               (a release) also fails on notice additions for
+///                                               versions no longer shipped (REQ-LTTCE-FOS-00008)
 ///   node scripts/foss/foss.mjs notices          write THIRD-PARTY-NOTICES.md (REQ-LTTCE-FOS-00002)
 ///                                               and the export notices (REQ-LTTCE-FOS-00005)
 ///   node scripts/foss/foss.mjs notices --check  fail if either committed file is stale
@@ -66,7 +68,7 @@ import { EXPORT_NOTICES_FILE, loadEmbedded, renderExportNotices, selectEmbedded 
 import { fallbackCopyright, findExhibitB, listLicenceFiles, selectTexts, shippedLicenceIds } from './licence-texts.mjs';
 import { ADDITIONS_FILE, attachAdditions, loadAdditions } from './notice-additions.mjs';
 import { enrichFromManifest, inventoryFromLockfile } from './npm-inventory.mjs';
-import { renderNotices } from './notices-render.mjs';
+import { escapeInline, renderNotices } from './notices-render.mjs';
 import { evaluateComponent, licenceTypeMap, loadPolicy, obligationNote, unusedPolicyEntries } from './policy.mjs';
 import { leafKey } from './spdx-expr.mjs';
 
@@ -75,7 +77,7 @@ export const NOTICES_FILE = 'THIRD-PARTY-NOTICES.md';
 export const PRODUCT_LICENSE = 'AGPL-3.0-or-later';
 const EXTRA_COMPONENTS_FILE = 'foss/extra-components.json';
 /** An inventory without notice additions (tests that build one by hand). */
-const NO_ADDITIONS = Object.freeze({ source: null, problems: [], warnings: [] });
+const NO_ADDITIONS = Object.freeze({ source: null, problems: [], unused: [] });
 const REGENERATE_HINT = `run "npm run foss:notices" and commit ${NOTICES_FILE} and ${EXPORT_NOTICES_FILE}`;
 /** What `notices` needs before it can regenerate: the sources it reads, without running any package scripts. */
 const REGENERATE_STEPS = Object.freeze([
@@ -140,7 +142,7 @@ function mergeComponent(merged, component, label) {
  * @param {{triple: string, label: string}[]} options.targets
  * @param {string} options.today YYYY-MM-DD
  * @param {(manifest: string, triple: string) => Promise<object>} [options.cargoMetadata] injectable for tests
- * @returns {Promise<{policy: object, entries: object[], appImage: object[], additions: {source: object|null, problems: string[], warnings: string[]}}>}
+ * @returns {Promise<{policy: object, entries: object[], appImage: object[], additions: {source: object|null, problems: string[], unused: string[]}}>}
  *   each entry also carries `additions` (notice-additions.mjs, REQ-LTTCE-FOS-00008)
  */
 export async function collect({ root, targets, today, cargoMetadata = runCargoMetadata }) {
@@ -194,8 +196,15 @@ export async function collect({ root, targets, today, cargoMetadata = runCargoMe
         ? evaluateAppImageList(loadAppImageList(root), policy, today)
         : [];
     const additionsData = loadAdditions(root);
-    const { problems, warnings } = attachAdditions(entries, additionsData, policy, loadStandardTexts(root));
-    return { policy, entries, appImage, additions: { source: additionsData?.source ?? null, problems, warnings } };
+    const { problems, unused } = attachAdditions(entries, additionsData, policy, loadStandardTexts(root));
+    // The export topics name additions: one that is missing fails the gate
+    // here, cleanly, instead of only when the export notices are written.
+    try {
+        selectEmbedded(entries, loadEmbedded(root), root);
+    } catch (e) {
+        problems.push(e.message);
+    }
+    return { policy, entries, appImage, additions: { source: additionsData?.source ?? null, problems, unused } };
 }
 // collect END *************************************************
 
@@ -205,9 +214,15 @@ export async function collect({ root, targets, today, cargoMetadata = runCargoMe
 //**************************************************************
 /**
  * The licence gate. Prints every failing component with its reasons.
+ * Notice additions for versions no longer shipped are warnings -- in the job
+ * summary and as annotations on GitHub Actions -- and with `block` (a
+ * release) failures: the notices would lack what the ledger decided.
+ * @param {object} inventory from `collect`
+ * @param {{log: Function, warn: Function, error: Function}} [log]
+ * @param {{block?: boolean, env?: Record<string, string|undefined>}} [options]
  * @returns {number} exit code
  */
-export function commandCheck({ policy, entries, appImage = [], additions = NO_ADDITIONS }, log = console) {
+export function commandCheck({ policy, entries, appImage = [], additions = NO_ADDITIONS }, log = console, { block = false, env = process.env } = {}) {
     const failures = entries.filter((e) => !e.evaluation.pass);
     const byEco = (eco) => entries.filter((e) => e.component.ecosystem === eco).length;
     log.log(`foss check: ${entries.length} components (${byEco('cargo')} cargo, ${byEco('npm')} npm, ${byEco('other')} other)`);
@@ -215,14 +230,23 @@ export function commandCheck({ policy, entries, appImage = [], additions = NO_AD
     for (const warning of unusedPolicyEntries(policy, components)) {
         log.warn(`  [WARN] unused policy entry ${warning}`);
     }
-    for (const warning of additions.warnings) log.warn(`  [WARN] ${warning}`);
+    if (!block) {
+        for (const line of additions.unused) {
+            log.warn(`  [WARN] ${line}`);
+            if (env.GITHUB_ACTIONS === 'true') log.log(annotation('warning', 'Notice addition not applied', line));
+        }
+        if (additions.unused.length) {
+            writeStepSummary(['### Notice additions not applied', '', ...additions.unused.map((l) => `- ${escapeInline(l)}`), '',
+                'A release (`foss.mjs check --block`) fails on these.'], env, log);
+        }
+    }
     const failed = failures.map((f) => {
         const c = f.component;
         return `${c.ecosystem}:${c.name}@${c.version} (${c.linkage}): ${f.evaluation.problems.join('; ')}`;
     });
     // REQ-LTTCE-FOS-00008: a decision made on other file content, or one that
     // adds a licence the policy does not admit, fails like a component would.
-    failed.push(...additions.problems);
+    failed.push(...additions.problems, ...(block ? additions.unused : []));
     for (const line of failed) log.error(`  [FAIL] ${line}`);
     // REQ-LTTCE-FOS-00006: the reviewed AppImage packages are held to the policy
     // on every run, so a policy change that rejects one fails here, not on a Linux leg.
@@ -480,13 +504,13 @@ export async function commandAudit({ entries }, { root, block, today, env = proc
 export function parseArgs(argv) {
     const [command, ...rest] = argv;
     if (!['check', 'notices', 'sbom', 'appimage', 'audit'].includes(command)) {
-        throw new Error(`unknown command "${command ?? ''}" (check | notices [--check] | sbom --out-dir <dir> | appimage --appimage <file> --root <dir> --target <label> --out-dir <dir> | audit [--block])`);
+        throw new Error(`unknown command "${command ?? ''}" (check [--block] | notices [--check] | sbom --out-dir <dir> | appimage --appimage <file> --root <dir> --target <label> --out-dir <dir> | audit [--block])`);
     }
     const opts = { command, check: false, block: false, outDir: null, appImage: null, appRoot: null, label: null, targets: [...TARGETS] };
     for (let i = 0; i < rest.length; i++) {
         const a = rest[i];
         if (a === '--check' && command === 'notices') opts.check = true;
-        else if (a === '--block' && command === 'audit') opts.block = true;
+        else if (a === '--block' && (command === 'audit' || command === 'check')) opts.block = true;
         else if (a === '--out-dir' && (command === 'sbom' || command === 'appimage') && rest[i + 1]) opts.outDir = rest[++i];
         else if (a === '--appimage' && command === 'appimage' && rest[i + 1]) opts.appImage = rest[++i];
         else if (a === '--root' && command === 'appimage' && rest[i + 1]) opts.appRoot = rest[++i];
@@ -540,7 +564,7 @@ export async function main(argv, { root = ROOT, today = new Date().toISOString()
         console.error(`foss: cannot build the inventory: ${e.message}`);
         return 2;
     }
-    if (opts.command === 'check') return commandCheck(inventory);
+    if (opts.command === 'check') return commandCheck(inventory, console, { block: opts.block });
     try {
         if (opts.command === 'notices') return commandNotices(inventory, { root, targets: opts.targets, check: opts.check });
         if (opts.command === 'audit') return await commandAudit(inventory, { root, block: opts.block, today });

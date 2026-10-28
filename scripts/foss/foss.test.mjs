@@ -113,7 +113,6 @@ describe('parseArgs', () => {
         [['check', '--targets', 'riscv64gc-unknown-linux-gnu'], /unknown target/],
         [['notices', '--targets', 'x86_64-pc-windows-msvc'], /every target/],
         [['audit', '--targets', 'x86_64-pc-windows-msvc'], /audit always covers every target/],
-        [['check', '--block'], /unexpected/],
     ])('rejects %j', (argv, message) => {
         expect(() => parseArgs(argv)).toThrow(message);
     });
@@ -192,7 +191,7 @@ describe('the CLI over a synthetic repository', () => {
         expect(commandNotices(changed, { root, targets: WIN, check: true }, quiet)).toBe(1);
     });
 
-    it('warns about a notice addition for a version that is not shipped, and still passes', async () => {
+    it('warns about a notice addition for a version that is not shipped, in the job summary too, and fails a release (--block)', async () => {
         const cargoMetadata = makeRepo(root);
         fs.writeFileSync(path.join(root, 'foss', 'notice-additions.json'), JSON.stringify({
             format: 1, source: {},
@@ -203,8 +202,29 @@ describe('the CLI over a synthetic repository', () => {
         }));
         const inv = await collect({ root, targets: WIN, today: TODAY, cargoMetadata });
         const warnings = [];
-        expect(commandCheck(inv, { ...quiet, warn: (m) => warnings.push(m) })).toBe(0);
+        const logged = [];
+        const summary = path.join(root, 'summary.md');
+        const env = { GITHUB_ACTIONS: 'true', GITHUB_STEP_SUMMARY: summary };
+        expect(commandCheck(inv, { ...quiet, warn: (m) => warnings.push(m), log: (m) => logged.push(m) }, { env })).toBe(0);
         expect(warnings.join('\n')).toMatch(/unused notice addition LT-2c62835b1c \(cargo:democrate@0\.0\.9\)/);
+        expect(logged.join('\n')).toMatch(/^::warning title=Notice addition not applied::unused notice addition LT-2c62835b1c/m);
+        expect(fs.readFileSync(summary, 'utf8')).toMatch(/### Notice additions not applied[\s\S]*LT-2c62835b1c/);
+
+        const errors = [];
+        expect(commandCheck(inv, { ...quiet, error: (m) => errors.push(m) }, { block: true, env: {} })).toBe(1);
+        expect(errors.join('\n')).toMatch(/\[FAIL\] unused notice addition LT-2c62835b1c/);
+        expect(parseArgs(['check', '--block'])).toMatchObject({ command: 'check', block: true });
+    });
+
+    it('fails the gate cleanly when an export topic has no notice addition (exit 1, not a crash of notices)', async () => {
+        const cargoMetadata = makeRepo(root);
+        fs.writeFileSync(path.join(root, 'foss', 'export-embedded.json'),
+            JSON.stringify({ components: [{ lockKey: 'node_modules/leftpad', material: 'padding', topics: ['LT-cb1928bbb9'] }] }));
+        const inv = await collect({ root, targets: WIN, today: TODAY, cargoMetadata });
+        const errors = [];
+        expect(commandCheck(inv, { ...quiet, error: (m) => errors.push(m) })).toBe(1);
+        expect(errors.join('\n')).toMatch(/topic LT-cb1928bbb9 of "node_modules\/leftpad" has no notice addition/);
+        expect(commandNotices(inv, { root, targets: WIN, check: true }, quiet)).toBe(1);
     });
 
     it('writes the export notices beside them, and checks them for drift too', async () => {

@@ -86,8 +86,13 @@ jobs:
         cargo fetch --locked --manifest-path src-tauri/Cargo.toml
         npm ci --omit=dev --ignore-scripts --no-audit --no-fund
 
+    # On a release (v* tag, the condition of publish-release-site) --block also
+    # fails on notice additions for versions no longer shipped (REQ-LTTCE-FOS-00008).
     - name: 140. Licence gate
-      run: node scripts/foss/foss.mjs check
+      shell: bash
+      env:
+        GATE_MODE: ${{ startsWith(github.ref, 'refs/tags/v') && '--block' || '' }}
+      run: node scripts/foss/foss.mjs check $GATE_MODE
 
     # 141 and 144 also run after a failed gate, so one run reports everything.
     - name: 141. Third-party notices up to date

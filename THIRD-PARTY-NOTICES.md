@@ -23,16 +23,16 @@ The Linux AppImage additionally carries system libraries from the Ubuntu release
 | MPL-2.0 | weak copyleft | 5 | 4 |
 | LGPL-2.1-only | weak copyleft | 1 | 0 |
 | OFL-1.1 | weak copyleft | 1 | 1 |
-| MIT | permissive | 760 | 660 |
+| MIT | permissive | 759 | 659 |
 | ISC | permissive | 41 | 41 |
 | Unicode-3.0 | permissive | 19 | 16 |
 | BSD-3-Clause | permissive | 18 | 17 |
-| Apache-2.0 | permissive | 13 | 13 |
-| BSD-2-Clause | permissive | 8 | 7 |
+| Apache-2.0 | permissive | 11 | 11 |
+| BSD-2-Clause | permissive | 7 | 6 |
 | LicenseRef-scancode-alliance-open-media-patent-1.0 | permissive | 4 | 4 |
 | Zlib | permissive | 3 | 2 |
-| SunPro | permissive | 2 | 2 |
 | Apache-2.0 WITH LLVM-exception | permissive | 1 | 0 |
+| SunPro | permissive | 1 | 1 |
 | W3C | permissive | 1 | 1 |
 | W3C-20150513 | permissive | 1 | 1 |
 | Xfig | permissive | 1 | 1 |
@@ -2473,12 +2473,12 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
   - Copyright (c) 2022, VideoLAN
   - Copyright (c) 2022-2023, The rav1e contributors
   - Licence text (BSD-2-Clause): [text-d5371501](#text-d5371501), standard text
-  - As found in `src/asm/arm/64/ipred.S`, `src/asm/arm/64/ipred16.S`, `src/asm/arm/64/mc.S` and 3 more: [text-39f7d156](#text-39f7d156)
-  - As found in `src/asm/arm/64/satd.S`: [text-a2524138](#text-a2524138)
-  - As found in `src/asm/arm/tables.S`: [text-a4b2e7ff](#text-a4b2e7ff)
-  - As found in `src/asm/x86/ipred16_avx2.asm`, `src/asm/x86/ipred16_avx512.asm`, `src/asm/x86/ipred16_sse.asm` and 9 more: [text-1efb508e](#text-1efb508e)
-  - As found in `src/asm/x86/sad_avx.asm`, `src/asm/x86/sad_plane.asm`, `src/asm/x86/sad_sse2.asm` and 2 more: [text-b666f61e](#text-b666f61e)
-  - As found in `src/asm/x86/tables.asm`: [text-f76f9f5b](#text-f76f9f5b)
+  - As found in src/asm/arm/64/ipred.S, src/asm/arm/64/ipred16.S, src/asm/arm/64/mc.S and 3 more: [text-39f7d156](#text-39f7d156)
+  - As found in src/asm/arm/64/satd.S: [text-a2524138](#text-a2524138)
+  - As found in src/asm/arm/tables.S: [text-a4b2e7ff](#text-a4b2e7ff)
+  - As found in src/asm/x86/ipred16_avx2.asm, src/asm/x86/ipred16_avx512.asm, src/asm/x86/ipred16_sse.asm and 9 more: [text-1efb508e](#text-1efb508e)
+  - As found in src/asm/x86/sad_avx.asm, src/asm/x86/sad_plane.asm, src/asm/x86/sad_sse2.asm and 2 more: [text-b666f61e](#text-b666f61e)
+  - As found in src/asm/x86/tables.asm: [text-f76f9f5b](#text-f76f9f5b)
 - Also in its code: BSD-2-Clause AND LicenseRef-scancode-alliance-open-media-patent-1.0, in 8 files (ledger decision LT-52572dd370)
   - Copyright (c) 2016, Alliance for Open Media
   - Copyright (c) 2018, Two Orioles, LLC
@@ -2489,12 +2489,12 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
   - Copyright (c) 2022-2023, The rav1e contributors
   - Licence text (BSD-2-Clause): [text-d5371501](#text-d5371501), standard text
   - Licence text (LicenseRef-scancode-alliance-open-media-patent-1.0): [text-866e55f8](#text-866e55f8), standard text
-  - As found in `src/asm/arm/64/satd.S`, `src/asm/arm/tables.S`: [text-a2524138](#text-a2524138)
-  - As found in `src/asm/x86/sad_avx.asm`, `src/asm/x86/sad_plane.asm`, `src/asm/x86/sad_sse2.asm` and 3 more: [text-b666f61e](#text-b666f61e)
+  - As found in src/asm/arm/64/satd.S, src/asm/arm/tables.S: [text-a2524138](#text-a2524138)
+  - As found in src/asm/x86/sad_avx.asm, src/asm/x86/sad_plane.asm, src/asm/x86/sad_sse2.asm and 3 more: [text-b666f61e](#text-b666f61e)
 - Also in its code: ISC, in 1 file (ledger decision LT-69b25851b1)
   - Copyright (c) 2005-2022 x264 project
   - Licence text (ISC): [text-f2ff9e66](#text-f2ff9e66), standard text
-  - As found in `src/asm/x86/x86inc.asm`: [text-3165bc0c](#text-3165bc0c)
+  - As found in src/asm/x86/x86inc.asm: [text-3165bc0c](#text-3165bc0c)
 
 ### av1-grain 0.2.5
 
@@ -2507,7 +2507,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Also in its code: LicenseRef-scancode-alliance-open-media-patent-1.0, in 3 files (ledger decision LT-b74830fd65)
   - Copyright (c) 2022-2022, The rav1e contributors
   - Licence text (LicenseRef-scancode-alliance-open-media-patent-1.0): [text-866e55f8](#text-866e55f8), standard text
-  - As found in `src/create.rs`, `src/lib.rs`, `src/parse.rs`: [text-49f9bfe6](#text-49f9bfe6)
+  - As found in src/create.rs, src/lib.rs, src/parse.rs: [text-49f9bfe6](#text-49f9bfe6)
 
 ### avif-serialize 0.8.9
 
@@ -2910,7 +2910,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Also in its code: Xfig, in 1 file (ledger decision LT-3c8f17dd12)
   - Copyright (c) 1994 Anthony Dekker
   - Copyright (c) 2014 The Piston Developers
-  - As found in `src/lib.rs`: [text-7ec6fec7](#text-7ec6fec7)
+  - As found in src/lib.rs: [text-7ec6fec7](#text-7ec6fec7)
 
 ### combine 4.6.9
 
@@ -3182,7 +3182,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
   - Copyright 2018 Vladimir Agafonkin
   - Copyright 2021 Mike Bostock
   - Licence text (ISC): [text-f2ff9e66](#text-f2ff9e66), standard text
-  - As found in `dist/d3-array.js`, `src/quickselect.js`: [text-4f02d6be](#text-4f02d6be)
+  - As found in dist/d3-array.js, src/quickselect.js: [text-4f02d6be](#text-4f02d6be)
 
 ### d3-array 3.2.4
 
@@ -3325,7 +3325,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
   - Copyright 2008-2012 Charles Karney
   - Copyright 2010-2024 Mike Bostock
   - Licence text (MIT): [text-07c7993a](#text-07c7993a), standard text
-  - As found in `LICENSE`: [text-4711c1a4](#text-4711c1a4)
+  - As found in LICENSE: [text-4711c1a4](#text-4711c1a4)
 
 ### d3-hierarchy 3.1.2
 
@@ -3421,7 +3421,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
   - Copyright 2002 Cynthia Brewer, Mark Harrower, and The Pennsylvania State University
   - Copyright 2010-2024 Mike Bostock
   - Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
-  - As found in `LICENSE`: [text-6b2c7a04](#text-6b2c7a04)
+  - As found in LICENSE: [text-6b2c7a04](#text-6b2c7a04)
 
 ### d3-selection 3.0.0
 
@@ -3744,8 +3744,8 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
   - (c) Cure53 and other contributors
   - Copyright (c) 2014-present, Facebook, Inc.
   - Licence text (MIT): [text-07c7993a](#text-07c7993a), standard text
-  - As found in `dist/purify.cjs.js`, `dist/purify.es.mjs`, `dist/purify.min.js`: [text-42ebe32f](#text-42ebe32f)
-  - As found in `dist/purify.js`: [text-a7b06e6d](#text-a7b06e6d)
+  - As found in dist/purify.cjs.js, dist/purify.es.mjs, dist/purify.min.js: [text-42ebe32f](#text-42ebe32f)
+  - As found in dist/purify.js: [text-a7b06e6d](#text-a7b06e6d)
 
 ### dpi 0.1.2
 
@@ -4774,11 +4774,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Also in its code: MIT, in 1 file (ledger decision LT-336583a4b2)
   - Copyright 2015 The Rust Project Developers
   - Licence text (MIT): [text-07c7993a](#text-07c7993a), standard text
-  - As found in `src/marker.rs`: [text-6659f034](#text-6659f034)
+  - As found in src/marker.rs: [text-6659f034](#text-6659f034)
 - Also in its code: MIT, in 1 file (ledger decision LT-8611166089)
   - Copyright 2015 The Rust Project Developers
   - Licence text (MIT): [text-07c7993a](#text-07c7993a), standard text
-  - As found in `src/marker.rs`: [text-6659f034](#text-6659f034)
+  - As found in src/marker.rs: [text-6659f034](#text-6659f034)
 
 ### ident_case 1.0.1
 
@@ -5142,10 +5142,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   - Copyright (c) 2014-2017 Khan Academy \<www.khanacademy.org\>
   - Copyright (c) 2015-2018 Martin Hensel
   - Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
-  - As found in `contrib/mhchem/mhchem.js`, `dist/contrib/mhchem.js`, `dist/contrib/mhchem.mjs`: [text-6fad4b84](#text-6fad4b84)
-  - As found in `dist/katex.js`, `dist/katex.mjs`, `src/utils.ts`: [text-7a2e3c82](#text-7a2e3c82)
-  - As found in `src/fonts/Makefile`: [text-c0449b96](#text-c0449b96)
-  - As found in `src/metrics/mapping.pl`: [text-099cb2d8](#text-099cb2d8)
+  - As found in contrib/mhchem/mhchem.js, dist/contrib/mhchem.js, dist/contrib/mhchem.mjs: [text-6fad4b84](#text-6fad4b84)
+  - As found in dist/katex.js, dist/katex.mjs, src/utils.ts: [text-7a2e3c82](#text-7a2e3c82)
+  - As found in src/fonts/Makefile: [text-c0449b96](#text-c0449b96)
+  - As found in src/metrics/mapping.pl: [text-099cb2d8](#text-099cb2d8)
 - Also in its code: OFL-1.1, in 24 files (ledger decision LT-cb1928bbb9)
   - (c) 2009-2010, Design Science, Inc. \<www.mathjax.org\>
   - Copyright (c) 2009-2010 Design Science, Inc.
@@ -5158,10 +5158,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   - Copyright (c) 2014-2018 Khan Academy www.khanacademy.org
   - Copyright 1995, 2009 American Mathematical Society
   - Licence text (OFL-1.1): [text-40f693c6](#text-40f693c6), standard text
-  - As found in `dist/katex.js`, `src/stretchy.ts`: [text-9041e5b6](#text-9041e5b6)
-  - As found in `src/fonts/lib/Space.ttx`: [text-9cb2c757](#text-9cb2c757)
-  - As found in `src/fonts/xbbold.mf`: [text-48912d19](#text-48912d19)
-  - Not quoted (binary, minified or too long): `dist/fonts/KaTeX_AMS-Regular.ttf`, `dist/fonts/KaTeX_Caligraphic-Bold.ttf`, `dist/fonts/KaTeX_Caligraphic-Regular.ttf` and 17 more
+  - As found in dist/katex.js, src/stretchy.ts: [text-9041e5b6](#text-9041e5b6)
+  - As found in src/fonts/lib/Space.ttx: [text-9cb2c757](#text-9cb2c757)
+  - As found in src/fonts/xbbold.mf: [text-48912d19](#text-48912d19)
+  - Not quoted (binary, minified or too long): dist/fonts/KaTeX_AMS-Regular.ttf, dist/fonts/KaTeX_Caligraphic-Bold.ttf, dist/fonts/KaTeX_Caligraphic-Regular.ttf and 17 more
 
 ### keyboard-types 0.8.3
 
@@ -5201,7 +5201,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Also in its code: Apache-2.0, in 2 files (ledger decision LT-da64513c8d)
   - Copyright i-Vis Research Group, Bilkent University, 2007
   - Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
-  - Not quoted (binary, minified or too long): `layout-base.js`, `src/util/SVD.js`
+  - Not quoted (binary, minified or too long): layout-base.js, src/util/SVD.js
 
 ### lebe 0.5.3
 
@@ -5285,18 +5285,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Also in its code: BSD-2-Clause, in 2 files (ledger decision LT-2265d82016)
   - Copyright (c) 2005 David Schultz \<das@FreeBSD.ORG\>
   - Licence text (BSD-2-Clause): [text-d5371501](#text-d5371501), standard text
-  - As found in `src/math/exp2.rs`, `src/math/exp2f.rs`: [text-20b187eb](#text-20b187eb)
+  - As found in src/math/exp2.rs, src/math/exp2f.rs: [text-20b187eb](#text-20b187eb)
 - Also in its code: SunPro, in 4 files (ledger decision LT-688ba4efef)
   - Copyright (c) 2004 by Sun Microsystems, Inc.
   - Copyright 2004 Sun Microsystems, Inc.
-  - As found in `src/math/exp.rs`, `src/math/k_tanf.rs`, `src/math/pow.rs`: [text-abf5b740](#text-abf5b740)
-  - As found in `src/math/k_tan.rs`: [text-5f350cbd](#text-5f350cbd)
+  - As found in src/math/exp.rs, src/math/k_tanf.rs, src/math/pow.rs: [text-abf5b740](#text-abf5b740)
+  - As found in src/math/k_tan.rs: [text-5f350cbd](#text-5f350cbd)
 - Also in its code: SunPro, in 46 files (ledger decision LT-c6a0dee635)
   - Copyright (c) 1993 by Sun Microsystems, Inc.
-  - As found in `src/math/acos.rs`, `src/math/asin.rs`, `src/math/atan2.rs` and 8 more: [text-56ec5a14](#text-56ec5a14)
-  - As found in `src/math/acosf.rs`, `src/math/asinf.rs`, `src/math/atan.rs` and 26 more: [text-55966770](#text-55966770)
-  - As found in `src/math/cos.rs`, `src/math/rem_pio2.rs`, `src/math/sin.rs` and 1 more: [text-4ffbb7c5](#text-4ffbb7c5)
-  - As found in `src/math/k_cos.rs`, `src/math/k_sin.rs`: [text-1cb954bf](#text-1cb954bf)
+  - As found in src/math/acos.rs, src/math/asin.rs, src/math/atan2.rs and 8 more: [text-56ec5a14](#text-56ec5a14)
+  - As found in src/math/acosf.rs, src/math/asinf.rs, src/math/atan.rs and 26 more: [text-55966770](#text-55966770)
+  - As found in src/math/cos.rs, src/math/rem_pio2.rs, src/math/sin.rs and 1 more: [text-4ffbb7c5](#text-4ffbb7c5)
+  - As found in src/math/k_cos.rs, src/math/k_sin.rs: [text-1cb954bf](#text-1cb954bf)
 
 ### linux-raw-sys 0.12.1
 
@@ -5395,7 +5395,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   - Copyright (c) 2011-2018, Christopher Jeffrey (https://github.com/chjj/)
   - Copyright (c) 2018+, MarkedJS (https://github.com/markedjs/)
   - Licence text (BSD-3-Clause): [text-a4da9103](#text-a4da9103), standard text
-  - Not quoted (binary, minified or too long): `LICENSE.md`
+  - Not quoted (binary, minified or too long): LICENSE.md
 
 ### markup5ever 0.39.0
 
@@ -5596,8 +5596,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   - Copyright i-Vis Research Group, Bilkent University, 2007
   - copyright Koen Bok
   - Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
-  - As found in `dist/chunks/mermaid.esm.min/chunk-QJSWEUOL.mjs`, `dist/chunks/mermaid.esm/chunk-AHS5MEEA.mjs`, `dist/mermaid.js` and 1 more: [text-4399d6b5](#text-4399d6b5)
-  - Not quoted (binary, minified or too long): `dist/chunks/mermaid.esm.min/architectureDiagram-2PNWDENW.mjs.map`, `dist/chunks/mermaid.esm.min/katex-CZ4GXH2S.mjs.map`, `dist/chunks/mermaid.esm/architectureDiagram-WKWPMKOY.mjs.map` and 3 more
+  - As found in dist/chunks/mermaid.esm.min/chunk-QJSWEUOL.mjs, dist/chunks/mermaid.esm/chunk-AHS5MEEA.mjs, dist/mermaid.js and 1 more: [text-4399d6b5](#text-4399d6b5)
+  - Not quoted (binary, minified or too long): dist/chunks/mermaid.esm.min/architectureDiagram-2PNWDENW.mjs.map, dist/chunks/mermaid.esm.min/katex-CZ4GXH2S.mjs.map, dist/chunks/mermaid.esm/architectureDiagram-WKWPMKOY.mjs.map and 3 more
 - Also in its code: Apache-2.0, in 4 files (ledger decision LT-529255ab92)
   - (c) Cure53 and other contributors
   - Copyright (c) 2013-2014 Ralf S. Engelschall (http://engelschall.com)
@@ -5606,7 +5606,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   - Copyright OpenJS Foundation and other contributors https://openjsf.org
   - copyright Koen Bok
   - Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
-  - As found in `dist/chunks/mermaid.esm.min/chunk-QJSWEUOL.mjs`, `dist/chunks/mermaid.esm/chunk-AHS5MEEA.mjs`, `dist/mermaid.js` and 1 more: [text-4399d6b5](#text-4399d6b5)
+  - As found in dist/chunks/mermaid.esm.min/chunk-QJSWEUOL.mjs, dist/chunks/mermaid.esm/chunk-AHS5MEEA.mjs, dist/mermaid.js and 1 more: [text-4399d6b5](#text-4399d6b5)
 - Also in its code: Apache-2.0, in 1 file (ledger decision LT-56ad7e6a6f)
   - (c) Cure53 and other contributors
   - Copyright (c) 2013-2014 Ralf S. Engelschall (http://engelschall.com)
@@ -5615,7 +5615,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   - Copyright OpenJS Foundation and other contributors https://openjsf.org
   - copyright Koen Bok
   - Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
-  - As found in `dist/mermaid.min.js`: [text-4399d6b5](#text-4399d6b5)
+  - As found in dist/mermaid.min.js: [text-4399d6b5](#text-4399d6b5)
 
 ### micromark 4.0.3
 
@@ -6768,7 +6768,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Also in its code: ISC, in 1 file (ledger decision LT-071c796ae5)
   - Copyright (c) 2005-2022 x264 project
   - Licence text (ISC): [text-f2ff9e66](#text-f2ff9e66), standard text
-  - As found in `src/ext/x86/x86inc.asm`: [text-3165bc0c](#text-3165bc0c)
+  - As found in src/ext/x86/x86inc.asm: [text-3165bc0c](#text-3165bc0c)
 - Also in its code: LicenseRef-scancode-alliance-open-media-patent-1.0, in 132 files (ledger decision LT-5e6381ada5)
   - Copyright (c) 2001-2016, Alliance for Open Media
   - Copyright (c) 2016, Alliance for Open Media
@@ -6794,10 +6794,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   - Copyright (c) 2022-2023, The rav1e contributors
   - Copyright (c) 2023, The rav1e contributors
   - Licence text (LicenseRef-scancode-alliance-open-media-patent-1.0): [text-866e55f8](#text-866e55f8), standard text
-  - As found in `PATENTS`: [text-866e55f8](#text-866e55f8)
-  - As found in `build.rs`, `src/activity.rs`, `src/api/channel/by_gop.rs` and 115 more: [text-49f9bfe6](#text-49f9bfe6)
-  - As found in `src/arm/64/cdef_dist.S`, `src/arm/64/sad.S`, `src/arm/64/satd.S` and 2 more: [text-a2524138](#text-a2524138)
-  - As found in `src/x86/cdef_dist.asm`, `src/x86/me.asm`, `src/x86/sad_avx.asm` and 5 more: [text-b666f61e](#text-b666f61e)
+  - As found in PATENTS: [text-866e55f8](#text-866e55f8)
+  - As found in build.rs, src/activity.rs, src/api/channel/by_gop.rs and 115 more: [text-49f9bfe6](#text-49f9bfe6)
+  - As found in src/arm/64/cdef_dist.S, src/arm/64/sad.S, src/arm/64/satd.S and 2 more: [text-a2524138](#text-a2524138)
+  - As found in src/x86/cdef_dist.asm, src/x86/me.asm, src/x86/sad_avx.asm and 5 more: [text-b666f61e](#text-b666f61e)
 
 ### ravif 0.13.0
 
@@ -7606,14 +7606,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   - Copyright (c) YEAR W3C(r) (MIT, ERCIM, Keio, Beihang)
   - Copyright 2014-2021 The winit contributors
   - Copyright 2021-2023 Tauri Programme
-  - As found in `src/keyboard.rs`: [text-2ac84f7d](#text-2ac84f7d)
+  - As found in src/keyboard.rs: [text-b4b2baa7](#text-b4b2baa7)
+  - As found in src/keyboard.rs: [text-19fc0236](#text-19fc0236)
 - Also in its code: W3C-20150513, in 1 file (ledger decision LT-e4c57c25b9)
   - Copyright (c) 2017 W3C(r) (MIT, ERCIM, Keio, Beihang)
   - Copyright (c) 2021 World Wide Web Consortium, (Massachusetts Institute of Technology, European Research Consortium for Informatics and Mathematics, Keio University, Beihang)
   - Copyright (c) YEAR W3C(r) (MIT, ERCIM, Keio, Beihang)
   - Copyright 2014-2021 The winit contributors
   - Copyright 2021-2023 Tauri Programme
-  - As found in `src/keyboard.rs`: [text-05a33849](#text-05a33849)
+  - As found in src/keyboard.rs: [text-05a33849](#text-05a33849)
 
 ### tao-macros 0.1.4
 
@@ -7969,7 +7970,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Also in its code: Apache-2.0, in 1 file (ledger decision LT-2c62835b1c)
   - Copyright 2017, Twitter Inc.
   - Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
-  - As found in `src/load/peak_ewma.rs`: [text-03aff879](#text-03aff879)
+  - As found in src/load/peak_ewma.rs: [text-03aff879](#text-03aff879)
 
 ### tower-http 0.6.11
 
@@ -7981,7 +7982,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence text (MIT): [text-edd4b164](#text-edd4b164), as shipped in the package file LICENSE
 - Also in its code: CC0-1.0, in 1 file (ledger decision LT-eae630f9fa)
   - Licence text (CC0-1.0): [text-6d489af6](#text-6d489af6), standard text
-  - As found in `src/compression/pin_project_cfg.rs`: [text-554291ff](#text-554291ff)
+  - As found in src/compression/pin_project_cfg.rs: [text-554291ff](#text-554291ff)
 
 ### tower-layer 0.3.3
 
@@ -8235,7 +8236,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   - Copyright (c) 2018-2020, The rav1e contributors
   - Copyright (c) 2020, The rav1e contributors
   - Licence text (LicenseRef-scancode-alliance-open-media-patent-1.0): [text-866e55f8](#text-866e55f8), standard text
-  - As found in `src/frame.rs`, `src/lib.rs`, `src/math.rs` and 2 more: [text-49f9bfe6](#text-49f9bfe6)
+  - As found in src/frame.rs, src/lib.rs, src/math.rs and 2 more: [text-49f9bfe6](#text-49f9bfe6)
 
 ### version_check 0.9.5
 
@@ -9327,7 +9328,7 @@ THE SOFTWARE.
 
 ### text-07c7993a
 
-Licence: MIT. Used by: d3-geo 3.1.1, dompurify 3.4.17, icu_provider 2.4.0, icu_provider 2.4.0.
+Licence: MIT. Used by: d3-geo 3.1.1, dompurify 3.4.17, icu_provider 2.4.0.
 
 ```text
 MIT License
@@ -10236,6 +10237,26 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
+### text-19fc0236
+
+Licence: W3C (as found in the code). Used by: tao 0.37.2.
+
+```text
+// --------- END OF W3C LICENSE --------------------------------------------------------------------
+
+// --------- BEGGINING OF W3C SHORT NOTICE ---------------------------------------------------------
+//
+// tao: https://github.com/tauri-apps/tao
+//
+// Copyright © 2021 World Wide Web Consortium, (Massachusetts Institute of Technology, European
+// Research Consortium for Informatics and Mathematics, Keio University, Beihang). All Rights
+// Reserved. This work is distributed under the W3C® Software License [1] in the hope that it will
+// be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.
+//
+// [1] http://www.w3.org/Consortium/Legal/copyright-software
+```
+
 ### text-1a6aa261
 
 Licence: MIT. Used by: scopeguard 1.2.0.
@@ -10859,63 +10880,6 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-```
-
-### text-2ac84f7d
-
-Licence: W3C (as found in the code). Used by: tao 0.37.2.
-
-```text
-// These documents were used under the terms of the following license. This W3C license as well as
-// the W3C short notice apply to the `Key` and `KeyCode` enums and their variants and the
-// documentation attached to their variants.
-
-// --------- BEGGINING OF W3C LICENSE --------------------------------------------------------------
-//
-// License
-//
-// By obtaining and/or copying this work, you (the licensee) agree that you have read, understood,
-// and will comply with the following terms and conditions.
-//
-// Permission to copy, modify, and distribute this work, with or without modification, for any
-// purpose and without fee or royalty is hereby granted, provided that you include the following on
-// ALL copies of the work or portions thereof, including modifications:
-//
-// - The full text of this NOTICE in a location viewable to users of the redistributed or derivative
-//   work.
-// - Any pre-existing intellectual property disclaimers, notices, or terms and conditions. If none
-//   exist, the W3C Software and Document Short Notice should be included.
-// - Notice of any changes or modifications, through a copyright statement on the new code or
-//   document such as "This software or document includes material copied from or derived from
-//   [title and URI of the W3C document]. Copyright © [YEAR] W3C® (MIT, ERCIM, Keio, Beihang)."
-//
-// Disclaimers
-//
-// THIS WORK IS PROVIDED "AS IS," AND COPYRIGHT HOLDERS MAKE NO REPRESENTATIONS OR WARRANTIES,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO, WARRANTIES OF MERCHANTABILITY OR FITNESS FOR
-// ANY PARTICULAR PURPOSE OR THAT THE USE OF THE SOFTWARE OR DOCUMENT WILL NOT INFRINGE ANY THIRD
-// PARTY PATENTS, COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.
-//
-// COPYRIGHT HOLDERS WILL NOT BE LIABLE FOR ANY DIRECT, INDIRECT, SPECIAL OR CONSEQUENTIAL DAMAGES
-// ARISING OUT OF ANY USE OF THE SOFTWARE OR DOCUMENT.
-//
-// The name and trademarks of copyright holders may NOT be used in advertising or publicity
-// pertaining to the work without specific, written prior permission. Title to copyright in this
-// work will at all times remain with copyright holders.
-//
-// --------- END OF W3C LICENSE --------------------------------------------------------------------
-
-// --------- BEGGINING OF W3C SHORT NOTICE ---------------------------------------------------------
-//
-// tao: https://github.com/tauri-apps/tao
-//
-// Copyright © 2021 World Wide Web Consortium, (Massachusetts Institute of Technology, European
-// Research Consortium for Informatics and Mathematics, Keio University, Beihang). All Rights
-// Reserved. This work is distributed under the W3C® Software License [1] in the hope that it will
-// be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.
-//
-// [1] http://www.w3.org/Consortium/Legal/copyright-software
 ```
 
 ### text-2ac8da45
@@ -12004,7 +11968,7 @@ Licence: MIT (as found in the code). Used by: dompurify 3.4.17.
 
 ### text-4399d6b5
 
-Licence: Apache-2.0 (as found in the code). Used by: mermaid 11.17.2, mermaid 11.17.2, mermaid 11.17.2.
+Licence: Apache-2.0 (as found in the code). Used by: mermaid 11.17.2.
 
 ```text
   (*! @license DOMPurify 3.4.12 | (c) Cure53 and other contributors | Released under the Apache license 2.0 and Mozilla Public License 2.0 | github.com/cure53/DOMPurify/blob/3.4.12/LICENSE *)
@@ -13433,7 +13397,7 @@ DEALINGS IN THE SOFTWARE.
 
 ### text-6659f034
 
-Licence: MIT (as found in the code). Used by: icu_provider 2.4.0, icu_provider 2.4.0.
+Licence: MIT (as found in the code). Used by: icu_provider 2.4.0.
 
 ```text
     // http://rust-lang.org/COPYRIGHT.
@@ -14635,7 +14599,7 @@ SOFTWARE.
 
 ### text-866e55f8
 
-Licence: LicenseRef-scancode-alliance-open-media-patent-1.0, LicenseRef-scancode-alliance-open-media-patent-1.0 (as found in the code). Used by: av-scenechange 0.14.1, av1-grain 0.2.5, rav1e 0.8.1, rav1e 0.8.1, v_frame 0.3.9.
+Licence: LicenseRef-scancode-alliance-open-media-patent-1.0, LicenseRef-scancode-alliance-open-media-patent-1.0 (as found in the code). Used by: av-scenechange 0.14.1, av1-grain 0.2.5, rav1e 0.8.1, v_frame 0.3.9.
 
 ```text
 Alliance for Open Media Patent License 1.0
@@ -16314,7 +16278,7 @@ SOFTWARE.
 
 ### text-a2524138
 
-Licence: BSD-2-Clause (as found in the code), BSD-2-Clause, LicenseRef-scancode-alliance-open-media-patent-1.0 (as found in the code), LicenseRef-scancode-alliance-open-media-patent-1.0 (as found in the code). Used by: av-scenechange 0.14.1, av-scenechange 0.14.1, rav1e 0.8.1.
+Licence: BSD-2-Clause (as found in the code), LicenseRef-scancode-alliance-open-media-patent-1.0 (as found in the code). Used by: av-scenechange 0.14.1, rav1e 0.8.1.
 
 ```text
  * This source code is subject to the terms of the BSD 2 Clause License and
@@ -16969,9 +16933,21 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+### text-b4b2baa7
+
+Licence: W3C (as found in the code). Used by: tao 0.37.2.
+
+```text
+// These documents were used under the terms of the following license. This W3C license as well as
+// the W3C short notice apply to the `Key` and `KeyCode` enums and their variants and the
+// documentation attached to their variants.
+
+// --------- BEGGINING OF W3C LICENSE --------------------------------------------------------------
+```
+
 ### text-b666f61e
 
-Licence: BSD-2-Clause (as found in the code), BSD-2-Clause, LicenseRef-scancode-alliance-open-media-patent-1.0 (as found in the code), LicenseRef-scancode-alliance-open-media-patent-1.0 (as found in the code). Used by: av-scenechange 0.14.1, av-scenechange 0.14.1, rav1e 0.8.1.
+Licence: BSD-2-Clause (as found in the code), LicenseRef-scancode-alliance-open-media-patent-1.0 (as found in the code). Used by: av-scenechange 0.14.1, rav1e 0.8.1.
 
 ```text
 ; This source code is subject to the terms of the BSD 2 Clause License and
@@ -17241,7 +17217,7 @@ DEALINGS IN THE SOFTWARE.
 
 ### text-c274f803
 
-Licence: Apache-2.0. Used by: @chevrotain/types 11.1.2, d3-scale-chromatic 3.1.0, dompurify 3.4.17, dpi 0.1.2, imgref 1.12.3, katex 0.18.10, layout-base 2.0.1, mermaid 11.17.2, mermaid 11.17.2, mermaid 11.17.2, sync_wrapper 1.0.2, tao 0.37.2, tower 0.5.3.
+Licence: Apache-2.0. Used by: @chevrotain/types 11.1.2, d3-scale-chromatic 3.1.0, dompurify 3.4.17, dpi 0.1.2, imgref 1.12.3, katex 0.18.10, layout-base 2.0.1, mermaid 11.17.2, sync_wrapper 1.0.2, tao 0.37.2, tower 0.5.3.
 
 ```text
 Apache License
@@ -18407,7 +18383,7 @@ SOFTWARE.
 
 ### text-d5371501
 
-Licence: BSD-2-Clause. Used by: av-scenechange 0.14.1, av-scenechange 0.14.1, libm 0.2.16.
+Licence: BSD-2-Clause. Used by: av-scenechange 0.14.1, libm 0.2.16.
 
 ```text
 Copyright (c) <year> <owner> 

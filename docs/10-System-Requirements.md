@@ -1124,7 +1124,7 @@ the component where it can be quoted, and the licence's standard text where one 
 come from one versioned file in the repository that names, per decision, the files and lines it covers and
 the content hash of each file; a file that differs from the one decided on, or a licence the policy of
 REQ-LTTCE-FOS-00004 does not admit, SHALL fail the licence check and the notices. A decision for a component
-version that is no longer shipped SHALL be reported. An exported document (REQ-LTTCE-FOS-00005) SHALL also
+version that is no longer shipped SHALL be reported, and SHALL block a release. An exported document (REQ-LTTCE-FOS-00005) SHALL also
 carry the decisions that concern the material it copies.
 
 *Rationale*: the notices of REQ-LTTCE-FOS-00002 come from each component's declared licence. A scan of

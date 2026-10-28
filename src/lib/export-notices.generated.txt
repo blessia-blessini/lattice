@@ -95,12 +95,12 @@ DISCLAIMER
 
 THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM OTHER DEALINGS IN THE FONT SOFTWARE.
 
----- OFL-1.1 licence text (katex) ----
+---- OFL-1.1 as found in the code (katex) ----
 
 // Licensed under the SIL Open Font License, Version 1.1.
 // See \nhttp://scripts.sil.org/OFL
 
----- OFL-1.1 licence text (katex) ----
+---- OFL-1.1 as found in the code (katex) ----
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license available with a FAQ at:
@@ -109,7 +109,7 @@ http://scripts.sil.org/OFL
     <namerecord nameID="14" platformID="3" platEncID="1" langID="0x409">
       http://scripts.sil.org/OFL
 
----- OFL-1.1 licence text (katex) ----
+---- OFL-1.1 as found in the code (katex) ----
 
 %% This Font Software is licensed under the SIL Open Font License,
 %% Version 1.1.  This license is in the accompanying file OFL.txt, and

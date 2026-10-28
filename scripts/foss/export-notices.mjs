@@ -123,11 +123,12 @@ export function renderExportNotices(selected, standardTexts) {
         'text follow.',
         '',
     ];
-    const texts = new Map(); // body -> {ids: Set, users: Set}
-    const addText = (body, id, user) => {
+    // body -> {ids, users, kind}: "licence text", or "as found in the code" for an excerpt
+    const texts = new Map();
+    const addText = (body, ids, user, kind = 'licence text') => {
         const key = body.replace(/\r\n?/g, '\n').trim();
-        if (!texts.has(key)) texts.set(key, { ids: new Set(), users: new Set() });
-        texts.get(key).ids.add(id);
+        if (!texts.has(key)) texts.set(key, { ids: new Set(), users: new Set(), kind });
+        for (const id of ids) texts.get(key).ids.add(id);
         texts.get(key).users.add(user);
     };
     for (const { entry: { component: c, evaluation: ev, selection: sel }, material, additions = [] } of selected) {
@@ -136,13 +137,13 @@ export function renderExportNotices(selected, standardTexts) {
         for (const line of sel.copyrights) lines.push(`  ${line}`);
         const source = c.repository ?? c.homepage;
         if (source) lines.push(`  Source: ${source}`);
-        for (const t of sel.texts) addText(licenceBody(t, standardTexts), t.id, c.name);
+        for (const t of sel.texts) addText(licenceBody(t, standardTexts), [t.id], c.name);
         // REQ-LTTCE-FOS-00008: material inside the package under a licence of its own.
         for (const a of additions) {
             lines.push(`  Also: ${a.licences.join(' AND ')}`);
             for (const line of a.copyrights) lines.push(`    ${line}`);
-            for (const id of a.licences.filter((l) => standardTexts[l])) addText(standardTexts[id], id, c.name);
-            for (const q of a.quotes) addText(q.text, a.licences.join(', '), c.name);
+            for (const id of a.licences.filter((l) => standardTexts[l])) addText(standardTexts[id], [id], c.name);
+            for (const q of a.quotes) addText(q.text, a.licences, c.name, 'as found in the code');
         }
     }
     lines.push(
@@ -150,8 +151,8 @@ export function renderExportNotices(selected, standardTexts) {
         'Styles taken from Lattice itself are covered by the additional permission for exported',
         `documents in Lattice's licensing statement: ${README_LICENSING}`,
     );
-    for (const [body, { ids, users }] of texts) {
-        lines.push('', `---- ${[...ids].join(', ')} licence text (${[...users].join(', ')}) ----`, '', body);
+    for (const [body, { ids, users, kind }] of texts) {
+        lines.push('', `---- ${[...ids].join(', ')} ${kind} (${[...users].join(', ')}) ----`, '', body);
     }
     const text = lines.join('\n') + '\n';
     if (text.includes('*/') || /<\/style/i.test(text)) {

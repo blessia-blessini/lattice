@@ -51,6 +51,14 @@ export const MAX_QUOTE_LINE_LENGTH = 400;
 
 const TOPIC_RE = /^LT-[0-9a-f]{10}$/;
 const SHA1_RE = /^[0-9a-f]{40}$/;
+/**
+ * A path inside a package as the scan writes it: relative, forward slashes,
+ * no "." or ".." segment, no drive ("C:"), no backslash -- checked the same on
+ * every OS, so a form only Windows treats as a path cannot pass on Linux.
+ */
+const PACKAGE_PATH_RE = /^(?!.*(?:^|\/)\.{1,2}(?:\/|$))[^\\/:]+(?:\/[^\\/:]+)*$/;
+/** Ranges of one file at most this many lines apart are quoted as one span. */
+export const MAX_MERGE_GAP = 10;
 const isText = (v) => typeof v === 'string' && v.trim() !== '';
 
 
@@ -79,7 +87,7 @@ export function validateAdditions(data) {
         if (!Array.isArray(a.files) || !a.files.length) fail(`${where}: "files" must be a non-empty list`);
         for (const f of a.files) {
             const rel = String(f?.path ?? '');
-            if (!isText(rel) || path.isAbsolute(rel) || rel.split(/[\\/]/).includes('..')) fail(`${where}: file path ${JSON.stringify(f?.path)} must stay inside the package`);
+            if (!PACKAGE_PATH_RE.test(rel)) fail(`${where}: file path ${JSON.stringify(f?.path)} must stay inside the package`);
             if (!SHA1_RE.test(f.sha1 ?? '')) fail(`${where}: file "${rel}" needs its SHA-1`);
             const ranges = Array.isArray(f.lines) && f.lines.length
                 && f.lines.every((r) => Array.isArray(r) && r.length === 2 && Number.isInteger(r[0]) && r[0] >= 1 && Number.isInteger(r[1]) && r[1] >= r[0]);
@@ -161,16 +169,22 @@ export function quoteLines(text, [start, end]) {
 // quoteRanges
 //**************************************************************
 /**
- * The ranges to quote from one file: one span from the first to the last
- * line found when it fits MAX_QUOTE_LINES — a licence block a scanner
- * reports in pieces reads as one — else each range on its own.
+ * The ranges to quote from one file, sorted: ranges at most MAX_MERGE_GAP
+ * lines apart (or overlapping) become one span -- a licence block a scanner
+ * reports in pieces reads as one -- while ranges further apart stay apart,
+ * so no stretch of unrelated code lands in the notices.
  * @param {[number, number][]} ranges
  * @returns {[number, number][]}
  */
 export function quoteRanges(ranges) {
-    const start = Math.min(...ranges.map((r) => r[0]));
-    const end = Math.max(...ranges.map((r) => r[1]));
-    return end - start + 1 <= MAX_QUOTE_LINES ? [[start, end]] : ranges;
+    const sorted = [...ranges].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const spans = [];
+    for (const [start, end] of sorted) {
+        const last = spans[spans.length - 1];
+        if (last && start - last[1] - 1 <= MAX_MERGE_GAP) last[1] = Math.max(last[1], end);
+        else spans.push([start, end]);
+    }
+    return spans;
 }
 // quoteRanges END *********************************************
 
@@ -181,40 +195,43 @@ export function quoteRanges(ranges) {
 /**
  * Gives each inventory entry the additions for its component, checked
  * against the installed files: `entry.additions` = [{ topic, licences,
- * copyrights, quotes: [{ text, files }], unquoted: [path], fileCount }],
- * sorted by topic. Every entry gets the field, [] when nothing applies.
+ * copyrights, quotes: [{ text, files }], unquoted, fileCount }], sorted by
+ * topic. `unquoted` names a file none of whose ranges could be quoted, and
+ * "file:start-end" for the ranges of a partly quoted one. Every entry gets
+ * the field, [] when nothing applies.
  *
- * Problems (fail the gate and the notices): an installed file missing or
- * with another SHA-1, an added licence the policy does not admit, an added
- * licence with neither a standard text nor a quoted excerpt. Warnings: an
- * addition for a component version that is not shipped (the package was
- * updated; scan it again).
+ * Problems (fail the gate and the notices): an installed file missing,
+ * outside the package (a link leading out) or with another SHA-1, an added
+ * licence the policy does not admit, an added licence with neither a
+ * standard text nor a quoted excerpt. Unused: additions for a component
+ * version that is not shipped (the package was updated; scan it again) --
+ * a warning, a failure on a release (`foss.mjs check --block`).
  * @param {object[]} entries evaluated inventory from `collect`
  * @param {object|null} data from loadAdditions
  * @param {object} policy
  * @param {Record<string,string>} standardTexts id -> text (foss/licenses)
- * @param {(file: string) => Buffer|null} [readFile] null when missing
- * @returns {{problems: string[], warnings: string[]}}
+ * @param {(dir: string, rel: string) => Buffer|null} [readFile] null when missing or outside dir
+ * @returns {{problems: string[], unused: string[]}}
  */
-export function attachAdditions(entries, data, policy, standardTexts, readFile = readIfExists) {
+export function attachAdditions(entries, data, policy, standardTexts, readFile = readInside) {
     const problems = [];
-    const warnings = [];
+    const unused = [];
     for (const e of entries) e.additions = [];
-    if (!data) return { problems, warnings };
+    if (!data) return { problems, unused };
     const byKey = new Map(entries.map((e) => [`${e.component.ecosystem}:${e.component.name}@${e.component.version}`, e]));
     for (const a of data.additions) {
         const label = `${a.topic} (${a.package.ecosystem}:${a.package.name}@${a.package.version})`;
         const entry = byKey.get(`${a.package.ecosystem}:${a.package.name}@${a.package.version}`);
         if (!entry) {
-            warnings.push(`unused notice addition ${label}: that version is not shipped; scan the new version with Legattice and update ${ADDITIONS_FILE}`);
+            unused.push(`unused notice addition ${label}: that version is not shipped, so its notices are not in the notices; scan the new version with Legattice and update ${ADDITIONS_FILE}`);
             continue;
         }
         const quotes = new Map(); // text -> Set(path)
         const unquoted = [];
         for (const f of a.files) {
-            const bytes = entry.component.dir ? readFile(path.join(entry.component.dir, f.path)) : null;
+            const bytes = entry.component.dir ? readFile(entry.component.dir, f.path) : null;
             if (!bytes) {
-                problems.push(`notice addition ${label}: ${f.path} is not in the installed package`);
+                problems.push(`notice addition ${label}: ${f.path} is not a file inside the installed package`);
                 continue;
             }
             const sha1 = crypto.createHash('sha1').update(bytes).digest('hex');
@@ -223,8 +240,10 @@ export function attachAdditions(entries, data, policy, standardTexts, readFile =
                 continue;
             }
             const text = decodeText(bytes);
-            const bodies = text === null ? [] : quoteRanges(f.lines).map((r) => quoteLines(text, r));
-            if (!bodies.length || bodies.some((b) => b === null)) unquoted.push(f.path);
+            const spans = quoteRanges(f.lines);
+            const bodies = text === null ? spans.map(() => null) : spans.map((r) => quoteLines(text, r));
+            if (bodies.every((b) => b === null)) unquoted.push(f.path);
+            else bodies.forEach((b, i) => { if (b === null) unquoted.push(`${f.path}:${spans[i][0]}-${spans[i][1]}`); });
             for (const body of bodies.filter(Boolean)) {
                 if (!quotes.has(body)) quotes.set(body, new Set());
                 quotes.get(body).add(f.path);
@@ -245,12 +264,29 @@ export function attachAdditions(entries, data, policy, standardTexts, readFile =
         });
     }
     for (const e of entries) e.additions.sort((x, y) => x.topic.localeCompare(y.topic, 'en'));
-    return { problems, warnings };
+    return { problems, unused };
 }
 // attachAdditions END *****************************************
 
 
-/** The bytes of a file, or null when it does not exist. */
-function readIfExists(file) {
-    return fs.existsSync(file) ? fs.readFileSync(file) : null;
+//**************************************************************
+// readInside
+//**************************************************************
+/**
+ * The bytes of `rel` inside `dir`, or null when it is missing, not a regular
+ * file, or resolves outside `dir` -- a symbolic link inside a package must
+ * not make the notices quote a file from elsewhere on the machine.
+ * @param {string} dir package directory
+ * @param {string} rel path inside it (validated by validateAdditions)
+ * @returns {Buffer|null}
+ */
+export function readInside(dir, rel) {
+    const file = path.join(dir, rel);
+    if (!fs.existsSync(file) || !fs.existsSync(dir)) return null;
+    const real = fs.realpathSync(file);
+    const base = fs.realpathSync(dir);
+    const inside = path.relative(base, real);
+    if (inside === '' || inside.split(path.sep)[0] === '..' || path.isAbsolute(inside)) return null;
+    return fs.statSync(real).isFile() ? fs.readFileSync(real) : null;
 }
+// readInside END **********************************************

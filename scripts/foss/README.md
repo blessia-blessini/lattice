@@ -111,7 +111,8 @@ so somebody has to look at it once more.
 **…an "unused exception" warning appears.** The package was fixed or removed; delete the entry.
 
 **…an "unused notice addition" warning appears.** A package was updated, so the decision about what
-is inside its old version no longer applies. Run the Legattice scan on this tree, decide what it
+is inside its old version no longer applies, and its notices are missing until it is renewed. A release
+(`v*` tag) fails on it. Run the Legattice scan on this tree, decide what it
 reopens, and copy its `topics/notice-additions.json` (results artifact) over
 `foss/notice-additions.json`; then `npm run foss:notices` and commit both.
 
