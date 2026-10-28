@@ -169,3 +169,7 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - ITST on the real tree: `foss/notice-additions.json` from Legattice run 40730716667 (Lattice v0.3.50, 28
   additions for 20 packages) passes `check` on v0.3.51 and is rendered by `notices`; `notices --check` in CI
   keeps the committed files in step with it.
+- Review cycle 2 nits (both tests failed against d22d710): `check --block` failing only on unused notice
+  additions reports them under their own heading ("Notice additions cannot be applied", what to do: a new
+  scan), not as components violating the policy, and the gate's job summary uses the injected `env`;
+  the export notices list a text's licence ids sorted.

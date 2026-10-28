@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.51
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: Notice additions - review cycle 2 nits: own heading for blocked additions, sorted export ids
 - FIX: Notice additions - review cycle 1: block a release on unused ones, tighter paths and quotes
 - FEAT: Carry the notices the Legattice ledger adds - code inside packages under its own licence
 - CHORE: Set version to 0.3.51

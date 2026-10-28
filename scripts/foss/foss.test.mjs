@@ -211,8 +211,15 @@ describe('the CLI over a synthetic repository', () => {
         expect(fs.readFileSync(summary, 'utf8')).toMatch(/### Notice additions not applied[\s\S]*LT-2c62835b1c/);
 
         const errors = [];
-        expect(commandCheck(inv, { ...quiet, error: (m) => errors.push(m) }, { block: true, env: {} })).toBe(1);
+        const blocked = path.join(root, 'blocked.md');
+        expect(commandCheck(inv, { ...quiet, error: (m) => errors.push(m) }, { block: true, env: { GITHUB_STEP_SUMMARY: blocked } })).toBe(1);
         expect(errors.join('\n')).toMatch(/\[FAIL\] unused notice addition LT-2c62835b1c/);
+        // Reported as what it is, not as a component outside the licence policy (review cycle 2).
+        expect(errors.join('\n')).toMatch(/1 notice addition\(s\) cannot be applied \(foss\/notice-additions\.json\)/);
+        expect(errors.join('\n')).not.toMatch(/violate foss\/policy\.json/);
+        const text = fs.readFileSync(blocked, 'utf8');
+        expect(text).toMatch(/### Notice additions cannot be applied[\s\S]*LT-2c62835b1c[\s\S]*Run the Legattice scan/);
+        expect(text).not.toMatch(/Licence gate failed/);
         expect(parseArgs(['check', '--block'])).toMatchObject({ command: 'check', block: true });
     });
 

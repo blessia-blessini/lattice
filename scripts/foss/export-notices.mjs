@@ -152,7 +152,7 @@ export function renderExportNotices(selected, standardTexts) {
         `documents in Lattice's licensing statement: ${README_LICENSING}`,
     );
     for (const [body, { ids, users, kind }] of texts) {
-        lines.push('', `---- ${[...ids].join(', ')} ${kind} (${[...users].join(', ')}) ----`, '', body);
+        lines.push('', `---- ${[...ids].sort().join(', ')} ${kind} (${[...users].join(', ')}) ----`, '', body);
     }
     const text = lines.join('\n') + '\n';
     if (text.includes('*/') || /<\/style/i.test(text)) {

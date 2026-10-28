@@ -244,9 +244,6 @@ export function commandCheck({ policy, entries, appImage = [], additions = NO_AD
         const c = f.component;
         return `${c.ecosystem}:${c.name}@${c.version} (${c.linkage}): ${f.evaluation.problems.join('; ')}`;
     });
-    // REQ-LTTCE-FOS-00008: a decision made on other file content, or one that
-    // adds a licence the policy does not admit, fails like a component would.
-    failed.push(...additions.problems, ...(block ? additions.unused : []));
     for (const line of failed) log.error(`  [FAIL] ${line}`);
     // REQ-LTTCE-FOS-00006: the reviewed AppImage packages are held to the policy
     // on every run, so a policy change that rejects one fails here, not on a Linux leg.
@@ -256,6 +253,13 @@ export function commandCheck({ policy, entries, appImage = [], additions = NO_AD
         log.error(`  [FAIL] ${line}`);
         failed.push(line);
     }
+    // REQ-LTTCE-FOS-00008: a decision made on other file content, one that adds a
+    // licence the policy does not admit, or (on a release) one for a version no
+    // longer shipped fails the gate too -- reported apart: it is not a component
+    // outside the policy, and it is fixed by a new scan, not in foss/policy.json.
+    const noticeFailed = [...additions.problems, ...(block ? additions.unused : [])];
+    for (const line of noticeFailed) log.error(`  [FAIL] ${line}`);
+    const asItems = (lines) => lines.map((line) => `- \`${line.replace(/`/g, "'")}\``);
     if (failed.length) {
         log.error(`foss check: ${failed.length} component(s) violate foss/policy.json`);
         writeStepSummary([
@@ -263,12 +267,24 @@ export function commandCheck({ policy, entries, appImage = [], additions = NO_AD
             '',
             `${failed.length} component(s) do not fit AGPL-3.0-or-later and the commercial licence:`,
             '',
-            ...failed.map((line) => `- \`${line.replace(/`/g, "'")}\``),
+            ...asItems(failed),
             '',
             'Review each licence; then record the outcome in `foss/policy.json` (a clarification with evidence, or a dated exception), or drop the dependency.',
-        ], process.env, log);
-        return 1;
+        ], env, log);
     }
+    if (noticeFailed.length) {
+        log.error(`foss check: ${noticeFailed.length} notice addition(s) cannot be applied (${ADDITIONS_FILE})`);
+        writeStepSummary([
+            '### Notice additions cannot be applied',
+            '',
+            `${noticeFailed.length} decision(s) of ${ADDITIONS_FILE} do not match what is shipped:`,
+            '',
+            ...asItems(noticeFailed),
+            '',
+            `Run the Legattice scan on this tree, decide what it reopens, and copy its notice-additions.json over ${ADDITIONS_FILE}.`,
+        ], env, log);
+    }
+    if (failed.length || noticeFailed.length) return 1;
     log.log('foss check: all components fit AGPL-3.0-or-later and the commercial licence');
     return 0;
 }

@@ -175,6 +175,12 @@ describe('renderExportNotices', () => {
         expect(text.match(/^---- OFL-1\.1 licence text/gm)).toHaveLength(1);
     });
 
+    it('lists the licence ids of a text sorted, whatever order the addition gives (review cycle 2)', () => {
+        const both = { topic: 'LT-cb1928bbb9', licences: ['OFL-1.1', 'MIT'], copyrights: [], quotes: [{ text: 'shared excerpt', files: ['a'] }], unquoted: [], fileCount: 1 };
+        const text = renderExportNotices([{ entry: entry({ name: 'katex' }), material: 'fonts', additions: [both] }], std);
+        expect(text).toMatch(/^---- MIT, OFL-1\.1 as found in the code \(katex\) ----$/m);
+    });
+
     it('prints an identical licence text once, naming every component that uses it', () => {
         const same = [{ id: 'MIT', source: 'package', file: 'LICENSE', text: 'shared text' }];
         const text = renderExportNotices([
