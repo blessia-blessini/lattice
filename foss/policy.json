@@ -7,8 +7,10 @@
     "Apache-2.0", "Unicode-3.0", "Unicode-DFS-2016", "BSL-1.0", "CC0-1.0",
     "Unlicense", "BlueOak-1.0.0", "CDLA-Permissive-2.0", "OFL-1.1",
     "bzip2-1.0.6", "curl", "IJG", "libpng-2.0", "OLDAP-2.8", "BSD-3-Clause-Attribution", "TCL",
-    "LicenseRef-Public-Domain"
+    "LicenseRef-Public-Domain",
+    "W3C", "W3C-20150513", "SunPro", "Xfig", "LicenseRef-scancode-alliance-open-media-patent-1.0"
   ],
+  "$comment_allowed": "The last line: licences of code inside a component that its declared licence does not cover, found by the Legattice scan and decided in its ledger (foss/notice-additions.json, REQ-LTTCE-FOS-00008). W3C, SunPro and Xfig are notice-only permissive licences; the Alliance for Open Media Patent License 1.0 is a royalty-free patent grant that asks its text to accompany binaries (section 1.2.1(b)).",
 
   "obligation": {
     "MPL-2.0": "File-level copyleft (MPL-2.0 section 3): these files stay under MPL-2.0, and their source form must remain available to recipients. Lattice does not modify them; the source is at the location given."
@@ -47,7 +49,8 @@
       "MIT", "MIT-0", "0BSD", "ISC", "BSD-2-Clause", "BSD-3-Clause", "Zlib",
       "Apache-2.0", "Unicode-3.0", "Unicode-DFS-2016", "BSL-1.0", "BlueOak-1.0.0",
       "CDLA-Permissive-2.0", "bzip2-1.0.6", "curl", "IJG", "libpng-2.0", "OLDAP-2.8",
-      "BSD-3-Clause-Attribution", "TCL", "AFL-2.1"
+      "BSD-3-Clause-Attribution", "TCL", "AFL-2.1",
+      "W3C", "W3C-20150513", "SunPro", "Xfig", "LicenseRef-scancode-alliance-open-media-patent-1.0"
     ],
     "public-domain": ["CC0-1.0", "Unlicense", "LicenseRef-Public-Domain"],
     "weak-copyleft": [

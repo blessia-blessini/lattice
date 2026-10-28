@@ -42,6 +42,16 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   `foss.mjs audit [--block]` → `commandAudit`; `.github/workflows/foss-compliance.yml` step 145 installs the
   pinned cargo-audit and passes `--block` on `v*` tags)
 - IMPL-LTTCE-FOS-00007 **covers** ARCH-LTTCE-FOS-00007
+- IMPL-LTTCE-FOS-00008 **covers** REQ-LTTCE-FOS-00008  (`notice-additions.mjs`: `loadAdditions` /
+  `validateAdditions` of `foss/notice-additions.json`, `attachAdditions` (component by ecosystem:name@version,
+  SHA-1 per file, `classifyLeaf` per added licence, a text or excerpt per licence), `decodeText` (Windows-1252
+  table), `quoteRanges` (gap-limited merging) / `quoteLines`, `readInside` (real path inside the package);
+  `foss.mjs` `collect` attaches and checks the export topics, `check` fails on problems and warns on unused
+  additions (job summary, annotation), fails on them with `--block` (step 140 on `v*` tags), `notices` refuses on
+  problems; `notices-render.mjs` `renderAddition` / `additionsIntro`
+  and the added licences in the type summary; `export-notices.mjs` `topics` in `loadEmbedded`,
+  `selectEmbedded`, `renderExportNotices`; `foss/licenses/OFL-1.1.txt` and the AOM patent licence text)
+- IMPL-LTTCE-FOS-00008 **covers** ARCH-LTTCE-FOS-00008
 
 ## Tests
 
@@ -137,3 +147,29 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   every pull request into dev and in every build; on a `v*` tag with `--block` it is the release gate (STST of
   REQ-LTTCE-FOS-00007). Locally verified 2026-10-25 with cargo-audit 0.22.2: 0 blocking, 2 development
   (vitest), 6 informational.
+- UTST `notice-additions.test.mjs` (REQ-LTTCE-FOS-00008) — file validation (23 malformed shapes: format,
+  list, topic id, duplicate, package, licences, files, a path leaving the package, an absolute path, `./a`,
+  `a/./b`, `x/..`, `C:foo`, `C:/x`, backslash, UNC, `a//b`, trailing slash, no SHA-1, inverted range, line 0,
+  copyrights; dots inside names accepted); `readInside` reads inside, refuses a folder and a link out (when
+  the OS allows creating one); the review-cycle-1 regressions — gap-limited merging, a partly quoted file
+  names only its unquoted range, an excerpt's licence ids and users listed once, a licence counted once per
+  component, a backtick in a path escaped (all failed against 70156cf); `decodeText` UTF-8, binary, Windows-1252 quotes and dashes; `quoteLines`
+  normalised, past the end, too many lines, too long a line, blank only; `quoteRanges` merges or keeps apart;
+  `attachAdditions` quotes a matching file, fails on a changed or missing file, a denied added licence, a
+  licence with neither text nor excerpt (a font), warns on a version not shipped, gives every entry [];
+  `renderAddition` lines, `additionsIntro`, added licences in the type summary.
+- UTST `export-notices.test.mjs` (REQ-LTTCE-FOS-00008) — `topics` read and refused when not topic ids;
+  `selectEmbedded` picks the named additions and fails for a topic the package has none for;
+  `renderExportNotices` prints the added licence, its copyright lines and its standard text.
+- ITST `foss.test.mjs` (REQ-LTTCE-FOS-00008) — over the synthetic repository: an addition whose file matches
+  passes `check`, and `notices` names the scan, the decision, the copyright line and quotes the line; the same
+  file changed fails `check` and `notices` (negative test); an addition for another version warns (console, job
+  summary, `::warning`) and passes, and fails with `--block`; an export topic without an addition fails `check`
+  with exit 1 and `notices --check` with 1, not a crash.
+- ITST on the real tree: `foss/notice-additions.json` from Legattice run 40730716667 (Lattice v0.3.50, 28
+  additions for 20 packages) passes `check` on v0.3.51 and is rendered by `notices`; `notices --check` in CI
+  keeps the committed files in step with it.
+- Review cycle 2 nits (both tests failed against d22d710): `check --block` failing only on unused notice
+  additions reports them under their own heading ("Notice additions cannot be applied", what to do: a new
+  scan), not as components violating the policy, and the gate's job summary uses the injected `env`;
+  the export notices list a text's licence ids sorted.

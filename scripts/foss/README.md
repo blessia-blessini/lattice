@@ -110,6 +110,16 @@ so somebody has to look at it once more.
 
 **…an "unused exception" warning appears.** The package was fixed or removed; delete the entry.
 
+**…an "unused notice addition" warning appears.** A package was updated, so the decision about what
+is inside its old version no longer applies, and its notices are missing until it is renewed. A release
+(`v*` tag) fails on it. Run the Legattice scan on this tree, decide what it
+reopens, and copy its `topics/notice-additions.json` (results artifact) over
+`foss/notice-additions.json`; then `npm run foss:notices` and commit both.
+
+**…"differs from the file the decision was made on".** The installed file is not the one the
+decision was made about. Do not edit the SHA-1 by hand: run the Legattice scan again and copy its
+`notice-additions.json`.
+
 
 ## Where things are
 
@@ -120,6 +130,7 @@ so somebody has to look at it once more.
 | `foss/extra-components.json` | Shipped parts no lock file lists (e.g. the Rust standard library) |
 | `foss/appimage-packages.json` | The reviewed Ubuntu libraries inside the Linux AppImage |
 | `foss/export-embedded.json` | Which packages an HTML export copies into the user's file |
+| `foss/notice-additions.json` | Licences found *inside* packages by the Legattice scan and decided in its ledger; generated there, copied here (see below) |
 | `foss/licenses/` | The standard licence texts |
 | `scripts/foss/foss.mjs` | The command line; every check starts here |
 | `scripts/foss/*.mjs` | The parts: reading the lock files, the licence rules, the notices, the audit, the AppImage check |

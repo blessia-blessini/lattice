@@ -1,0 +1,3770 @@
+{
+  "format": 1,
+  "source": {
+    "product": {
+      "repository": "blessia-blessini/lattice",
+      "ref": "v0.3.50"
+    },
+    "date": "2026-10-28",
+    "legattice": "448a1acdc0866ba0716c3248dcf6e124bccec226",
+    "run": "https://github.com/blessia-blessini/legattice/actions/runs/40730716667"
+  },
+  "additions": [
+    {
+      "topic": "LT-027ebfae08",
+      "package": {
+        "id": "Crate::av-scenechange:0.14.1",
+        "ecosystem": "cargo",
+        "name": "av-scenechange",
+        "version": "0.14.1"
+      },
+      "licences": [
+        "BSD-2-Clause"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "BSD-2-Clause",
+        "rationale": "REASON-003: Bundled code under its own licence; asm from dav1d (VideoLAN, Two Orioles); binary clause applies, not yet in notices",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "src/asm/arm/64/ipred.S",
+          "sha1": "a03bbde409ad6b2f9f1dd23bc09c4f2f416a5459",
+          "lines": [
+            [
+              6,
+              25
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/arm/64/ipred16.S",
+          "sha1": "da5a6eacbd678e27cbc3e5bd7f06114847b3fdca",
+          "lines": [
+            [
+              6,
+              25
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/arm/64/mc.S",
+          "sha1": "1ead88376fbf648f94baca64d8a016987d053cbe",
+          "lines": [
+            [
+              7,
+              26
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/arm/64/mc16.S",
+          "sha1": "50ceade717d0509b87aae61a23498d47b0b412e4",
+          "lines": [
+            [
+              7,
+              26
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/arm/64/satd.S",
+          "sha1": "52c2a9f3915e69b0196b99d3868536e87041b04f",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/arm/64/util.S",
+          "sha1": "3130aa50d48ac31d56b50c05c4fe951a317a541a",
+          "lines": [
+            [
+              7,
+              26
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/arm/asm.S",
+          "sha1": "cd5522f8c4eb74802dd3ace7ccbb51b323cfeeaa",
+          "lines": [
+            [
+              6,
+              25
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/arm/tables.S",
+          "sha1": "eff4bb8eb7facc3ba9ef1c8049f13ec76251587c",
+          "lines": [
+            [
+              4,
+              9
+            ],
+            [
+              17,
+              36
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/ipred16_avx2.asm",
+          "sha1": "25f46efa1619ac7b10f989bb543c7c724b8c8062",
+          "lines": [
+            [
+              5,
+              24
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/ipred16_avx512.asm",
+          "sha1": "67745d1eadb22ce5d948f376ee37e3b74a9526f3",
+          "lines": [
+            [
+              5,
+              24
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/ipred16_sse.asm",
+          "sha1": "fc90501c08cb3f4b7e56555ee0ac26a8a036b2a3",
+          "lines": [
+            [
+              5,
+              24
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/ipred_avx2.asm",
+          "sha1": "f35f34ec8236603778758714e7c148785c918f4d",
+          "lines": [
+            [
+              5,
+              24
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/ipred_avx512.asm",
+          "sha1": "eb626b4c182a207431bb708425197c151db2ae15",
+          "lines": [
+            [
+              5,
+              24
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/ipred_sse.asm",
+          "sha1": "2e8a53f7d49fd8ddadb099b82a41ba0b018cdeac",
+          "lines": [
+            [
+              5,
+              24
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/mc16_avx2.asm",
+          "sha1": "d68f8097d339ba02c86a54a86b188972706b5076",
+          "lines": [
+            [
+              5,
+              24
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/mc16_avx512.asm",
+          "sha1": "a455847a46caee382d3e31777718ebb341c39296",
+          "lines": [
+            [
+              5,
+              24
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/mc16_sse.asm",
+          "sha1": "46e1b92b2287fe4aee21cbc5d2ebe8630e37f495",
+          "lines": [
+            [
+              5,
+              24
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/mc_avx2.asm",
+          "sha1": "46d37ee1d65093178e7a92fd142dd7df0e58d572",
+          "lines": [
+            [
+              5,
+              24
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/mc_avx512.asm",
+          "sha1": "a0bca9f42b0ce9df01e3b06ceebbb7ef916ca2da",
+          "lines": [
+            [
+              5,
+              24
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/mc_sse.asm",
+          "sha1": "f9f99b378fe1b2737fdcc6385e1a5d8de71dd025",
+          "lines": [
+            [
+              6,
+              25
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/sad_avx.asm",
+          "sha1": "441487d847ffb9406f0544bf8ac6b66acd50e3ee",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/sad_plane.asm",
+          "sha1": "6b09763d129b48470ebd86923ee72d650a72c400",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/sad_sse2.asm",
+          "sha1": "10bfc7b26e9036e8f8d6174e3ac219106add039d",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/satd.asm",
+          "sha1": "d64f067efb1384b4f50c4d33b2ebf76f9760a85a",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/satd16_avx2.asm",
+          "sha1": "35d44a99199270296db904a57cf9fba6155bc3dd",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/tables.asm",
+          "sha1": "f127ec92486964bd52886b622550e61435b974a1",
+          "lines": [
+            [
+              3,
+              8
+            ],
+            [
+              14,
+              33
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright (c) 2015 Janne Grunau",
+        "Copyright (c) 2015 Martin Storsjo",
+        "Copyright (c) 2016, Alliance for Open Media",
+        "Copyright (c) 2018, Janne Grunau",
+        "Copyright (c) 2018, Martin Storsjo",
+        "Copyright (c) 2018, Two Orioles, LLC",
+        "Copyright (c) 2018, VideoLAN",
+        "Copyright (c) 2018, VideoLabs",
+        "Copyright (c) 2018-2021, Two Orioles, LLC",
+        "Copyright (c) 2018-2021, VideoLAN",
+        "Copyright (c) 2019, Martin Storsjo",
+        "Copyright (c) 2019, The rav1e contributors",
+        "Copyright (c) 2019-2022, The rav1e contributors",
+        "Copyright (c) 2020, Martin Storsjo",
+        "Copyright (c) 2020, Two Orioles, LLC",
+        "Copyright (c) 2020, VideoLAN",
+        "Copyright (c) 2021, Two Orioles, LLC",
+        "Copyright (c) 2021, VideoLAN",
+        "Copyright (c) 2022, The rav1e contributors",
+        "Copyright (c) 2022, Two Orioles, LLC",
+        "Copyright (c) 2022, VideoLAN",
+        "Copyright (c) 2022-2023, The rav1e contributors"
+      ]
+    },
+    {
+      "topic": "LT-52572dd370",
+      "package": {
+        "id": "Crate::av-scenechange:0.14.1",
+        "ecosystem": "cargo",
+        "name": "av-scenechange",
+        "version": "0.14.1"
+      },
+      "licences": [
+        "BSD-2-Clause",
+        "LicenseRef-scancode-alliance-open-media-patent-1.0"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "BSD-2-Clause AND LicenseRef-scancode-alliance-open-media-patent-1.0",
+        "rationale": "REASON-010: AV1 patent licence; rav1e asm headers; PATENTS 1.2.1(b): text must ship with binaries; not yet in notices",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "src/asm/arm/64/satd.S",
+          "sha1": "52c2a9f3915e69b0196b99d3868536e87041b04f",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/arm/tables.S",
+          "sha1": "eff4bb8eb7facc3ba9ef1c8049f13ec76251587c",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/sad_avx.asm",
+          "sha1": "441487d847ffb9406f0544bf8ac6b66acd50e3ee",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/sad_plane.asm",
+          "sha1": "6b09763d129b48470ebd86923ee72d650a72c400",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/sad_sse2.asm",
+          "sha1": "10bfc7b26e9036e8f8d6174e3ac219106add039d",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/satd.asm",
+          "sha1": "d64f067efb1384b4f50c4d33b2ebf76f9760a85a",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/satd16_avx2.asm",
+          "sha1": "35d44a99199270296db904a57cf9fba6155bc3dd",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/tables.asm",
+          "sha1": "f127ec92486964bd52886b622550e61435b974a1",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright (c) 2016, Alliance for Open Media",
+        "Copyright (c) 2018, Two Orioles, LLC",
+        "Copyright (c) 2018, VideoLAN",
+        "Copyright (c) 2019, The rav1e contributors",
+        "Copyright (c) 2019-2022, The rav1e contributors",
+        "Copyright (c) 2022, The rav1e contributors",
+        "Copyright (c) 2022-2023, The rav1e contributors"
+      ]
+    },
+    {
+      "topic": "LT-69b25851b1",
+      "package": {
+        "id": "Crate::av-scenechange:0.14.1",
+        "ecosystem": "cargo",
+        "name": "av-scenechange",
+        "version": "0.14.1"
+      },
+      "licences": [
+        "ISC"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "ISC",
+        "rationale": "REASON-003: Bundled code under its own licence; src/asm/x86/x86inc.asm from the x264 project; not yet in notices",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "src/asm/x86/x86inc.asm",
+          "sha1": "04c86ccaf467935555c85b9fcb4fbb9479817574",
+          "lines": [
+            [
+              11,
+              21
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright (c) 2005-2022 x264 project"
+      ]
+    },
+    {
+      "topic": "LT-b74830fd65",
+      "package": {
+        "id": "Crate::av1-grain:0.2.5",
+        "ecosystem": "cargo",
+        "name": "av1-grain",
+        "version": "0.2.5"
+      },
+      "licences": [
+        "LicenseRef-scancode-alliance-open-media-patent-1.0"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "BSD-2-Clause AND LicenseRef-scancode-alliance-open-media-patent-1.0",
+        "rationale": "REASON-010: AV1 patent licence; rav1e headers; PATENTS 1.2.1(b): text must ship with binaries; not yet in notices",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "src/create.rs",
+          "sha1": "99f7b7c841cf940c4848578afccd8c07998a15b4",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/lib.rs",
+          "sha1": "3de6354128393bca5505494ce93a8793f83516ed",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/parse.rs",
+          "sha1": "047c8f3d09ac8bcffa394453152dc1a0e3e560b6",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright (c) 2022-2022, The rav1e contributors"
+      ]
+    },
+    {
+      "topic": "LT-3c8f17dd12",
+      "package": {
+        "id": "Crate::color_quant:1.1.0",
+        "ecosystem": "cargo",
+        "name": "color_quant",
+        "version": "1.1.0"
+      },
+      "licences": [
+        "Xfig"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "Xfig",
+        "rationale": "REASON-003: Bundled code under its own licence; NeuQuant by Anthony Dekker, notice must stay intact; not yet in notices",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "src/lib.rs",
+          "sha1": "cf233736e0111492fa65ba12a24f3d200694400f",
+          "lines": [
+            [
+              42,
+              49
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright (c) 1994 Anthony Dekker",
+        "Copyright (c) 2014 The Piston Developers"
+      ]
+    },
+    {
+      "topic": "LT-336583a4b2",
+      "package": {
+        "id": "Crate::icu_provider:2.4.0",
+        "ecosystem": "cargo",
+        "name": "icu_provider",
+        "version": "2.4.0"
+      },
+      "licences": [
+        "MIT"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "MIT",
+        "rationale": "REASON-001: Prefer MIT over Apache-2.0; marker.rs reproduces Rust project code under MIT OR Apache-2.0",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "src/marker.rs",
+          "sha1": "3d384c2b19c4de186b5a70d0ca2365bc2cbf25f3",
+          "lines": [
+            [
+              256,
+              256
+            ],
+            [
+              258,
+              262
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright 2015 The Rust Project Developers"
+      ]
+    },
+    {
+      "topic": "LT-8611166089",
+      "package": {
+        "id": "Crate::icu_provider:2.4.0",
+        "ecosystem": "cargo",
+        "name": "icu_provider",
+        "version": "2.4.0"
+      },
+      "licences": [
+        "MIT"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "MIT",
+        "rationale": "REASON-001: Prefer MIT over Apache-2.0; marker.rs reproduces Rust project code under MIT OR Apache-2.0",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "src/marker.rs",
+          "sha1": "3d384c2b19c4de186b5a70d0ca2365bc2cbf25f3",
+          "lines": [
+            [
+              256,
+              256
+            ],
+            [
+              258,
+              262
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright 2015 The Rust Project Developers"
+      ]
+    },
+    {
+      "topic": "LT-2265d82016",
+      "package": {
+        "id": "Crate::libm:0.2.16",
+        "ecosystem": "cargo",
+        "name": "libm",
+        "version": "0.2.16"
+      },
+      "licences": [
+        "BSD-2-Clause"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "BSD-2-Clause",
+        "rationale": "REASON-003: Bundled code under its own licence; exp2/exp2f from FreeBSD msun (David Schultz); copyright already in notices",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "src/math/exp2.rs",
+          "sha1": "05157f2e985bab87599363460afdb6d43ddc2f32",
+          "lines": [
+            [
+              6,
+              25
+            ]
+          ]
+        },
+        {
+          "path": "src/math/exp2f.rs",
+          "sha1": "3cd61fe1e7ed7273a22aa7c8111d51d516eaeec2",
+          "lines": [
+            [
+              6,
+              25
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright (c) 2005 David Schultz <das@FreeBSD.ORG>"
+      ]
+    },
+    {
+      "topic": "LT-688ba4efef",
+      "package": {
+        "id": "Crate::libm:0.2.16",
+        "ecosystem": "cargo",
+        "name": "libm",
+        "version": "0.2.16"
+      },
+      "licences": [
+        "SunPro"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "SunPro",
+        "rationale": "REASON-003: Bundled code under its own licence; lines 6-8 are Sun's msun notice ('provided this notice is preserved'); in notices",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "src/math/exp.rs",
+          "sha1": "541e3242358acd766e56c0638728f5edc1594fe4",
+          "lines": [
+            [
+              6,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/math/k_tan.rs",
+          "sha1": "f922f06cbfeaa196ce0fae86a046ba7575e09320",
+          "lines": [
+            [
+              6,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/math/k_tanf.rs",
+          "sha1": "eeb4a5efc0f3f9c09032158764bfa28b47e25bb5",
+          "lines": [
+            [
+              6,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/math/pow.rs",
+          "sha1": "8271e8be214b4066f19fa4b4b5172f2feb302ab8",
+          "lines": [
+            [
+              6,
+              8
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright (c) 2004 by Sun Microsystems, Inc.",
+        "Copyright 2004 Sun Microsystems, Inc."
+      ]
+    },
+    {
+      "topic": "LT-c6a0dee635",
+      "package": {
+        "id": "Crate::libm:0.2.16",
+        "ecosystem": "cargo",
+        "name": "libm",
+        "version": "0.2.16"
+      },
+      "licences": [
+        "SunPro"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "SunPro",
+        "rationale": "REASON-003: Bundled code under its own licence; Sun msun code via FreeBSD ('provided this notice is preserved'); in notices",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "src/math/acos.rs",
+          "sha1": "0e3a4ce3a7e4febb6c44b835f14e968300c8a814",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/math/acosf.rs",
+          "sha1": "2d77be2f7bbaee1eeac09dfb063f420b6a13a992",
+          "lines": [
+            [
+              9,
+              12
+            ]
+          ]
+        },
+        {
+          "path": "src/math/asin.rs",
+          "sha1": "07e0a79ff57477c0af1c287d0075456479e6c6a3",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/math/asinf.rs",
+          "sha1": "2bfd786e6b2b1094dee5f0af4aa137b0fd4ec601",
+          "lines": [
+            [
+              9,
+              12
+            ]
+          ]
+        },
+        {
+          "path": "src/math/atan.rs",
+          "sha1": "3cf0fb3ce45cbfcf13be396727a3afd5f4c7b70f",
+          "lines": [
+            [
+              6,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/math/atan2.rs",
+          "sha1": "60968a6a5e776f7fe0ef735cf6a136c720c066f6",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/math/atan2f.rs",
+          "sha1": "0e5868b235da5ce4541f3606c801cec2eec49459",
+          "lines": [
+            [
+              9,
+              12
+            ]
+          ]
+        },
+        {
+          "path": "src/math/atanf.rs",
+          "sha1": "c866a4625dcb26c32863201f5a655b5e6e64e204",
+          "lines": [
+            [
+              9,
+              12
+            ]
+          ]
+        },
+        {
+          "path": "src/math/cbrtf.rs",
+          "sha1": "841a548cd1622458ab3a2921f77a3419d5412945",
+          "lines": [
+            [
+              10,
+              13
+            ]
+          ]
+        },
+        {
+          "path": "src/math/cos.rs",
+          "sha1": "e2eb4625f3312b9a4d6e3697c4ced017a39897b3",
+          "lines": [
+            [
+              6,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/math/cosf.rs",
+          "sha1": "9cfd66429078323b6905dac79479a1c817428f57",
+          "lines": [
+            [
+              10,
+              13
+            ]
+          ]
+        },
+        {
+          "path": "src/math/erf.rs",
+          "sha1": "8c6a8b20f6975d084e10b624059495d7ea8cc705",
+          "lines": [
+            [
+              7,
+              10
+            ]
+          ]
+        },
+        {
+          "path": "src/math/erff.rs",
+          "sha1": "4776015121c014e6d9d9386137c4d00bbb2fab19",
+          "lines": [
+            [
+              9,
+              12
+            ]
+          ]
+        },
+        {
+          "path": "src/math/expf.rs",
+          "sha1": "5c57193f3aac4885c69fcb73e354b042befb68dc",
+          "lines": [
+            [
+              9,
+              12
+            ]
+          ]
+        },
+        {
+          "path": "src/math/expm1.rs",
+          "sha1": "211a2ce75516e325cb98133b5c38143f5308122d",
+          "lines": [
+            [
+              6,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/math/expm1f.rs",
+          "sha1": "f78155412768048426958287f8b9761e4f41948a",
+          "lines": [
+            [
+              9,
+              12
+            ]
+          ]
+        },
+        {
+          "path": "src/math/j0.rs",
+          "sha1": "d87f3455876af26f6c7d3c1ea75c681b0c2ef674",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/math/j0f.rs",
+          "sha1": "78cc00c2c233469208b0b398b77cb54dce8e5a8e",
+          "lines": [
+            [
+              9,
+              12
+            ]
+          ]
+        },
+        {
+          "path": "src/math/j1.rs",
+          "sha1": "7e05213420a6d1c927654e15742caa63ff1e4ddb",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/math/j1f.rs",
+          "sha1": "6d7c7750b00e6dc9d7a27542112d829cd682ff40",
+          "lines": [
+            [
+              9,
+              12
+            ]
+          ]
+        },
+        {
+          "path": "src/math/jn.rs",
+          "sha1": "cce07e588b73b04585a27e3cda9d254bd459f4ed",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/math/jnf.rs",
+          "sha1": "4d94ae428c05d6b16da8d87df123133956d56cb8",
+          "lines": [
+            [
+              9,
+              12
+            ]
+          ]
+        },
+        {
+          "path": "src/math/k_cos.rs",
+          "sha1": "a7a792e866121d6e7e5b21c9914058262b960ea7",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/math/k_cosf.rs",
+          "sha1": "cdea81a432f9f1fd96b745ec720884782e78c133",
+          "lines": [
+            [
+              10,
+              13
+            ]
+          ]
+        },
+        {
+          "path": "src/math/k_sin.rs",
+          "sha1": "a2e2ec3fdf84ef26cc890d9c8ade8132514c3f16",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/math/k_sinf.rs",
+          "sha1": "d48291001dbe37500d11443286a0e08194182e60",
+          "lines": [
+            [
+              10,
+              13
+            ]
+          ]
+        },
+        {
+          "path": "src/math/lgamma_r.rs",
+          "sha1": "9506998f38dacf78a7273f164f3942fbe76c4371",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/math/lgammaf_r.rs",
+          "sha1": "641fa478096b7cc2c1df014f2d20fb1c9a6b63cb",
+          "lines": [
+            [
+              9,
+              12
+            ]
+          ]
+        },
+        {
+          "path": "src/math/log.rs",
+          "sha1": "5ea6e4dbaac3158dd0485b3b2bd7a513ba749843",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/math/log10.rs",
+          "sha1": "ab5875e7f9d6196e56df8fb6ad34c93cb5cd4182",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/math/log10f.rs",
+          "sha1": "d66490ecff03ef6c0318d20f1c97eb24ce8bc37b",
+          "lines": [
+            [
+              6,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/math/log1p.rs",
+          "sha1": "9611f530745aff114c65cc19feb85a7dc5fbe90a",
+          "lines": [
+            [
+              6,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/math/log1pf.rs",
+          "sha1": "12f914e48d23ce699e4b5dd02a3b491529342539",
+          "lines": [
+            [
+              6,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/math/log2.rs",
+          "sha1": "3c94f401b251c8c471ab44cb4f1a76eb70b3b24c",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/math/log2f.rs",
+          "sha1": "e5fbe71a8f9b418e69a175fe6c7fa3339f2eb9bd",
+          "lines": [
+            [
+              6,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/math/logf.rs",
+          "sha1": "b34b48b15340d561c965adbc0b561e9f40a34696",
+          "lines": [
+            [
+              9,
+              12
+            ]
+          ]
+        },
+        {
+          "path": "src/math/powf.rs",
+          "sha1": "f14a1f187015f2455bda284f25ca7618a43ecbcf",
+          "lines": [
+            [
+              9,
+              12
+            ]
+          ]
+        },
+        {
+          "path": "src/math/rem_pio2.rs",
+          "sha1": "e5c8bd892cbbc218ee70cbc776be0f845cf38f46",
+          "lines": [
+            [
+              6,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/math/rem_pio2_large.rs",
+          "sha1": "752a91dfc9f20c9e808824801b97cadd3c9c171c",
+          "lines": [
+            [
+              5,
+              10
+            ]
+          ]
+        },
+        {
+          "path": "src/math/rem_pio2f.rs",
+          "sha1": "d91687dd31e89efbaa8f8fa0e531c108563aaebb",
+          "lines": [
+            [
+              10,
+              13
+            ]
+          ]
+        },
+        {
+          "path": "src/math/sin.rs",
+          "sha1": "7761f93e377f949fb884962210395071105a8b05",
+          "lines": [
+            [
+              6,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/math/sincos.rs",
+          "sha1": "5ecb97161114db97bbe7878f0a488a6eb83d8138",
+          "lines": [
+            [
+              6,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/math/sincosf.rs",
+          "sha1": "4b55ade105ffa7ef6edfa5f9fc3a2a4b51cb1793",
+          "lines": [
+            [
+              10,
+              13
+            ]
+          ]
+        },
+        {
+          "path": "src/math/sinf.rs",
+          "sha1": "68742bd7120fe145ed9b3a881ed4fee1ee347674",
+          "lines": [
+            [
+              10,
+              13
+            ]
+          ]
+        },
+        {
+          "path": "src/math/tan.rs",
+          "sha1": "c95fd8ce5ab7768046722c6781ada422d1d43a69",
+          "lines": [
+            [
+              6,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/math/tanf.rs",
+          "sha1": "37b713820ca1e55b35fd878cd967893e3c757a96",
+          "lines": [
+            [
+              10,
+              13
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright (c) 1993 by Sun Microsystems, Inc."
+      ]
+    },
+    {
+      "topic": "LT-071c796ae5",
+      "package": {
+        "id": "Crate::rav1e:0.8.1",
+        "ecosystem": "cargo",
+        "name": "rav1e",
+        "version": "0.8.1"
+      },
+      "licences": [
+        "ISC"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "ISC",
+        "rationale": "REASON-003: Bundled code under its own licence; src/ext/x86/x86inc.asm from the x264 project; not yet in notices",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "src/ext/x86/x86inc.asm",
+          "sha1": "04c86ccaf467935555c85b9fcb4fbb9479817574",
+          "lines": [
+            [
+              11,
+              21
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright (c) 2005-2022 x264 project"
+      ]
+    },
+    {
+      "topic": "LT-5e6381ada5",
+      "package": {
+        "id": "Crate::rav1e:0.8.1",
+        "ecosystem": "cargo",
+        "name": "rav1e",
+        "version": "0.8.1"
+      },
+      "licences": [
+        "LicenseRef-scancode-alliance-open-media-patent-1.0"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "BSD-2-Clause AND LicenseRef-scancode-alliance-open-media-patent-1.0",
+        "rationale": "REASON-010: AV1 patent licence; rav1e's files, PATENTS; PATENTS 1.2.1(b): text must ship with binaries; not yet in notices",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "PATENTS",
+          "sha1": "59ecaf215c4d1e4414bd58ab0e9b73594fc2a828",
+          "lines": [
+            [
+              1,
+              107
+            ]
+          ]
+        },
+        {
+          "path": "build.rs",
+          "sha1": "3c38c1421a70c093579677273e9233771535b10c",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/activity.rs",
+          "sha1": "ff15de5924353479d0db59e6624578085b0e0b3b",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/api/channel/by_gop.rs",
+          "sha1": "bae3576f819070362ca85b5c6a26c5909d1d01cd",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/api/channel/data.rs",
+          "sha1": "062ccee8ef198b8fd47c5e1f290e48eb2545ab40",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/api/channel/mod.rs",
+          "sha1": "51a9e2eb1c1b56ac04e93f5880648b6c509ce707",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/api/color.rs",
+          "sha1": "0dca1948269eadaa1c382f2e6b161052963061fd",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/api/config/encoder.rs",
+          "sha1": "6a541feaf7c37aad8de4faf2f113ff6ccb4d2041",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/api/config/mod.rs",
+          "sha1": "1b9984fc92087b38b3e9b733912901cd81fcb9cb",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/api/config/rate.rs",
+          "sha1": "a3d049745a646c3c6e22e44a6057468998e8d389",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/api/config/speedsettings.rs",
+          "sha1": "41b2b81246ae2f1990061fb7f141c37cc8322539",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/api/context.rs",
+          "sha1": "319dcc54c0cb5033f22df1eb0157d992dab56966",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/api/internal.rs",
+          "sha1": "c9a6413c7e7bdf89e4b6fabab8705a0e33531fa4",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/api/mod.rs",
+          "sha1": "504dadf25dc6387582f16e031446e693548d609b",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/api/test.rs",
+          "sha1": "688e9346ee620517dad0164d193efd4e8623d82e",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/api/util.rs",
+          "sha1": "d76a822325d764fd6859d9e55e81c5e141deea27",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/arm/64/cdef_dist.S",
+          "sha1": "ab070f318a3e98c887425f102e937c9791c8f132",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/arm/64/sad.S",
+          "sha1": "b9d40d757dc480d5acf43d6cc2e3b45fccee84af",
+          "lines": [
+            [
+              5,
+              10
+            ]
+          ]
+        },
+        {
+          "path": "src/arm/64/satd.S",
+          "sha1": "9d3892b3e88d26b62bcc52f1cc3b852bd26fe326",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/arm/64/sse.S",
+          "sha1": "850f30604c1d7895a33bc6dd21fd751f3fc5cd5d",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/arm/tables.S",
+          "sha1": "7d5691d7eeadf73f7470defd731961f8582d4b82",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/aarch64/cdef.rs",
+          "sha1": "d35a77537dff726de12a5aaeb9c3d94c8a93c619",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/aarch64/dist/cdef_dist.rs",
+          "sha1": "601834670ca042e9036b8dd8d3db27db60bd736d",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/aarch64/dist/mod.rs",
+          "sha1": "aa67c6e6fd230a690feba5bdb27df6cf73f75888",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/aarch64/dist/sse.rs",
+          "sha1": "56cbbf84a98ba0d2294faa0415cd97b400d33b00",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/aarch64/mc.rs",
+          "sha1": "a054fc5fae8653358fe32da9cfa0a0dba9eab261",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/aarch64/mod.rs",
+          "sha1": "cdcc5d80ebd668989fced83b6aef7ddacb926b7b",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/aarch64/predict.rs",
+          "sha1": "599cdedea2f5d192a44c66b3224b1db47d45f4c0",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/aarch64/transform/forward.rs",
+          "sha1": "ae5c2e8aa15cc000f71db7d4fe5a78201ffa1641",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/aarch64/transform/inverse.rs",
+          "sha1": "9e6af0a6feb8e4c88d92e7bfea02dfba5caf0d86",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/aarch64/transform/mod.rs",
+          "sha1": "9d9fc81552100eebd32b773371b295880264cdc0",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/mod.rs",
+          "sha1": "2e1824d18d34af489d9e2a22a2aa71e491f3239c",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/shared/dist/cdef_dist.rs",
+          "sha1": "12c5f7023c2613e3c409b59a85186c56aa3f4061",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/shared/dist/mod.rs",
+          "sha1": "6fad3b94baf5e22ee23ef7d701144af4ff1e9646",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/shared/dist/sse.rs",
+          "sha1": "aa6a4b8cf2cb5f883b8ba559d65630ce31bafe4b",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/shared/mod.rs",
+          "sha1": "440c24bb9f1dd6830742d73f2f20d9a555fa17fd",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/shared/predict.rs",
+          "sha1": "719d0ea06474a939665b6d60cf7518952a7d596b",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/shared/transform/forward.rs",
+          "sha1": "42ccbbd6ac4693cedcb5d38f5e0aed947f31dc62",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/shared/transform/inverse.rs",
+          "sha1": "0435fb7cf8b85d5197cd7a38b8bd6cbe4ca6c3aa",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/shared/transform/mod.rs",
+          "sha1": "4f099bf5f4e0a2d4f30eebd3e882c1534383dd42",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/cdef.rs",
+          "sha1": "e178033e5343126d8c1d7e0b35f1f60206613f39",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/dist/cdef_dist.rs",
+          "sha1": "f72b00d2f474473fbba2e5cc2a6573b56c2c700c",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/dist/mod.rs",
+          "sha1": "55d149cf16109a44e704a546049e5e1790568515",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/dist/sse.rs",
+          "sha1": "c9b4309527a980f32de01da8d045282be51164e0",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/ec.rs",
+          "sha1": "9f68fa65ebf13ccdb879ff27e80c81dbbc0df2c3",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/lrf.rs",
+          "sha1": "1f07a0f84c83d23def5a4933d88c3c9f80504790",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/mc.rs",
+          "sha1": "4c765a3ca205e1e53795f13f54a7dac2b7e13533",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/mod.rs",
+          "sha1": "5e5a75ec9a384f4109fc386f5e54fd13149f0e9a",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/predict.rs",
+          "sha1": "c99b4b36e4709ab659b7d6e2108fc05cde6ac3a9",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/quantize.rs",
+          "sha1": "e0a815dfce7e5e11b9747db6dd00ff2bb454db89",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/transform/forward.rs",
+          "sha1": "fb0b40f71471d13f891d6bde7fa6f7eaf962d79e",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/transform/inverse.rs",
+          "sha1": "341212bf549864c6f6240ff01e9ae0d49bd1c0ea",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/asm/x86/transform/mod.rs",
+          "sha1": "7e1986d8c83ca4422c77eecd24cffff077c92fc9",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/bin/common.rs",
+          "sha1": "684b5993230acc03da1440e276f272480e00ee99",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/bin/decoder/mod.rs",
+          "sha1": "ffc9a7e7ededc11b23dc3d81000475aa690a9c84",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/bin/decoder/y4m.rs",
+          "sha1": "574960786fcbf09f1d5c7ae83c619a56d05e1b3b",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/bin/error.rs",
+          "sha1": "5f6702d92f25c1b6204d64c15d5918fe6f0b57d5",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/bin/muxer/ivf.rs",
+          "sha1": "18335242d3fc05968cc91276f432c74a1f6c780b",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/bin/muxer/mod.rs",
+          "sha1": "8ed3ae779c1b38d05e5727075d6cdbc03f049fa3",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/bin/muxer/y4m.rs",
+          "sha1": "c12a53d217f687bf5eda9cb5247938ba6bcbc4d6",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/bin/rav1e-ch.rs",
+          "sha1": "e8fe8ce8d4bc91abc2c828bb55fe731f5c3bc5d8",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/bin/rav1e.rs",
+          "sha1": "51dec95db1b537de91460b2973841cc2f0a7bfeb",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/bin/stats.rs",
+          "sha1": "c1e6ee06bc376582f162788446208998675bc445",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/capi.rs",
+          "sha1": "4314d5b5bc7d5f8ee4620e55e72447467ccd2527",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/cdef.rs",
+          "sha1": "b2e70a509655594a28767a4ab3b162f7470a84d1",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/context/block_unit.rs",
+          "sha1": "c19738797873c2f4fcd2e023e7da39de5f30cd20",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/context/cdf_context.rs",
+          "sha1": "33a4afbc641c824080dc239bf18f29cd45762d34",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/context/frame_header.rs",
+          "sha1": "5c2f3f4f17d08388dbea7d124ae75b77c35d6eb3",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/context/mod.rs",
+          "sha1": "09d5d1471bba91c015451a75225785a59af3b920",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/context/partition_unit.rs",
+          "sha1": "41ee63ae823099e43f03e823953be25eafa2b0ad",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/context/superblock_unit.rs",
+          "sha1": "240a18800623e51271603c82ea82558ad461f227",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/context/transform_unit.rs",
+          "sha1": "20a6cb6c7ad1f103b4152550fdd9990a19bda133",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/cpu_features/aarch64.rs",
+          "sha1": "bb95efb4e4892c5847127354025cf7243a57f104",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/cpu_features/mod.rs",
+          "sha1": "b40b2c1d87ea2a181d0b935a9d67885f5c8ef032",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/cpu_features/rust.rs",
+          "sha1": "cd1724213aa8d67ff401edaf875789147d9eb391",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/cpu_features/x86.rs",
+          "sha1": "5aaae2ae57f1181eae4f8067b19ce4d4394a6fd7",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/deblock.rs",
+          "sha1": "90498b06612779ca13db11df75efef897d3c010e",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/dist.rs",
+          "sha1": "dd6c60842abe8c93d28ae0175bdf8b5d482caf0c",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/ec.rs",
+          "sha1": "0d7d564d3d5adcc9dfa15097d446155ef6562c99",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/encoder.rs",
+          "sha1": "4ca64ac417ad43d3872afab1528efdd33458cdef",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/entropymode.rs",
+          "sha1": "9da079e43cd3c1f7b7cd7161f58d0fc88859c8c3",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/frame/mod.rs",
+          "sha1": "afb62629c48dfdb57134d2d2df29c237eb8f5446",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/frame/plane.rs",
+          "sha1": "233cd955f9400b89727172132509ce18996f57f5",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/fuzzing.rs",
+          "sha1": "1a3b2ac8cbad3326b96dc257983506df89f592e6",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/header.rs",
+          "sha1": "b32ed75a1b65ddb8aa3937867723e0ea34c89f7f",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/levels.rs",
+          "sha1": "dbab7a069c1f5174073fcb8583a4333c27f30c1b",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/lib.rs",
+          "sha1": "1f23a3c7561b1e79deabfd33df13a1a1c9997883",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/lrf.rs",
+          "sha1": "7bd2491dce87647d8520f305d5873202ccc97ceb",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/mc.rs",
+          "sha1": "fd2cbdd7ef10a5672966807242680fa7360659ef",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/me.rs",
+          "sha1": "b13808bddef8d28829bfe8facf50a9ea9e8bad02",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/partition.rs",
+          "sha1": "327a6958e04099472443345a5b49e03911f198ed",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/predict.rs",
+          "sha1": "3502fa87e17923798599c01a832016d9069a5b90",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/quantize/mod.rs",
+          "sha1": "8b5f3090d4c7406b96fd9e18c0b8ab810c27ca3f",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/quantize/tables.rs",
+          "sha1": "4aaf24cc72d83073faa0f7ff3436adc0f26fa1a3",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/rate.rs",
+          "sha1": "57315594c39d73702d736e43437a508a139117f5",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/rdo.rs",
+          "sha1": "737eb609708d9c66d76a8595621e21c97c629a80",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/rdo_tables.rs",
+          "sha1": "faa03232699ff506495420eed0917c154f8556ad",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/recon_intra.rs",
+          "sha1": "562f1c1d2ebda9cd4171ee3748c9a8f74a400efb",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/scan_order.rs",
+          "sha1": "57f66f545de265c9cf15d25b3428bbbdd06bfd46",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/segmentation.rs",
+          "sha1": "65de2cfb27331f0c83b64b760cc7cac6eb02ef0e",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/stats.rs",
+          "sha1": "6d6441dcd19873ebc9d7cc375bff8959e9b0cc97",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/test_encode_decode/aom.rs",
+          "sha1": "642647b9027f5a193ff13e44b27a8b0e5116e84d",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/test_encode_decode/dav1d.rs",
+          "sha1": "2a969c25abe42ae7a114391b9fef620782b42627",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/test_encode_decode/mod.rs",
+          "sha1": "1b7173de8ed3221f9508ba9b3cb836a20c5c61b6",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/tiling/mod.rs",
+          "sha1": "49117aa4b6c5187ec246ddac270be63df95a8ee4",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/tiling/plane_region.rs",
+          "sha1": "d2fc49cc3f50c219b34b4bcf164551ae4f42ddb6",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/tiling/tile.rs",
+          "sha1": "f8866a7adb226dc8a078636073529a9e98890c12",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/tiling/tile_blocks.rs",
+          "sha1": "eadd93908f3da72f2e5b7b4d33e8ce5e785cb5e0",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/tiling/tile_motion_stats.rs",
+          "sha1": "4b9741e2bd153f19a0846041af4089a57ff88df8",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/tiling/tile_restoration_state.rs",
+          "sha1": "cb6f4ce270b1f478d40635b392707f80fa4d17a4",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/tiling/tile_state.rs",
+          "sha1": "94aea83a8a35fdcd27041ba33b9ad9324ea5d060",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/tiling/tiler.rs",
+          "sha1": "69e1d16fa6a8f99b1f1b2f66a19092bf58769a82",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/token_cdfs.rs",
+          "sha1": "87c1b436c9bb05cd7e5df51924097f5901e47874",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/transform/forward.rs",
+          "sha1": "5f407be188bf2f199aca055909c4509a30bba5b1",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/transform/forward_shared.rs",
+          "sha1": "e6b06f0df34adc401042c96be9e8177196f2269d",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/transform/inverse.rs",
+          "sha1": "f7805e6ab3a9da7d0285acd9231c6e73bbca3ee7",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/transform/mod.rs",
+          "sha1": "1a44bae949d97b0b7d5fa85772ea6ae04eb7b501",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/util/align.rs",
+          "sha1": "0ee1b9706a6aeff1cef6877eea5cc6a7895bfe2d",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/util/cdf.rs",
+          "sha1": "f06a1477e99201154aaf4d930aa11eff858d7dfb",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/util/kmeans.rs",
+          "sha1": "95bf366919ca58452588a5d8441d25ca2562a75e",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/util/logexp.rs",
+          "sha1": "0ace45a1438c69ffbdf6bbcbcab91855b15519a8",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/util/mod.rs",
+          "sha1": "cb5ed9a2dd7a16566e89880810f634c5f6021ee2",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/util/pixel.rs",
+          "sha1": "3f69946cf3e0c8daa4b7046d75be22e3bc8923d8",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/util/uninit.rs",
+          "sha1": "6d2a3a3490d4b6d6c6319119d8d74a5ed750f2ef",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/x86/cdef_dist.asm",
+          "sha1": "e7a4b3fb739ddfccaade4d767ad7727131b37027",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/x86/me.asm",
+          "sha1": "5ff890dfc7d8406c803d74a1b735e04e7e9478ef",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/x86/sad_avx.asm",
+          "sha1": "f861b642b8091e277dc2b9a622b775416cc75609",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/x86/sad_sse2.asm",
+          "sha1": "ec696644c3984f36160f13509960364ebe18e22b",
+          "lines": [
+            [
+              4,
+              9
+            ]
+          ]
+        },
+        {
+          "path": "src/x86/satd.asm",
+          "sha1": "420dfd6f5c785c2501b945dacd0a46c2944e246d",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/x86/satd16_avx2.asm",
+          "sha1": "0d812e0821dff69dba8cbec2bb2ab42e8ecd6a71",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/x86/sse.asm",
+          "sha1": "a976e71f3a497033f9d970900ab0b4883a483e8f",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/x86/tables.asm",
+          "sha1": "1622b92912353258464ea976150aba3efd4e281e",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright (c) 2001-2016, Alliance for Open Media",
+        "Copyright (c) 2016, Alliance for Open Media",
+        "Copyright (c) 2017-2019, The rav1e contributors",
+        "Copyright (c) 2017-2020, The rav1e contributors",
+        "Copyright (c) 2017-2021, The rav1e contributors",
+        "Copyright (c) 2017-2022, The rav1e contributors",
+        "Copyright (c) 2017-2023, The rav1e contributors",
+        "Copyright (c) 2018, The rav1e contributors",
+        "Copyright (c) 2018, Two Orioles, LLC",
+        "Copyright (c) 2018, VideoLAN",
+        "Copyright (c) 2018-2020, The rav1e contributors",
+        "Copyright (c) 2018-2021, The rav1e contributors",
+        "Copyright (c) 2018-2022, The rav1e contributors",
+        "Copyright (c) 2018-2023, The rav1e contributors",
+        "Copyright (c) 2019, The rav1e contributors",
+        "Copyright (c) 2019-2020, The rav1e contributors",
+        "Copyright (c) 2019-2022, The rav1e contributors",
+        "Copyright (c) 2019-2023, The rav1e contributors",
+        "Copyright (c) 2020-2022, The rav1e contributors",
+        "Copyright (c) 2020-2023, The rav1e contributors",
+        "Copyright (c) 2022, The rav1e contributors",
+        "Copyright (c) 2022-2023, The rav1e contributors",
+        "Copyright (c) 2023, The rav1e contributors"
+      ]
+    },
+    {
+      "topic": "LT-0808cb7bfb",
+      "package": {
+        "id": "Crate::tao:0.37.2",
+        "ecosystem": "cargo",
+        "name": "tao",
+        "version": "0.37.2"
+      },
+      "licences": [
+        "W3C"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "W3C",
+        "rationale": "REASON-003: Bundled code under its own licence; keyboard.rs Key/KeyCode docs from the W3C UI Events spec; not yet in notices",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "src/keyboard.rs",
+          "sha1": "4f643ef149f3b9d2909d66f0e2f465457790bea8",
+          "lines": [
+            [
+              23,
+              23
+            ],
+            [
+              27,
+              27
+            ],
+            [
+              60,
+              60
+            ],
+            [
+              68,
+              72
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright (c) 2017 W3C(r) (MIT, ERCIM, Keio, Beihang)",
+        "Copyright (c) 2021 World Wide Web Consortium, (Massachusetts Institute of Technology, European Research Consortium for Informatics and Mathematics, Keio University, Beihang)",
+        "Copyright (c) YEAR W3C(r) (MIT, ERCIM, Keio, Beihang)",
+        "Copyright 2014-2021 The winit contributors",
+        "Copyright 2021-2023 Tauri Programme"
+      ]
+    },
+    {
+      "topic": "LT-e4c57c25b9",
+      "package": {
+        "id": "Crate::tao:0.37.2",
+        "ecosystem": "cargo",
+        "name": "tao",
+        "version": "0.37.2"
+      },
+      "licences": [
+        "W3C-20150513"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "W3C-20150513",
+        "rationale": "REASON-003: Bundled code under its own licence; keyboard.rs Key/KeyCode docs from the W3C UI Events spec; not yet in notices",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "src/keyboard.rs",
+          "sha1": "4f643ef149f3b9d2909d66f0e2f465457790bea8",
+          "lines": [
+            [
+              23,
+              58
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright (c) 2017 W3C(r) (MIT, ERCIM, Keio, Beihang)",
+        "Copyright (c) 2021 World Wide Web Consortium, (Massachusetts Institute of Technology, European Research Consortium for Informatics and Mathematics, Keio University, Beihang)",
+        "Copyright (c) YEAR W3C(r) (MIT, ERCIM, Keio, Beihang)",
+        "Copyright 2014-2021 The winit contributors",
+        "Copyright 2021-2023 Tauri Programme"
+      ]
+    },
+    {
+      "topic": "LT-eae630f9fa",
+      "package": {
+        "id": "Crate::tower-http:0.6.11",
+        "ecosystem": "cargo",
+        "name": "tower-http",
+        "version": "0.6.11"
+      },
+      "licences": [
+        "CC0-1.0"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "CC0-1.0",
+        "rationale": "REASON-005: Public-domain dedication; compression/pin_project_cfg.rs from a CC0 gist by tesaguri; nothing to comply with",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "src/compression/pin_project_cfg.rs",
+          "sha1": "730773117002bf0a90df8f43c35ae6257be59de1",
+          "lines": [
+            [
+              1,
+              1
+            ]
+          ]
+        }
+      ],
+      "copyrights": []
+    },
+    {
+      "topic": "LT-2c62835b1c",
+      "package": {
+        "id": "Crate::tower:0.5.3",
+        "ecosystem": "cargo",
+        "name": "tower",
+        "version": "0.5.3"
+      },
+      "licences": [
+        "Apache-2.0"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "Apache-2.0",
+        "rationale": "REASON-003: Bundled code under its own licence; load/peak_ewma.rs derived from Twitter's Finagle; not yet in notices",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "src/load/peak_ewma.rs",
+          "sha1": "fa223616318876f7737cb7a89921208c4956f023",
+          "lines": [
+            [
+              38,
+              39
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright 2017, Twitter Inc."
+      ]
+    },
+    {
+      "topic": "LT-68e84b435f",
+      "package": {
+        "id": "Crate::v_frame:0.3.9",
+        "ecosystem": "cargo",
+        "name": "v_frame",
+        "version": "0.3.9"
+      },
+      "licences": [
+        "LicenseRef-scancode-alliance-open-media-patent-1.0"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "BSD-2-Clause AND LicenseRef-scancode-alliance-open-media-patent-1.0",
+        "rationale": "REASON-010: AV1 patent licence; rav1e headers; PATENTS 1.2.1(b): text must ship with binaries; not yet in notices",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "src/frame.rs",
+          "sha1": "220f92b8badfc5ad6b8f9c052be7cbca13e90cda",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/lib.rs",
+          "sha1": "8e71b2f0fca3bfe65ac14672a521c5e86509500a",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/math.rs",
+          "sha1": "80c186e5cdff293f51e11d8c3e03aa469c639a00",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/pixel.rs",
+          "sha1": "6ff2044c3fdcd8088111308f6d0bf7092c8ae9d4",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        },
+        {
+          "path": "src/plane.rs",
+          "sha1": "0075d89862581e13af1c48994b84cf7485ec2bf9",
+          "lines": [
+            [
+              3,
+              8
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright (c) 2017-2020, The rav1e contributors",
+        "Copyright (c) 2017-2021, The rav1e contributors",
+        "Copyright (c) 2018-2020, The rav1e contributors",
+        "Copyright (c) 2020, The rav1e contributors"
+      ]
+    },
+    {
+      "topic": "LT-3f5bb166b4",
+      "package": {
+        "id": "NPM::d3-array:2.12.1",
+        "ecosystem": "npm",
+        "name": "d3-array",
+        "version": "2.12.1"
+      },
+      "licences": [
+        "ISC"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "ISC",
+        "rationale": "REASON-003: Bundled code under its own licence; quickselect by Vladimir Agafonkin in d3-array 2.12.1 (via d3-sankey); not yet in notices",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "dist/d3-array.js",
+          "sha1": "8d828dffdb25a300892db4f130f0e253c5be00bd",
+          "lines": [
+            [
+              648,
+              648
+            ]
+          ]
+        },
+        {
+          "path": "src/quickselect.js",
+          "sha1": "7a10a9694e37ac5c017253b29086c07237de5b70",
+          "lines": [
+            [
+              4,
+              4
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright 2018 Vladimir Agafonkin",
+        "Copyright 2021 Mike Bostock"
+      ]
+    },
+    {
+      "topic": "LT-638e15459a",
+      "package": {
+        "id": "NPM::d3-geo:3.1.1",
+        "ecosystem": "npm",
+        "name": "d3-geo",
+        "version": "3.1.1"
+      },
+      "licences": [
+        "MIT"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "MIT",
+        "rationale": "REASON-003: Bundled code under its own licence; GeographicLib (Charles Karney), the MIT part of its LICENSE; already in notices",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha1": "9a91678a818bfa3dc1df287854a8e82e5a5c7be1",
+          "lines": [
+            [
+              19,
+              34
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright 2008-2012 Charles Karney",
+        "Copyright 2010-2024 Mike Bostock"
+      ]
+    },
+    {
+      "topic": "LT-232db81609",
+      "package": {
+        "id": "NPM::d3-scale-chromatic:3.1.0",
+        "ecosystem": "npm",
+        "name": "d3-scale-chromatic",
+        "version": "3.1.0"
+      },
+      "licences": [
+        "Apache-2.0"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "Apache-2.0",
+        "rationale": "REASON-003: Bundled code under its own licence; ColorBrewer schemes, the Apache-2.0 part of its LICENSE; already in notices",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha1": "8d1e41a9446f57c00965174f31fc8f225b3972b4",
+          "lines": [
+            [
+              15,
+              15
+            ],
+            [
+              15,
+              28
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright 2002 Cynthia Brewer, Mark Harrower, and The Pennsylvania State University",
+        "Copyright 2010-2024 Mike Bostock"
+      ]
+    },
+    {
+      "topic": "LT-7c66dbb35e",
+      "package": {
+        "id": "NPM::dompurify:3.4.17",
+        "ecosystem": "npm",
+        "name": "dompurify",
+        "version": "3.4.17"
+      },
+      "licences": [
+        "MIT"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "MIT",
+        "rationale": "REASON-003: Bundled code under its own licence; Babel's regenerator-runtime helper inlined in dist (Facebook, MIT); not yet in notices",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "dist/purify.cjs.js",
+          "sha1": "95e4d584a377b4692fc75df9fe60a01f944feb0d",
+          "lines": [
+            [
+              38,
+              38
+            ]
+          ]
+        },
+        {
+          "path": "dist/purify.es.mjs",
+          "sha1": "029a2ae3fc666e75ba395343667cdaf87be19def",
+          "lines": [
+            [
+              37,
+              37
+            ]
+          ]
+        },
+        {
+          "path": "dist/purify.js",
+          "sha1": "bbcabd468671acf610be2ba86fb85d0e0ffff9e1",
+          "lines": [
+            [
+              41,
+              41
+            ]
+          ]
+        },
+        {
+          "path": "dist/purify.min.js",
+          "sha1": "53925cb040dbb420d2d1dbbca2922ba5b1f54cb7",
+          "lines": [
+            [
+              4,
+              4
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "(c) Cure53 and other contributors",
+        "Copyright (c) 2014-present, Facebook, Inc."
+      ]
+    },
+    {
+      "topic": "LT-128c2fd76b",
+      "package": {
+        "id": "NPM::katex:0.18.10",
+        "ecosystem": "npm",
+        "name": "katex",
+        "version": "0.18.10"
+      },
+      "licences": [
+        "Apache-2.0"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "Apache-2.0",
+        "rationale": "REASON-003: Bundled code under its own licence; hyphenate/escape adapted from React (shipped); mhchem, Makefile, mapping.pl unused",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "contrib/mhchem/mhchem.js",
+          "sha1": "3ab7eb29daa9a1e6c3f637c9ee7ce26ee5fa9f8e",
+          "lines": [
+            [
+              19,
+              43
+            ]
+          ]
+        },
+        {
+          "path": "dist/contrib/mhchem.js",
+          "sha1": "8a1cf10ecd9f9e1d3dc7232569a8f71094682767",
+          "lines": [
+            [
+              100,
+              124
+            ]
+          ]
+        },
+        {
+          "path": "dist/contrib/mhchem.mjs",
+          "sha1": "5a77b8db84a3d97a1a4f4fecb575e9efdb79e8b8",
+          "lines": [
+            [
+              21,
+              45
+            ]
+          ]
+        },
+        {
+          "path": "dist/katex.js",
+          "sha1": "a8d7fa0caadf223b0ed5b40510a8c9d2a8c2c8eb",
+          "lines": [
+            [
+              116,
+              116
+            ]
+          ]
+        },
+        {
+          "path": "dist/katex.mjs",
+          "sha1": "85f16efdba1a238bbb84f06d03e19564230ea2f4",
+          "lines": [
+            [
+              67,
+              67
+            ]
+          ]
+        },
+        {
+          "path": "src/fonts/Makefile",
+          "sha1": "b86ad4def3e33f27c652a21fa7b19a1db9f35252",
+          "lines": [
+            [
+              3,
+              3
+            ],
+            [
+              8,
+              18
+            ]
+          ]
+        },
+        {
+          "path": "src/metrics/mapping.pl",
+          "sha1": "b83128c6eac794d5e80561ddd5e4e8f82a00af45",
+          "lines": [
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "path": "src/utils.ts",
+          "sha1": "affcbedea31fec9081fa56020892af6c4855e472",
+          "lines": [
+            [
+              8,
+              8
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright (c) 2009-2010, Design Science, Inc. <www.mathjax.org>",
+        "Copyright (c) 2011-2015 The MathJax Consortium",
+        "Copyright (c) 2013 MathJax Project",
+        "Copyright (c) 2013 The MathJax Consortium",
+        "Copyright (c) 2014-2017 Khan Academy <www.khanacademy.org>",
+        "Copyright (c) 2015-2018 Martin Hensel"
+      ]
+    },
+    {
+      "topic": "LT-cb1928bbb9",
+      "package": {
+        "id": "NPM::katex:0.18.10",
+        "ecosystem": "npm",
+        "name": "katex",
+        "version": "0.18.10"
+      },
+      "licences": [
+        "OFL-1.1"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "OFL-1.1",
+        "rationale": "REASON-003: Bundled code under its own licence; KaTeX fonts (Design Science, Khan Academy), unmodified; OFL not yet in notices",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "dist/fonts/KaTeX_AMS-Regular.ttf",
+          "sha1": "1dfd0ee6e30f8a1c23999d9d965db8700b5a9f2e",
+          "lines": [
+            [
+              182,
+              184
+            ]
+          ]
+        },
+        {
+          "path": "dist/fonts/KaTeX_Caligraphic-Bold.ttf",
+          "sha1": "8fab738a16ba8fb7e7002a075f036a455a45c6e8",
+          "lines": [
+            [
+              72,
+              74
+            ]
+          ]
+        },
+        {
+          "path": "dist/fonts/KaTeX_Caligraphic-Regular.ttf",
+          "sha1": "26f26a13e6a7d0a69b48f62acd31a8196bce7f6e",
+          "lines": [
+            [
+              79,
+              81
+            ]
+          ]
+        },
+        {
+          "path": "dist/fonts/KaTeX_Fraktur-Bold.ttf",
+          "sha1": "4e08dd00383124e7cd96970ccb0fbe35c9efaaa3",
+          "lines": [
+            [
+              194,
+              196
+            ]
+          ]
+        },
+        {
+          "path": "dist/fonts/KaTeX_Fraktur-Regular.ttf",
+          "sha1": "17db40882dd5f140625f28dd94c43045e1893e98",
+          "lines": [
+            [
+              174,
+              176
+            ]
+          ]
+        },
+        {
+          "path": "dist/fonts/KaTeX_Main-Bold.ttf",
+          "sha1": "413ab3dc3fc3a5752275bae2cae67eb58f2b32f0",
+          "lines": [
+            [
+              202,
+              204
+            ]
+          ]
+        },
+        {
+          "path": "dist/fonts/KaTeX_Main-BoldItalic.ttf",
+          "sha1": "ba6464e442fd50aef7678924ba0f2d9581ebbb07",
+          "lines": [
+            [
+              111,
+              113
+            ]
+          ]
+        },
+        {
+          "path": "dist/fonts/KaTeX_Main-Italic.ttf",
+          "sha1": "1d5668a2b94ae7dbeefdd7cd68d98fe9d5825e07",
+          "lines": [
+            [
+              96,
+              98
+            ]
+          ]
+        },
+        {
+          "path": "dist/fonts/KaTeX_Main-Regular.ttf",
+          "sha1": "8744db6ef8c309e3dc85f1bbe980520ad8b7bfd4",
+          "lines": [
+            [
+              188,
+              190
+            ]
+          ]
+        },
+        {
+          "path": "dist/fonts/KaTeX_Math-BoldItalic.ttf",
+          "sha1": "e80cc4c232d2075f762a52d46beb4ffbd37a5f1a",
+          "lines": [
+            [
+              117,
+              119
+            ]
+          ]
+        },
+        {
+          "path": "dist/fonts/KaTeX_Math-Italic.ttf",
+          "sha1": "9e9a10d8fa5ad88c9ecfa4902addd4d92580b2bc",
+          "lines": [
+            [
+              118,
+              120
+            ]
+          ]
+        },
+        {
+          "path": "dist/fonts/KaTeX_SansSerif-Bold.ttf",
+          "sha1": "20b45f5346b686d52c445745393d1707bb88ec1d",
+          "lines": [
+            [
+              100,
+              102
+            ]
+          ]
+        },
+        {
+          "path": "dist/fonts/KaTeX_SansSerif-Italic.ttf",
+          "sha1": "991fbdc03168bb14a4447cfa3e515f09a6ecfedc",
+          "lines": [
+            [
+              106,
+              108
+            ]
+          ]
+        },
+        {
+          "path": "dist/fonts/KaTeX_SansSerif-Regular.ttf",
+          "sha1": "4a8e17a0cb58a8228dd4417fbd1b899e41dab045",
+          "lines": [
+            [
+              145,
+              147
+            ]
+          ]
+        },
+        {
+          "path": "dist/fonts/KaTeX_Script-Regular.ttf",
+          "sha1": "c6f675da81ad29cbf24b2cf770f795b4da2c648e",
+          "lines": [
+            [
+              105,
+              107
+            ]
+          ]
+        },
+        {
+          "path": "dist/fonts/KaTeX_Size1-Regular.ttf",
+          "sha1": "3280bacbcb1245971fe01017b474c76c337c10c9",
+          "lines": [
+            [
+              72,
+              74
+            ]
+          ]
+        },
+        {
+          "path": "dist/fonts/KaTeX_Size2-Regular.ttf",
+          "sha1": "faf73ff3e795184e5431666ffafeb8aa0e28834d",
+          "lines": [
+            [
+              68,
+              70
+            ]
+          ]
+        },
+        {
+          "path": "dist/fonts/KaTeX_Size3-Regular.ttf",
+          "sha1": "302a61b2ecdf82d39e6780f42bd07ee4ce67b8d5",
+          "lines": [
+            [
+              57,
+              59
+            ]
+          ]
+        },
+        {
+          "path": "dist/fonts/KaTeX_Size4-Regular.ttf",
+          "sha1": "3d8d9dd58a03b7a46d497f5761e60d8b844a5199",
+          "lines": [
+            [
+              61,
+              63
+            ]
+          ]
+        },
+        {
+          "path": "dist/fonts/KaTeX_Typewriter-Regular.ttf",
+          "sha1": "629b99faf18d97529f21a1b1018093e60bcd058f",
+          "lines": [
+            [
+              99,
+              101
+            ]
+          ]
+        },
+        {
+          "path": "dist/katex.js",
+          "sha1": "a8d7fa0caadf223b0ed5b40510a8c9d2a8c2c8eb",
+          "lines": [
+            [
+              6966,
+              6966
+            ],
+            [
+              6967,
+              6967
+            ]
+          ]
+        },
+        {
+          "path": "src/fonts/lib/Space.ttx",
+          "sha1": "720f6c5c3db9182f240376b02534fad23a2fe892",
+          "lines": [
+            [
+              138,
+              140
+            ],
+            [
+              143,
+              143
+            ]
+          ]
+        },
+        {
+          "path": "src/fonts/xbbold.mf",
+          "sha1": "cabccfe2a66a1ce25b9cc9f593dd18dd2e9f6039",
+          "lines": [
+            [
+              20,
+              22
+            ]
+          ]
+        },
+        {
+          "path": "src/stretchy.ts",
+          "sha1": "ee836f68b8333dd1f2bc259297a44fd0111ab5a2",
+          "lines": [
+            [
+              75,
+              75
+            ],
+            [
+              76,
+              76
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "(c) 2009-2010, Design Science, Inc. <www.mathjax.org>",
+        "Copyright (c) 2009-2010 Design Science, Inc.",
+        "Copyright (c) 2009-2010, Design Science, Inc. <www.mathjax.org>",
+        "Copyright (c) 2009-2010, Design Science, Inc. www.mathjax.org",
+        "Copyright (c) 2014-2017 Khan Academy <www.khanacademy.org>",
+        "Copyright (c) 2014-2018 Khan",
+        "Copyright (c) 2014-2018 Khan Academy",
+        "Copyright (c) 2014-2018 Khan Academy <www.khanacademy.org>",
+        "Copyright (c) 2014-2018 Khan Academy www.khanacademy.org",
+        "Copyright 1995, 2009 American Mathematical Society"
+      ]
+    },
+    {
+      "topic": "LT-da64513c8d",
+      "package": {
+        "id": "NPM::layout-base:2.0.1",
+        "ecosystem": "npm",
+        "name": "layout-base",
+        "version": "2.0.1"
+      },
+      "licences": [
+        "Apache-2.0"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "Apache-2.0",
+        "rationale": "REASON-003: Bundled code under its own licence; util/SVD.js adapted from JamaJS, Apache text in the file; not yet in notices",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "layout-base.js",
+          "sha1": "3d64f409a5d37961936f5d1a63d6b61b6a93cb8c",
+          "lines": [
+            [
+              4327,
+              4527
+            ]
+          ]
+        },
+        {
+          "path": "src/util/SVD.js",
+          "sha1": "2af1b9293bb0f9c29377ed9d342daf30874fd5c2",
+          "lines": [
+            [
+              13,
+              213
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright i-Vis Research Group, Bilkent University, 2007"
+      ]
+    },
+    {
+      "topic": "LT-4576c3a3e6",
+      "package": {
+        "id": "NPM::marked:16.4.2",
+        "ecosystem": "npm",
+        "name": "marked",
+        "version": "16.4.2"
+      },
+      "licences": [
+        "BSD-3-Clause"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "BSD-3-Clause",
+        "rationale": "REASON-003: Bundled code under its own licence; John Gruber's Markdown, the BSD-3 part of LICENSE.md; already in notices",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "LICENSE.md",
+          "sha1": "b9422693a42a724cfc8ade0cf877c90c3c0ca89a",
+          "lines": [
+            [
+              38,
+              44
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright (c) 2004, John Gruber http://daringfireball.net",
+        "Copyright (c) 2011-2018, Christopher Jeffrey (https://github.com/chjj/)",
+        "Copyright (c) 2018+, MarkedJS (https://github.com/markedjs/)"
+      ]
+    },
+    {
+      "topic": "LT-345a4da239",
+      "package": {
+        "id": "NPM::mermaid:11.17.2",
+        "ecosystem": "npm",
+        "name": "mermaid",
+        "version": "11.17.2"
+      },
+      "licences": [
+        "Apache-2.0"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "Apache-2.0",
+        "rationale": "REASON-003: Bundled code under its own licence; bundled DOMPurify (Apache option); other hits only in .map files, not in Lattice",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "dist/chunks/mermaid.esm.min/architectureDiagram-2PNWDENW.mjs.map",
+          "sha1": "6455eae6ef720ab346409d9dc81a39207e9041c0",
+          "lines": [
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "path": "dist/chunks/mermaid.esm.min/chunk-QJSWEUOL.mjs",
+          "sha1": "9048b231d1b5d0552bac275ae6c2b8ee4ba9d8ad",
+          "lines": [
+            [
+              131,
+              131
+            ]
+          ]
+        },
+        {
+          "path": "dist/chunks/mermaid.esm.min/katex-CZ4GXH2S.mjs.map",
+          "sha1": "7c752649cb0ee5f8a2464f658d555cd5b79fdef9",
+          "lines": [
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "path": "dist/chunks/mermaid.esm/architectureDiagram-WKWPMKOY.mjs.map",
+          "sha1": "3dd293128229f061918217626b13ba8013a65680",
+          "lines": [
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "path": "dist/chunks/mermaid.esm/chunk-AHS5MEEA.mjs",
+          "sha1": "5c22722cd26ec21c108c6bfb8af83ff8b4d72719",
+          "lines": [
+            [
+              7845,
+              7845
+            ]
+          ]
+        },
+        {
+          "path": "dist/chunks/mermaid.esm/katex-HNBAO5SE.mjs.map",
+          "sha1": "6e16e894652dd7591b8e2e891a57deb943008bd9",
+          "lines": [
+            [
+              4,
+              4
+            ]
+          ]
+        },
+        {
+          "path": "dist/mermaid.js",
+          "sha1": "6b7f3577dd173999e4e5af93f0750e77cd249892",
+          "lines": [
+            [
+              193153,
+              193153
+            ]
+          ]
+        },
+        {
+          "path": "dist/mermaid.js.map",
+          "sha1": "e4ac4b6aee28c2fca6571344f63cc43e54febde1",
+          "lines": [
+            [
+              11811,
+              11811
+            ],
+            [
+              217276,
+              217476
+            ]
+          ]
+        },
+        {
+          "path": "dist/mermaid.min.js",
+          "sha1": "4e251a46dbaa57869e89988bbae3eb59e4827567",
+          "lines": [
+            [
+              3607,
+              3607
+            ]
+          ]
+        },
+        {
+          "path": "dist/mermaid.min.js.map",
+          "sha1": "e5e6c7480cc00d1cf59b1e2908f75309deb115d8",
+          "lines": [
+            [
+              11811,
+              11811
+            ],
+            [
+              217269,
+              217469
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "(c) Cure53 and other contributors",
+        "Copyright (c) 2013-2014 Ralf S. Engelschall (http://engelschall.com)",
+        "Copyright (c) 2016-2026, The Cytoscape Consortium",
+        "Copyright Gaetan Renaudeau",
+        "Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors",
+        "Copyright OpenJS Foundation and other contributors https://openjsf.org",
+        "Copyright i-Vis Research Group, Bilkent University, 2007",
+        "copyright Koen Bok"
+      ]
+    },
+    {
+      "topic": "LT-529255ab92",
+      "package": {
+        "id": "NPM::mermaid:11.17.2",
+        "ecosystem": "npm",
+        "name": "mermaid",
+        "version": "11.17.2"
+      },
+      "licences": [
+        "Apache-2.0"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "Apache-2.0",
+        "rationale": "REASON-004: Permissive option of a dual licence; bundled DOMPurify is Apache-2.0 OR MPL-2.0; Apache-2.0 as for Lattice's own dompurify",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "dist/chunks/mermaid.esm.min/chunk-QJSWEUOL.mjs",
+          "sha1": "9048b231d1b5d0552bac275ae6c2b8ee4ba9d8ad",
+          "lines": [
+            [
+              131,
+              131
+            ]
+          ]
+        },
+        {
+          "path": "dist/chunks/mermaid.esm/chunk-AHS5MEEA.mjs",
+          "sha1": "5c22722cd26ec21c108c6bfb8af83ff8b4d72719",
+          "lines": [
+            [
+              7845,
+              7845
+            ]
+          ]
+        },
+        {
+          "path": "dist/mermaid.js",
+          "sha1": "6b7f3577dd173999e4e5af93f0750e77cd249892",
+          "lines": [
+            [
+              193153,
+              193153
+            ]
+          ]
+        },
+        {
+          "path": "dist/mermaid.min.js",
+          "sha1": "4e251a46dbaa57869e89988bbae3eb59e4827567",
+          "lines": [
+            [
+              3607,
+              3607
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "(c) Cure53 and other contributors",
+        "Copyright (c) 2013-2014 Ralf S. Engelschall (http://engelschall.com)",
+        "Copyright Gaetan Renaudeau",
+        "Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors",
+        "Copyright OpenJS Foundation and other contributors https://openjsf.org",
+        "copyright Koen Bok"
+      ]
+    },
+    {
+      "topic": "LT-56ad7e6a6f",
+      "package": {
+        "id": "NPM::mermaid:11.17.2",
+        "ecosystem": "npm",
+        "name": "mermaid",
+        "version": "11.17.2"
+      },
+      "licences": [
+        "Apache-2.0"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "Apache-2.0",
+        "rationale": "REASON-002: False positive; no EPL: line 3607 is DOMPurify's 'Apache license 2.0 and Mozilla Public License 2.0'",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-10-28"
+      },
+      "files": [
+        {
+          "path": "dist/mermaid.min.js",
+          "sha1": "4e251a46dbaa57869e89988bbae3eb59e4827567",
+          "lines": [
+            [
+              3607,
+              3607
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "(c) Cure53 and other contributors",
+        "Copyright (c) 2013-2014 Ralf S. Engelschall (http://engelschall.com)",
+        "Copyright Gaetan Renaudeau",
+        "Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors",
+        "Copyright OpenJS Foundation and other contributors https://openjsf.org",
+        "copyright Koen Bok"
+      ]
+    }
+  ]
+}
