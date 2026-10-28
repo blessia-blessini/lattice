@@ -25,6 +25,7 @@
 // synthetic repository: gate, notices (write + drift check) and SBOMs.
 // Hermetic: a temp-dir repository and an injected `cargo metadata`.
 
+import crypto from 'crypto';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -63,6 +64,8 @@ function makeRepo(root, { crateLicense = 'MIT OR Apache-2.0' } = {}) {
         fs.writeFileSync(path.join(root, rel), text);
     };
     fs.cpSync(path.join(REAL_ROOT, 'foss'), path.join(root, 'foss'), { recursive: true });
+    // The real additions name real packages; tests that want some write their own.
+    fs.rmSync(path.join(root, 'foss', 'notice-additions.json'), { force: true });
     write('foss/policy.json', JSON.stringify({ ...JSON.parse(fs.readFileSync(path.join(REAL_ROOT, 'foss', 'policy.json'), 'utf8')), clarifications: [] }));
     write('foss/export-embedded.json', JSON.stringify({ components: [{ lockKey: 'node_modules/leftpad', material: 'padding' }] }));
     write('package.json', JSON.stringify({ name: 'lattice', version: '9.9.9', dependencies: { leftpad: '^1' }, devDependencies: { vitest: '*' } }));
@@ -152,6 +155,56 @@ describe('the CLI over a synthetic repository', () => {
         const errors = [];
         expect(commandNotices(inv, { root, targets: WIN, check: true }, { ...quiet, error: (m) => errors.push(m) })).toBe(1);
         expect(errors[0]).toMatch(/npm run foss:notices/);
+    });
+
+    it('quotes a notice addition from the installed package, and fails when the file differs (REQ-LTTCE-FOS-00008)', async () => {
+        const cargoMetadata = makeRepo(root);
+        const header = '// Copyright 2014 Twitter Inc.\n// Derived from Finagle, under the Apache License 2.0.\nfn ewma() {}\n';
+        const file = path.join(root, 'reg', 'democrate', 'src', 'ewma.rs');
+        fs.mkdirSync(path.dirname(file), { recursive: true });
+        fs.writeFileSync(file, header);
+        fs.writeFileSync(path.join(root, 'foss', 'notice-additions.json'), JSON.stringify({
+            format: 1,
+            source: { product: { repository: 'owner/lattice', ref: 'v9.9.9' }, date: '2026-10-28', legattice: null, run: null },
+            additions: [{
+                topic: 'LT-2c62835b1c',
+                package: { id: 'Crate::democrate:0.1.0', ecosystem: 'cargo', name: 'democrate', version: '0.1.0' },
+                licences: ['Apache-2.0'],
+                decision: { outcome: 'accept-as', licence: 'Apache-2.0', rationale: 'R', decidedBy: 'A. Reviewer', date: '2026-10-28' },
+                files: [{ path: 'src/ewma.rs', sha1: crypto.createHash('sha1').update(header).digest('hex'), lines: [[2, 2]] }],
+                copyrights: ['Copyright 2014 Twitter Inc.'],
+            }],
+        }));
+
+        const inv = await collect({ root, targets: WIN, today: TODAY, cargoMetadata });
+        expect(commandCheck(inv, quiet)).toBe(0);
+        expect(commandNotices(inv, { root, targets: WIN, check: false }, quiet)).toBe(0);
+        const md = fs.readFileSync(path.join(root, NOTICES_FILE), 'utf8');
+        expect(md).toMatch(/recorded in foss\/notice-additions\.json \(a scan of owner\/lattice at v9\.9\.9, 2026-10-28\)/);
+        expect(md).toMatch(/- Also in its code: Apache-2\.0, in 1 file \(ledger decision LT-2c62835b1c\)\n {2}- Copyright 2014 Twitter Inc\./);
+        expect(md).toMatch(/```text\n\/\/ Derived from Finagle, under the Apache License 2\.0\.\n```/);
+
+        fs.writeFileSync(file, header + '// changed\n');
+        const changed = await collect({ root, targets: WIN, today: TODAY, cargoMetadata });
+        const errors = [];
+        expect(commandCheck(changed, { ...quiet, error: (m) => errors.push(m) })).toBe(1);
+        expect(errors.join('\n')).toMatch(/src\/ewma\.rs differs from the file the decision was made on/);
+        expect(commandNotices(changed, { root, targets: WIN, check: true }, quiet)).toBe(1);
+    });
+
+    it('warns about a notice addition for a version that is not shipped, and still passes', async () => {
+        const cargoMetadata = makeRepo(root);
+        fs.writeFileSync(path.join(root, 'foss', 'notice-additions.json'), JSON.stringify({
+            format: 1, source: {},
+            additions: [{
+                topic: 'LT-2c62835b1c', package: { ecosystem: 'cargo', name: 'democrate', version: '0.0.9' }, licences: ['Apache-2.0'],
+                files: [{ path: 'src/ewma.rs', sha1: '0'.repeat(40), lines: [[1, 1]] }], copyrights: [],
+            }],
+        }));
+        const inv = await collect({ root, targets: WIN, today: TODAY, cargoMetadata });
+        const warnings = [];
+        expect(commandCheck(inv, { ...quiet, warn: (m) => warnings.push(m) })).toBe(0);
+        expect(warnings.join('\n')).toMatch(/unused notice addition LT-2c62835b1c \(cargo:democrate@0\.0\.9\)/);
     });
 
     it('writes the export notices beside them, and checks them for drift too', async () => {

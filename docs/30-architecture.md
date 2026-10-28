@@ -2307,6 +2307,39 @@ of `foss-compliance.yml`, so it runs on every pull request into `dev`, every pus
 *Why cargo-audit, not cargo-deny*: cargo-deny's other checks (licences, sources) duplicate the gate; the
 RustSec project's own reader is one binary. *Why npm audit*: it ships with Node; nothing new to install.
 
+<!--ARCH-LTTCE-FOS-00008-->
+**ARCH-LTTCE-FOS-00008** — covers REQ-LTTCE-FOS-00008. The deep scan runs outside Lattice, in Legattice
+(ORT + ScanCode over the package sources, about 10–30 minutes); a person decides each finding in its
+ledger. The decisions that add a licence to a component are exported by the scan as
+`notice-additions.json` (format: Legattice `docs/notices.md`) and committed here as
+`foss/notice-additions.json` — the same pattern as the other reviewed inputs of `foss/`, and Lattice's
+own checks never wait for the slow scan.
+
+```text
+ Legattice scan + ledger ─► notice-additions.json ─► foss/notice-additions.json (committed, reviewed)
+                                                         │
+ collect() ─► entries ─► attachAdditions ◄───────────────┘   per addition: component by ecosystem:name@version,
+                              │                              each file by SHA-1 in component.dir, lines quoted
+                              ├─► check: problems fail the gate, unused additions warn
+                              ├─► notices-render: "Also in its code" per component, texts in "Licence texts"
+                              └─► export-notices: the additions export-embedded.json names by topic
+```
+
+- **Trust, not re-scan**: Lattice does not re-run ScanCode. It checks that each file it quotes is byte for byte
+  the one the decision was made on (SHA-1 from the scan) and that each added licence fits `foss/policy.json`;
+  either failing fails `check` and `notices`.
+- **Quoting**: the lines of one file are quoted as one span when it fits 200 lines, else range by range; a
+  binary file (a NUL byte), a line over 400 characters (minified code, source maps) or a range past the end is
+  listed as not quoted. Non-UTF-8 files are read as Windows-1252 with its own table for 0x80–0x9F (Node's
+  decoder treats that label as Latin-1). Identical excerpts are printed once, like licence texts.
+- **Texts**: each added licence links its standard text from `foss/licenses/` where there is one; a licence
+  with neither a standard text nor a quoted excerpt fails, naming the file to add.
+- **Versions**: an addition for a component version no longer shipped (a dependency update) is a warning, not
+  a failure, so Dependabot pull requests keep passing; the decision must be renewed by a new scan.
+- **Exports**: `export-embedded.json` names per component the ledger topics that concern the copied material
+  (`topics`) — KaTeX's fonts (OFL-1.1), not KaTeX's code — because which files an export copies is not
+  something the scan knows.
+
 ## Architectural Decisions
 
 ### ADR-01: External Image Fetches Blocked by Default

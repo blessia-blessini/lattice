@@ -98,7 +98,14 @@ describe('loadEmbedded', () => {
 
     it('reads the list', () => {
         write({ components: [{ lockKey: 'node_modules/a', material: 'stylesheet' }] });
-        expect(loadEmbedded(root)).toEqual([{ lockKey: 'node_modules/a', material: 'stylesheet' }]);
+        expect(loadEmbedded(root)).toEqual([{ lockKey: 'node_modules/a', material: 'stylesheet', topics: [] }]);
+    });
+
+    it('reads the ledger topics of a component, and refuses ones that are not topic ids (REQ-LTTCE-FOS-00008)', () => {
+        write({ components: [{ lockKey: 'node_modules/a', material: 'fonts', topics: ['LT-cb1928bbb9'] }] });
+        expect(loadEmbedded(root)[0].topics).toEqual(['LT-cb1928bbb9']);
+        write({ components: [{ lockKey: 'node_modules/a', material: 'fonts', topics: ['OFL-1.1'] }] });
+        expect(() => loadEmbedded(root)).toThrow(/"topics" of node_modules\/a/);
     });
 
     it.each([
@@ -137,6 +144,15 @@ describe('selectEmbedded', () => {
     it('fails for a package the inventory does not ship', () => {
         expect(() => selectEmbedded(entries, [{ lockKey: 'node_modules/missing', material: 'a' }], ROOT)).toThrow(/node_modules\/missing.*not a shipped npm package/);
     });
+
+    it('picks the notice additions a component names by topic, and fails for one it does not have (REQ-LTTCE-FOS-00008)', () => {
+        const fonts = { topic: 'LT-cb1928bbb9', licences: ['OFL-1.1'], copyrights: [], quotes: [], unquoted: [], fileCount: 1 };
+        const katex = { ...entry({ name: 'katex' }), additions: [fonts] };
+        const picked = selectEmbedded([katex], [{ lockKey: 'node_modules/katex', material: 'fonts', topics: ['LT-cb1928bbb9'] }], ROOT);
+        expect(picked[0].additions).toEqual([fonts]);
+        expect(() => selectEmbedded([katex], [{ lockKey: 'node_modules/katex', material: 'fonts', topics: ['LT-0000000000'] }], ROOT))
+            .toThrow(/topic LT-0000000000 of "node_modules\/katex" has no notice addition/);
+    });
 });
 
 describe('renderExportNotices', () => {
@@ -147,6 +163,13 @@ describe('renderExportNotices', () => {
         expect(text).toMatch(/^- katex 0\.18\.2 \(stylesheet and fonts\): MIT\n {2}Copyright katex authors\n {2}Source: https:\/\/example\.org\/katex$/m);
         expect(text).toMatch(/^---- MIT licence text \(katex\) ----\n\nMIT text of katex$/m);
         expect(text.endsWith('\n')).toBe(true);
+    });
+
+    it('adds the licence, copyright lines and standard text of a notice addition (REQ-LTTCE-FOS-00008)', () => {
+        const fonts = { topic: 'LT-cb1928bbb9', licences: ['OFL-1.1'], copyrights: ['Copyright (c) 2009-2010 Design Science, Inc.'], quotes: [], unquoted: ['fonts/a.ttf'], fileCount: 1 };
+        const text = renderExportNotices([{ entry: entry({ name: 'katex' }), material: 'fonts', additions: [fonts] }], std);
+        expect(text).toMatch(/^ {2}Also: OFL-1\.1\n {4}Copyright \(c\) 2009-2010 Design Science, Inc\.$/m);
+        expect(text).toMatch(/^---- OFL-1\.1 licence text \(katex\) ----\n\nSIL OPEN FONT LICENSE/m);
     });
 
     it('prints an identical licence text once, naming every component that uses it', () => {

@@ -1,7 +1,7 @@
 {
-  "$comment": "Third-party material that src/lib/export-document.ts copies into every exported HTML document (REQ-LTTCE-FOS-00005). Each entry names the installed npm package by its package-lock.json key, so the version is the one the export really imports. 'foss.mjs notices' renders their notices into src/lib/export-notices.generated.txt; a key that matches no shipped npm package fails the run, and a unit test fails when export-document.ts imports material from a package not listed here.",
+  "$comment": "Third-party material that src/lib/export-document.ts copies into every exported HTML document (REQ-LTTCE-FOS-00005). Each entry names the installed npm package by its package-lock.json key, so the version is the one the export really imports. 'foss.mjs notices' renders their notices into src/lib/export-notices.generated.txt; a key that matches no shipped npm package fails the run, and a unit test fails when export-document.ts imports material from a package not listed here. 'topics' names the notice additions (foss/notice-additions.json, REQ-LTTCE-FOS-00008) that concern the copied material: KaTeX's fonts are under the SIL OFL-1.1 (ledger topic LT-cb1928bbb9), its code is not copied.",
   "components": [
-    { "lockKey": "node_modules/katex", "material": "stylesheet and fonts" },
+    { "lockKey": "node_modules/katex", "material": "stylesheet and fonts", "topics": ["LT-cb1928bbb9"] },
     { "lockKey": "node_modules/github-markdown-css", "material": "stylesheet" }
   ]
 }

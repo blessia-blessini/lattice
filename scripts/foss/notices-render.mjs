@@ -195,6 +195,59 @@ export function renderTypeSummary(uses, licenceTypes = {}) {
 // renderTypeSummary END ***************************************
 
 
+/** Files named in one line: the first few, then how many more. */
+const SHOWN_FILES = 3;
+function fileList(files) {
+    const shown = files.slice(0, SHOWN_FILES).map((f) => `\`${f}\``).join(', ');
+    return files.length > SHOWN_FILES ? `${shown} and ${files.length - SHOWN_FILES} more` : shown;
+}
+
+
+//**************************************************************
+// additionsIntro
+//**************************************************************
+/** The introduction's sentence on foss/notice-additions.json and where it came from. */
+export function additionsIntro(source) {
+    const scanned = [source.product?.repository, source.product?.ref].filter(Boolean).join(' at ');
+    const from = [scanned && `a scan of ${scanned}`, source.date, source.run].filter(Boolean).join(', ');
+    return 'Some components contain code from other projects under licences of their own, found by a scan of the package sources and recorded in foss/notice-additions.json'
+        + `${from ? ` (${escapeInline(from)})` : ''}; they are listed under each component as "Also in its code".`;
+}
+// additionsIntro END ******************************************
+
+
+//**************************************************************
+// renderAddition
+//**************************************************************
+/**
+ * The lines of one notice addition under its component: the licences, the
+ * copyright lines found with them, a standard text per licence where
+ * foss/licenses has one, and each distinct excerpt quoted from the files.
+ * @param {object} a one of `entry.additions`
+ * @param {string} title component title, for "Used by"
+ * @param {Record<string,string>} standardTexts
+ * @param {(body: string, id: string, user: string) => string} addText registers a text, returns its key
+ * @returns {string[]} Markdown lines
+ */
+export function renderAddition(a, title, standardTexts, addText) {
+    const files = a.fileCount === 1 ? '1 file' : `${a.fileCount} files`;
+    const lines = [`- Also in its code: ${escapeInline(a.licences.join(' AND '))}, in ${files} (ledger decision ${a.topic})`];
+    for (const line of a.copyrights) lines.push(`  - ${escapeInline(line)}`);
+    for (const id of a.licences) {
+        if (!standardTexts[id]) continue;
+        const key = addText(standardTexts[id], id, title);
+        lines.push(`  - Licence text (${escapeInline(id)}): [${key}](#${key}), standard text`);
+    }
+    for (const q of a.quotes) {
+        const key = addText(q.text, `${a.licences.join(', ')} (as found in the code)`, title);
+        lines.push(`  - As found in ${fileList(q.files)}: [${key}](#${key})`);
+    }
+    if (a.unquoted.length) lines.push(`  - Not quoted (binary, minified or too long): ${fileList(a.unquoted)}`);
+    return lines;
+}
+// renderAddition END ******************************************
+
+
 //**************************************************************
 // renderNotices
 //**************************************************************
@@ -212,9 +265,12 @@ export function renderTypeSummary(uses, licenceTypes = {}) {
  * @param {Record<string,string>} [input.licenceTypes] id -> type, for "Licences by type"
  * @param {string[]} [input.extraSections] Markdown lines placed after the
  *   components and before the licence texts (the AppImage section)
+ * @param {object|null} [input.additionsSource] `source` of foss/notice-additions.json,
+ *   named in the introduction when present; each entry's `additions`
+ *   (notice-additions.mjs) are rendered under its component (REQ-LTTCE-FOS-00008)
  * @returns {string} Markdown, LF line ends, trailing newline
  */
-export function renderNotices({ entries, standardTexts, targets, licenceTypes = {}, extraSections = [] }) {
+export function renderNotices({ entries, standardTexts, targets, licenceTypes = {}, extraSections = [], additionsSource = null }) {
     const sorted = [...entries].sort((a, b) =>
         a.component.name.localeCompare(b.component.name, 'en') ||
         a.component.version.localeCompare(b.component.version, 'en') ||
@@ -233,7 +289,8 @@ export function renderNotices({ entries, standardTexts, targets, licenceTypes = 
     const sections = [];
     const rows = [];
     const uses = []; // one per licence a component is used under, for the type summary
-    for (const { component: c, evaluation: ev, selection: sel, platforms, obligation } of sorted) {
+    for (const entry of sorted) {
+        const { component: c, evaluation: ev, selection: sel, platforms, obligation } = entry;
         counts[c.ecosystem in counts ? c.ecosystem : 'other']++;
         const title = `${c.name} ${c.version}`;
         const usedKeys = [...new Set(ev.chosen.map((l) => (l.exception ? `${l.id} WITH ${l.exception}` : l.id)))];
@@ -261,6 +318,10 @@ export function renderNotices({ entries, standardTexts, targets, licenceTypes = 
             lines.push(`- Licence text (${escapeInline(t.id)}): [${key}](#${key}), ${note}`);
         }
         if (obligation) lines.push(`- Obligation: ${escapeInline(obligation)}`);
+        for (const a of entry.additions ?? []) {
+            for (const id of a.licences) uses.push({ key: id, title, linked: c.linkage === 'linked' });
+            lines.push(...renderAddition(a, title, standardTexts, addText));
+        }
         for (const n of sel.notices) {
             lines.push('', `NOTICE file \`${n.name}\`:`, '', fenced(n.text));
         }
@@ -277,6 +338,7 @@ export function renderNotices({ entries, standardTexts, targets, licenceTypes = 
         '',
         'This file is generated by `npm run foss:notices` (scripts/foss/foss.mjs) from Cargo.lock, package-lock.json and foss/extra-components.json. Do not edit it by hand.',
         '',
+        ...(additionsSource ? [additionsIntro(additionsSource), ''] : []),
         `Components: ${total} (${counts.cargo} Rust crates, ${counts.npm} npm packages, ${counts.other} other).`,
         '',
         'Platforms: ' + targets.map((t) => `${t.label} = ${t.triple}`).join('; ') + '.',

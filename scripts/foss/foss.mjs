@@ -64,6 +64,7 @@ import {
 import { buildSbom } from './cyclonedx.mjs';
 import { EXPORT_NOTICES_FILE, loadEmbedded, renderExportNotices, selectEmbedded } from './export-notices.mjs';
 import { fallbackCopyright, findExhibitB, listLicenceFiles, selectTexts, shippedLicenceIds } from './licence-texts.mjs';
+import { ADDITIONS_FILE, attachAdditions, loadAdditions } from './notice-additions.mjs';
 import { enrichFromManifest, inventoryFromLockfile } from './npm-inventory.mjs';
 import { renderNotices } from './notices-render.mjs';
 import { evaluateComponent, licenceTypeMap, loadPolicy, obligationNote, unusedPolicyEntries } from './policy.mjs';
@@ -73,6 +74,8 @@ export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 export const NOTICES_FILE = 'THIRD-PARTY-NOTICES.md';
 export const PRODUCT_LICENSE = 'AGPL-3.0-or-later';
 const EXTRA_COMPONENTS_FILE = 'foss/extra-components.json';
+/** An inventory without notice additions (tests that build one by hand). */
+const NO_ADDITIONS = Object.freeze({ source: null, problems: [], warnings: [] });
 const REGENERATE_HINT = `run "npm run foss:notices" and commit ${NOTICES_FILE} and ${EXPORT_NOTICES_FILE}`;
 /** What `notices` needs before it can regenerate: the sources it reads, without running any package scripts. */
 const REGENERATE_STEPS = Object.freeze([
@@ -137,7 +140,8 @@ function mergeComponent(merged, component, label) {
  * @param {{triple: string, label: string}[]} options.targets
  * @param {string} options.today YYYY-MM-DD
  * @param {(manifest: string, triple: string) => Promise<object>} [options.cargoMetadata] injectable for tests
- * @returns {Promise<{policy: object, entries: object[]}>}
+ * @returns {Promise<{policy: object, entries: object[], appImage: object[], additions: {source: object|null, problems: string[], warnings: string[]}}>}
+ *   each entry also carries `additions` (notice-additions.mjs, REQ-LTTCE-FOS-00008)
  */
 export async function collect({ root, targets, today, cargoMetadata = runCargoMetadata }) {
     const policy = loadPolicy(path.join(root, 'foss', 'policy.json'));
@@ -189,7 +193,9 @@ export async function collect({ root, targets, today, cargoMetadata = runCargoMe
     const appImage = fs.existsSync(path.join(root, APPIMAGE_LIST_FILE))
         ? evaluateAppImageList(loadAppImageList(root), policy, today)
         : [];
-    return { policy, entries, appImage };
+    const additionsData = loadAdditions(root);
+    const { problems, warnings } = attachAdditions(entries, additionsData, policy, loadStandardTexts(root));
+    return { policy, entries, appImage, additions: { source: additionsData?.source ?? null, problems, warnings } };
 }
 // collect END *************************************************
 
@@ -201,7 +207,7 @@ export async function collect({ root, targets, today, cargoMetadata = runCargoMe
  * The licence gate. Prints every failing component with its reasons.
  * @returns {number} exit code
  */
-export function commandCheck({ policy, entries, appImage = [] }, log = console) {
+export function commandCheck({ policy, entries, appImage = [], additions = NO_ADDITIONS }, log = console) {
     const failures = entries.filter((e) => !e.evaluation.pass);
     const byEco = (eco) => entries.filter((e) => e.component.ecosystem === eco).length;
     log.log(`foss check: ${entries.length} components (${byEco('cargo')} cargo, ${byEco('npm')} npm, ${byEco('other')} other)`);
@@ -209,10 +215,14 @@ export function commandCheck({ policy, entries, appImage = [] }, log = console) 
     for (const warning of unusedPolicyEntries(policy, components)) {
         log.warn(`  [WARN] unused policy entry ${warning}`);
     }
+    for (const warning of additions.warnings) log.warn(`  [WARN] ${warning}`);
     const failed = failures.map((f) => {
         const c = f.component;
         return `${c.ecosystem}:${c.name}@${c.version} (${c.linkage}): ${f.evaluation.problems.join('; ')}`;
     });
+    // REQ-LTTCE-FOS-00008: a decision made on other file content, or one that
+    // adds a licence the policy does not admit, fails like a component would.
+    failed.push(...additions.problems);
     for (const line of failed) log.error(`  [FAIL] ${line}`);
     // REQ-LTTCE-FOS-00006: the reviewed AppImage packages are held to the policy
     // on every run, so a policy change that rejects one fails here, not on a Linux leg.
@@ -249,11 +259,16 @@ export function commandCheck({ policy, entries, appImage = [] }, log = console) 
  * compares both to the committed copies.
  * @returns {number} exit code
  */
-export function commandNotices({ policy, entries, appImage = [] }, { root, targets, check }, log = console) {
+export function commandNotices({ policy, entries, appImage = [], additions = NO_ADDITIONS }, { root, targets, check }, log = console) {
+    if (additions.problems.length) {
+        for (const p of additions.problems) log.error(`  [FAIL] ${p}`);
+        log.error(`foss notices: ${ADDITIONS_FILE} does not match the installed packages; update it from a Legattice scan of this tree`);
+        return 1;
+    }
     const standardTexts = loadStandardTexts(root);
     const extraSections = appImage.length ? renderAppImageSection(appImage) : [];
     const outputs = [
-        [NOTICES_FILE, renderNotices({ entries, standardTexts, targets, licenceTypes: licenceTypeMap(policy), extraSections })],
+        [NOTICES_FILE, renderNotices({ entries, standardTexts, targets, licenceTypes: licenceTypeMap(policy), extraSections, additionsSource: additions.source })],
         [EXPORT_NOTICES_FILE, renderExportNotices(selectEmbedded(entries, loadEmbedded(root), root), standardTexts)],
     ];
     if (!check) {

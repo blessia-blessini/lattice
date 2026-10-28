@@ -1115,6 +1115,23 @@ Dependabot alerts do not stop a release. The block sits where a vulnerable compo
 new advisory appears without any change to the code, and failing every pull request on it would stop
 unrelated work until the dependency is fixed (follow-up FU-9).
 
+<!--REQ-LTTCE-FOS-00008-->
+**REQ-LTTCE-FOS-00008** — Where a component contains material under a licence it does not declare — code
+taken from another project with its own licence header, fonts under their own licence — and a person has
+decided that finding of a scan of the component sources, the third-party notices of REQ-LTTCE-FOS-00002
+SHALL carry it under that component: the licence, the copyright lines found with it, the text as found in
+the component where it can be quoted, and the licence's standard text where one exists. The decisions SHALL
+come from one versioned file in the repository that names, per decision, the files and lines it covers and
+the content hash of each file; a file that differs from the one decided on, or a licence the policy of
+REQ-LTTCE-FOS-00004 does not admit, SHALL fail the licence check and the notices. A decision for a component
+version that is no longer shipped SHALL be reported. An exported document (REQ-LTTCE-FOS-00005) SHALL also
+carry the decisions that concern the material it copies.
+
+*Rationale*: the notices of REQ-LTTCE-FOS-00002 come from each component's declared licence. A scan of
+Lattice v0.3.50 (Legattice, 2026-10-28) found 28 decisions' worth of material that licence does not cover —
+among them dav1d and x264 assembly, W3C text, the Sun and FreeBSD maths code, KaTeX's fonts under the SIL OFL
+and the Alliance for Open Media Patent License, whose section 1.2.1(b) asks for its text with every binary.
+
 ---
 
 [^mermaid]: Mermaid — a JavaScript diagramming library rendering text definitions inside fenced code blocks
