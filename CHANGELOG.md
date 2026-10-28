@@ -3,10 +3,24 @@
 All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
+## v0.3.52
+### Changes
+  <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE:Prep v0.3.51 Release
+--- 
 
 ## v0.3.51
 ### Changes
-  <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: Notice additions - review cycle 2 nits: own heading for blocked additions, sorted export ids
+- FIX: Notice additions - review cycle 1: block a release on unused ones, tighter paths and quotes
+- FEAT: Carry the notices the Legattice ledger adds - code inside packages under its own licence
+- FIX: FIX FOSS compliance tooling scripts, tests, and documentation for false positives
+- FEAT: add FOSS compliance workflow, test documentation, and system requirements specification
+- CHORE: update dev dependencies and their licence notes
+---
+
+## v0.3.51 - unchanged
+### Changes
 - FIX: Notice additions - review cycle 2 nits: own heading for blocked additions, sorted export ids
 - FIX: Notice additions - review cycle 1: block a release on unused ones, tighter paths and quotes
 - FEAT: Carry the notices the Legattice ledger adds - code inside packages under its own licence
