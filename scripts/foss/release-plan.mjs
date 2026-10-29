@@ -24,17 +24,14 @@
 
 /// What a build is, for the release FOSS gate (release-plan.mjs)
 ///
-/// IMPL-LTTCE-FOS-00009 — REQ-LTTCE-FOS-00009. The release build decides two
-/// things once, in its setup job, and every later job follows them:
-/// - the kind: a release (tag vX.Y.Z), a candidate (tag vX.Y.Z-suffix: built
-///   and checked like a release, never published) or an ordinary build;
-/// - whether the shipped dependencies changed since the scan that the
-///   committed foss/notice-additions.json was made from: then the deep scan
-///   runs before the build legs, which ship its fresh notices; else it runs
-///   beside them, and the fresh notice additions must equal the committed ones.
-/// And, for the parallel path, whether two notice-additions files agree.
+/// IMPL-LTTCE-FOS-00009 — REQ-LTTCE-FOS-00009. The build decides its kind once,
+/// in its setup job, and every later job follows it: a release (tag vX.Y.Z), a
+/// candidate (tag vX.Y.Z-suffix: built and checked like a release, never
+/// published) or an ordinary build. Releases and candidates always ship the
+/// notices of their own deep scan; after a release, whether those differ from
+/// the committed ones decides if a pull request brings them back to dev.
 ///
-/// Pure apart from what the callers pass in (file texts, git output).
+/// Pure: no file system, no git.
 
 /** A release tag: exactly vX.Y.Z. */
 const RELEASE_TAG_RE = /^v[0-9]+\.[0-9]+\.[0-9]+$/;
@@ -61,78 +58,6 @@ export function releaseKind(ref) {
     return 'build';
 }
 // releaseKind END *********************************************
-
-
-//**************************************************************
-// cargoLockVersions
-//**************************************************************
-/**
- * The registry and git crates of a Cargo.lock as "name -> versions". Path
- * crates (no `source`) are Lattice's own code -- among them lattice itself,
- * whose version changes with every release -- and are left out.
- * @param {string} text Cargo.lock
- * @returns {Map<string, string>} "cargo:name" -> sorted versions joined by ","
- */
-export function cargoLockVersions(text) {
-    const versions = new Map();
-    for (const block of String(text).split(/^\[\[package\]\]\s*$/m).slice(1)) {
-        const field = (name) => block.match(new RegExp(`^${name}\\s*=\\s*"([^"]*)"`, 'm'))?.[1];
-        const name = field('name');
-        const version = field('version');
-        if (!name || !version || !field('source')) continue;
-        const key = `cargo:${name}`;
-        versions.set(key, [...(versions.get(key)?.split(',') ?? []), version].sort().join(','));
-    }
-    return versions;
-}
-// cargoLockVersions END ***************************************
-
-
-//**************************************************************
-// npmLockVersions
-//**************************************************************
-/**
- * The installed packages of a package-lock.json (lockfile v2/v3) as
- * "lock key -> version". The root entry (Lattice itself) and links to
- * local folders are left out.
- * @param {object} lock parsed package-lock.json
- * @returns {Map<string, string>} "npm:node_modules/..." -> version
- */
-export function npmLockVersions(lock) {
-    const versions = new Map();
-    for (const [key, entry] of Object.entries(lock?.packages ?? {})) {
-        if (key === '' || entry?.link === true || typeof entry?.version !== 'string') continue;
-        versions.set(`npm:${key}`, entry.version);
-    }
-    return versions;
-}
-// npmLockVersions END *****************************************
-
-
-//**************************************************************
-// dependencyChanges
-//**************************************************************
-/**
- * What differs between two version maps, each list sorted.
- * @param {Map<string, string>} before
- * @param {Map<string, string>} after
- * @returns {{added: string[], removed: string[], changed: string[]}}
- *   added "key@version", removed "key@version", changed "key old -> new"
- */
-export function dependencyChanges(before, after) {
-    const added = [];
-    const removed = [];
-    const changed = [];
-    for (const [key, version] of after) {
-        if (!before.has(key)) added.push(`${key}@${version}`);
-        else if (before.get(key) !== version) changed.push(`${key} ${before.get(key)} -> ${version}`);
-    }
-    for (const [key, version] of before) {
-        if (!after.has(key)) removed.push(`${key}@${version}`);
-    }
-    return { added: added.sort(), removed: removed.sort(), changed: changed.sort() };
-}
-// dependencyChanges END ***************************************
 
 
 //**************************************************************

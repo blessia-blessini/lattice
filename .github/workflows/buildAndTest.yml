@@ -73,18 +73,14 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       # REQ-LTTCE-FOS-00009: release (tag vX.Y.Z) | candidate (vX.Y.Z-suffix:
-      # built and checked like a release, never published) | build; and on a
-      # tag whether the shipped dependencies changed since the deep scan the
-      # committed notice additions came from. Every later job follows these.
+      # built and checked like a release, never published) | build. Every
+      # later job follows it.
       kind: ${{ steps.release-plan.outputs.kind }}
-      deps_changed: ${{ steps.release-plan.outputs.deps_changed }}
     steps:
-    # Full history: the release plan compares the lock files with the tag
-    # the committed notice additions were scanned at.
     - name: Checkout (release plan)
       uses: actions/checkout@v6
       with:
-        fetch-depth: 0
+        sparse-checkout: scripts/foss
 
     - name: Install Node (release plan)
       uses: actions/setup-node@v6
@@ -268,98 +264,64 @@ jobs:
         echo "matrix=$FINAL_JSON" >> "$GITHUB_OUTPUT"
 
   ################################################################
-  # JOBS 1b-1f: FOSS COMPLIANCE (REQ-LTTCE-FOS-00002 / 00004 / 00007 /
+  # JOBS 1b-1d: FOSS COMPLIANCE (REQ-LTTCE-FOS-00002 / 00004 / 00007 /
   #   00008 / 00009). foss-compliance.yml also runs on every pull
   #   request to dev and every push to dev; here it writes the SBOMs
-  #   (sbom: true, which only a build passes). On a release or
-  #   candidate tag the deep scan (Legattice: ORT + ScanCode + the
-  #   ledger) runs too and stops the run while a medium or high topic
-  #   is undecided -- decide it in the Legattice ledger, then "Re-run
-  #   failed jobs" here. Two paths, chosen by setup (deps_changed):
+  #   (sbom: true, which only a build passes).
   #
-  #   unchanged: foss-scan-beside  beside the build legs, which ship
-  #              the committed notices; compare-additions checks the
-  #              scan adds exactly what foss/notice-additions.json says
-  #   changed:   foss-scan-first -> foss-compliance-fresh -> build legs:
-  #              the scan's additions replace the committed ones, the
-  #              notices are regenerated and the legs ship those
+  #   build (branch, manual):  foss-compliance beside the build legs,
+  #                            which ship the committed notices.
+  #   release / candidate tag: foss-scan -> foss-compliance-release ->
+  #                            build legs. The deep scan (Legattice:
+  #                            ORT + ScanCode + the ledger) stops the
+  #                            run while ANY topic is undecided -- decide
+  #                            it in the Legattice ledger, then "Re-run
+  #                            failed jobs" here. Its notice additions
+  #                            replace the committed ones, the notices
+  #                            are regenerated and every leg ships those.
   #
-  #   The scan and the FOSS job appear twice because a job's needs are
-  #   fixed: the changed path makes the build legs wait for them, the
-  #   unchanged path must not. Only one of each pair runs.
+  #   The FOSS job appears twice because a job's needs are fixed: on a
+  #   tag the build legs wait for it, on a branch they must not. Only
+  #   one of the two runs.
   ################################################################
   foss-compliance:
     needs: setup
-    if: needs.setup.outputs.deps_changed != 'true'
+    if: needs.setup.outputs.kind == 'build'
     uses: ./.github/workflows/foss-compliance.yml
     with:
       sbom: true
 
-  foss-scan-beside:
+  foss-scan:
     needs: setup
-    if: needs.setup.outputs.kind != 'build' && needs.setup.outputs.deps_changed != 'true'
-    uses: blessia-blessini/legattice/.github/workflows/scan.yml@main
-    with:
-      repository: ${{ github.repository }}
-      ref: ${{ github.sha }}
-      # 8 of GitHub's 20 parallel jobs: the build legs run at the same time.
-      shards: '8'
-      block_at: medium
-
-  compare-additions:
-    needs: [setup, foss-scan-beside]
-    if: needs.setup.outputs.kind != 'build' && needs.setup.outputs.deps_changed != 'true'
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout (FOSS tooling and data)
-      uses: actions/checkout@v6
-      with:
-        sparse-checkout: |
-          scripts/foss
-          foss
-    - name: Install Node
-      uses: actions/setup-node@v6
-      with:
-        node-version: '24'
-    - name: Get the deep scan's results
-      uses: actions/download-artifact@v8
-      with:
-        name: ${{ needs.foss-scan-beside.outputs.results_artifact }}
-        path: legattice-results
-    - name: The scan adds what the committed notices carry
-      run: node scripts/foss/foss.mjs compare-additions --fresh legattice-results/topics/notice-additions.json
-
-  foss-scan-first:
-    needs: setup
-    if: needs.setup.outputs.kind != 'build' && needs.setup.outputs.deps_changed == 'true'
+    if: needs.setup.outputs.kind != 'build'
     uses: blessia-blessini/legattice/.github/workflows/scan.yml@main
     with:
       repository: ${{ github.repository }}
       ref: ${{ github.sha }}
       # Nothing else runs yet: the build legs wait for this.
       shards: '16'
-      block_at: medium
+      block_at: low
 
-  foss-compliance-fresh:
-    needs: [setup, foss-scan-first]
-    if: needs.setup.outputs.kind != 'build' && needs.setup.outputs.deps_changed == 'true'
+  foss-compliance-release:
+    needs: [setup, foss-scan]
+    if: needs.setup.outputs.kind != 'build'
     uses: ./.github/workflows/foss-compliance.yml
     with:
       sbom: true
-      fresh_additions: ${{ needs.foss-scan-first.outputs.results_artifact }}
+      fresh_additions: ${{ needs.foss-scan.outputs.results_artifact }}
 
   ################################################################
   # JOB 2: BUILD AND TEST
-  #   With changed dependencies (setup deps_changed) the legs wait
-  #   for foss-compliance-fresh and ship its regenerated notices
-  #   (step 102); otherwise they start at once, as before.
+  #   On a release or candidate tag the legs wait for
+  #   foss-compliance-release and ship its regenerated notices
+  #   (step 102); on a branch they start at once, as before.
   ################################################################
   build-and-test:
-    needs: [setup, foss-compliance-fresh]
+    needs: [setup, foss-compliance-release]
     if: >-
       !cancelled() && needs.setup.result == 'success'
       && needs.setup.outputs.matrix != '[]' && needs.setup.outputs.matrix != ''
-      && (needs.setup.outputs.deps_changed != 'true' || needs.foss-compliance-fresh.result == 'success')
+      && (needs.setup.outputs.kind == 'build' || needs.foss-compliance-release.result == 'success')
     runs-on: ${{ matrix.config.os }}
     strategy:
       fail-fast: false
@@ -421,15 +383,15 @@ jobs:
         echo "scripts/foss and foss absent; LICENSE and THIRD-PARTY-NOTICES.md present"
 
     ################################################################
-    # 102 / Release with changed dependencies (REQ-LTTCE-FOS-00009):
+    # 102 / Release and candidate tags (REQ-LTTCE-FOS-00009):
     #       the notices regenerated from this commit's deep scan
-    #       (foss-compliance-fresh) replace the committed ones before
+    #       (foss-compliance-release) replace the committed ones before
     #       anything is built -- THIRD-PARTY-NOTICES.md is bundled, the
     #       export notices are compiled into the frontend. Step 390
     #       then checks the installers against these files.
     ################################################################
     - name: 102. Use the release notices of the deep scan
-      if: needs.setup.outputs.deps_changed == 'true'
+      if: needs.setup.outputs.kind != 'build'
       uses: actions/download-artifact@v8
       with:
         name: release-notices
@@ -889,18 +851,14 @@ jobs:
   # JOB 4: PUBLISH TO RELEASE SITE  (tag vX.X.X builds only)
   ################################################################################################################################
   publish-release-site:
-    needs: [setup, build-and-test, package-msix-bundle, foss-compliance, foss-scan-beside, compare-additions, foss-scan-first, foss-compliance-fresh]
+    needs: [setup, build-and-test, package-msix-bundle, foss-scan, foss-compliance-release]
     # Only an exact release tag vX.Y.Z publishes (REQ-LTTCE-FOS-00009), and only
-    # when the FOSS jobs of its path passed: the deep scan found no undecided
-    # medium or high topic, and the notices the installers carry are the ones
-    # the scan's decisions call for. Skipped jobs of the other path are expected.
+    # when the deep scan found no undecided topic and the installers carry the
+    # notices made from its decisions (foss-compliance-release).
     if: >-
       !cancelled() && needs.setup.outputs.kind == 'release'
       && needs.build-and-test.result == 'success' && needs.package-msix-bundle.result == 'success'
-      && ((needs.setup.outputs.deps_changed != 'true' && needs.foss-compliance.result == 'success'
-           && needs.foss-scan-beside.result == 'success' && needs.compare-additions.result == 'success')
-       || (needs.setup.outputs.deps_changed == 'true' && needs.foss-scan-first.result == 'success'
-           && needs.foss-compliance-fresh.result == 'success'))
+      && needs.foss-scan.result == 'success' && needs.foss-compliance-release.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write      # required to create GitHub Releases
@@ -1075,7 +1033,7 @@ jobs:
     - name: 903.2a. Download the deep scan's results
       uses: actions/download-artifact@v8
       with:
-        name: ${{ needs.foss-scan-first.outputs.results_artifact || needs.foss-scan-beside.outputs.results_artifact }}
+        name: ${{ needs.foss-scan.outputs.results_artifact }}
         path: legattice-results
 
     - name: 903.2b. Add the FOSS topics report
@@ -1717,3 +1675,90 @@ jobs:
         echo " - GitHub Release: ${RELEASE_URL}" >> $GITHUB_STEP_SUMMARY
         echo " - Release page: https://lattice-md.app/Lattice-Releases/assets-${VERSION}/" >> $GITHUB_STEP_SUMMARY
         echo " - Coverage report: https://lattice-md.app/Lattice-Releases/assets-${VERSION}/coverage/" >> $GITHUB_STEP_SUMMARY
+
+  ################################################################################################################################
+  ################################################################################################################################
+  # JOB 5: BRING THE RELEASED NOTICES BACK TO DEV  (tag vX.Y.Z, after publishing; REQ-LTTCE-FOS-00009)
+  #   The installers carry the notices of this release's deep scan, which
+  #   may be newer than those committed. If they differ, this opens a pull
+  #   request into dev with foss/notice-additions.json and the two notices
+  #   files exactly as released, so nobody has to remember it; merging it
+  #   is the maintainer's approval. Re-running is safe: an open pull request
+  #   or a pushed branch of the same release is reused, never overwritten.
+  #   Needs the repository setting "Allow GitHub Actions to create and
+  #   approve pull requests". Pull requests made with GITHUB_TOKEN start no
+  #   workflows; the files were checked by this run already.
+  ################################################################################################################################
+  notices-to-dev:
+    needs: [setup, foss-scan, publish-release-site]
+    if: >-
+      !cancelled() && needs.setup.outputs.kind == 'release'
+      && needs.publish-release-site.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write        # push the branch
+      pull-requests: write   # open the pull request
+    steps:
+    - name: 950. Checkout (the released commit)
+      uses: actions/checkout@v6
+
+    - name: 951. Install Node
+      uses: actions/setup-node@v6
+      with:
+        node-version: '24'
+
+    - name: 952a. Get the deep scan's results
+      uses: actions/download-artifact@v8
+      with:
+        name: ${{ needs.foss-scan.outputs.results_artifact }}
+        path: legattice-results
+
+    - name: 952b. Get the released notices
+      uses: actions/download-artifact@v8
+      with:
+        name: release-notices
+        path: .
+
+    - name: 953. Did the notice additions change?
+      id: compare
+      run: node scripts/foss/foss.mjs compare-additions --fresh legattice-results/topics/notice-additions.json
+
+    - name: 954. Open the pull request into dev
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        ADDITIONS_CHANGED: ${{ steps.compare.outputs.changed }}
+        TAG: ${{ github.ref_name }}
+      run: |
+        set -euo pipefail
+        NOTICES="THIRD-PARTY-NOTICES.md src/lib/export-notices.generated.txt"
+        # shellcheck disable=SC2086
+        if [ "$ADDITIONS_CHANGED" != "true" ] && git diff --quiet -- $NOTICES; then
+          echo "The released notices are the committed ones: nothing to bring back."
+          echo "### Notices: dev is up to date" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+        fi
+        BRANCH="foss-notices-${TAG}"
+        EXISTING=$(gh pr list --base dev --head "$BRANCH" --state open --json url --jq '.[0].url // empty')
+        if [ -n "$EXISTING" ]; then
+          echo "Pull request already open: $EXISTING"
+          echo "### Notices: pull request into dev already open: $EXISTING" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+        fi
+        if ! git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
+          cp legattice-results/topics/notice-additions.json foss/notice-additions.json
+          git config user.name  "GitHub Actions"
+          git config user.email "actions@github.com"
+          git switch -c "$BRANCH"
+          # shellcheck disable=SC2086
+          git add foss/notice-additions.json $NOTICES
+          git commit -m "CHORE: Bring the notices released in ${TAG} back to dev" \
+            -m "The installers of ${TAG} carry the notices of its deep scan (REQ-LTTCE-FOS-00009); this commits them as released." \
+            -m "Co-authored-by: Blessia-Blessini <273819958+blessia-blessini@users.noreply.github.com>"
+          git push origin "$BRANCH"
+        fi
+        URL=$(gh pr create --base dev --head "$BRANCH" \
+          --title "CHORE: Bring the notices released in ${TAG} back to dev" \
+          --body "The installers of ${TAG} carry the third-party notices of its deep scan. This brings \`foss/notice-additions.json\`, \`THIRD-PARTY-NOTICES.md\` and \`src/lib/export-notices.generated.txt\` to dev exactly as released. Made by run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}.")
+        echo "Opened $URL"
+        echo "### Notices: pull request into dev opened: $URL" >> "$GITHUB_STEP_SUMMARY"

@@ -46,22 +46,17 @@ They need the sources of all packages on disk first: `npm ci --ignore-scripts` a
 
 **Releases and the deep scan.** Only a tag of exactly the form `vX.Y.Z` publishes. A tag with a suffix
 (`v0.3.52-rc1`) is a dress rehearsal: it builds and checks everything a release does, and publishes
-nothing. On both, the build also runs the deep scan of all package sources (Legattice) and **stops before
-publishing while a medium or high finding is undecided**:
+nothing. On both, the build first runs the deep scan of all package sources (Legattice) and **stops while
+any finding is undecided** — low, medium or high:
 
 1. The run's summary lists the open topics; the scan's results artifact holds a draft for each.
 2. Decide them in the Legattice ledger (`products/lattice/ledger/`), commit and push there.
 3. On the stopped run here: **Re-run failed jobs**. The scan reads your decisions and the build goes on.
 
-The first job ("Release plan" in its summary) says which way the build goes:
-
-- **Dependencies unchanged** since the scan `foss/notice-additions.json` came from: the scan runs beside the
-  build, which ships the committed notices. If your decisions changed what the notices must carry, the
-  release stops with "Notice additions changed": copy the scan's `topics/notice-additions.json` over
-  `foss/notice-additions.json`, run `npm run foss:notices`, commit both and tag again.
-- **Dependencies changed**: the build waits for the scan and ships notices made from it. The release
-  attaches them; **afterwards commit the attached `notice-additions.json` as `foss/notice-additions.json`**
-  (and `npm run foss:notices`), or the next release stops at "Notice additions changed".
+The installers of a release or candidate always carry the notices made from that scan, never the
+committed ones. After a release whose notices differ from the committed ones, the build opens a pull
+request into `dev` ("Bring the notices released in vX.Y.Z back to dev") with the files as released —
+merge it, nothing else to do.
 
 "Reports only" means: you see the findings in the job summary and as yellow warnings, but the
 check stays green.

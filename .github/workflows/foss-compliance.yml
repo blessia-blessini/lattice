@@ -60,7 +60,7 @@ on:
         type: boolean
         default: true
       fresh_additions:
-        description: 'Release with changed dependencies (REQ-LTTCE-FOS-00009): artifact of the deep scan of this commit; its notice additions replace the committed ones, the notices are regenerated and uploaded as release-notices'
+        description: 'Release or candidate tag (REQ-LTTCE-FOS-00009): artifact of the deep scan of this commit; its notice additions replace the committed ones, the notices are regenerated and uploaded as release-notices'
         type: string
         default: ''
   pull_request:
@@ -91,7 +91,7 @@ jobs:
         npm ci --omit=dev --ignore-scripts --no-audit --no-fund
 
     ################################################################
-    # 135 / Release with changed dependencies only (REQ-LTTCE-FOS-00009):
+    # 135 / Release and candidate tags only (REQ-LTTCE-FOS-00009):
     #       the deep scan of this commit, run before this job, decided
     #       what the notices add; its file replaces the committed one for
     #       everything below, so gate, notices and SBOMs use it.

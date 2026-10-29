@@ -36,12 +36,12 @@
 ///   node scripts/foss/foss.mjs appimage --appimage F --root R --target linux-x64|linux-arm64 --out-dir D
 ///                                               check a built AppImage F, unpacked at R, on its
 ///                                               Linux build machine; writes its SBOM (REQ-LTTCE-FOS-00006)
-///   node scripts/foss/foss.mjs release-plan --ref <ref> [--since <git-ref>]
-///                                               build kind and whether the shipped dependencies
-///                                               changed (job outputs kind, deps_changed; REQ-LTTCE-FOS-00009)
+///   node scripts/foss/foss.mjs release-plan --ref <ref>
+///                                               build kind: release, candidate or build
+///                                               (job output kind; REQ-LTTCE-FOS-00009)
 ///   node scripts/foss/foss.mjs compare-additions --fresh <file>
-///                                               fail when a scan's notice additions differ from
-///                                               foss/notice-additions.json (REQ-LTTCE-FOS-00009)
+///                                               whether a scan's notice additions differ from
+///                                               foss/notice-additions.json (job output changed; REQ-LTTCE-FOS-00009)
 ///   node scripts/foss/foss.mjs audit [--block]  npm audit + cargo audit against the shipped components
 ///                                               (REQ-LTTCE-FOS-00007); reports only, unless --block
 ///
@@ -57,7 +57,6 @@
 /// shipped component, 2 usage or environment error (with --block: a tool that
 /// could not audit).
 
-import { execFileSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -77,7 +76,7 @@ import { ADDITIONS_FILE, attachAdditions, loadAdditions, validateAdditions } fro
 import { enrichFromManifest, inventoryFromLockfile } from './npm-inventory.mjs';
 import { escapeInline, renderNotices } from './notices-render.mjs';
 import { evaluateComponent, licenceTypeMap, loadPolicy, obligationNote, unusedPolicyEntries } from './policy.mjs';
-import { additionsDifference, cargoLockVersions, dependencyChanges, npmLockVersions, releaseKind } from './release-plan.mjs';
+import { additionsDifference, releaseKind } from './release-plan.mjs';
 import { leafKey } from './spdx-expr.mjs';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -517,22 +516,6 @@ export async function commandAudit({ entries }, { root, block, today, env = proc
 // commandAudit END ********************************************
 
 
-/** The lock files whose shipped versions decide whether the deep scan runs first. */
-const LOCK_FILES = Object.freeze({ cargo: 'src-tauri/Cargo.lock', npm: 'package-lock.json' });
-/** Changed packages listed in the job summary; the count says how many there were. */
-const SHOWN_CHANGES = 40;
-
-
-//**************************************************************
-// gitShow
-//**************************************************************
-/** A file as it is at a git ref, or throws (unknown ref, file not there). */
-function gitShow(root, ref, file) {
-    return execFileSync('git', ['show', `${ref}:${file}`], { cwd: root, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] });
-}
-// gitShow END *************************************************
-
-
 //**************************************************************
 // writeOutputs
 //**************************************************************
@@ -548,66 +531,22 @@ function writeOutputs(values, env) {
 // commandReleasePlan
 //**************************************************************
 /**
- * REQ-LTTCE-FOS-00009 — what kind of build this is, and on a tag whether the
- * shipped dependencies changed since the scan the committed notice additions
- * came from (`source.product.ref` of foss/notice-additions.json, or `since`).
- * Writes the job outputs `kind` and `deps_changed` and a job summary. Anything
- * it cannot read counts as changed: the safe side, the scan then runs first.
+ * REQ-LTTCE-FOS-00009 — what kind of build this is: release, candidate or
+ * build. Writes the job output `kind` and a job summary line.
  * @param {object} options
- * @param {string} options.root repository root
  * @param {string} options.ref the build's git ref (github.ref)
- * @param {string|null} [options.since] compare against this ref instead
  * @param {Record<string, string|undefined>} [options.env]
- * @param {(root: string, ref: string, file: string) => string} [options.show] injectable git show
- * @returns {number} exit code (0; the decision is in the outputs)
+ * @returns {number} exit code (0; the decision is in the output)
  */
-export function commandReleasePlan({ root, ref, since = null, env = process.env, show = gitShow }, log = console) {
+export function commandReleasePlan({ ref, env = process.env }, log = console) {
     const kind = releaseKind(ref);
-    let changed = false;
-    let reason = 'not a release or candidate tag: no deep scan';
-    let changes = { added: [], removed: [], changed: [] };
-    if (kind !== 'build') {
-        const base = since ?? loadAdditions(root)?.source?.product?.ref ?? null;
-        if (!base) {
-            changed = true;
-            reason = `${ADDITIONS_FILE} names no scanned ref to compare with`;
-        } else {
-            try {
-                const now = {
-                    cargo: cargoLockVersions(fs.readFileSync(path.join(root, LOCK_FILES.cargo), 'utf8')),
-                    npm: npmLockVersions(JSON.parse(fs.readFileSync(path.join(root, LOCK_FILES.npm), 'utf8'))),
-                };
-                const then = {
-                    cargo: cargoLockVersions(show(root, base, LOCK_FILES.cargo)),
-                    npm: npmLockVersions(JSON.parse(show(root, base, LOCK_FILES.npm))),
-                };
-                const merge = (k) => [...dependencyChanges(then.cargo, now.cargo)[k], ...dependencyChanges(then.npm, now.npm)[k]];
-                changes = { added: merge('added'), removed: merge('removed'), changed: merge('changed') };
-                changed = changes.added.length + changes.removed.length + changes.changed.length > 0;
-                reason = changed ? `shipped dependencies differ from ${base}` : `shipped dependencies are those of ${base}`;
-            } catch (e) {
-                changed = true;
-                reason = `cannot compare with ${base}: ${String(e.message).split('\n')[0]}`;
-            }
-        }
-    }
-    log.log(`foss release-plan: kind ${kind}, dependencies changed: ${changed} (${reason})`);
-    writeOutputs({ kind, deps_changed: String(changed) }, env);
-    const listed = [
-        ...changes.changed.map((c) => `changed ${c}`),
-        ...changes.added.map((c) => `added ${c}`),
-        ...changes.removed.map((c) => `removed ${c}`),
-    ];
-    const plan = kind === 'build' ? 'no deep scan' : changed
-        ? 'deep scan **before** the build legs; they ship its fresh notices'
-        : 'deep scan **beside** the build legs; its notice additions must equal the committed ones';
-    writeStepSummary([
-        '### Release plan',
-        '',
-        `Kind: **${kind}** (${escapeInline(ref)}). Dependencies changed: **${changed}** — ${escapeInline(reason)}. Path: ${plan}.`,
-        ...(listed.length ? ['', ...listed.slice(0, SHOWN_CHANGES).map((l) => `- ${escapeInline(l)}`),
-            ...(listed.length > SHOWN_CHANGES ? [`- … and ${listed.length - SHOWN_CHANGES} more`] : [])] : []),
-    ], env, log);
+    const plan = kind === 'build'
+        ? 'no deep scan; the build legs ship the committed notices'
+        : 'deep scan first (any undecided topic stops the run), then the build legs ship its fresh notices'
+          + (kind === 'release' ? '; publish; a pull request brings changed notices back to dev' : '; never published');
+    log.log(`foss release-plan: kind ${kind} (${plan})`);
+    writeOutputs({ kind }, env);
+    writeStepSummary(['### Release plan', '', `Kind: **${kind}** (${escapeInline(ref)}). ${plan}.`], env, log);
     return 0;
 }
 // commandReleasePlan END **************************************
@@ -617,17 +556,19 @@ export function commandReleasePlan({ root, ref, since = null, env = process.env,
 // commandCompareAdditions
 //**************************************************************
 /**
- * REQ-LTTCE-FOS-00009 — on a release whose dependencies did not change, the
- * build legs ship the committed notices; this checks that the deep scan of the
- * same commit adds exactly what foss/notice-additions.json says (ignoring
- * `source`). A difference means a decision changed the notices: stop.
+ * REQ-LTTCE-FOS-00009 — after a release: does the deep scan's notice-additions
+ * file, which the released installers were made from, say something else than
+ * the committed foss/notice-additions.json (ignoring `source`)? Writes the job
+ * output `changed` (true/false) and lists the differing topics; the release
+ * build then opens a pull request into dev with the fresh files.
  * @param {{root: string, fresh: string, env?: Record<string, string|undefined>}} options
- * @returns {number} exit code: 0 equal, 1 different
+ * @returns {number} exit code: 0 (the answer is in the output)
  */
 export function commandCompareAdditions({ root, fresh, env = process.env }, log = console) {
     const committed = loadAdditions(root) ?? { additions: [] };
     const scanned = validateAdditions(JSON.parse(fs.readFileSync(fresh, 'utf8')));
     const diff = additionsDifference(committed, scanned);
+    writeOutputs({ changed: String(!diff.equal) }, env);
     if (diff.equal) {
         log.log(`foss compare-additions: the scan adds what ${ADDITIONS_FILE} says (${committed.additions.length} additions)`);
         return 0;
@@ -637,18 +578,16 @@ export function commandCompareAdditions({ root, fresh, env = process.env }, log 
         ...diff.removed.map((t) => `gone: ${t}`),
         ...diff.changed.map((t) => `changed: ${t}`),
     ];
-    for (const l of lines) log.error(`  [FAIL] ${l}`);
-    log.error(`foss compare-additions: the scan's notice additions differ from ${ADDITIONS_FILE}; the release would ship outdated notices`);
+    for (const l of lines) log.log(`  ${l}`);
+    log.log(`foss compare-additions: the scan's notice additions differ from ${ADDITIONS_FILE}`);
     writeStepSummary([
         '### Notice additions changed',
         '',
-        `The deep scan of this commit adds other notices than the committed ${ADDITIONS_FILE}:`,
+        `The released notices come from this deep scan, which adds other notices than the committed ${ADDITIONS_FILE}:`,
         '',
         ...lines.map((l) => `- ${escapeInline(l)}`),
-        '',
-        `Copy the scan's topics/notice-additions.json (results artifact) over ${ADDITIONS_FILE}, run \`npm run foss:notices\`, commit both and tag again.`,
     ], env, log);
-    return 1;
+    return 0;
 }
 // commandCompareAdditions END *********************************
 
@@ -664,9 +603,9 @@ export function commandCompareAdditions({ root, fresh, env = process.env }, log 
 export function parseArgs(argv) {
     const [command, ...rest] = argv;
     if (!['check', 'notices', 'sbom', 'appimage', 'audit', 'release-plan', 'compare-additions'].includes(command)) {
-        throw new Error(`unknown command "${command ?? ''}" (check [--block] | notices [--check] | sbom --out-dir <dir> | appimage --appimage <file> --root <dir> --target <label> --out-dir <dir> | audit [--block] | release-plan --ref <ref> [--since <git-ref>] | compare-additions --fresh <file>)`);
+        throw new Error(`unknown command "${command ?? ''}" (check [--block] | notices [--check] | sbom --out-dir <dir> | appimage --appimage <file> --root <dir> --target <label> --out-dir <dir> | audit [--block] | release-plan --ref <ref> | compare-additions --fresh <file>)`);
     }
-    const opts = { command, check: false, block: false, outDir: null, appImage: null, appRoot: null, label: null, ref: null, since: null, fresh: null, targets: [...TARGETS] };
+    const opts = { command, check: false, block: false, outDir: null, appImage: null, appRoot: null, label: null, ref: null, fresh: null, targets: [...TARGETS] };
     for (let i = 0; i < rest.length; i++) {
         const a = rest[i];
         if (a === '--check' && command === 'notices') opts.check = true;
@@ -676,7 +615,6 @@ export function parseArgs(argv) {
         else if (a === '--root' && command === 'appimage' && rest[i + 1]) opts.appRoot = rest[++i];
         else if (a === '--target' && command === 'appimage' && rest[i + 1]) opts.label = rest[++i];
         else if (a === '--ref' && command === 'release-plan' && rest[i + 1] !== undefined) opts.ref = rest[++i];
-        else if (a === '--since' && command === 'release-plan' && rest[i + 1]) opts.since = rest[++i];
         else if (a === '--fresh' && command === 'compare-additions' && rest[i + 1]) opts.fresh = rest[++i];
         else if (a === '--targets' && rest[i + 1]) {
             const wanted = rest[++i].split(',');
@@ -713,9 +651,9 @@ export async function main(argv, { root = ROOT, today = new Date().toISOString()
         return 2;
     }
     // The release plan and the additions comparison need no inventory either:
-    // they run in the build's setup job and before publishing (REQ-LTTCE-FOS-00009).
+    // they run in the build's setup job and after publishing (REQ-LTTCE-FOS-00009).
     try {
-        if (opts.command === 'release-plan') return commandReleasePlan({ root, ref: opts.ref, since: opts.since });
+        if (opts.command === 'release-plan') return commandReleasePlan({ ref: opts.ref });
         if (opts.command === 'compare-additions') return commandCompareAdditions({ root, fresh: path.resolve(opts.fresh) });
     } catch (e) {
         console.error(`foss ${opts.command}: ${e.message}`);

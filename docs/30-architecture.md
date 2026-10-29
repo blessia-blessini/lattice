@@ -2350,44 +2350,38 @@ own checks never wait for the slow scan.
 
 <!--ARCH-LTTCE-FOS-00009-->
 **ARCH-LTTCE-FOS-00009** — covers REQ-LTTCE-FOS-00009. The release gate lives in `buildAndTest.yml`; its setup
-job runs `foss.mjs release-plan` (`release-plan.mjs`) once and every later job follows its two outputs:
-
-- **`kind`**: `release` (tag `^v[0-9]+\.[0-9]+\.[0-9]+$`), `candidate` (`vX.Y.Z-<suffix>`) or `build`. Release
-  and candidate build all platforms, the MSIX bundle included, and run the deep scan; only `release` runs
-  `publish-release-site`. Every former `startsWith(github.ref, 'refs/tags/v')` is replaced by these outputs.
-- **`deps_changed`**: the registry/git crates of `src-tauri/Cargo.lock` and the packages of
-  `package-lock.json` at this commit against the same files at `source.product.ref` of the committed
-  `foss/notice-additions.json` (`git show`, so setup checks out the full history). Path crates and the lock
-  root are Lattice's own code and are left out — Lattice's version changes every release. Anything it cannot
-  compare counts as changed.
+job runs `foss.mjs release-plan` (`release-plan.mjs`) once and every later job follows its output **`kind`**:
+`release` (tag `^v[0-9]+\.[0-9]+\.[0-9]+$`), `candidate` (`vX.Y.Z-<suffix>`) or `build`. Release and
+candidate build all platforms, the MSIX bundle included, and run the deep scan; only `release` runs
+`publish-release-site` and `notices-to-dev`. Every former `startsWith(github.ref, 'refs/tags/v')` is replaced by it.
 
 ```text
-                ┌─ deps_changed false (or kind build) ──────────────────────────────────────────────┐
- setup ─────────┤  foss-compliance (committed texts)     build-and-test (starts at once)            ├─► publish
- kind,          │  foss-scan-beside ─► compare-additions                                            │   (release only;
- deps_changed   └─ deps_changed true: foss-scan-first ─► foss-compliance-fresh ─► build-and-test ───┘    MSIX for both)
+ build:               setup ─┬─► foss-compliance (committed texts)
+                             └─► build-and-test (starts at once)
+ release / candidate: setup ─► foss-scan ─► foss-compliance-release ─► build-and-test ─► package-msix
+                                                     (fresh texts)                          │
+                      release only:                       publish-release-site ◄──────────┘ ─► notices-to-dev
 ```
 
 - **The deep scan** is Legattice's `scan.yml` as a reusable workflow (`uses:
-  blessia-blessini/legattice/.github/workflows/scan.yml@main`) on `github.sha`, `block_at: medium`: its merge
-  job fails while a medium or high topic is open, reopened or pending removal, and the ledger is Legattice's
-  `main` as it is when the job starts. Deciding there and **Re-run failed jobs** here continues the same run.
-  Its artifact (`results_artifact`) carries `topics/topics.md` and `topics/notice-additions.json`.
-- **Unchanged dependencies**: the scan runs beside the build legs (8 shards, leaving GitHub's job slots for the
-  legs); `compare-additions` fails when the scan's additions differ from the committed file, ignoring `source` —
-  then a decision changed the notices, and the release needs a commit and a new tag.
-- **Changed dependencies**: the build legs wait. `foss-compliance.yml` with `fresh_additions` puts the scan's
-  file in place of the committed one, runs the gate (`check --block`), regenerates both notices files instead
-  of checking them for drift, and uploads them as `release-notices`; step 102 of every leg downloads them over
-  the checkout before anything is built, so the bundle and the frontend carry them and step 390 checks the
-  installers against them. The committed copies then lag; the release attaches the files, and committing them
-  to `dev` stays a signed step of the maintainer (decision 4a of the plan) — until then a later release with
-  unchanged dependencies stops at `compare-additions`, which forces it.
-- **Two jobs each** for scan and FOSS check: a job's `needs` cannot depend on an output, so the waiting path and
-  the parallel path are separate jobs with opposite `if:`s; only one of each pair runs, and publish accepts the
-  other's `skipped`.
-- **Publish** needs the FOSS jobs of its path to succeed and attaches `FOSS-TOPICS.md` and
+  blessia-blessini/legattice/.github/workflows/scan.yml@main`) on `github.sha`, 16 shards, `block_at: low`: its
+  merge job fails while any topic is open, reopened or pending removal, and the ledger is Legattice's `main` as it
+  is when the job starts. Deciding there and **Re-run failed jobs** here continues the same run. Its artifact
+  (`results_artifact`) carries `topics/topics.md` and `topics/notice-additions.json`.
+- **Fresh texts**: `foss-compliance.yml` with `fresh_additions` puts the scan's file in place of the committed
+  one, runs the gate (`check --block`), regenerates both notices files instead of checking them for drift, and
+  uploads them as `release-notices`; step 102 of every leg downloads them over the checkout before anything is
+  built, so the bundle and the frontend carry them and step 390 checks the installers against them.
+- **Two FOSS jobs**: a job's `needs` cannot depend on an output, so `foss-compliance` (branch builds, beside the
+  legs) and `foss-compliance-release` (tags, before the legs) are separate jobs with opposite `if:`s; only one runs.
+- **Publish** needs `foss-scan` and `foss-compliance-release` to succeed and attaches `FOSS-TOPICS.md` and
   `notice-additions.json` next to the notices and SBOMs.
+- **`notices-to-dev`** (after publish): `compare-additions` (output `changed`, ignoring `source`) and a
+  `git diff` of the two notices files against the released commit; if either differs it commits the three files
+  as released on branch `foss-notices-<tag>` and opens a pull request into `dev` (`GITHUB_TOKEN`,
+  `contents`/`pull-requests: write`; needs the repository setting allowing Actions to create pull requests).
+  An open pull request or an existing branch of the same tag is reused, so a re-run never overwrites. Merging
+  is the maintainer's approval; the commit is made by Actions, co-authored by the maintainer account.
 
 ## Architectural Decisions
 

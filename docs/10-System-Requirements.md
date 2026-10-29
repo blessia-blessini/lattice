@@ -1135,20 +1135,19 @@ and the Alliance for Open Media Patent License, whose section 1.2.1(b) asks for 
 <!--REQ-LTTCE-FOS-00009-->
 **REQ-LTTCE-FOS-00009** — A release SHALL be published only from a tag of exactly the form `vX.Y.Z`. A tag
 `vX.Y.Z-<suffix>` SHALL build and check exactly like a release and SHALL NOT be published. For both, one
-build SHALL scan the sources of every shipped component and of Lattice itself at that commit, and SHALL NOT
-publish while a finding of medium or high severity has no current decision (none, its evidence changed, or
-it expired); findings of low severity SHALL be reported and SHALL NOT block. Once the missing decisions are
-made, re-running the stopped parts of the same build SHALL let it continue. When the shipped dependencies
-differ from those of the scan the committed notices were made from, the installers SHALL carry notices
-generated from this build's scan; otherwise the build SHALL NOT publish unless this build's scan calls for
-exactly the committed notice additions. The release SHALL attach the scan's report and the notice additions
-it used.
+build SHALL scan the sources of every shipped component and of Lattice itself at that commit before it builds
+the installers, and SHALL stop while any finding, of whatever severity, has no current decision (none, its
+evidence changed, or it expired). Once the missing decisions are made, re-running the stopped parts of the same
+build SHALL let it continue. The installers SHALL carry notices generated from this build's scan. The release
+SHALL attach the scan's report and the notice additions it used, and when its notices differ from those
+committed, the build SHALL open a pull request that brings them, as released, to the development branch.
 
 *Rationale*: until v0.3.51 the deep scan of the sources ran only by hand, so a release could ship with an
-undecided finding, and notices made for older dependency versions. Running the scan always but waiting for
-it only when the dependencies changed keeps a release without dependency changes as fast as before
-(decided by the product owner, 2026-10-29). A suffix tag published like a release until then, although no
-step looked at the suffix.
+undecided finding, and notices made for older dependency versions. Scanning first and always shipping the
+scan's notices makes "the installers carry what the signed decisions say" hold for every release, at the cost
+of waiting for the scan; blocking on every severity means nothing ships undecided; the pull request replaces a
+manual "remember to commit" step (decided by the product owner, 2026-10-29). A suffix tag published like a
+release until then, although no step looked at the suffix.
 
 ---
 
