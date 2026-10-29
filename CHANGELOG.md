@@ -6,8 +6,8 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.52
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: Release gate review cycle 1 - notices PR re-run safe after merge or close, stale changelog line
 - FEAT: Release gate simplified - scan first on every tag, block on any undecided topic, PR brings released notices to dev
-- FEAT: Gate releases on the deep FOSS scan - one build, candidate tags, fresh notices when deps change
 - v0.3.51 Release
 - CHORE:Prep v0.3.51 Release
 --- 

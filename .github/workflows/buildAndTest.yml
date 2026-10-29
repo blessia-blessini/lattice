@@ -1683,8 +1683,9 @@ jobs:
   #   may be newer than those committed. If they differ, this opens a pull
   #   request into dev with foss/notice-additions.json and the two notices
   #   files exactly as released, so nobody has to remember it; merging it
-  #   is the maintainer's approval. Re-running is safe: an open pull request
-  #   or a pushed branch of the same release is reused, never overwritten.
+  #   is the maintainer's approval. Re-running is safe: a pull request of the
+  #   same release in any state, or its pushed branch, is reused, never
+  #   overwritten or opened twice.
   #   Needs the repository setting "Allow GitHub Actions to create and
   #   approve pull requests". Pull requests made with GITHUB_TOKEN start no
   #   workflows; the files were checked by this run already.
@@ -1739,10 +1740,12 @@ jobs:
           exit 0
         fi
         BRANCH="foss-notices-${TAG}"
-        EXISTING=$(gh pr list --base dev --head "$BRANCH" --state open --json url --jq '.[0].url // empty')
+        # Any state: open (waiting), merged (done) or closed (the maintainer
+        # declined it) -- a re-run never opens a second one.
+        EXISTING=$(gh pr list --base dev --head "$BRANCH" --state all --json state,url --jq '.[0] // empty | "\(.state) \(.url)"')
         if [ -n "$EXISTING" ]; then
-          echo "Pull request already open: $EXISTING"
-          echo "### Notices: pull request into dev already open: $EXISTING" >> "$GITHUB_STEP_SUMMARY"
+          echo "Pull request for this release already exists: $EXISTING"
+          echo "### Notices: pull request into dev already exists ($EXISTING)" >> "$GITHUB_STEP_SUMMARY"
           exit 0
         fi
         if ! git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then

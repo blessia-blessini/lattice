@@ -2380,7 +2380,8 @@ candidate build all platforms, the MSIX bundle included, and run the deep scan; 
   `git diff` of the two notices files against the released commit; if either differs it commits the three files
   as released on branch `foss-notices-<tag>` and opens a pull request into `dev` (`GITHUB_TOKEN`,
   `contents`/`pull-requests: write`; needs the repository setting allowing Actions to create pull requests).
-  An open pull request or an existing branch of the same tag is reused, so a re-run never overwrites. Merging
+  A pull request of the same tag in any state (open, merged, closed) or an already pushed branch is reused, so a
+  re-run never opens a second one or overwrites. Merging
   is the maintainer's approval; the commit is made by Actions, co-authored by the maintainer account.
 
 ## Architectural Decisions
