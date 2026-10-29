@@ -52,6 +52,14 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   and the added licences in the type summary; `export-notices.mjs` `topics` in `loadEmbedded`,
   `selectEmbedded`, `renderExportNotices`; `foss/licenses/OFL-1.1.txt` and the AOM patent licence text)
 - IMPL-LTTCE-FOS-00008 **covers** ARCH-LTTCE-FOS-00008
+- IMPL-LTTCE-FOS-00009 **covers** REQ-LTTCE-FOS-00009  (`release-plan.mjs`: `releaseKind`, `cargoLockVersions` /
+  `npmLockVersions` (own code left out), `dependencyChanges`, `additionsDifference`; `foss.mjs`
+  `commandReleasePlan` (job outputs `kind`, `deps_changed`, job summary; `git show` of the scanned ref, anything
+  unreadable = changed) and `commandCompareAdditions`; `buildAndTest.yml` setup job, `foss-scan-beside` +
+  `compare-additions`, `foss-scan-first` + `foss-compliance-fresh`, `build-and-test` step 102, the `kind`
+  conditions of `package-msix-bundle` and `publish-release-site`, steps 903.2a/b; `foss-compliance.yml`
+  input `fresh_additions`, steps 135a/b, 141a/b; Legattice `scan.yml` as a reusable workflow)
+- IMPL-LTTCE-FOS-00009 **covers** ARCH-LTTCE-FOS-00009
 
 ## Tests
 
@@ -173,3 +181,12 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   additions reports them under their own heading ("Notice additions cannot be applied", what to do: a new
   scan), not as components violating the policy, and the gate's job summary uses the injected `env`;
   the export notices list a text's licence ids sorted.
+- UTST `release-plan.test.mjs` (REQ-LTTCE-FOS-00009) — `releaseKind` over 13 refs (release, candidate forms,
+  malformed suffixes, branches, empty); Cargo.lock without path crates and with two versions of one crate;
+  package-lock without root and links; Lattice's own version change ignored, added/removed/changed seen;
+  additions compared ignoring `source`; `release-plan` with an injected `git show`: release unchanged,
+  candidate changed (job summary names the crate), unknown ref / no scanned ref / unreadable lock = changed, a
+  branch build never compares; `compare-additions` equal 0, different 1 with what to do; argument parsing.
+- ITST on the real tree: `release-plan` for `refs/tags/v0.3.52` = release, unchanged since v0.3.50;
+  `-rc1` = candidate; `--since v0.3.39` = changed; `compare-additions` 0 against the committed file, 1 against
+  an empty one. The workflow graph (both paths, a stop and a re-run) is proven by candidate tags `v0.3.52-rcN` (STST).

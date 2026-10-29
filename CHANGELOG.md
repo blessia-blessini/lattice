@@ -6,6 +6,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.52
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FEAT: Gate releases on the deep FOSS scan - one build, candidate tags, fresh notices when deps change
 - v0.3.51 Release
 - CHORE:Prep v0.3.51 Release
 --- 
