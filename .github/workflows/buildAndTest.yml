@@ -294,6 +294,7 @@ jobs:
   foss-scan:
     needs: setup
     if: needs.setup.outputs.kind != 'build'
+    # @main on purpose, an accepted risk (same owner): ARCH-LTTCE-FOS-00009.
     uses: blessia-blessini/legattice/.github/workflows/scan.yml@main
     with:
       repository: ${{ github.repository }}

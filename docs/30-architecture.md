@@ -2368,6 +2368,11 @@ candidate build all platforms, the MSIX bundle included, and run the deep scan; 
   merge job fails while any topic is open, reopened or pending removal, and the ledger is Legattice's `main` as it
   is when the job starts. Deciding there and **Re-run failed jobs** here continues the same run. Its artifact
   (`results_artifact`) carries `topics/topics.md` and `topics/notice-additions.json`.
+- **`@main`, not pinned — an accepted risk** (decided 2026-10-29): Legattice and Lattice have the same owner,
+  so whoever can change Legattice's `main` can change Lattice too. Pinning the caller to a commit would not be
+  enough on its own: `scan.yml` checks out Legattice's code together with the ledger from `main`, and only the
+  ledger must follow `main` (decisions made between a stop and its re-run). Accepted consequence: a Legattice push
+  can stop or change a Lattice release without a Lattice commit; the scan records the Legattice commit it used.
 - **Fresh texts**: `foss-compliance.yml` with `fresh_additions` puts the scan's file in place of the committed
   one, runs the gate (`check --block`), regenerates both notices files instead of checking them for drift, and
   uploads them as `release-notices`; step 102 of every leg downloads them over the checkout before anything is
