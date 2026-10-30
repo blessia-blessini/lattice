@@ -29,23 +29,24 @@ import os from 'os';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { commandCompareAdditions, commandReleasePlan, parseArgs } from './foss.mjs';
-import { additionsDifference, releaseKind } from './release-plan.mjs';
+import { additionsDifference, deepScanSetting, LEGATTICE_URL, releaseKind } from './release-plan.mjs';
 
 const quiet = { log: () => {}, warn: () => {}, error: () => {} };
 const addition = (topic, extra = {}) => ({ topic, package: { ecosystem: 'npm', name: 'katex', version: '1' }, licences: ['OFL-1.1'], files: [{ path: 'a', sha1: '0'.repeat(40), lines: [[1, 1]] }], copyrights: [], ...extra });
 
 
 describe('releaseKind', () => {
+    // The rule: a tag of exactly vX.Y.Z publishes; every other tag rehearses; no tag builds.
     it.each([
         ['refs/tags/v0.3.52', 'release'],
         ['refs/tags/v10.0.0', 'release'],
         ['refs/tags/v0.3.52-rc1', 'candidate'],
-        ['refs/tags/v0.3.52-rc.2', 'candidate'],
-        ['refs/tags/v0.3.52-test-a', 'candidate'],
-        ['refs/tags/v0.3.52-', 'build'],
-        ['refs/tags/v0.3.52rc1', 'build'],
-        ['refs/tags/v0.3', 'build'],
-        ['refs/tags/x0.3.52', 'build'],
+        ['refs/tags/v0.3.52a', 'candidate'],
+        ['refs/tags/v0.3.52b', 'candidate'],
+        ['refs/tags/v0.3.52-', 'candidate'],
+        ['refs/tags/v0.3', 'candidate'],
+        ['refs/tags/x0.3.52', 'candidate'],
+        ['refs/tags/v0.3.52 ', 'candidate'],
         ['refs/heads/v0.3.52', 'build'],
         ['refs/heads/dev', 'build'],
         ['', 'build'],
@@ -53,6 +54,29 @@ describe('releaseKind', () => {
     ])('%j is a %s', (ref, kind) => {
         expect(releaseKind(ref)).toBe(kind);
     });
+});
+
+
+describe('deepScanSetting', () => {
+    it.each([
+        [undefined, { scan: false, error: null }],
+        ['', { scan: false, error: null }],
+        ['   ', { scan: false, error: null }],
+        [LEGATTICE_URL, { scan: true, error: null }],
+        [`${LEGATTICE_URL}/`, { scan: true, error: null }],
+        [`${LEGATTICE_URL}.git`, { scan: true, error: null }],
+        [` ${LEGATTICE_URL.toUpperCase()} `, { scan: true, error: null }],
+    ])('%j -> %j', (url, expected) => {
+        expect(deepScanSetting(url)).toEqual(expected);
+    });
+
+    it.each(['https://github.com/someone-else/legattice', 'blessia-blessini/legattice', 'https://github.com/blessia-blessini/legatice'])(
+        'refuses %j, naming the one it can call and how to switch the scan off', (url) => {
+            const s = deepScanSetting(url);
+            expect(s.scan).toBe(false);
+            expect(s.error).toContain(LEGATTICE_URL);
+            expect(s.error).toMatch(/delete the variable/);
+        });
 });
 
 
@@ -81,14 +105,26 @@ describe('release-plan and compare-additions commands', () => {
     const outputs = () => Object.fromEntries(fs.readFileSync(out, 'utf8').trim().split('\n').map((l) => l.split('=')));
 
     it.each([
-        ['refs/tags/v0.3.52', 'release', /publish; a pull request brings changed notices back to dev/],
-        ['refs/tags/v0.3.52-rc1', 'candidate', /deep scan first[\s\S]*never published/],
-        ['refs/heads/dev', 'build', /no deep scan/],
-    ])('%s: output kind %s and a summary of the plan', (ref, kind, plan) => {
+        ['refs/tags/v0.3.52', LEGATTICE_URL, 'release', 'true', /deep scan first[\s\S]*publish; a pull request brings changed notices back to dev/],
+        ['refs/tags/v0.3.52a', LEGATTICE_URL, 'candidate', 'true', /deep scan first[\s\S]*never published/],
+        ['refs/tags/v0.3.52', undefined, 'release', 'false', /LEGATTICE_URL not set: no deep scan[\s\S]*; publish\./],
+        ['refs/tags/v0.3.52-rc1', '', 'candidate', 'false', /LEGATTICE_URL not set[\s\S]*never published/],
+        ['refs/heads/dev', LEGATTICE_URL, 'build', 'false', /no deep scan; the build legs ship the committed notices\./],
+    ])('%s with LEGATTICE_URL %j: kind %s, deep_scan %s', (ref, url, kind, deepScan, plan) => {
         const summary = path.join(root, 'summary.md');
-        expect(commandReleasePlan({ ref, env: { GITHUB_OUTPUT: out, GITHUB_STEP_SUMMARY: summary } }, quiet)).toBe(0);
-        expect(outputs()).toEqual({ kind });
+        expect(commandReleasePlan({ ref, env: { GITHUB_OUTPUT: out, GITHUB_STEP_SUMMARY: summary, LEGATTICE_URL: url } }, quiet)).toBe(0);
+        expect(outputs()).toEqual({ kind, deep_scan: deepScan });
         expect(fs.readFileSync(summary, 'utf8')).toMatch(plan);
+    });
+
+    it('stops with exit 2 and no outputs when LEGATTICE_URL names another repository', () => {
+        const summary = path.join(root, 'summary.md');
+        const errors = [];
+        expect(commandReleasePlan({ ref: 'refs/tags/v0.3.52', env: { GITHUB_OUTPUT: out, GITHUB_STEP_SUMMARY: summary, LEGATTICE_URL: 'https://example.org/x' } },
+            { ...quiet, error: (m) => errors.push(m) })).toBe(2);
+        expect(fs.existsSync(out)).toBe(false);
+        expect(errors.join('\n')).toMatch(/LEGATTICE_URL is "https:\/\/example.org\/x"/);
+        expect(fs.readFileSync(summary, 'utf8')).toMatch(/\*\*Stopped\*\*/);
     });
 
     it('compare-additions: changed=false on the same additions (source ignored), changed=true and the topics on others', () => {

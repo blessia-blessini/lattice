@@ -24,21 +24,30 @@
 
 /// What a build is, for the release FOSS gate (release-plan.mjs)
 ///
-/// IMPL-LTTCE-FOS-00009 — REQ-LTTCE-FOS-00009. The build decides its kind once,
-/// in its setup job, and every later job follows it: a release (tag vX.Y.Z), a
-/// candidate (tag vX.Y.Z-suffix: built and checked like a release, never
-/// published) or an ordinary build. Releases and candidates always ship the
-/// notices of their own deep scan; after a release, whether those differ from
-/// the committed ones decides if a pull request brings them back to dev.
+/// IMPL-LTTCE-FOS-00009 — REQ-LTTCE-FOS-00009. The build decides once, in its
+/// setup job, and every later job follows it:
+/// - the kind: a tag of exactly vX.Y.Z is a release (published); any other tag
+///   is a candidate (built and checked like a release, never published); a
+///   branch or manual run is an ordinary build;
+/// - whether the deep scan (Legattice) takes part: only on a release or a
+///   candidate, and only when the repository variable LEGATTICE_URL names the
+///   supported Legattice. Without it a tag builds as before the deep scan
+///   existed: committed notices, no scan, no pull request.
+/// And, after a release, whether two notice-additions files agree.
 ///
 /// Pure: no file system, no git.
 
 /** A release tag: exactly vX.Y.Z. */
 const RELEASE_TAG_RE = /^v[0-9]+\.[0-9]+\.[0-9]+$/;
-/** A candidate tag: vX.Y.Z and a suffix (-rc1, -rc.2, -test). */
-const CANDIDATE_TAG_RE = /^v[0-9]+\.[0-9]+\.[0-9]+-[0-9A-Za-z][0-9A-Za-z.-]*$/;
 const TAG_PREFIX = 'refs/tags/';
 export const KINDS = Object.freeze(['release', 'candidate', 'build']);
+/**
+ * The one Legattice the build can call: GitHub resolves a called workflow
+ * from a fixed `uses:` line, never from a variable, so LEGATTICE_URL can only
+ * switch the scan on for this repository -- keep in sync with `foss-scan` in
+ * .github/workflows/buildAndTest.yml.
+ */
+export const LEGATTICE_URL = 'https://github.com/blessia-blessini/legattice';
 
 
 //**************************************************************
@@ -52,12 +61,30 @@ export const KINDS = Object.freeze(['release', 'candidate', 'build']);
 export function releaseKind(ref) {
     const text = String(ref ?? '');
     if (!text.startsWith(TAG_PREFIX)) return 'build';
-    const tag = text.slice(TAG_PREFIX.length);
-    if (RELEASE_TAG_RE.test(tag)) return 'release';
-    if (CANDIDATE_TAG_RE.test(tag)) return 'candidate';
-    return 'build';
+    return RELEASE_TAG_RE.test(text.slice(TAG_PREFIX.length)) ? 'release' : 'candidate';
 }
 // releaseKind END *********************************************
+
+
+//**************************************************************
+// deepScanSetting
+//**************************************************************
+/**
+ * What the repository variable LEGATTICE_URL says about the deep scan.
+ * Not set (empty) = no Legattice: the build runs without the scan. The
+ * supported URL (case, a trailing "/" or ".git" ignored) = scan. Anything else
+ * is a mistake, reported rather than silently building without the scan.
+ * @param {string|undefined|null} url the variable's value
+ * @returns {{scan: boolean, error: string|null}}
+ */
+export function deepScanSetting(url) {
+    const text = String(url ?? '').trim();
+    if (!text) return { scan: false, error: null };
+    const normal = (u) => u.toLowerCase().replace(/\/+$/, '').replace(/\.git$/, '');
+    if (normal(text) === normal(LEGATTICE_URL)) return { scan: true, error: null };
+    return { scan: false, error: `LEGATTICE_URL is "${text}"; the build can only call ${LEGATTICE_URL} -- set it to that, or delete the variable to build without the deep scan` };
+}
+// deepScanSetting END *****************************************
 
 
 //**************************************************************

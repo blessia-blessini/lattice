@@ -1155,21 +1155,26 @@ among them dav1d and x264 assembly, W3C text, the Sun and FreeBSD maths code, Ka
 and the Alliance for Open Media Patent License, whose section 1.2.1(b) asks for its text with every binary.
 
 <!--REQ-LTTCE-FOS-00009-->
-**REQ-LTTCE-FOS-00009** — A release SHALL be published only from a tag of exactly the form `vX.Y.Z`. A tag
-`vX.Y.Z-<suffix>` SHALL build and check exactly like a release and SHALL NOT be published. For both, one
-build SHALL scan the sources of every shipped component and of Lattice itself at that commit before it builds
+**REQ-LTTCE-FOS-00009** — A release SHALL be published only from a tag of exactly the form `vX.Y.Z`. Every
+other tag (e.g. `vX.Y.Za`, `vX.Y.Z-rc1`) SHALL build and check exactly like a release and SHALL NOT be
+published. When the deep scan is configured for the repository (Legattice named by the repository variable
+`LEGATTICE_URL`), for every tag one build SHALL scan the sources of every shipped component and of Lattice itself at that commit before it builds
 the installers, and SHALL stop while any finding, of whatever severity, has no current decision (none, its
 evidence changed, or it expired). Once the missing decisions are made, re-running the stopped parts of the same
 build SHALL let it continue. The installers SHALL carry notices generated from this build's scan. The release
 SHALL attach the scan's report and the notice additions it used, and when its notices differ from those
 committed, the build SHALL open a pull request that brings them, as released, to the development branch.
+When the deep scan is not configured, a tag SHALL build, check and publish as without the deep scan, with the
+committed notices; a variable naming anything other than the supported Legattice SHALL stop the build.
 
 *Rationale*: until v0.3.51 the deep scan of the sources ran only by hand, so a release could ship with an
 undecided finding, and notices made for older dependency versions. Scanning first and always shipping the
 scan's notices makes "the installers carry what the signed decisions say" hold for every release, at the cost
 of waiting for the scan; blocking on every severity means nothing ships undecided; the pull request replaces a
-manual "remember to commit" step (decided by the product owner, 2026-10-29). A suffix tag published like a
-release until then, although no step looked at the suffix.
+manual "remember to commit" step; one rule for tags ("exactly vX.Y.Z publishes, everything else rehearses")
+and an optional, explicitly named Legattice keep the release process easy to remember and Lattice buildable
+without it (decided by the product owner, 2026-10-29/30). A suffix tag published like a release until then,
+although no step looked at the suffix.
 
 ---
 

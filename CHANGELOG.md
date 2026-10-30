@@ -6,6 +6,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.52
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FEAT: One tag rule and an optional Legattice - exactly vX.Y.Z publishes, every other tag rehearses, LEGATTICE_URL switches the deep scan
 - CHORE: Cleaned CHANGELOG
 - Fix: review findings
 - DOCS: Record calling the Legattice scan at @main as an accepted risk

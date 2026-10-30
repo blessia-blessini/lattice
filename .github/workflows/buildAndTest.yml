@@ -72,10 +72,13 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
-      # REQ-LTTCE-FOS-00009: release (tag vX.Y.Z) | candidate (vX.Y.Z-suffix:
-      # built and checked like a release, never published) | build. Every
-      # later job follows it.
+      # REQ-LTTCE-FOS-00009: release (a tag of exactly vX.Y.Z) | candidate
+      # (any other tag: built and checked like a release, never published) |
+      # build (branch, manual run). deep_scan: a tag AND the repository
+      # variable LEGATTICE_URL set to Legattice; without it a tag builds as
+      # before the deep scan existed. Every later job follows these two.
       kind: ${{ steps.release-plan.outputs.kind }}
+      deep_scan: ${{ steps.release-plan.outputs.deep_scan }}
     steps:
     - name: Checkout (release plan)
       uses: actions/checkout@v6
@@ -92,6 +95,7 @@ jobs:
       shell: bash
       env:
         BUILD_REF: ${{ github.ref }}
+        LEGATTICE_URL: ${{ vars.LEGATTICE_URL }}
       run: node scripts/foss/foss.mjs release-plan --ref "$BUILD_REF"
 
     - name: Strings and Matrix Definition
@@ -269,9 +273,12 @@ jobs:
   #   request to dev and every push to dev; here it writes the SBOMs
   #   (sbom: true, which only a build passes).
   #
-  #   build (branch, manual):  foss-compliance beside the build legs,
+  #   deep_scan false (any branch or manual build; a tag while the
+  #   repository variable LEGATTICE_URL is not set):
+  #                            foss-compliance beside the build legs,
   #                            which ship the committed notices.
-  #   release / candidate tag: foss-scan -> foss-compliance-release ->
+  #   deep_scan true (a tag, LEGATTICE_URL set):
+  #                            foss-scan -> foss-compliance-release ->
   #                            build legs. The deep scan (Legattice:
   #                            ORT + ScanCode + the ledger) stops the
   #                            run while ANY topic is undecided -- decide
@@ -280,20 +287,20 @@ jobs:
   #                            replace the committed ones, the notices
   #                            are regenerated and every leg ships those.
   #
-  #   The FOSS job appears twice because a job's needs are fixed: on a
-  #   tag the build legs wait for it, on a branch they must not. Only
-  #   one of the two runs.
+  #   The FOSS job appears twice because a job's needs are fixed: with
+  #   the deep scan the build legs wait for it, without it they must
+  #   not. Only one of the two runs.
   ################################################################
   foss-compliance:
     needs: setup
-    if: needs.setup.outputs.kind == 'build'
+    if: needs.setup.outputs.deep_scan != 'true'
     uses: ./.github/workflows/foss-compliance.yml
     with:
       sbom: true
 
   foss-scan:
     needs: setup
-    if: needs.setup.outputs.kind != 'build'
+    if: needs.setup.outputs.deep_scan == 'true'
     # @main on purpose, an accepted risk (same owner): ARCH-LTTCE-FOS-00009.
     uses: blessia-blessini/legattice/.github/workflows/scan.yml@main
     with:
@@ -305,7 +312,7 @@ jobs:
 
   foss-compliance-release:
     needs: [setup, foss-scan]
-    if: needs.setup.outputs.kind != 'build'
+    if: needs.setup.outputs.deep_scan == 'true'
     uses: ./.github/workflows/foss-compliance.yml
     with:
       sbom: true
@@ -313,16 +320,16 @@ jobs:
 
   ################################################################
   # JOB 2: BUILD AND TEST
-  #   On a release or candidate tag the legs wait for
+  #   With the deep scan (setup deep_scan) the legs wait for
   #   foss-compliance-release and ship its regenerated notices
-  #   (step 102); on a branch they start at once, as before.
+  #   (step 102); otherwise they start at once, as before.
   ################################################################
   build-and-test:
     needs: [setup, foss-compliance-release]
     if: >-
       !cancelled() && needs.setup.result == 'success'
       && needs.setup.outputs.matrix != '[]' && needs.setup.outputs.matrix != ''
-      && (needs.setup.outputs.kind == 'build' || needs.foss-compliance-release.result == 'success')
+      && (needs.setup.outputs.deep_scan != 'true' || needs.foss-compliance-release.result == 'success')
     runs-on: ${{ matrix.config.os }}
     strategy:
       fail-fast: false
@@ -384,7 +391,7 @@ jobs:
         echo "scripts/foss and foss absent; LICENSE and THIRD-PARTY-NOTICES.md present"
 
     ################################################################
-    # 102 / Release and candidate tags (REQ-LTTCE-FOS-00009):
+    # 102 / Tags with the deep scan (REQ-LTTCE-FOS-00009):
     #       the notices regenerated from this commit's deep scan
     #       (foss-compliance-release) replace the committed ones before
     #       anything is built -- THIRD-PARTY-NOTICES.md is bundled, the
@@ -392,7 +399,7 @@ jobs:
     #       then checks the installers against these files.
     ################################################################
     - name: 102. Use the release notices of the deep scan
-      if: needs.setup.outputs.kind != 'build'
+      if: needs.setup.outputs.deep_scan == 'true'
       uses: actions/download-artifact@v8
       with:
         name: release-notices
@@ -795,7 +802,7 @@ jobs:
   ################################################################################################################################
   package-msix-bundle:
     needs: [setup, build-and-test]
-    # Release and candidate (REQ-LTTCE-FOS-00009): a candidate rehearses the
+    # Every tag (REQ-LTTCE-FOS-00009): a candidate rehearses the
     # whole build, MSIX bundle included; only publishing is left out.
     if: needs.setup.outputs.kind == 'release' || needs.setup.outputs.kind == 'candidate'
     runs-on: windows-latest
@@ -852,14 +859,17 @@ jobs:
   # JOB 4: PUBLISH TO RELEASE SITE  (tag vX.X.X builds only)
   ################################################################################################################################
   publish-release-site:
-    needs: [setup, build-and-test, package-msix-bundle, foss-scan, foss-compliance-release]
+    needs: [setup, build-and-test, package-msix-bundle, foss-compliance, foss-scan, foss-compliance-release]
     # Only an exact release tag vX.Y.Z publishes (REQ-LTTCE-FOS-00009), and only
-    # when the deep scan found no undecided topic and the installers carry the
-    # notices made from its decisions (foss-compliance-release).
+    # when the FOSS jobs passed: with the deep scan, it found no undecided topic
+    # and the installers carry the notices made from its decisions
+    # (foss-compliance-release); without it, foss-compliance as before.
     if: >-
       !cancelled() && needs.setup.outputs.kind == 'release'
       && needs.build-and-test.result == 'success' && needs.package-msix-bundle.result == 'success'
-      && needs.foss-scan.result == 'success' && needs.foss-compliance-release.result == 'success'
+      && ((needs.setup.outputs.deep_scan == 'true'
+           && needs.foss-scan.result == 'success' && needs.foss-compliance-release.result == 'success')
+       || (needs.setup.outputs.deep_scan != 'true' && needs.foss-compliance.result == 'success'))
     runs-on: ubuntu-latest
     permissions:
       contents: write      # required to create GitHub Releases
@@ -1032,12 +1042,14 @@ jobs:
     #         notice additions the installers' notices were made from.
     ################################################################
     - name: 903.2a. Download the deep scan's results
+      if: needs.setup.outputs.deep_scan == 'true'
       uses: actions/download-artifact@v8
       with:
         name: ${{ needs.foss-scan.outputs.results_artifact }}
         path: legattice-results
 
     - name: 903.2b. Add the FOSS topics report
+      if: needs.setup.outputs.deep_scan == 'true'
       shell: bash
       run: |
         set -euo pipefail
@@ -1694,7 +1706,7 @@ jobs:
   notices-to-dev:
     needs: [setup, foss-scan, publish-release-site]
     if: >-
-      !cancelled() && needs.setup.outputs.kind == 'release'
+      !cancelled() && needs.setup.outputs.kind == 'release' && needs.setup.outputs.deep_scan == 'true'
       && needs.publish-release-site.result == 'success'
     runs-on: ubuntu-latest
     permissions:

@@ -2370,15 +2370,24 @@ own checks never wait for the slow scan.
 
 <!--ARCH-LTTCE-FOS-00009-->
 **ARCH-LTTCE-FOS-00009** — covers REQ-LTTCE-FOS-00009. The release gate lives in `buildAndTest.yml`; its setup
-job runs `foss.mjs release-plan` (`release-plan.mjs`) once and every later job follows its output **`kind`**:
-`release` (tag `^v[0-9]+\.[0-9]+\.[0-9]+$`), `candidate` (`vX.Y.Z-<suffix>`) or `build`. Release and
-candidate build all platforms, the MSIX bundle included, and run the deep scan; only `release` runs
-`publish-release-site` and `notices-to-dev`. Every former `startsWith(github.ref, 'refs/tags/v')` is replaced by it.
+job runs `foss.mjs release-plan` (`release-plan.mjs`) once and every later job follows its two outputs:
+
+- **`kind`**: `release` (a tag matching `^v[0-9]+\.[0-9]+\.[0-9]+$`), `candidate` (any other tag) or `build`
+  (branch, manual run). Release and candidate build all platforms, the MSIX bundle included; only `release`
+  runs `publish-release-site`. Every former `startsWith(github.ref, 'refs/tags/v')` is replaced by it.
+- **`deep_scan`**: `true` only for a release or candidate while the repository variable `LEGATTICE_URL`
+  (`vars.LEGATTICE_URL`, passed to the step as an environment variable) is the supported Legattice URL —
+  `LEGATTICE_URL` in `release-plan.mjs`, which must match the fixed `uses:` line of `foss-scan`, since GitHub
+  takes no expression there. Not set → `false`: the tag builds as before the deep scan existed (`foss-compliance`
+  with the committed notices, no scan, no `notices-to-dev`). Any other value → setup fails with exit 2, so a typo
+  cannot silently release without the scan. Loose coupling has one limit: GitHub resolves the called workflow
+  when the run starts, so a deleted, renamed or private Legattice repository stops every run until the
+  `foss-scan` job is removed.
 
 ```text
- build:               setup ─┬─► foss-compliance (committed texts)
+ deep_scan false:     setup ─┬─► foss-compliance (committed texts)
                              └─► build-and-test (starts at once)
- release / candidate: setup ─► foss-scan ─► foss-compliance-release ─► build-and-test ─► package-msix
+ deep_scan true:      setup ─► foss-scan ─► foss-compliance-release ─► build-and-test ─► package-msix
                                                      (fresh texts)                          │
                       release only:                       publish-release-site ◄──────────┘ ─► notices-to-dev
 ```
@@ -2397,11 +2406,13 @@ candidate build all platforms, the MSIX bundle included, and run the deep scan; 
   one, runs the gate (`check --block`), regenerates both notices files instead of checking them for drift, and
   uploads them as `release-notices`; step 102 of every leg downloads them over the checkout before anything is
   built, so the bundle and the frontend carry them and step 390 checks the installers against them.
-- **Two FOSS jobs**: a job's `needs` cannot depend on an output, so `foss-compliance` (branch builds, beside the
-  legs) and `foss-compliance-release` (tags, before the legs) are separate jobs with opposite `if:`s; only one runs.
-- **Publish** needs `foss-scan` and `foss-compliance-release` to succeed and attaches `FOSS-TOPICS.md` and
-  `notice-additions.json` next to the notices and SBOMs.
-- **`notices-to-dev`** (after publish): `compare-additions` (output `changed`, ignoring `source`) and a
+- **Two FOSS jobs**: a job's `needs` cannot depend on an output, so `foss-compliance` (no deep scan, beside the
+  legs) and `foss-compliance-release` (deep scan, before the legs) are separate jobs with opposite `if:`s on
+  `deep_scan`; only one runs.
+- **Publish** needs the FOSS jobs of its path to succeed — `foss-scan` and `foss-compliance-release` with the deep
+  scan, `foss-compliance` without — and with the deep scan attaches `FOSS-TOPICS.md` and `notice-additions.json`
+  next to the notices and SBOMs.
+- **`notices-to-dev`** (after publish, deep scan only): `compare-additions` (output `changed`, ignoring `source`) and a
   `git diff` of the two notices files against the released commit; if either differs it commits the three files
   as released on branch `foss-notices-<tag>` and opens a pull request into `dev` (`GITHUB_TOKEN`,
   `contents`/`pull-requests: write`; needs the repository setting allowing Actions to create pull requests).

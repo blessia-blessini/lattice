@@ -44,9 +44,13 @@ They need the sources of all packages on disk first: `npm ci --ignore-scripts` a
 | A build (manual, `*build*` branch) | runs | reports only |
 | A release (`v*` tag) | runs; a failure **stops the release** | **stops the release** if a shipped package has a known vulnerability (unless excepted, see below) |
 
-**Releases and the deep scan.** Only a tag of exactly the form `vX.Y.Z` publishes. A tag with a suffix
-(`v0.3.52-rc1`) is a dress rehearsal: it builds and checks everything a release does, and publishes
-nothing. On both, the build first runs the deep scan of all package sources (Legattice) and **stops while
+**Releases and the deep scan.** One rule: a tag of exactly the form `vX.Y.Z` publishes; **every other tag**
+(`v0.3.52a`, `v0.3.52-rc1`, …) is a dress rehearsal: it builds and checks everything a release does, and
+publishes nothing. Branch builds never scan and never publish.
+
+The deep scan is switched on by the repository variable **`LEGATTICE_URL`** = `https://github.com/blessia-blessini/legattice`
+(GitHub: the repository → Settings → Secrets and variables → Actions → tab *Variables*). Without it, tags
+build and publish as before the deep scan existed. With it, on every tag the build first runs the deep scan of all package sources (Legattice) and **stops while
 any finding is undecided** — low, medium or high:
 
 1. The run's summary lists the open topics; the scan's results artifact holds a draft for each.

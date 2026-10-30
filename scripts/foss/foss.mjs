@@ -37,8 +37,9 @@
 ///                                               check a built AppImage F, unpacked at R, on its
 ///                                               Linux build machine; writes its SBOM (REQ-LTTCE-FOS-00006)
 ///   node scripts/foss/foss.mjs release-plan --ref <ref>
-///                                               build kind: release, candidate or build
-///                                               (job output kind; REQ-LTTCE-FOS-00009)
+///                                               build kind (release, candidate, build) and whether the
+///                                               deep scan runs (env LEGATTICE_URL; job outputs kind,
+///                                               deep_scan; REQ-LTTCE-FOS-00009)
 ///   node scripts/foss/foss.mjs compare-additions --fresh <file>
 ///                                               whether a scan's notice additions differ from
 ///                                               foss/notice-additions.json (job output changed; REQ-LTTCE-FOS-00009)
@@ -76,7 +77,7 @@ import { ADDITIONS_FILE, attachAdditions, loadAdditions, validateAdditions } fro
 import { enrichFromManifest, inventoryFromLockfile } from './npm-inventory.mjs';
 import { escapeInline, renderNotices } from './notices-render.mjs';
 import { evaluateComponent, licenceTypeMap, loadPolicy, obligationNote, unusedPolicyEntries } from './policy.mjs';
-import { additionsDifference, releaseKind } from './release-plan.mjs';
+import { additionsDifference, deepScanSetting, releaseKind } from './release-plan.mjs';
 import { leafKey } from './spdx-expr.mjs';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -531,22 +532,33 @@ function writeOutputs(values, env) {
 // commandReleasePlan
 //**************************************************************
 /**
- * REQ-LTTCE-FOS-00009 — what kind of build this is: release, candidate or
- * build. Writes the job output `kind` and a job summary line.
+ * REQ-LTTCE-FOS-00009 — what kind of build this is (release, candidate or
+ * build) and whether the deep scan takes part (a tag, and the repository
+ * variable LEGATTICE_URL, passed in as env.LEGATTICE_URL, names Legattice).
+ * Writes the job outputs `kind` and `deep_scan` and a job summary line.
  * @param {object} options
  * @param {string} options.ref the build's git ref (github.ref)
  * @param {Record<string, string|undefined>} [options.env]
- * @returns {number} exit code (0; the decision is in the output)
+ * @returns {number} exit code: 0, or 2 when LEGATTICE_URL names something else
  */
 export function commandReleasePlan({ ref, env = process.env }, log = console) {
     const kind = releaseKind(ref);
-    const plan = kind === 'build'
-        ? 'no deep scan; the build legs ship the committed notices'
-        : 'deep scan first (any undecided topic stops the run), then the build legs ship its fresh notices'
-          + (kind === 'release' ? '; publish; a pull request brings changed notices back to dev' : '; never published');
-    log.log(`foss release-plan: kind ${kind} (${plan})`);
-    writeOutputs({ kind }, env);
-    writeStepSummary(['### Release plan', '', `Kind: **${kind}** (${escapeInline(ref)}). ${plan}.`], env, log);
+    const setting = deepScanSetting(env.LEGATTICE_URL);
+    if (setting.error) {
+        log.error(`foss release-plan: ${setting.error}`);
+        writeStepSummary(['### Release plan', '', `**Stopped**: ${escapeInline(setting.error)}.`], env, log);
+        return 2;
+    }
+    const deepScan = kind !== 'build' && setting.scan;
+    let plan;
+    if (kind === 'build') plan = 'no deep scan; the build legs ship the committed notices';
+    else if (!deepScan) plan = 'LEGATTICE_URL not set: no deep scan; the build legs ship the committed notices';
+    else plan = 'deep scan first (any undecided topic stops the run), then the build legs ship its fresh notices';
+    if (kind === 'release') plan += deepScan ? '; publish; a pull request brings changed notices back to dev' : '; publish';
+    if (kind === 'candidate') plan += '; never published';
+    log.log(`foss release-plan: kind ${kind}, deep scan ${deepScan} (${plan})`);
+    writeOutputs({ kind, deep_scan: String(deepScan) }, env);
+    writeStepSummary(['### Release plan', '', `Kind: **${kind}** (${escapeInline(ref)}). Deep scan: **${deepScan}**. ${plan}.`], env, log);
     return 0;
 }
 // commandReleasePlan END **************************************
