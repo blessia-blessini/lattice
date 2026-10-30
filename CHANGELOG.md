@@ -6,6 +6,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.52
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: Set version to 0.3.52
 - v0.3.51 Release
 - CHORE:Prep v0.3.51 Release
 --- 
