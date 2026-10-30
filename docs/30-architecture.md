@@ -1939,6 +1939,26 @@ created by it are left on disk untouched.
 `#[serde(default)]`. Absent keys therefore mean `DLN` / OFF, while an explicit `""` survives as "no prefix".
 No settings-specific code was needed for validation — the field's type carries it.
 
+**Where the folder comes from** (REQ-LTTCE-DLN-00008, -00009; IMPL-LTTCE-DLN-00006). The frontend never
+resolves the Daily Notes Path itself; it receives it resolved from `load_settings`:
+
+```
+load_settings_internal(settings_path, home)                 save_settings_internal(settings_path, s, home)
+  get_vault_root(settings_path, home) ─▶ notes root           get_vault_root(...) ─▶ notes root
+    <home>/.lattice/settings.json → <home>/lattice-notes        condense_daily_notes_path:
+    <vault>/.lattice/settings.json → <vault>                       starts with notes root → "{notesRoot}…"
+  expand_daily_notes_path:                                       else stored as entered
+    "" → <notes root>/daily
+    "{notesRoot}" replaced by the notes root
+```
+
+`<home>` is the base path of `calc_base_path_internal` — the user's home folder on desktop, the app's data
+folder on mobile (Chapter VLT). The notes root of the home vault is a sub-folder so that daily notes never
+land loose in the home folder itself. The token keeps a vault relocatable: copied or moved, its stored path
+still points inside it. `condense` matches the notes root as a string prefix, so a sibling such as
+`<vault>2/x` is stored as `{notesRoot}2/x`; it expands back to the same path, so nothing observable changes
+until the vault is moved.
+
 ### Frontend Glue
 
 | Layer    | File                          | Responsibility                                                                                     |
@@ -2347,6 +2367,58 @@ own checks never wait for the slow scan.
 - **Exports**: `export-embedded.json` names per component the ledger topics that concern the copied material
   (`topics`) — KaTeX's fonts (OFL-1.1), not KaTeX's code — because which files an export copies is not
   something the scan knows.
+
+<!--ARCH-LTTCE-FOS-00009-->
+**ARCH-LTTCE-FOS-00009** — covers REQ-LTTCE-FOS-00009. The release gate lives in `buildAndTest.yml`; its setup
+job runs `foss.mjs release-plan` (`release-plan.mjs`) once and every later job follows its two outputs:
+
+- **`kind`**: `release` (a tag matching `^v[0-9]+\.[0-9]+\.[0-9]+$`), `candidate` (any other tag) or `build`
+  (branch, manual run). Release and candidate build all platforms, the MSIX bundle included; only `release`
+  runs `publish-release-site`. Every former `startsWith(github.ref, 'refs/tags/v')` is replaced by it.
+- **`deep_scan`**: `true` only for a release or candidate while the repository variable `LEGATTICE_URL`
+  (`vars.LEGATTICE_URL`, passed to the step as an environment variable) is the supported Legattice URL —
+  `LEGATTICE_URL` in `release-plan.mjs`, which must match the fixed `uses:` line of `foss-scan`, since GitHub
+  takes no expression there. Not set → `false`: the tag builds as before the deep scan existed (`foss-compliance`
+  with the committed notices, no scan, no `notices-to-dev`). Any other value → setup fails with exit 2, so a typo
+  cannot silently release without the scan. Loose coupling has one limit: GitHub resolves the called workflow
+  when the run starts, so a deleted, renamed or private Legattice repository stops every run until the
+  `foss-scan` job is removed.
+
+```text
+ deep_scan false:     setup ─┬─► foss-compliance (committed texts)
+                             └─► build-and-test (starts at once)
+ deep_scan true:      setup ─► foss-scan ─► foss-compliance-release ─► build-and-test ─► package-msix
+                                                     (fresh texts)                          │
+                      release only:                       publish-release-site ◄──────────┘ ─► notices-to-dev
+```
+
+- **The deep scan** is Legattice's `scan.yml` as a reusable workflow (`uses:
+  blessia-blessini/legattice/.github/workflows/scan.yml@main`) on `github.sha`, 16 shards, `block_at: low`: its
+  merge job fails while any topic is open, reopened or pending removal, and the ledger is Legattice's `main` as it
+  is when the job starts. Deciding there and **Re-run failed jobs** here continues the same run. Its artifact
+  (`results_artifact`) carries `topics/topics.md` and `topics/notice-additions.json`.
+- **`@main`, not pinned — an accepted risk** (decided 2026-10-29): Legattice and Lattice have the same owner,
+  so whoever can change Legattice's `main` can change Lattice too. Pinning the caller to a commit would not be
+  enough on its own: `scan.yml` checks out Legattice's code together with the ledger from `main`, and only the
+  ledger must follow `main` (decisions made between a stop and its re-run). Accepted consequence: a Legattice push
+  can stop or change a Lattice release without a Lattice commit; the scan records the Legattice commit it used.
+- **Fresh texts**: `foss-compliance.yml` with `fresh_additions` puts the scan's file in place of the committed
+  one, runs the gate (`check --block`), regenerates both notices files instead of checking them for drift, and
+  uploads them as `release-notices`; step 102 of every leg downloads them over the checkout before anything is
+  built, so the bundle and the frontend carry them and step 390 checks the installers against them.
+- **Two FOSS jobs**: a job's `needs` cannot depend on an output, so `foss-compliance` (no deep scan, beside the
+  legs) and `foss-compliance-release` (deep scan, before the legs) are separate jobs with opposite `if:`s on
+  `deep_scan`; only one runs.
+- **Publish** needs the FOSS jobs of its path to succeed — `foss-scan` and `foss-compliance-release` with the deep
+  scan, `foss-compliance` without — and with the deep scan attaches `FOSS-TOPICS.md` and `notice-additions.json`
+  next to the notices and SBOMs.
+- **`notices-to-dev`** (after publish, deep scan only): `compare-additions` (output `changed`, ignoring `source`) and a
+  `git diff` of the two notices files against the released commit; if either differs it commits the three files
+  as released on branch `foss-notices-<tag>` and opens a pull request into `dev` (`GITHUB_TOKEN`,
+  `contents`/`pull-requests: write`; needs the repository setting allowing Actions to create pull requests).
+  A pull request of the same tag in any state (open, merged, closed) or an already pushed branch is reused, so a
+  re-run never opens a second one or overwrites. Merging
+  is the maintainer's approval; the commit is made by Actions, co-authored by the maintainer account.
 
 ## Architectural Decisions
 

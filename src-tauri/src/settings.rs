@@ -117,6 +117,8 @@ impl Default for Settings {
 //**************************************************************
 // get_vault_root
 //**************************************************************
+/// IMPL-LTTCE-DLN-00006 — the notes root of a vault (REQ-LTTCE-DLN-00009): the folder
+/// holding `.lattice`, except `<home>/lattice-notes` for the home vault.
 pub fn get_vault_root(settings_path: &str, home_dir_req: Option<&Path>) -> Result<PathBuf, String> {
     let s_path = Path::new(settings_path);
 
@@ -146,6 +148,8 @@ pub fn get_vault_root(settings_path: &str, home_dir_req: Option<&Path>) -> Resul
 //**************************************************************
 // expand_daily_notes_path
 //**************************************************************
+/// IMPL-LTTCE-DLN-00006 — Daily Notes Path as loaded (REQ-LTTCE-DLN-00008): empty →
+/// `<notes root>/daily`, `{notesRoot}` → the notes root.
 pub fn expand_daily_notes_path(mut settings: Settings, vault_root: &Path) -> Settings {
     let vault_root_str = vault_root.to_string_lossy().to_string();
 
@@ -164,6 +168,8 @@ pub fn expand_daily_notes_path(mut settings: Settings, vault_root: &Path) -> Set
 //**************************************************************
 // condense_daily_notes_path
 //**************************************************************
+/// IMPL-LTTCE-DLN-00006 — Daily Notes Path as saved (REQ-LTTCE-DLN-00008): a path
+/// beginning with the notes root is stored with `{notesRoot}` instead.
 pub fn condense_daily_notes_path(mut settings: Settings, vault_root: &Path) -> Settings {
     let vault_root_str = vault_root.to_string_lossy().to_string();
     if settings.daily_notes_path.starts_with(&vault_root_str) {

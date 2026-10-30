@@ -59,6 +59,10 @@ on:
         description: 'Write and upload the SBOMs (artifact FOSS) for the release'
         type: boolean
         default: true
+      fresh_additions:
+        description: 'Tag with the deep scan (REQ-LTTCE-FOS-00009): artifact of the deep scan of this commit; its notice additions replace the committed ones, the notices are regenerated and uploaded as release-notices'
+        type: string
+        default: ''
   pull_request:
     branches: [ "dev" ]
   push:
@@ -86,7 +90,28 @@ jobs:
         cargo fetch --locked --manifest-path src-tauri/Cargo.toml
         npm ci --omit=dev --ignore-scripts --no-audit --no-fund
 
-    # On a release (v* tag, the condition of publish-release-site) --block also
+    ################################################################
+    # 135 / Tags with the deep scan only (REQ-LTTCE-FOS-00009):
+    #       the deep scan of this commit, run before this job, decided
+    #       what the notices add; its file replaces the committed one for
+    #       everything below, so gate, notices and SBOMs use it.
+    ################################################################
+    - name: 135a. Get the deep scan's results
+      if: inputs.fresh_additions
+      uses: actions/download-artifact@v8
+      with:
+        name: ${{ inputs.fresh_additions }}
+        path: legattice-results
+
+    - name: 135b. Use its notice additions
+      if: inputs.fresh_additions
+      shell: bash
+      run: |
+        set -euo pipefail
+        cp legattice-results/topics/notice-additions.json foss/notice-additions.json
+        node -e "const a=require('./foss/notice-additions.json'); console.log('notice additions from', JSON.stringify(a.source), '-', a.additions.length, 'additions')"
+
+    # On a v* tag (a release or a rehearsal, REQ-LTTCE-FOS-00009) --block also
     # fails on notice additions for versions no longer shipped (REQ-LTTCE-FOS-00008).
     - name: 140. Licence gate
       shell: bash
@@ -96,8 +121,24 @@ jobs:
 
     # 141 and 144 also run after a failed gate, so one run reports everything.
     - name: 141. Third-party notices up to date
-      if: (success() || failure()) && steps.fetch.outcome == 'success'
+      if: (success() || failure()) && steps.fetch.outcome == 'success' && !inputs.fresh_additions
       run: node scripts/foss/foss.mjs notices --check
+
+    # With fresh additions the committed notices are older by design: they are
+    # regenerated here, and the build legs ship these (REQ-LTTCE-FOS-00009).
+    - name: 141a. Regenerate the notices from the fresh additions
+      if: inputs.fresh_additions
+      run: node scripts/foss/foss.mjs notices
+
+    - name: 141b. Upload the release notices
+      if: inputs.fresh_additions
+      uses: actions/upload-artifact@v7
+      with:
+        name: release-notices
+        path: |
+          THIRD-PARTY-NOTICES.md
+          src/lib/export-notices.generated.txt
+        if-no-files-found: error
 
     # 142/143 only when called by a build: inputs exist only for
     # workflow_call, so on a pull request or a push to dev inputs.sbom

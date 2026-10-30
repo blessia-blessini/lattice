@@ -44,6 +44,24 @@ They need the sources of all packages on disk first: `npm ci --ignore-scripts` a
 | A build (manual, `*build*` branch) | runs | reports only |
 | A release (`v*` tag) | runs; a failure **stops the release** | **stops the release** if a shipped package has a known vulnerability (unless excepted, see below) |
 
+**Releases and the deep scan.** One rule: a tag of exactly the form `vX.Y.Z` publishes; **every other tag**
+(`v0.3.52a`, `v0.3.52-rc1`, …) is a dress rehearsal: it builds and checks everything a release does, and
+publishes nothing. Branch builds never scan and never publish.
+
+The deep scan is switched on by the repository variable **`LEGATTICE_URL`** = `https://github.com/blessia-blessini/legattice`
+(GitHub: the repository → Settings → Secrets and variables → Actions → tab *Variables*). Without it, tags
+build and publish as before the deep scan existed. With it, on every tag the build first runs the deep scan of all package sources (Legattice) and **stops while
+any finding is undecided** — low, medium or high:
+
+1. The run's summary lists the open topics; the scan's results artifact holds a draft for each.
+2. Decide them in the Legattice ledger (`products/lattice/ledger/`), commit and push there.
+3. On the stopped run here: **Re-run failed jobs**. The scan reads your decisions and the build goes on.
+
+When the deep scan runs, the installers of a release or candidate carry the notices made from that
+scan, never the committed ones. After such a release whose notices differ from the committed ones, the build opens a pull
+request into `dev` ("Bring the notices released in vX.Y.Z back to dev") with the files as released —
+merge it, nothing else to do.
+
 "Reports only" means: you see the findings in the job summary and as yellow warnings, but the
 check stays green.
 

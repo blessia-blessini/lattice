@@ -3,10 +3,25 @@
 All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
-## v0.3.52
+
+## v0.3.53
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- REL: Release Version 0.3.52
+---
+
+## v0.3.52
+### Changes
 - CHORE: Set version to 0.3.52
+- FEAT: Notices PR step explains a missing repository setting - error with where to switch it on
+- DOCS: Release gate review nits - notices only from a deep scan, job 5 header, gate comment
+- FEAT: One tag rule and an optional Legattice - exactly vX.Y.Z publishes, every other tag rehearses, LEGATTICE_URL switches the deep scan
+- CHORE: Cleaned CHANGELOG
+- Fix: review findings
+- DOCS: Record calling the Legattice scan at @main as an accepted risk
+- FIX: Release gate review cycle 1 - notices PR re-run safe after merge or close, stale changelog line
+- FEAT: Release gate simplified - scan first on every tag, block on any undecided topic, PR brings released notices to dev
+---
 - v0.3.51 Release
 - CHORE:Prep v0.3.51 Release
 --- 

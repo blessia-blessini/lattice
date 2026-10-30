@@ -36,6 +36,13 @@
 ///   node scripts/foss/foss.mjs appimage --appimage F --root R --target linux-x64|linux-arm64 --out-dir D
 ///                                               check a built AppImage F, unpacked at R, on its
 ///                                               Linux build machine; writes its SBOM (REQ-LTTCE-FOS-00006)
+///   node scripts/foss/foss.mjs release-plan --ref <ref>
+///                                               build kind (release, candidate, build) and whether the
+///                                               deep scan runs (env LEGATTICE_URL; job outputs kind,
+///                                               deep_scan; REQ-LTTCE-FOS-00009)
+///   node scripts/foss/foss.mjs compare-additions --fresh <file>
+///                                               whether a scan's notice additions differ from
+///                                               foss/notice-additions.json (job output changed; REQ-LTTCE-FOS-00009)
 ///   node scripts/foss/foss.mjs audit [--block]  npm audit + cargo audit against the shipped components
 ///                                               (REQ-LTTCE-FOS-00007); reports only, unless --block
 ///
@@ -66,10 +73,11 @@ import {
 import { buildSbom } from './cyclonedx.mjs';
 import { EXPORT_NOTICES_FILE, loadEmbedded, renderExportNotices, selectEmbedded } from './export-notices.mjs';
 import { fallbackCopyright, findExhibitB, listLicenceFiles, selectTexts, shippedLicenceIds } from './licence-texts.mjs';
-import { ADDITIONS_FILE, attachAdditions, loadAdditions } from './notice-additions.mjs';
+import { ADDITIONS_FILE, attachAdditions, loadAdditions, validateAdditions } from './notice-additions.mjs';
 import { enrichFromManifest, inventoryFromLockfile } from './npm-inventory.mjs';
 import { escapeInline, renderNotices } from './notices-render.mjs';
 import { evaluateComponent, licenceTypeMap, loadPolicy, obligationNote, unusedPolicyEntries } from './policy.mjs';
+import { additionsDifference, deepScanSetting, releaseKind } from './release-plan.mjs';
 import { leafKey } from './spdx-expr.mjs';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -510,6 +518,93 @@ export async function commandAudit({ entries }, { root, block, today, env = proc
 
 
 //**************************************************************
+// writeOutputs
+//**************************************************************
+/** Appends key=value lines to GITHUB_OUTPUT (job outputs); nothing outside Actions. */
+function writeOutputs(values, env) {
+    if (!env.GITHUB_OUTPUT) return;
+    fs.appendFileSync(env.GITHUB_OUTPUT, Object.entries(values).map(([k, v]) => `${k}=${v}\n`).join(''));
+}
+// writeOutputs END ********************************************
+
+
+//**************************************************************
+// commandReleasePlan
+//**************************************************************
+/**
+ * REQ-LTTCE-FOS-00009 — what kind of build this is (release, candidate or
+ * build) and whether the deep scan takes part (a tag, and the repository
+ * variable LEGATTICE_URL, passed in as env.LEGATTICE_URL, names Legattice).
+ * Writes the job outputs `kind` and `deep_scan` and a job summary line.
+ * @param {object} options
+ * @param {string} options.ref the build's git ref (github.ref)
+ * @param {Record<string, string|undefined>} [options.env]
+ * @returns {number} exit code: 0, or 2 when LEGATTICE_URL names something else
+ */
+export function commandReleasePlan({ ref, env = process.env }, log = console) {
+    const kind = releaseKind(ref);
+    const setting = deepScanSetting(env.LEGATTICE_URL);
+    if (setting.error) {
+        log.error(`foss release-plan: ${setting.error}`);
+        writeStepSummary(['### Release plan', '', `**Stopped**: ${escapeInline(setting.error)}.`], env, log);
+        return 2;
+    }
+    const deepScan = kind !== 'build' && setting.scan;
+    let plan;
+    if (kind === 'build') plan = 'no deep scan; the build legs ship the committed notices';
+    else if (!deepScan) plan = 'LEGATTICE_URL not set: no deep scan; the build legs ship the committed notices';
+    else plan = 'deep scan first (any undecided topic stops the run), then the build legs ship its fresh notices';
+    if (kind === 'release') plan += deepScan ? '; publish; a pull request brings changed notices back to dev' : '; publish';
+    if (kind === 'candidate') plan += '; never published';
+    log.log(`foss release-plan: kind ${kind}, deep scan ${deepScan} (${plan})`);
+    writeOutputs({ kind, deep_scan: String(deepScan) }, env);
+    writeStepSummary(['### Release plan', '', `Kind: **${kind}** (${escapeInline(ref)}). Deep scan: **${deepScan}**. ${plan}.`], env, log);
+    return 0;
+}
+// commandReleasePlan END **************************************
+
+
+//**************************************************************
+// commandCompareAdditions
+//**************************************************************
+/**
+ * REQ-LTTCE-FOS-00009 — after a release: does the deep scan's notice-additions
+ * file, which the released installers were made from, say something else than
+ * the committed foss/notice-additions.json (ignoring `source`)? Writes the job
+ * output `changed` (true/false) and lists the differing topics; the release
+ * build then opens a pull request into dev with the fresh files.
+ * @param {{root: string, fresh: string, env?: Record<string, string|undefined>}} options
+ * @returns {number} exit code: 0 (the answer is in the output)
+ */
+export function commandCompareAdditions({ root, fresh, env = process.env }, log = console) {
+    const committed = loadAdditions(root) ?? { additions: [] };
+    const scanned = validateAdditions(JSON.parse(fs.readFileSync(fresh, 'utf8')));
+    const diff = additionsDifference(committed, scanned);
+    writeOutputs({ changed: String(!diff.equal) }, env);
+    if (diff.equal) {
+        log.log(`foss compare-additions: the scan adds what ${ADDITIONS_FILE} says (${committed.additions.length} additions)`);
+        return 0;
+    }
+    const lines = [
+        ...diff.added.map((t) => `new: ${t}`),
+        ...diff.removed.map((t) => `gone: ${t}`),
+        ...diff.changed.map((t) => `changed: ${t}`),
+    ];
+    for (const l of lines) log.log(`  ${l}`);
+    log.log(`foss compare-additions: the scan's notice additions differ from ${ADDITIONS_FILE}`);
+    writeStepSummary([
+        '### Notice additions changed',
+        '',
+        `The released notices come from this deep scan, which adds other notices than the committed ${ADDITIONS_FILE}:`,
+        '',
+        ...lines.map((l) => `- ${escapeInline(l)}`),
+    ], env, log);
+    return 0;
+}
+// commandCompareAdditions END *********************************
+
+
+//**************************************************************
 // parseArgs
 //**************************************************************
 /**
@@ -519,10 +614,10 @@ export async function commandAudit({ entries }, { root, block, today, env = proc
  */
 export function parseArgs(argv) {
     const [command, ...rest] = argv;
-    if (!['check', 'notices', 'sbom', 'appimage', 'audit'].includes(command)) {
-        throw new Error(`unknown command "${command ?? ''}" (check [--block] | notices [--check] | sbom --out-dir <dir> | appimage --appimage <file> --root <dir> --target <label> --out-dir <dir> | audit [--block])`);
+    if (!['check', 'notices', 'sbom', 'appimage', 'audit', 'release-plan', 'compare-additions'].includes(command)) {
+        throw new Error(`unknown command "${command ?? ''}" (check [--block] | notices [--check] | sbom --out-dir <dir> | appimage --appimage <file> --root <dir> --target <label> --out-dir <dir> | audit [--block] | release-plan --ref <ref> | compare-additions --fresh <file>)`);
     }
-    const opts = { command, check: false, block: false, outDir: null, appImage: null, appRoot: null, label: null, targets: [...TARGETS] };
+    const opts = { command, check: false, block: false, outDir: null, appImage: null, appRoot: null, label: null, ref: null, fresh: null, targets: [...TARGETS] };
     for (let i = 0; i < rest.length; i++) {
         const a = rest[i];
         if (a === '--check' && command === 'notices') opts.check = true;
@@ -531,6 +626,8 @@ export function parseArgs(argv) {
         else if (a === '--appimage' && command === 'appimage' && rest[i + 1]) opts.appImage = rest[++i];
         else if (a === '--root' && command === 'appimage' && rest[i + 1]) opts.appRoot = rest[++i];
         else if (a === '--target' && command === 'appimage' && rest[i + 1]) opts.label = rest[++i];
+        else if (a === '--ref' && command === 'release-plan' && rest[i + 1] !== undefined) opts.ref = rest[++i];
+        else if (a === '--fresh' && command === 'compare-additions' && rest[i + 1]) opts.fresh = rest[++i];
         else if (a === '--targets' && rest[i + 1]) {
             const wanted = rest[++i].split(',');
             const unknown = wanted.filter((w) => !TARGETS.some((t) => t.triple === w));
@@ -539,6 +636,8 @@ export function parseArgs(argv) {
         } else throw new Error(`unexpected argument "${a}"`);
     }
     if (command === 'sbom' && !opts.outDir) throw new Error('sbom needs --out-dir <dir>');
+    if (command === 'release-plan' && opts.ref === null) throw new Error('release-plan needs --ref <ref> (the github.ref of the build)');
+    if (command === 'compare-additions' && !opts.fresh) throw new Error('compare-additions needs --fresh <notice-additions.json>');
     if (command === 'appimage') {
         if (!opts.appImage || !opts.appRoot || !opts.outDir || !opts.label) throw new Error('appimage needs --appimage <file> --root <dir> --target <label> --out-dir <dir>');
         if (!Object.hasOwn(APPIMAGE_TARGETS, opts.label)) throw new Error(`no AppImage for target "${opts.label}" (known: ${Object.keys(APPIMAGE_TARGETS).join(', ')})`);
@@ -561,6 +660,15 @@ export async function main(argv, { root = ROOT, today = new Date().toISOString()
         opts = parseArgs(argv);
     } catch (e) {
         console.error(`foss: ${e.message}`);
+        return 2;
+    }
+    // The release plan and the additions comparison need no inventory either:
+    // they run in the build's setup job and after publishing (REQ-LTTCE-FOS-00009).
+    try {
+        if (opts.command === 'release-plan') return commandReleasePlan({ ref: opts.ref });
+        if (opts.command === 'compare-additions') return commandCompareAdditions({ root, fresh: path.resolve(opts.fresh) });
+    } catch (e) {
+        console.error(`foss ${opts.command}: ${e.message}`);
         return 2;
     }
     // The AppImage check needs no cargo/npm inventory: it runs on a Linux build
