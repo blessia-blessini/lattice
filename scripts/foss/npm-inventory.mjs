@@ -146,7 +146,14 @@ export function inventoryFromLockfile(lock, pkgJson, rootDir) {
 /** "Jane <j@x.org> (https://x.org)" or {name} -> "Jane". */
 function personName(person) {
     const raw = typeof person === 'string' ? person : person?.name;
-    return typeof raw === 'string' ? raw.replace(/<[^>]*>|\([^)]*\)/g, '').trim() || null : null;
+    if (typeof raw !== 'string') return null;
+    let cleaned = raw;
+    let previous;
+    do {
+        previous = cleaned;
+        cleaned = cleaned.replace(/<[^>]*>|\([^)]*\)/g, '');
+    } while (cleaned !== previous);
+    return cleaned.trim() || null;
 }
 // personName END **********************************************
 

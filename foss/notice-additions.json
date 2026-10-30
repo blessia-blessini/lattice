@@ -3,11 +3,11 @@
   "source": {
     "product": {
       "repository": "blessia-blessini/lattice",
-      "ref": "v0.3.50"
+      "ref": "a68e8f4a9d1f62fcc34b259b528a373cb5c3d205"
     },
-    "date": "2026-10-28",
-    "legattice": "448a1acdc0866ba0716c3248dcf6e124bccec226",
-    "run": "https://github.com/blessia-blessini/legattice/actions/runs/40730716667"
+    "date": "2026-10-30",
+    "legattice": "a68e8f4a9d1f62fcc34b259b528a373cb5c3d205",
+    "run": "https://github.com/blessia-blessini/lattice/actions/runs/41104939156"
   },
   "additions": [
     {
@@ -3535,7 +3535,7 @@
         "licence": "Apache-2.0",
         "rationale": "REASON-003: Bundled code under its own licence; bundled DOMPurify (Apache option); other hits only in .map files, not in Lattice",
         "decidedBy": "Blessia Blessini",
-        "date": "2026-10-28"
+        "date": "2026-10-30"
       },
       "files": [
         {
@@ -3707,45 +3707,6 @@
             ]
           ]
         },
-        {
-          "path": "dist/mermaid.min.js",
-          "sha1": "4e251a46dbaa57869e89988bbae3eb59e4827567",
-          "lines": [
-            [
-              3607,
-              3607
-            ]
-          ]
-        }
-      ],
-      "copyrights": [
-        "(c) Cure53 and other contributors",
-        "Copyright (c) 2013-2014 Ralf S. Engelschall (http://engelschall.com)",
-        "Copyright Gaetan Renaudeau",
-        "Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors",
-        "Copyright OpenJS Foundation and other contributors https://openjsf.org",
-        "copyright Koen Bok"
-      ]
-    },
-    {
-      "topic": "LT-56ad7e6a6f",
-      "package": {
-        "id": "NPM::mermaid:11.17.2",
-        "ecosystem": "npm",
-        "name": "mermaid",
-        "version": "11.17.2"
-      },
-      "licences": [
-        "Apache-2.0"
-      ],
-      "decision": {
-        "outcome": "accept-as",
-        "licence": "Apache-2.0",
-        "rationale": "REASON-002: False positive; no EPL: line 3607 is DOMPurify's 'Apache license 2.0 and Mozilla Public License 2.0'",
-        "decidedBy": "Blessia Blessini",
-        "date": "2026-10-28"
-      },
-      "files": [
         {
           "path": "dist/mermaid.min.js",
           "sha1": "4e251a46dbaa57869e89988bbae3eb59e4827567",
