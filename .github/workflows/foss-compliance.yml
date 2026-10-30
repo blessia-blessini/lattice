@@ -111,7 +111,7 @@ jobs:
         cp legattice-results/topics/notice-additions.json foss/notice-additions.json
         node -e "const a=require('./foss/notice-additions.json'); console.log('notice additions from', JSON.stringify(a.source), '-', a.additions.length, 'additions')"
 
-    # On a release (v* tag, the condition of publish-release-site) --block also
+    # On a v* tag (a release or a rehearsal, REQ-LTTCE-FOS-00009) --block also
     # fails on notice additions for versions no longer shipped (REQ-LTTCE-FOS-00008).
     - name: 140. Licence gate
       shell: bash

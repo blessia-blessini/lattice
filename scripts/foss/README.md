@@ -57,8 +57,8 @@ any finding is undecided** — low, medium or high:
 2. Decide them in the Legattice ledger (`products/lattice/ledger/`), commit and push there.
 3. On the stopped run here: **Re-run failed jobs**. The scan reads your decisions and the build goes on.
 
-The installers of a release or candidate always carry the notices made from that scan, never the
-committed ones. After a release whose notices differ from the committed ones, the build opens a pull
+When the deep scan runs, the installers of a release or candidate carry the notices made from that
+scan, never the committed ones. After such a release whose notices differ from the committed ones, the build opens a pull
 request into `dev` ("Bring the notices released in vX.Y.Z back to dev") with the files as released —
 merge it, nothing else to do.
 

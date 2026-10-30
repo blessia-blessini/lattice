@@ -1691,8 +1691,10 @@ jobs:
 
   ################################################################################################################################
   ################################################################################################################################
-  # JOB 5: BRING THE RELEASED NOTICES BACK TO DEV  (tag vX.Y.Z, after publishing; REQ-LTTCE-FOS-00009)
-  #   The installers carry the notices of this release's deep scan, which
+  # JOB 5: BRING THE RELEASED NOTICES BACK TO DEV  (tag vX.Y.Z, deep scan only, after publishing; REQ-LTTCE-FOS-00009)
+  #   Without the deep scan the release ships the committed notices, so there
+  #   is nothing to bring back. With it, the installers carry the notices of
+  #   this release's deep scan, which
   #   may be newer than those committed. If they differ, this opens a pull
   #   request into dev with foss/notice-additions.json and the two notices
   #   files exactly as released, so nobody has to remember it; merging it
