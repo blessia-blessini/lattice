@@ -2071,19 +2071,19 @@ The Settings window has its own size (600 × 400) and is not an editor window.
 `localStorage` under `MRU_STORAGE_KEY` (`lattice-mru-list`), at most `MRU_MAX` (20) entries (`App.tsx`):
 `addToMRU` after a successful load or save, `removeFromMRU`, both through `updateMRU` (trim and persist in
 one place). The menu entry calls `openRecent(path)`, which first asks the backend command
-`recent_file_state` (`src-tauri/src/recent_files.rs`, IMPL-LTTCE-RCT-00001):
+`recent_file_state` (`src-tauri/src/recent_files.rs`, IMPL-LTTCE-RCT-00001) — one `std::fs::metadata` call:
 
-| `std::fs::metadata(path)` | Root of the path (`C:\`, `\\server\share\`, `/`) | State | Frontend |
-|---|---|---|---|
-| a file | — | `file` | `loadDocument` |
-| a folder | — | `gone` | remove, alert naming the path |
-| `NotFound` | exists | `gone` | remove, alert naming the path |
-| `NotFound` | missing, or no root | `unavailable` | `loadDocument`, entry kept |
-| any other error | — | `unavailable` | `loadDocument`, entry kept |
+| `std::fs::metadata(path)` | State | Frontend |
+|---|---|---|
+| a file | `file` | `loadDocument` |
+| a folder, or `NotFound` | `notFound` | `confirm` naming the path: OK → `removeFromMRU`; never opened |
+| any other error | `unavailable` | `loadDocument`, entry kept |
 
 The decision uses the error *kind*, never the OS message text (localised). If the command itself fails, the
-frontend opens as before. The decision is pure Rust and unit-tested on the host; the frontend only switches on
-three strings.
+frontend opens as before. `NotFound` is never treated as proof: an unplugged stick, an unmounted volume
+(`/Volumes/X`, `/media/<user>/X`, where the root `/` still exists) and a Windows path beyond `MAX_PATH` report
+it too, so the user decides. A first design dropped such entries automatically when the path's drive or root
+existed; review cycle 1 showed that wrong on macOS and Linux, and it cost an offline network share two timeouts.
 
 **Test isolation of the WebView profile.** The app under test has the installed app's identifier, so WebView2
 used the developer's own profile (`%LOCALAPPDATA%\<identifier>\EBWebView`) — every full test run added the

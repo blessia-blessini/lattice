@@ -474,7 +474,10 @@ function App() {
     }
   }, []);
 
-  // One place that changes the MRU list: trim to MRU_MAX and persist.
+  //**************************************************************
+  // updateMRU
+  //**************************************************************
+  /** The one place that changes the MRU list: trim to MRU_MAX and persist. */
   const updateMRU = (change: (list: string[]) => string[]) => {
     setMruList(prev => {
       const newList = change(prev).slice(0, MRU_MAX);
@@ -482,25 +485,37 @@ function App() {
       return newList;
     });
   };
+  // updateMRU END ************************************************
 
-  // Helper to add to MRU: to the front, each path once (REQ-LTTCE-RCT-00001)
+
+  //**************************************************************
+  // addToMRU
+  //**************************************************************
+  /** To the front, each path once (REQ-LTTCE-RCT-00001). */
   const addToMRU = (path: string) => {
     if (!path) return;
     updateMRU(prev => [path, ...prev.filter(p => p !== path)]);
   };
+  // addToMRU END *************************************************
 
+
+  //**************************************************************
+  // removeFromMRU
+  //**************************************************************
   const removeFromMRU = (path: string) => {
     updateMRU(prev => prev.filter(p => p !== path));
   };
+  // removeFromMRU END ********************************************
 
   //**************************************************************
   // openRecent
   //**************************************************************
   /**
    * IMPL-LTTCE-RCT-00002 — opens an "Open Recent" entry (REQ-LTTCE-RCT-00002).
-   * An entry whose file is certainly gone is dropped, with a message naming it;
-   * one that cannot be checked now (drive not connected, no permission) is
-   * opened as before and kept. If the check itself fails, opening is tried.
+   * Not found: the user is asked whether to remove the entry, and nothing is
+   * opened -- "not found" is also what an unplugged stick or volume reports,
+   * so it is never removed without asking. Any other answer, or a failing
+   * check: opened as before, kept.
    */
   const openRecent = async (path: string) => {
     let state: RecentFileState = 'unavailable';
@@ -509,9 +524,10 @@ function App() {
     } catch (e) {
       console.error('recent_file_state failed; opening anyway', e);
     }
-    if (state === 'gone') {
-      removeFromMRU(path);
-      alert(`"${path}" no longer exists. It was removed from Open Recent.`);
+    if (state === 'notFound') {
+      if (confirm(`"${path}" was not found. Remove it from Open Recent?`)) {
+        removeFromMRU(path);
+      }
       return;
     }
     await loadDocument(path);

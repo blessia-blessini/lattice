@@ -24,24 +24,24 @@
 //! Recent files — is an "Open Recent" entry still there? (Chapter RCT)
 //!
 //! The list itself lives in the frontend (`localStorage`); this module only
-//! answers, for one entry, whether it can be dropped:
+//! answers, for one entry, what became of it:
 //!
 //! ```text
-//!   exists, is a file                              → File         open it
-//!   gone: not found while its drive / root exists  → Gone         drop it
-//!         or now a folder
-//!   anything else: drive or stick not connected,   → Unavailable  keep it
-//!         no permission, a path without a root
+//!   exists, is a file                    → File         open it
+//!   not found, or now a folder           → NotFound     ask the user whether to remove it
+//!   any other error (no permission, an   → Unavailable  open as before, keep it
+//!   invalid path)
 //! ```
 //!
-//! Only "not found" counts as gone, and only when the drive or root the path
-//! lives on exists: an unplugged stick or a disconnected network share also
-//! reports "not found", and its entries must survive until it is back. The
-//! OS error *text* is never looked at -- it is localised.
+//! "Not found" is never taken as proof that the file is gone: an unplugged
+//! stick, an unmounted volume (`/Volumes/X`, `/media/<user>/X`) or a Windows
+//! path over 260 characters report it too. So the user decides; nothing is
+//! removed automatically. The OS error *text* is never looked at -- it is
+//! localised.
 
 use serde::Serialize;
 use std::io::ErrorKind;
-use std::path::{Component, Path, PathBuf};
+use std::path::Path;
 
 //**************************************************************
 // RecentFileState
@@ -52,42 +52,24 @@ use std::path::{Component, Path, PathBuf};
 pub enum RecentFileState {
     /// An existing file: open it.
     File,
-    /// Certainly gone: not found on a drive that exists, or now a folder.
-    Gone,
-    /// Cannot tell now (drive missing, no permission, no root): keep it.
+    /// Not found, or a folder now: ask whether to remove the entry.
+    NotFound,
+    /// Any other error: open as before, keep the entry.
     Unavailable,
 }
 // RecentFileState END *****************************************
 
 
 //**************************************************************
-// path_root
-//**************************************************************
-/// The drive or root a path lives on -- `C:\`, `\\server\share\`, `/` -- or
-/// `None` for a path without one (relative, or a bare `C:file`).
-fn path_root(path: &Path) -> Option<PathBuf> {
-    let root: PathBuf = path
-        .components()
-        .take_while(|c| matches!(c, Component::Prefix(_) | Component::RootDir))
-        .collect();
-    let has_root_dir = root.components().any(|c| matches!(c, Component::RootDir));
-    has_root_dir.then_some(root)
-}
-// path_root END ***********************************************
-
-
-//**************************************************************
 // recent_file_state_of
 //**************************************************************
-/// IMPL-LTTCE-RCT-00001 — classifies one entry (see the module table).
+/// IMPL-LTTCE-RCT-00001 — classifies one entry (see the module table). One
+/// `metadata` call: an offline network share costs one timeout, not two.
 pub fn recent_file_state_of(path: &Path) -> RecentFileState {
     match std::fs::metadata(path) {
         Ok(meta) if meta.is_file() => RecentFileState::File,
-        Ok(_) => RecentFileState::Gone,
-        Err(e) if e.kind() == ErrorKind::NotFound => match path_root(path) {
-            Some(root) if root.is_dir() => RecentFileState::Gone,
-            _ => RecentFileState::Unavailable,
-        },
+        Ok(_) => RecentFileState::NotFound,
+        Err(e) if e.kind() == ErrorKind::NotFound => RecentFileState::NotFound,
         Err(_) => RecentFileState::Unavailable,
     }
 }

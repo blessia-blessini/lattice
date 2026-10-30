@@ -1034,16 +1034,17 @@ The File menu's **Open Recent** lists the documents the user worked on last, to 
 newest first, each path once, at most 20; choosing one SHALL open that document.
 
 <!--REQ-LTTCE-RCT-00002-->
-**REQ-LTTCE-RCT-00002** — When the chosen entry's file certainly no longer exists — it is not found while the
-drive or root folder it lives on exists, or the path now names a folder — the application SHALL remove the
-entry from Open Recent and tell the user so, naming the path, instead of trying to open it. When this cannot be
-told — the drive or network share is not connected, access is denied, the path has no drive or root — the
-application SHALL try to open the document as before and SHALL keep the entry.
+**REQ-LTTCE-RCT-00002** — When the chosen entry's file is not found, or its path now names a folder, the
+application SHALL NOT try to open it; it SHALL ask the user, naming the path, whether to remove the entry from
+Open Recent, and SHALL remove it only when the user agrees. When the entry cannot be checked for any other
+reason (access denied, an invalid path), the application SHALL try to open the document as before and SHALL
+keep the entry.
 
 *Rationale*: written 2026-10-30. The list filled with paths that could not be opened — fixture files of the
 automated tests, which shared the developer's WebView storage (fixed in the test harness) — and nothing ever
-removed a dead entry. Only a certain absence removes one: an unplugged stick also reports "not found", and its
-entries must still be there when it is back.
+removed a dead entry. "Not found" is not proof that a file is gone: an unplugged stick, an unmounted volume or a
+Windows path over 260 characters report it too. So the user decides; nothing is removed without asking (the
+first design removed automatically; review, 2026-10-30).
 
 ## Chapter FOS — Third-Party Licence Compliance
 

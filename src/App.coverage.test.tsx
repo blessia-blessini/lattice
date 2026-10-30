@@ -80,7 +80,7 @@ type InvokeOpts = {
     dailyNoteThrows?: boolean;
     base64Throws?:    boolean;
     initVaultThrows?: boolean;
-    recentState?:     'file' | 'gone' | 'unavailable' | 'throws';   // recent_file_state (Chapter RCT)
+    recentState?:     'file' | 'notFound' | 'unavailable' | 'throws';   // recent_file_state (Chapter RCT)
 };
 
 const makeInvoke = (opts: InvokeOpts = {}) => (cmd: string, args: any) => {
@@ -1252,23 +1252,26 @@ describe('App — MRU submenu item click', () => {
     const readsOf = (path: string) => vi.mocked(TauriCore.invoke).mock.calls
         .filter(([cmd, args]) => cmd === 'read_text_file' && (args as any)?.path === path).length;
 
-    // REQ-LTTCE-RCT-00002: an entry whose file is gone is dropped, with a message naming it.
-    it('drops an entry whose file is gone, says so, and does not try to open it', async () => {
+    // REQ-LTTCE-RCT-00002: not found -> ask; OK removes the entry, Cancel keeps it; never opened.
+    it.each([
+        [true, 'removes'],
+        [false, 'keeps'],
+    ])('asks about an entry that is not found; answering %s %s it, and nothing is opened', async (answer) => {
         localStorage.setItem('lattice-mru-list', JSON.stringify(['/vault/deleted.md', '/vault/kept.md']));
-        const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
-        const { getByText } = await renderApp({ path: '/vault/current.md', invoke: makeInvoke({ recentState: 'gone' }) });
+        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(answer);
+        const { getByText } = await renderApp({ path: '/vault/current.md', invoke: makeInvoke({ recentState: 'notFound' }) });
         await waitForTitle('current.md');
 
         await clickRecent(getByText, '/vault/deleted.md');
 
-        await waitFor(() => expect(alertSpy).toHaveBeenCalledWith(
-            '"/vault/deleted.md" no longer exists. It was removed from Open Recent.'));
+        await waitFor(() => expect(confirmSpy).toHaveBeenCalledWith(
+            '"/vault/deleted.md" was not found. Remove it from Open Recent?'));
         expect(TauriCore.invoke).toHaveBeenCalledWith('recent_file_state', { path: '/vault/deleted.md' });
         expect(readsOf('/vault/deleted.md')).toBe(0);
         const mru: string[] = JSON.parse(localStorage.getItem('lattice-mru-list') || '[]');
-        expect(mru).not.toContain('/vault/deleted.md');
+        expect(mru.includes('/vault/deleted.md')).toBe(!answer);
         expect(mru).toContain('/vault/kept.md');
-        alertSpy.mockRestore();
+        confirmSpy.mockRestore();
     });
 
     // REQ-LTTCE-RCT-00002: cannot tell now (drive not connected, no permission) — open as before, keep it.

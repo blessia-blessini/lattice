@@ -88,7 +88,8 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - IMPL-LTTCE-RCT-00002 **covers** REQ-LTTCE-RCT-00001  (`addToMRU` / `removeFromMRU` through `updateMRU`:
   newest first, each path once, `MRU_MAX` = 20, persisted under `MRU_STORAGE_KEY`) — UTST:
   `src/App.coverage.test.tsx`, *App — MRU localStorage init*, *App — MRU truncation*
-- IMPL-LTTCE-RCT-00002 **covers** REQ-LTTCE-RCT-00002  (`openRecent`: `gone` → removed + alert naming the
-  path, not opened; `unavailable` or a failing check → opened as before, kept) — UTST:
-  `src/App.coverage.test.tsx`, *App — MRU submenu item click* (file, gone, unavailable, check throws)
+- IMPL-LTTCE-RCT-00002 **covers** REQ-LTTCE-RCT-00002  (`openRecent`: `notFound` → `confirm` naming the
+  path, OK removes, Cancel keeps, never opened; `unavailable` or a failing check → opened as before, kept) —
+  UTST: `src/App.coverage.test.tsx`, *App — MRU submenu item click* (file; not found + OK; not found + Cancel;
+  unavailable; check throws)
 - IMPL-LTTCE-RCT-00002 **covers** ARCH-LTTCE-RCT-00001

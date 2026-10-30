@@ -33,8 +33,8 @@ export interface WriteResponse {
   hash: string;
 }
 
-/** What became of an "Open Recent" entry: open it, drop it, or keep it (cannot tell now). */
-export type RecentFileState = 'file' | 'gone' | 'unavailable';
+/** What became of an "Open Recent" entry: open it, ask whether to remove it, or open as before. */
+export type RecentFileState = 'file' | 'notFound' | 'unavailable';
 
 export const FileSystem = {
   readTextFile: async (path: string): Promise<FileResponse> => {

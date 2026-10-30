@@ -433,7 +433,7 @@ fn test_recent_file_state_ipc() {
     };
 
     assert_eq!(ask(&file), "file");
-    assert_eq!(ask(&temp.path().join("deleted.md")), "gone");
-    assert_eq!(ask(std::path::Path::new("no-root/x.md")), "unavailable");
+    assert_eq!(ask(&temp.path().join("deleted.md")), "notFound");
+    assert_eq!(ask(std::path::Path::new("bad\0name.md")), "unavailable");
 }
 // test_recent_file_state_ipc END ******************************
