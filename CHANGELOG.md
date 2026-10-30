@@ -6,6 +6,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.52
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FEAT: Notices PR step explains a missing repository setting - error with where to switch it on
 - DOCS: Release gate review nits - notices only from a deep scan, job 5 header, gate comment
 - FEAT: One tag rule and an optional Legattice - exactly vX.Y.Z publishes, every other tag rehearses, LEGATTICE_URL switches the deep scan
 - CHORE: Cleaned CHANGELOG

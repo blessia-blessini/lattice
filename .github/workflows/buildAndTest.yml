@@ -1701,8 +1701,8 @@ jobs:
   #   is the maintainer's approval. Re-running is safe: a pull request of the
   #   same release in any state, or its pushed branch, is reused, never
   #   overwritten or opened twice.
-  #   Needs the repository setting "Allow GitHub Actions to create and
-  #   approve pull requests". Pull requests made with GITHUB_TOKEN start no
+  #   **Needs the repository setting "Allow GitHub Actions to create and
+  #   approve pull requests"**. Pull requests made with GITHUB_TOKEN start no
   #   workflows; the files were checked by this run already.
   ################################################################################################################################
   notices-to-dev:
@@ -1775,8 +1775,25 @@ jobs:
             -m "Co-authored-by: Blessia-Blessini <273819958+blessia-blessini@users.noreply.github.com>"
           git push origin "$BRANCH"
         fi
-        URL=$(gh pr create --base dev --head "$BRANCH" \
+        # The repository setting cannot be read with GITHUB_TOKEN (it needs
+        # administration rights), so it is recognised by the refusal itself;
+        # the branch is pushed by then and a re-run reuses it.
+        if ! URL=$(gh pr create --base dev --head "$BRANCH" \
           --title "CHORE: Bring the notices released in ${TAG} back to dev" \
-          --body "The installers of ${TAG} carry the third-party notices of its deep scan. This brings \`foss/notice-additions.json\`, \`THIRD-PARTY-NOTICES.md\` and \`src/lib/export-notices.generated.txt\` to dev exactly as released. Made by run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}.")
+          --body "The installers of ${TAG} carry the third-party notices of its deep scan. This brings \`foss/notice-additions.json\`, \`THIRD-PARTY-NOTICES.md\` and \`src/lib/export-notices.generated.txt\` to dev exactly as released. Made by run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}." \
+          2> pr-create-error.txt); then
+          cat pr-create-error.txt >&2
+          SETTINGS="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/settings/actions"
+          if grep -qi "not permitted to create or approve pull requests" pr-create-error.txt; then
+            WHY="GitHub Actions may not open pull requests in this repository."
+            HOW="Open ${SETTINGS}, box 'Workflow permissions' at the bottom: tick 'Allow GitHub Actions to create and approve pull requests', Save. Then 'Re-run failed jobs' on this run: the branch ${BRANCH} is already pushed and is reused."
+          else
+            WHY="gh pr create failed (see the log above)."
+            HOW="Fix the cause, then 'Re-run failed jobs' on this run, or open the pull request from branch ${BRANCH} into dev by hand."
+          fi
+          echo "::error title=Notices pull request not opened::${WHY} ${HOW} The release itself is published."
+          { echo "### Notices: pull request NOT opened"; echo; echo "${WHY}"; echo; echo "${HOW}"; echo; echo "The release itself is published."; } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+        fi
         echo "Opened $URL"
         echo "### Notices: pull request into dev opened: $URL" >> "$GITHUB_STEP_SUMMARY"
