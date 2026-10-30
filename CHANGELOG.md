@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.53
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FEAT: Release ships the SBOMs as one zip - lattice_<version>_sbom.zip instead of nine JSON downloads
 - CHORE: Set version to 0.3.53
 - REL: Release Version 0.3.52
 ---

@@ -1050,7 +1050,9 @@ licence requires to accompany a copy. They SHALL be generated from the dependenc
 inputs SHALL always produce the same bytes. They SHALL open with a summary of the licences in use, each
 with its type — permissive, public-domain dedication, weak copyleft or strong copyleft — and its number of
 components, naming every component used under a copyleft licence. Each release SHALL publish them, together with one
-machine-readable bill of materials (CycloneDX) per built target, next to its installers. Every pull request
+machine-readable bill of materials (CycloneDX) per built target, next to its installers; the bills of
+materials SHALL be published together in one archive, so that the release lists them as one download
+beside the installers. Every pull request
 into the development branch — an automated dependency update included — SHALL be checked against the
 licence policy and the committed notices before it is merged, and so SHALL every change pushed to the
 development branch directly, right after it arrives; a mismatch SHALL fail that check and state how to
@@ -1106,7 +1108,7 @@ refer to; a missing one SHALL fail the build. The third-party notices SHALL list
 its licence and source package and every bundler part, and carry a written offer of the corresponding source
 code for every library under the LGPL, the GPL or the MPL, valid for at least three years. Each release
 SHALL publish, per AppImage, a machine-readable bill of materials (CycloneDX) with the exact package
-versions it contains.
+versions it contains, in the release's archive of bills of materials (REQ-LTTCE-FOS-00002).
 
 *Rationale*: until v0.3.37 every AppImage carried about 170 libraries from about 110 Ubuntu packages that no
 lock file lists — among them libjbig (GPL-2.0-or-later only), pulled in solely by GTK's TIFF image loader,

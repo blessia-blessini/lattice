@@ -2147,7 +2147,10 @@ content hash, so adding a component does not renumber the others.
 The file is **committed**: Tauri refuses to build when a listed resource is missing, a dependency bump shows
 up as a reviewable diff, and `notices --check` (CI, full local suite) fails with the regeneration command
 when it is stale. `foss.mjs sbom` writes one CycloneDX 1.6 document per target; its serial number is derived
-from the content, so it is reproducible too.
+from the content, so it is reproducible too. A release publishes them, the AppImage SBOMs of step 392
+included, as **one archive** `lattice_<version>_sbom.zip` (step 903.1, `zip -j -X`: file names only, no extra
+attributes; no SBOM at all fails the step), listed as one row on the release page (905); the archive itself is
+not byte-reproducible (zip stores file times), the documents inside it are.
 
 <!--ARCH-LTTCE-FOS-00001-->
 **ARCH-LTTCE-FOS-00001** — covers REQ-LTTCE-FOS-00001. `tauri.conf.json` → `bundle.resources` maps

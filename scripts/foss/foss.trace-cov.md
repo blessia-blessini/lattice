@@ -14,7 +14,9 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   the policy's `types` (copyleft types by `COPYLEFT_TYPES`); `foss.mjs sbom`: `cyclonedx.mjs`; on GitHub Actions
   `writeStepSummary` explains a failing `check` or a stale `notices --check`. `.github/workflows/foss-compliance.yml`
   runs gate, notices check, unit tests and audit on every pull request into dev, Dependabot's included, and
-  on every push to dev, and is called by `buildAndTest.yml` with `sbom: true`, the only way that writes the SBOMs)
+  on every push to dev, and is called by `buildAndTest.yml` with `sbom: true`, the only way that writes the SBOMs;
+  `buildAndTest.yml` step 903.1 packs every SBOM into `lattice_<version>_sbom.zip` for the release, step 905
+  lists it as one row and never sends it to the virus scan)
 - IMPL-LTTCE-FOS-00002 **covers** ARCH-LTTCE-FOS-00002
 - IMPL-LTTCE-FOS-00001 **covers** REQ-LTTCE-FOS-00001  (`assert-bundled.sh`, the STST of step 390)
 - IMPL-LTTCE-FOS-00001 **covers** ARCH-LTTCE-FOS-00001
@@ -129,7 +131,7 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   libfuse (LGPL-2.1-only) passes as a separate program and not as a crate.
 - STST CI step 391 on both Linux legs: `foss.mjs appimage --appimage` on the AppImage just built, with the
   runner's dpkg — also the end-to-end check of steps 340 (no TIFF loader, no typelib) and 341 (staged files);
-  step 392 uploads its SBOM, 901.8 / 903.1 publish it.
+  step 392 uploads its SBOM, 901.8 / 903.1 publish it inside the release's SBOM archive.
 - ITST on the real tree: CI job `foss-compliance` (and the full local `build-test`) runs `check` and
   `notices --check` over all 8 targets — in every build, and on every pull request into dev.
 - STST `assert-bundled.sh`, CI step 390 — locally verified only for MSIX (an old package fails, a package
