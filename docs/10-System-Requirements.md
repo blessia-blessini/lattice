@@ -965,6 +965,28 @@ Settings panel, and SHALL be persisted to the vault `settings.json`.
 known, the application SHALL tell the user so in a visible message that names where to set it
 (Settings ▸ Daily Notes ▸ "Daily Notes Path"), and SHALL create nothing. It SHALL NOT silently do nothing.
 
+<!--REQ-LTTCE-DLN-00008-->
+**REQ-LTTCE-DLN-00008** — The Daily Notes Path folder SHALL be taken from the setting "Daily Notes Path"
+(persisted key `dailyNotesPath`) of the selected vault (Chapter VLT), resolved against that vault's *notes
+root* (REQ-LTTCE-DLN-00009):
+
+- an empty or absent value SHALL mean the folder `daily` directly inside the notes root;
+- the text `{notesRoot}` in the value SHALL stand for the notes root (e.g. `{notesRoot}/journal`);
+- any other value SHALL be used as written.
+
+When a path that begins with the notes root is saved from the Settings panel, it SHALL be stored with
+`{notesRoot}` in place of the notes root, so that a vault that is moved or copied keeps its daily notes
+inside itself. A path outside the notes root SHALL be stored as entered.
+
+*Rationale*: written down 2026-10-29 from the existing behaviour. Because an empty value has a default, the
+"not known" case of REQ-LTTCE-DLN-00007 arises only when no settings could be loaded at all.
+
+<!--REQ-LTTCE-DLN-00009-->
+**REQ-LTTCE-DLN-00009** — The notes root of a vault SHALL be the folder that holds its `.lattice` folder,
+with one exception: the notes root of the home vault SHALL be the folder `lattice-notes` inside the home
+vault's folder (on desktop the user's home folder, e.g. `<home>/lattice-notes/daily` for the default
+setting), so that notes never land loose in the home folder.
+
 ## Chapter VLT — Vault Selection
 
 A *vault* is a folder holding a `.lattice/settings.json`; its settings (theme, Daily Notes Path, …) apply to

@@ -1939,6 +1939,26 @@ created by it are left on disk untouched.
 `#[serde(default)]`. Absent keys therefore mean `DLN` / OFF, while an explicit `""` survives as "no prefix".
 No settings-specific code was needed for validation — the field's type carries it.
 
+**Where the folder comes from** (REQ-LTTCE-DLN-00008, -00009; IMPL-LTTCE-DLN-00006). The frontend never
+resolves the Daily Notes Path itself; it receives it resolved from `load_settings`:
+
+```
+load_settings_internal(settings_path, home)                 save_settings_internal(settings_path, s, home)
+  get_vault_root(settings_path, home) ─▶ notes root           get_vault_root(...) ─▶ notes root
+    <home>/.lattice/settings.json → <home>/lattice-notes        condense_daily_notes_path:
+    <vault>/.lattice/settings.json → <vault>                       starts with notes root → "{notesRoot}…"
+  expand_daily_notes_path:                                       else stored as entered
+    "" → <notes root>/daily
+    "{notesRoot}" replaced by the notes root
+```
+
+`<home>` is the base path of `calc_base_path_internal` — the user's home folder on desktop, the app's data
+folder on mobile (Chapter VLT). The notes root of the home vault is a sub-folder so that daily notes never
+land loose in the home folder itself. The token keeps a vault relocatable: copied or moved, its stored path
+still points inside it. `condense` matches the notes root as a string prefix, so a sibling such as
+`<vault>2/x` is stored as `{notesRoot}2/x`; it expands back to the same path, so nothing observable changes
+until the vault is moved.
+
 ### Frontend Glue
 
 | Layer    | File                          | Responsibility                                                                                     |
