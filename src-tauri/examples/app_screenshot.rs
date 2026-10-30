@@ -31,6 +31,7 @@
 //! contract (`capture_main_window(pid, png) -> Result<bool, String>`), chosen
 //! below by target. This is test tooling, never part of the shipped binary.
 
+use lattice_lib::e2e::WEBVIEW2_USER_DATA_ENV;
 use std::fs;
 use std::path::Path;
 use std::process::{Child, Command};
@@ -122,6 +123,9 @@ fn screenshot(bin: &Path, document: &Path, scratch: &Path, png: &Path) -> Result
     let mut child = Command::new(bin)
         .arg(document)
         .current_dir(scratch)
+        // Its own WebView profile: opening the document must not reach the
+        // developer's recent-files list (lattice_lib::e2e::WEBVIEW2_USER_DATA_ENV).
+        .env(WEBVIEW2_USER_DATA_ENV, scratch.join("webview2"))
         .spawn()
         .map_err(|e| format!("cannot launch {}: {e}", bin.display()))?;
 

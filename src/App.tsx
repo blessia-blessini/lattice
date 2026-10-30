@@ -49,7 +49,7 @@ import { isSelectAllChord, resolveSelectAllScope, selectElementContents } from "
 // we opted for using the settings pane within the same window
 //  as it will be more mobile-friendly for porting later
 import { Settings } from "./components/Settings";
-import { FileSystem } from "./services/FileSystem";
+import { FileSystem, type RecentFileState } from "./services/FileSystem";
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import tauriConfig from '../src-tauri/tauri.conf.json';
@@ -74,6 +74,9 @@ import { StaticRuntime } from "@services/StaticRuntime";
 // MUST stay in sync with APP_NAME_SUFFIX in src-tauri/src/lib.rs.
 const APP_NAME_SUFFIX = "-md";
 const APP_NAME = (tauriConfig.productName || "lattice") + APP_NAME_SUFFIX;
+/** "Open Recent" (Chapter RCT): where the list is kept, and how many entries. */
+const MRU_STORAGE_KEY = "lattice-mru-list";
+const MRU_MAX = 20;
 
 // Rehype plugin: copy each element's source line number from its mdast position
 // onto a data-source-line attribute, used by dual-view scroll sync.
@@ -461,7 +464,7 @@ function App() {
 
   // Load MRU from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem('lattice-mru-list');
+    const saved = localStorage.getItem(MRU_STORAGE_KEY);
     if (saved) {
       try {
         setMruList(JSON.parse(saved));
@@ -471,23 +474,65 @@ function App() {
     }
   }, []);
 
-  // Helper to add to MRU
-  const addToMRU = (path: string) => {
-    if (!path) return;
+  //**************************************************************
+  // updateMRU
+  //**************************************************************
+  /** The one place that changes the MRU list: trim to MRU_MAX and persist. */
+  const updateMRU = (change: (list: string[]) => string[]) => {
     setMruList(prev => {
-      // Remove existing instance of path
-      const newList = prev.filter(p => p !== path);
-      // Add to front
-      newList.unshift(path);
-      // Trim to 20
-      if (newList.length > 20) {
-        newList.splice(20);
-      }
-      // Save
-      localStorage.setItem('lattice-mru-list', JSON.stringify(newList));
+      const newList = change(prev).slice(0, MRU_MAX);
+      localStorage.setItem(MRU_STORAGE_KEY, JSON.stringify(newList));
       return newList;
     });
   };
+  // updateMRU END ************************************************
+
+
+  //**************************************************************
+  // addToMRU
+  //**************************************************************
+  /** To the front, each path once (REQ-LTTCE-RCT-00001). */
+  const addToMRU = (path: string) => {
+    if (!path) return;
+    updateMRU(prev => [path, ...prev.filter(p => p !== path)]);
+  };
+  // addToMRU END *************************************************
+
+
+  //**************************************************************
+  // removeFromMRU
+  //**************************************************************
+  const removeFromMRU = (path: string) => {
+    updateMRU(prev => prev.filter(p => p !== path));
+  };
+  // removeFromMRU END ********************************************
+
+  //**************************************************************
+  // openRecent
+  //**************************************************************
+  /**
+   * IMPL-LTTCE-RCT-00002 — opens an "Open Recent" entry (REQ-LTTCE-RCT-00002).
+   * Not found: the user is asked whether to remove the entry, and nothing is
+   * opened -- "not found" is also what an unplugged stick or volume reports,
+   * so it is never removed without asking. Any other answer, or a failing
+   * check: opened as before, kept.
+   */
+  const openRecent = async (path: string) => {
+    let state: RecentFileState = 'unavailable';
+    try {
+      state = await FileSystem.recentFileState(path);
+    } catch (e) {
+      console.error('recent_file_state failed; opening anyway', e);
+    }
+    if (state === 'notFound') {
+      if (confirm(`"${path}" was not found. Remove it from Open Recent?`)) {
+        removeFromMRU(path);
+      }
+      return;
+    }
+    await loadDocument(path);
+  };
+  // openRecent END ***********************************************
 
   // TRACE: Monitor m_currentFilePath state changes + persist for refresh recovery
   useEffect(() => {
@@ -2200,7 +2245,7 @@ function App() {
                 disabled: mruList.length === 0,
                 submenu: mruList.map(path => ({
                   label: path,
-                  onClick: () => loadDocument(path)
+                  onClick: () => openRecent(path)
                 }))
               },
               { label: "Open in new ...", onClick: handleLoadInNewWindow },

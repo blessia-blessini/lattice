@@ -80,6 +80,7 @@ type InvokeOpts = {
     dailyNoteThrows?: boolean;
     base64Throws?:    boolean;
     initVaultThrows?: boolean;
+    recentState?:     'file' | 'notFound' | 'unavailable' | 'throws';   // recent_file_state (Chapter RCT)
 };
 
 const makeInvoke = (opts: InvokeOpts = {}) => (cmd: string, args: any) => {
@@ -114,6 +115,10 @@ const makeInvoke = (opts: InvokeOpts = {}) => (cmd: string, args: any) => {
         return Promise.resolve(opts.dailyNotePath ?? '/notes/DLN-2026-05-03-Sun.md');
     }
     if (cmd === 'exit_app')   return Promise.resolve();
+    if (cmd === 'recent_file_state') {
+        if (opts.recentState === 'throws') return Promise.reject(new Error('no backend'));
+        return Promise.resolve(opts.recentState ?? 'file');
+    }
     return Promise.resolve(null);
 };
 
@@ -1235,6 +1240,51 @@ describe('App — preview img without current file path', () => {
 // =============================================================================
 describe('App — MRU submenu item click', () => {
     beforeEach(resetEnv);
+
+    /** Opens the menu, expands "Open Recent" and clicks `entry`. */
+    const clickRecent = async (getByText: (t: string) => HTMLElement, entry: string) => {
+        await openMenu(getByText);
+        const openRecent = await waitFor(() => getByText('Open Recent'));
+        await act(async () => { fireEvent.click(openRecent); });
+        const mruItem = await waitFor(() => getByText(entry));
+        await act(async () => { fireEvent.click(mruItem); });
+    };
+    const readsOf = (path: string) => vi.mocked(TauriCore.invoke).mock.calls
+        .filter(([cmd, args]) => cmd === 'read_text_file' && (args as any)?.path === path).length;
+
+    // REQ-LTTCE-RCT-00002: not found -> ask; OK removes the entry, Cancel keeps it; never opened.
+    it.each([
+        [true, 'removes'],
+        [false, 'keeps'],
+    ])('asks about an entry that is not found; answering %s %s it, and nothing is opened', async (answer) => {
+        localStorage.setItem('lattice-mru-list', JSON.stringify(['/vault/deleted.md', '/vault/kept.md']));
+        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(answer);
+        const { getByText } = await renderApp({ path: '/vault/current.md', invoke: makeInvoke({ recentState: 'notFound' }) });
+        await waitForTitle('current.md');
+
+        await clickRecent(getByText, '/vault/deleted.md');
+
+        await waitFor(() => expect(confirmSpy).toHaveBeenCalledWith(
+            '"/vault/deleted.md" was not found. Remove it from Open Recent?'));
+        expect(TauriCore.invoke).toHaveBeenCalledWith('recent_file_state', { path: '/vault/deleted.md' });
+        expect(readsOf('/vault/deleted.md')).toBe(0);
+        const mru: string[] = JSON.parse(localStorage.getItem('lattice-mru-list') || '[]');
+        expect(mru.includes('/vault/deleted.md')).toBe(!answer);
+        expect(mru).toContain('/vault/kept.md');
+        confirmSpy.mockRestore();
+    });
+
+    // REQ-LTTCE-RCT-00002: cannot tell now (drive not connected, no permission) — open as before, keep it.
+    it.each(['unavailable', 'throws'] as const)('keeps and tries to open an entry whose state is %s', async (recentState) => {
+        localStorage.setItem('lattice-mru-list', JSON.stringify(['/mnt/stick/note.md']));
+        const { getByText } = await renderApp({ path: '/vault/current.md', invoke: makeInvoke({ recentState }) });
+        await waitForTitle('current.md');
+
+        await clickRecent(getByText, '/mnt/stick/note.md');
+
+        await waitFor(() => expect(readsOf('/mnt/stick/note.md')).toBe(1));
+        expect(JSON.parse(localStorage.getItem('lattice-mru-list') || '[]')).toContain('/mnt/stick/note.md');
+    });
 
     it('calls loadDocument with the selected MRU path', async () => {
         localStorage.setItem('lattice-mru-list', JSON.stringify(['/vault/recent.md']));
