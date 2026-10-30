@@ -33,6 +33,9 @@ export interface WriteResponse {
   hash: string;
 }
 
+/** What became of an "Open Recent" entry: open it, drop it, or keep it (cannot tell now). */
+export type RecentFileState = 'file' | 'gone' | 'unavailable';
+
 export const FileSystem = {
   readTextFile: async (path: string): Promise<FileResponse> => {
     const label = getCurrentWebviewWindow().label;
@@ -55,5 +58,9 @@ export const FileSystem = {
   },
   isDir: async (path: string): Promise<boolean> => {
     return await invoke('is_dir', { path });
+  },
+  /** REQ-LTTCE-RCT-00002: is an "Open Recent" entry still there (src-tauri/src/recent_files.rs)? */
+  recentFileState: async (path: string): Promise<RecentFileState> => {
+    return await invoke('recent_file_state', { path });
   }
 };

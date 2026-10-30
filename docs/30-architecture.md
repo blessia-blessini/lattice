@@ -2052,7 +2052,8 @@ yet — true vault support on mobile is separate work.
 
 **E2E isolation.** `e2e::isolated_home()` — `LATTICE_E2E_HOME`, honoured only by `--features e2e_test`
 builds and compiled away otherwise — replaces the home folder and the state-file folder, so the harness's
-launches without a document never touch the developer's real home vault or last-vault file.
+launches without a document never touch the developer's real home vault or last-vault file. The WebView's own
+profile (localStorage: Open Recent) is isolated separately, by `WEBVIEW2_USER_DATA_FOLDER` (ARCH-LTTCE-RCT-00001).
 
 ## Feature: Editor Window Geometry
 
@@ -2062,6 +2063,33 @@ launches without a document never touch the developer's real home vault or last-
 (850 × 600 logical pixels), position from `calculate_cascade_coordinates`, so successive windows step
 diagonally. Tauri applies the size in logical pixels; the OS adds its frame and applies display scaling.
 The Settings window has its own size (600 × 400) and is not an editor window.
+
+## Feature: Recent Files
+
+<!--ARCH-LTTCE-RCT-00001-->
+**ARCH-LTTCE-RCT-00001** — covers REQ-LTTCE-RCT-00001 and -00002. The list lives in the frontend, in
+`localStorage` under `MRU_STORAGE_KEY` (`lattice-mru-list`), at most `MRU_MAX` (20) entries (`App.tsx`):
+`addToMRU` after a successful load or save, `removeFromMRU`, both through `updateMRU` (trim and persist in
+one place). The menu entry calls `openRecent(path)`, which first asks the backend command
+`recent_file_state` (`src-tauri/src/recent_files.rs`, IMPL-LTTCE-RCT-00001):
+
+| `std::fs::metadata(path)` | Root of the path (`C:\`, `\\server\share\`, `/`) | State | Frontend |
+|---|---|---|---|
+| a file | — | `file` | `loadDocument` |
+| a folder | — | `gone` | remove, alert naming the path |
+| `NotFound` | exists | `gone` | remove, alert naming the path |
+| `NotFound` | missing, or no root | `unavailable` | `loadDocument`, entry kept |
+| any other error | — | `unavailable` | `loadDocument`, entry kept |
+
+The decision uses the error *kind*, never the OS message text (localised). If the command itself fails, the
+frontend opens as before. The decision is pure Rust and unit-tested on the host; the frontend only switches on
+three strings.
+
+**Test isolation of the WebView profile.** The app under test has the installed app's identifier, so WebView2
+used the developer's own profile (`%LOCALAPPDATA%\<identifier>\EBWebView`) — every full test run added the
+daily-note fixture paths to their real Open Recent. Every launcher of the app under test (`e2e_harness`,
+`export_demo`, `app_screenshot`) now sets `WEBVIEW2_USER_DATA_FOLDER` (`e2e::WEBVIEW2_USER_DATA_ENV`) to a
+folder of its own; WebView2 honours it over the folder Tauri passes. Ignored off Windows.
 
 ## Feature: Third-Party Licence Compliance (FOSS line)
 

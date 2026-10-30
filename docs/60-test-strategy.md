@@ -146,7 +146,11 @@ once, and launches it directly per scenario (< 5 s startup, no npm at runtime).
 **Isolated home.** Every harness launch sets `LATTICE_E2E_HOME` to a folder under
 `src-tauri/target/e2e-home/`. E2E builds (`--features e2e_test`, and only those — `e2e::isolated_home`)
 use it as the home folder and for the last-vault memory, so a launch without a document never reads or
-writes the developer's real home vault or `last-vault.json`.
+writes the developer's real home vault or `last-vault.json`. The harness, the CLI export check and the
+screenshot check also set `WEBVIEW2_USER_DATA_FOLDER` (`e2e::WEBVIEW2_USER_DATA_ENV`) to a `webview2` folder
+of their own: the app under test shares the installed app's identifier, and until 2026-10-30 every run wrote its
+fixture paths into the developer's real Open Recent list. Checked by comparing the real profile's files before
+and after a run (unchanged), not by an automated test.
 
 The daily-note scenarios need the app to *act*, not just start, so they have a frontend half:
 `src/services/StaticRuntime/DailyNoteE2EDriver.ts`, reachable only through `StaticRuntime.dev.ts`

@@ -40,7 +40,7 @@ use chrono::{Local, NaiveDate};
 use lattice_lib::daily_note::{
     daily_note_base_name, daily_note_title, DailyNotePrefix, DAILY_NOTE_PREFIX_DEFAULT,
 };
-use lattice_lib::e2e::E2E_HOME_ENV;
+use lattice_lib::e2e::{E2E_HOME_ENV, WEBVIEW2_USER_DATA_ENV};
 use lattice_lib::last_vault::LAST_VAULT_FILE;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -117,7 +117,8 @@ fn launch(bin: &PathBuf, root: &PathBuf, args: &[&str], profile_name: &str) -> C
 
 /// Launch with an explicit isolated home — for scenarios whose launches
 /// share one, so state written by one launch is seen by the next.
-/// Sets LLVM_PROFILE_FILE so each launch writes its own profraw.
+/// Sets LLVM_PROFILE_FILE so each launch writes its own profraw, and gives
+/// the WebView its own data folder inside the home (`WEBVIEW2_USER_DATA_ENV`).
 fn launch_in_home(bin: &PathBuf, root: &PathBuf, args: &[&str], profile_name: &str, home: &Path) -> Child {
     let profraw = root
         .join("src-tauri")
@@ -130,6 +131,7 @@ fn launch_in_home(bin: &PathBuf, root: &PathBuf, args: &[&str], profile_name: &s
         .current_dir(root)
         .env("LLVM_PROFILE_FILE", &profraw)
         .env(E2E_HOME_ENV, home)
+        .env(WEBVIEW2_USER_DATA_ENV, home.join("webview2"))
         .spawn()
         .unwrap_or_else(|e| panic!("Failed to launch lattice binary: {e}"))
 }

@@ -394,3 +394,46 @@ fn test_daily_note_settings_round_trip_through_shims() {
         assert!(s.use_calendar_week_title);
     }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// test_recent_file_state_ipc
+// ─────────────────────────────────────────────────────────────────────────────
+/// ITST for REQ-LTTCE-RCT-00002: `recent_file_state` through the real IPC
+/// boundary -- the camelCase `path` argument and the lower-case answers the
+/// frontend switches on.
+#[test]
+fn test_recent_file_state_ipc() {
+    let temp = tempfile::tempdir().unwrap();
+    let file = temp.path().join("note.md");
+    fs::write(&file, "# note").unwrap();
+
+    let app = mock_builder()
+        .invoke_handler(tauri::generate_handler![lattice_lib::recent_files::recent_file_state])
+        .build(mock_context(noop_assets()))
+        .expect("MockRuntime app construction failed");
+    let webview = tauri::WebviewWindowBuilder::new(&app, "main", Default::default())
+        .build()
+        .expect("mock webview");
+    let ask = |path: &std::path::Path| -> String {
+        tauri::test::get_ipc_response(
+            &webview,
+            tauri::webview::InvokeRequest {
+                cmd: "recent_file_state".into(),
+                callback: tauri::ipc::CallbackFn(0),
+                error: tauri::ipc::CallbackFn(1),
+                url: webview.url().expect("mock webview has a URL"),
+                body: tauri::ipc::InvokeBody::Json(serde_json::json!({ "path": path.to_string_lossy() })),
+                headers: Default::default(),
+                invoke_key: tauri::test::INVOKE_KEY.to_string(),
+            },
+        )
+        .expect("recent_file_state never fails")
+        .deserialize::<String>()
+        .expect("a string state")
+    };
+
+    assert_eq!(ask(&file), "file");
+    assert_eq!(ask(&temp.path().join("deleted.md")), "gone");
+    assert_eq!(ask(std::path::Path::new("no-root/x.md")), "unavailable");
+}
+// test_recent_file_state_ipc END ******************************

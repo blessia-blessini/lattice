@@ -38,6 +38,7 @@
 //!   than a skip. CI sets this; a local working tree that has never been
 //!   built should not hard-fail.
 
+use lattice_lib::e2e::WEBVIEW2_USER_DATA_ENV;
 use lattice_lib::paper::{PageMargins, PaperSize, mm_to_points};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -175,6 +176,9 @@ fn run_export(bin: &Path, scratch: &Path, args: &[&str], file: &Path) -> Result<
         .args(args)
         .arg(file)
         .current_dir(scratch)
+        // Its own WebView profile, never the developer's
+        // (lattice_lib::e2e::WEBVIEW2_USER_DATA_ENV).
+        .env(WEBVIEW2_USER_DATA_ENV, scratch.join("webview2"))
         .spawn()
         .map_err(|e| format!("cannot launch {}: {e}", bin.display()))?;
 

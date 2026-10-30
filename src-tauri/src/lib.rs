@@ -46,6 +46,7 @@ pub mod file_state;
 // Public so the CLI export check (examples/export_demo.rs) asserts page sizes
 // against the same table the backends print with.
 pub mod paper;
+pub mod recent_files;
 pub mod settings;
 // IMPL-LTTCE-FOS-00003 — third-party notices window and the resource save guard.
 pub mod licences;
@@ -1258,6 +1259,7 @@ pub fn run() {
             file_state::read_text_file,
             file_state::write_text_file,
             daily_note::open_daily_note,
+            recent_files::recent_file_state,
             file_state::close_file,
             open_new_window,
             licences::open_licences_window,

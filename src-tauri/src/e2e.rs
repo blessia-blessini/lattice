@@ -38,6 +38,14 @@ pub const fn is_e2e_tst_build() -> bool {
 /// Environment variable naming the isolated home folder of an E2E run.
 pub const E2E_HOME_ENV: &str = "LATTICE_E2E_HOME";
 
+/// The WebView2 runtime's own variable for its user-data folder (cookies,
+/// localStorage, cache); read by WebView2 on Windows, ignored elsewhere. Every
+/// program that launches the app under test sets it to a folder of its own:
+/// that app has the installed app's identifier, so without it a test run
+/// wrote into the developer's real WebView2 profile -- the recent-files list
+/// (`lattice-mru-list` in localStorage) filled with deleted fixture paths.
+pub const WEBVIEW2_USER_DATA_ENV: &str = "WEBVIEW2_USER_DATA_FOLDER";
+
 //******************************************************************************
 // isolated_home
 //******************************************************************************
