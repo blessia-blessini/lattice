@@ -401,7 +401,7 @@ export function parseDpkgSearch(text, arch = null) {
     const out = [];
     for (const line of text.split('\n')) {
         if (line.startsWith('diversion')) continue;
-        const m = line.match(/^([^:\s][^:]*(?::[a-z0-9-]+)?(?:, [^:]+(?::[a-z0-9-]+)?)*): (\/\S+)$/);
+        const m = line.match(/^([^:\s,]+(?::[a-z0-9-]+)?(?:, [^:\s,]+(?::[a-z0-9-]+)?)*): (\/\S+)$/);
         if (!m) continue;
         const packages = [];
         for (const token of m[1].split(', ')) {
