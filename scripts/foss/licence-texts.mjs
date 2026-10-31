@@ -198,6 +198,28 @@ export function extractCopyrights(texts) {
 
 
 //**************************************************************
+// authorName
+//**************************************************************
+/**
+ * The name part of a package-metadata author ("Jane Doe <jane@example.org>"
+ * → "Jane Doe"): the e-mail address never reaches the notices. Drops every
+ * "<…>" block, then anything from a "<" left unclosed, then a stray ">" --
+ * so no address and no angle bracket survives malformed or nested input
+ * (an earlier one-pass fix removed only the brackets and kept the address).
+ * @param {string} author
+ * @returns {string}
+ */
+export function authorName(author) {
+    return String(author)
+        .replace(/<[^<>]*>/g, '')
+        .replace(/<.*$/s, '')
+        .replace(/>/g, '')
+        .trim();
+}
+// authorName END **********************************************
+
+
+//**************************************************************
 // fallbackCopyright
 //**************************************************************
 /**
@@ -207,7 +229,7 @@ export function extractCopyrights(texts) {
  * @returns {string}
  */
 export function fallbackCopyright(component) {
-    const names = (component.authors ?? []).map((a) => a.replace(/[<>]/g, '').trim()).filter(Boolean);
+    const names = (component.authors ?? []).map(authorName).filter(Boolean);
     return names.length
         ? `Copyright (c) ${names.join(', ')} (authors as declared in the package metadata)`
         : `Copyright (c) the authors of ${component.name} (no holder named in the package)`;

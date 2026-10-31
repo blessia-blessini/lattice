@@ -7,6 +7,9 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.53
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: Tests of licence tests
+- --- chunk 1: legattice/ -- products/lattice/ledger/ (6 files), AFTER the review and signing with sign-ledger.mjs ---
+- CHORE: merged DEV
 - CHORE: regenerate Foss notices
 - FIX: Licence Texts, Published SBOM, MRU File Menu
 - CHORE: Update dependencies (NPM, Cargo)

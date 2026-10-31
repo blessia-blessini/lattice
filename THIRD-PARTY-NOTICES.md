@@ -2222,7 +2222,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: BSD-3-Clause
 - Source: https://github.com/dropbox/rust-alloc-no-stdlib
 - Copyright:
-  - Copyright (c) Daniel Reiter Horn danielrh@dropbox.com (authors as declared in the package metadata)
+  - Copyright (c) Daniel Reiter Horn (authors as declared in the package metadata)
 - Licence text (BSD-3-Clause): [text-e0543276](#text-e0543276), standard text; the package ships no licence file, so the copyright above is taken from its metadata
 
 ### android_log-sys 0.3.2
@@ -2261,7 +2261,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/anyhow
 - Copyright:
-  - Copyright (c) David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### AppImage type 2 runtime fedfad5
@@ -2325,7 +2325,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MIT (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/async-channel
 - Copyright:
-  - Copyright (c) Stjepan Glavina stjepang@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) Stjepan Glavina (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### async-executor 1.14.0
@@ -2334,7 +2334,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MIT (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/async-executor
 - Copyright:
-  - Copyright (c) Stjepan Glavina stjepang@gmail.com, John Nunley dev@notgull.net (authors as declared in the package metadata)
+  - Copyright (c) Stjepan Glavina, John Nunley (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### async-io 2.6.0
@@ -2343,7 +2343,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MIT (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/async-io
 - Copyright:
-  - Copyright (c) Stjepan Glavina stjepang@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) Stjepan Glavina (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### async-lock 3.4.2
@@ -2352,7 +2352,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MIT (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/async-lock
 - Copyright:
-  - Copyright (c) Stjepan Glavina stjepang@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) Stjepan Glavina (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### async-process 2.5.0
@@ -2361,7 +2361,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MIT (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/async-process
 - Copyright:
-  - Copyright (c) Stjepan Glavina stjepang@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) Stjepan Glavina (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### async-recursion 1.2.0
@@ -2370,7 +2370,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dcchut/async-recursion
 - Copyright:
-  - Copyright (c) Robert Usher 266585+dcchut@users.noreply.github.com (authors as declared in the package metadata)
+  - Copyright (c) Robert Usher (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### async-signal 0.2.14
@@ -2379,7 +2379,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MIT (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/async-signal
 - Copyright:
-  - Copyright (c) John Nunley dev@notgull.net (authors as declared in the package metadata)
+  - Copyright (c) John Nunley (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### async-task 4.7.1
@@ -2388,7 +2388,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MIT (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/async-task
 - Copyright:
-  - Copyright (c) Stjepan Glavina stjepang@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) Stjepan Glavina (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### async-trait 0.1.92
@@ -2397,7 +2397,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/async-trait
 - Copyright:
-  - Copyright (c) David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### atk 0.18.2
@@ -2619,7 +2619,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MIT
 - Source: https://github.com/madsmtm/objc2
 - Copyright:
-  - Copyright (c) Mads Marquart mads@marquart.dk (authors as declared in the package metadata)
+  - Copyright (c) Mads Marquart (authors as declared in the package metadata)
 - Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
 
 ### blocking 1.7.0
@@ -2747,7 +2747,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/camino-rs/camino
 - Copyright:
-  - Copyright (c) Without Boats saoirse@without.boats, Ashley Williams ashley666ashley@gmail.com, Steve Klabnik steve@steveklabnik.com, Rain rain@sunshowers.io (authors as declared in the package metadata)
+  - Copyright (c) Without Boats, Ashley Williams, Steve Klabnik, Rain (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### cargo_metadata 0.19.2
@@ -2756,7 +2756,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MIT
 - Source: https://github.com/oli-obk/cargo_metadata
 - Copyright:
-  - Copyright (c) Oliver Schneider git-spam-no-reply9815368754983@oli-obk.de (authors as declared in the package metadata)
+  - Copyright (c) Oliver Schneider (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### cargo_toml 1.0.1
@@ -2950,7 +2950,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MIT (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/concurrent-queue
 - Copyright:
-  - Copyright (c) Stjepan Glavina stjepang@gmail.com, Taiki Endo te316e89@gmail.com, John Nunley dev@notgull.net (authors as declared in the package metadata)
+  - Copyright (c) Stjepan Glavina, Taiki Endo, John Nunley (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### cookie 0.18.2
@@ -3098,7 +3098,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MPL-2.0
 - Source: https://github.com/servo/rust-cssparser
 - Copyright:
-  - Copyright (c) Simon Sapin simon.sapin@exyr.org (authors as declared in the package metadata)
+  - Copyright (c) Simon Sapin (authors as declared in the package metadata)
 - Licence text (MPL-2.0): [text-fb72181d](#text-fb72181d), standard text
 - Obligation: File-level copyleft (MPL-2.0 section 3): these files stay under MPL-2.0, and their source form must remain available to recipients. Lattice does not modify them; the source is at the location given.
 
@@ -3108,7 +3108,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MPL-2.0
 - Source: https://github.com/servo/rust-cssparser
 - Copyright:
-  - Copyright (c) Simon Sapin simon.sapin@exyr.org (authors as declared in the package metadata)
+  - Copyright (c) Simon Sapin (authors as declared in the package metadata)
 - Licence text (MPL-2.0): [text-fb72181d](#text-fb72181d), standard text
 - Obligation: File-level copyleft (MPL-2.0 section 3): these files stay under MPL-2.0, and their source form must remain available to recipients. Lattice does not modify them; the source is at the location given.
 
@@ -3127,7 +3127,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MIT (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/mmastrac/linktime
 - Copyright:
-  - Copyright (c) Matt Mastracci matthew@mastracci.com (authors as declared in the package metadata)
+  - Copyright (c) Matt Mastracci (authors as declared in the package metadata)
 - Licence text (MIT): [text-bccaa8b6](#text-bccaa8b6), as shipped in the package file LICENSE-MIT
 
 ### cytoscape 3.34.4
@@ -3689,7 +3689,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MIT (declared: Zlib OR Apache-2.0 OR MIT)
 - Source: https://github.com/madsmtm/objc2
 - Copyright:
-  - Copyright (c) Mads Marquart mads@marquart.dk, Mary mary@mary.zone (authors as declared in the package metadata)
+  - Copyright (c) Mads Marquart, Mary (authors as declared in the package metadata)
 - Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
 
 ### displaydoc 0.2.7
@@ -3698,7 +3698,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/yaahc/displaydoc
 - Copyright:
-  - Copyright (c) Jane Lusby jlusby@yaah.dev (authors as declared in the package metadata)
+  - Copyright (c) Jane Lusby (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### dlopen2 0.8.2
@@ -3707,7 +3707,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MIT
 - Source: https://github.com/OpenByteDev/dlopen2
 - Copyright:
-  - Copyright (c) Szymon Wieloch szymon.wieloch@gmail.com, Ahmed Masud ahmed.masud@saf.ai, OpenByte development.openbyte@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) Szymon Wieloch, Ahmed Masud, OpenByte (authors as declared in the package metadata)
 - Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
 
 ### dlopen2_derive 0.4.3
@@ -3716,7 +3716,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MIT
 - Source: https://github.com/OpenByteDev/dlopen2
 - Copyright:
-  - Copyright (c) Szymon Wieloch szymon.wieloch@gmail.com, OpenByte development.openbyte@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) Szymon Wieloch, OpenByte (authors as declared in the package metadata)
 - Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
 
 ### dom_query 0.28.0
@@ -3766,7 +3766,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/dtoa
 - Copyright:
-  - Copyright (c) David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### dtoa-short 0.3.5
@@ -3775,7 +3775,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MPL-2.0
 - Source: https://github.com/upsuper/dtoa-short
 - Copyright:
-  - Copyright (c) Xidorn Quan me@upsuper.org (authors as declared in the package metadata)
+  - Copyright (c) Xidorn Quan (authors as declared in the package metadata)
 - Licence text (MPL-2.0): [text-fb72181d](#text-fb72181d), standard text
 - Obligation: File-level copyleft (MPL-2.0 section 3): these files stay under MPL-2.0, and their source form must remain available to recipients. Lattice does not modify them; the source is at the location given.
 
@@ -3785,7 +3785,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: CC0-1.0 (declared: CC0-1.0 OR MIT-0 OR Apache-2.0)
 - Source: https://gitlab.com/kornelski/dunce
 - Copyright:
-  - Copyright (c) Kornel kornel@geekhood.net (authors as declared in the package metadata)
+  - Copyright (c) Kornel (authors as declared in the package metadata)
 - Licence text (CC0-1.0): [text-6d489af6](#text-6d489af6), standard text
 
 ### dyn-clone 1.0.20
@@ -3794,7 +3794,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/dyn-clone
 - Copyright:
-  - Copyright (c) David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### either 1.19.0
@@ -3830,7 +3830,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MIT
 - Source: https://github.com/zeenix/endi
 - Copyright:
-  - Copyright (c) Zeeshan Ali Khan zeenix@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) Zeeshan Ali Khan (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### entities 6.0.1
@@ -3904,7 +3904,7 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/erased-serde
 - Copyright:
-  - Copyright (c) David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### errno 0.3.14
@@ -3994,7 +3994,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/event-listener
 - Copyright:
-  - Copyright (c) Stjepan Glavina stjepang@gmail.com, John Nunley dev@notgull.net (authors as declared in the package metadata)
+  - Copyright (c) Stjepan Glavina, John Nunley (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### event-listener-strategy 0.5.4
@@ -4003,7 +4003,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/event-listener-strategy
 - Copyright:
-  - Copyright (c) John Nunley dev@notgull.net (authors as declared in the package metadata)
+  - Copyright (c) John Nunley (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### exr 1.74.2
@@ -4040,7 +4040,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/fastrand
 - Copyright:
-  - Copyright (c) Stjepan Glavina stjepang@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) Stjepan Glavina (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### fax 0.2.7
@@ -4474,7 +4474,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/VoidStarKat/half-rs
 - Copyright:
-  - Copyright (c) Kathryn Long squeeself@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) Kathryn Long (authors as declared in the package metadata)
 - Licence text (MIT): [text-1847e0e0](#text-1847e0e0), as shipped in the package file LICENSE-MIT
 
 ### hashbrown 0.12.3
@@ -4782,7 +4782,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/TedDriggs/ident_case
 - Copyright:
-  - Copyright (c) Ted Driggs ted.driggs@outlook.com (authors as declared in the package metadata)
+  - Copyright (c) Ted Driggs (authors as declared in the package metadata)
 - Licence text (MIT): [text-1847e0e0](#text-1847e0e0), as shipped in the package file LICENSE
 
 ### idna 1.1.0
@@ -4827,7 +4827,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: Apache-2.0 (declared: CC0-1.0 OR Apache-2.0)
 - Source: https://github.com/kornelski/imgref
 - Copyright:
-  - Copyright (c) Kornel Lesiński kornel@geekhood.net (authors as declared in the package metadata)
+  - Copyright (c) Kornel Lesiński (authors as declared in the package metadata)
 - Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### import-meta-resolve 4.2.0
@@ -5000,7 +5000,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/itoa
 - Copyright:
-  - Copyright (c) David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### javascriptcore-rs 1.1.2
@@ -5091,7 +5091,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/jni-rs/jni-sys
 - Copyright:
-  - Copyright (c) Robert Bragg robert@sixbynine.org (authors as declared in the package metadata)
+  - Copyright (c) Robert Bragg (authors as declared in the package metadata)
 - Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
 
 ### jobserver 0.1.35
@@ -6042,7 +6042,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: CC0-1.0
 - Source: https://github.com/notify-rs/notify.git
 - Copyright:
-  - Copyright (c) Félix Saparelli me@passcod.name, Daniel Faust hessijames@gmail.com, Aron Heinecke Ox0p54r36@t-online.de (authors as declared in the package metadata)
+  - Copyright (c) Félix Saparelli, Daniel Faust, Aron Heinecke (authors as declared in the package metadata)
 - Licence text (CC0-1.0): [text-6d489af6](#text-6d489af6), standard text
 
 ### num_enum 0.7.6
@@ -6142,7 +6142,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT
 - Source: https://github.com/madsmtm/objc2
 - Copyright:
-  - Copyright (c) Mads Marquart mads@marquart.dk (authors as declared in the package metadata)
+  - Copyright (c) Mads Marquart (authors as declared in the package metadata)
 - Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
 
 ### objc2-app-kit 0.3.2
@@ -6223,7 +6223,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT
 - Source: https://github.com/madsmtm/objc2
 - Copyright:
-  - Copyright (c) Mads Marquart mads@marquart.dk (authors as declared in the package metadata)
+  - Copyright (c) Mads Marquart (authors as declared in the package metadata)
 - Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
 
 ### objc2-exception-helper 0.1.1
@@ -6232,7 +6232,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: Zlib OR Apache-2.0 OR MIT)
 - Source: https://github.com/madsmtm/objc2
 - Copyright:
-  - Copyright (c) Mads Marquart mads@marquart.dk (authors as declared in the package metadata)
+  - Copyright (c) Mads Marquart (authors as declared in the package metadata)
 - Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
 
 ### objc2-foundation 0.3.2
@@ -6313,7 +6313,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/matklad/once_cell
 - Copyright:
-  - Copyright (c) Aleksey Kladov aleksey.kladov@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) Aleksey Kladov (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### open 5.4.5
@@ -6331,7 +6331,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MPL-2.0
 - Source: https://github.com/soc/option-ext.git
 - Copyright:
-  - Copyright (c) Simon Ochsenreither simon@ochsenreither.de (authors as declared in the package metadata)
+  - Copyright (c) Simon Ochsenreither (authors as declared in the package metadata)
 - Licence text (MPL-2.0): [text-fb72181d](#text-fb72181d), standard text
 - Obligation: File-level copyleft (MPL-2.0 section 3): these files stay under MPL-2.0, and their source form must remain available to recipients. Lattice does not modify them; the source is at the location given.
 
@@ -6341,7 +6341,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/danieldg/ordered-stream
 - Copyright:
-  - Copyright (c) Daniel De Graaf code@danieldg.net, Zeeshan Ali Khan zeeshanak@gnome.org (authors as declared in the package metadata)
+  - Copyright (c) Daniel De Graaf, Zeeshan Ali Khan (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### package-manager-detector 1.9.0
@@ -6422,7 +6422,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/paste
 - Copyright:
-  - Copyright (c) David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### pastey 0.1.1
@@ -6431,7 +6431,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/as1100k/pastey
 - Copyright:
-  - Copyright (c) Aditya Kumar git@adityais.dev, David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) Aditya Kumar, David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### path-data-parser 0.1.0
@@ -6512,7 +6512,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/smol-rs/piper
 - Copyright:
-  - Copyright (c) Stjepan Glavina stjepang@gmail.com, John Nunley dev@notgull.net (authors as declared in the package metadata)
+  - Copyright (c) Stjepan Glavina, John Nunley (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### pkg-config 0.3.34
@@ -6566,7 +6566,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/polling
 - Copyright:
-  - Copyright (c) Stjepan Glavina stjepang@gmail.com, John Nunley dev@notgull.net (authors as declared in the package metadata)
+  - Copyright (c) Stjepan Glavina, John Nunley (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### potential_utf 0.1.6
@@ -6603,7 +6603,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/bkchr/proc-macro-crate
 - Copyright:
-  - Copyright (c) Bastian Köcher git@kchr.de (authors as declared in the package metadata)
+  - Copyright (c) Bastian Köcher (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### proc-macro-crate 2.0.2
@@ -6612,7 +6612,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/bkchr/proc-macro-crate
 - Copyright:
-  - Copyright (c) Bastian Köcher git@kchr.de (authors as declared in the package metadata)
+  - Copyright (c) Bastian Köcher (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### proc-macro-crate 3.5.0
@@ -6621,7 +6621,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/bkchr/proc-macro-crate
 - Copyright:
-  - Copyright (c) Bastian Köcher git@kchr.de (authors as declared in the package metadata)
+  - Copyright (c) Bastian Köcher (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### proc-macro-error 1.0.4
@@ -6650,7 +6650,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/proc-macro2
 - Copyright:
-  - Copyright (c) David Tolnay dtolnay@gmail.com, Alex Crichton alex@alexcrichton.com (authors as declared in the package metadata)
+  - Copyright (c) David Tolnay, Alex Crichton (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### profiling 1.0.18
@@ -6659,7 +6659,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/aclysma/profiling
 - Copyright:
-  - Copyright (c) Philip Degarmo aclysma@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) Philip Degarmo (authors as declared in the package metadata)
 - Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
 
 ### profiling-procmacros 1.0.18
@@ -6668,7 +6668,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/aclysma/profiling
 - Copyright:
-  - Copyright (c) Philip Degarmo aclysma@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) Philip Degarmo (authors as declared in the package metadata)
 - Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
 
 ### property-information 7.2.0
@@ -6695,7 +6695,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT
 - Source: https://github.com/sarah-quinones/pulp/
 - Copyright:
-  - Copyright (c) sarah quiñones sarah@veganb.tw (authors as declared in the package metadata)
+  - Copyright (c) sarah quiñones (authors as declared in the package metadata)
 - Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
 
 ### pxfm 0.1.30
@@ -6741,7 +6741,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/quote
 - Copyright:
-  - Copyright (c) David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### rav1e 0.8.1
@@ -6874,7 +6874,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/ref-cast
 - Copyright:
-  - Copyright (c) David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### ref-cast-impl 1.0.27
@@ -6883,7 +6883,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/ref-cast
 - Copyright:
-  - Copyright (c) David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### regex 1.13.1
@@ -7055,7 +7055,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/rustversion
 - Copyright:
-  - Copyright (c) David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### rw 1.3.3
@@ -7155,7 +7155,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/semver
 - Copyright:
-  - Copyright (c) David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### serde 1.0.229
@@ -7164,7 +7164,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/serde-rs/serde
 - Copyright:
-  - Copyright (c) Erick Tryzelaar erick.tryzelaar@gmail.com, David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) Erick Tryzelaar, David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### serde_core 1.0.229
@@ -7173,7 +7173,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/serde-rs/serde
 - Copyright:
-  - Copyright (c) Erick Tryzelaar erick.tryzelaar@gmail.com, David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) Erick Tryzelaar, David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### serde_derive 1.0.229
@@ -7182,7 +7182,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/serde-rs/serde
 - Copyright:
-  - Copyright (c) Erick Tryzelaar erick.tryzelaar@gmail.com, David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) Erick Tryzelaar, David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### serde_derive_internals 0.29.1
@@ -7191,7 +7191,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/serde-rs/serde
 - Copyright:
-  - Copyright (c) Erick Tryzelaar erick.tryzelaar@gmail.com, David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) Erick Tryzelaar, David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### serde_json 1.0.154
@@ -7209,7 +7209,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/serde-repr
 - Copyright:
-  - Copyright (c) David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### serde_spanned 0.6.9
@@ -7254,7 +7254,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/serde-untagged
 - Copyright:
-  - Copyright (c) David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### serialize-to-javascript 0.1.2
@@ -7320,7 +7320,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT
 - Source: https://github.com/lu-zero/simd_helpers
 - Copyright:
-  - Copyright (c) Luca Barbato lu_zero@gentoo.org (authors as declared in the package metadata)
+  - Copyright (c) Luca Barbato (authors as declared in the package metadata)
 - Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
 
 ### simd-adler32 0.3.10
@@ -7522,7 +7522,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/syn
 - Copyright:
-  - Copyright (c) David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### syn 2.0.119
@@ -7531,7 +7531,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/syn
 - Copyright:
-  - Copyright (c) David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### syn 3.0.9
@@ -7540,7 +7540,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/syn
 - Copyright:
-  - Copyright (c) David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### sync_wrapper 1.0.2
@@ -7549,7 +7549,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: Apache-2.0
 - Source: https://github.com/Actyx/sync_wrapper
 - Copyright:
-  - Copyright (c) Actyx AG developer@actyx.io (authors as declared in the package metadata)
+  - Copyright (c) Actyx AG (authors as declared in the package metadata)
 - Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### synstructure 0.14.0
@@ -7567,7 +7567,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/gdesmott/system-deps
 - Copyright:
-  - Copyright (c) Guillaume Desmottes guillaume.desmottes@collabora.com, Josh Triplett josh@joshtriplett.org (authors as declared in the package metadata)
+  - Copyright (c) Guillaume Desmottes, Josh Triplett (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### tao 0.37.2
@@ -7609,7 +7609,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: Apache-2.0 WITH LLVM-exception
 - Source: https://github.com/bytecodealliance/target-lexicon
 - Copyright:
-  - Copyright (c) Dan Gohman sunfish@mozilla.com (authors as declared in the package metadata)
+  - Copyright (c) Dan Gohman (authors as declared in the package metadata)
 - Licence text (Apache-2.0 WITH LLVM-exception): [text-c454c52c](#text-c454c52c), standard text
 
 ### tauri 2.12.5
@@ -7745,7 +7745,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/thiserror
 - Copyright:
-  - Copyright (c) David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### thiserror 2.0.21
@@ -7754,7 +7754,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/thiserror
 - Copyright:
-  - Copyright (c) David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### thiserror-impl 1.0.69
@@ -7763,7 +7763,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/thiserror
 - Copyright:
-  - Copyright (c) David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### thiserror-impl 2.0.21
@@ -7772,7 +7772,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/thiserror
 - Copyright:
-  - Copyright (c) David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### tiff 0.11.3
@@ -8059,7 +8059,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/typeid
 - Copyright:
-  - Copyright (c) David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### typenum 1.20.1
@@ -8657,7 +8657,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT
 - Source: https://github.com/AltF02/x11-rs.git
 - Copyright:
-  - Copyright (c) daggerbot daggerbot@gmail.com, Erle Pereira erle@erlepereira.com, AltF02 contact@altf2.dev (authors as declared in the package metadata)
+  - Copyright (c) daggerbot, Erle Pereira, AltF02 (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### x11-dl 2.21.0
@@ -8666,7 +8666,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT
 - Source: https://github.com/AltF02/x11-rs.git
 - Copyright:
-  - Copyright (c) daggerbot daggerbot@gmail.com, Erle Pereira erle@erlepereira.com, AltF02 contact@altf2.dev (authors as declared in the package metadata)
+  - Copyright (c) daggerbot, Erle Pereira, AltF02 (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### y4m 0.8.0
@@ -8822,7 +8822,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT
 - Source: https://github.com/dtolnay/zmij
 - Copyright:
-  - Copyright (c) David Tolnay dtolnay@gmail.com (authors as declared in the package metadata)
+  - Copyright (c) David Tolnay (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
 
 ### zstd (in the AppImage type 2 runtime) Alpine 3.21 package, in type2-runtime fedfad5
@@ -8887,7 +8887,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Licence: MIT
 - Source: https://github.com/z-galaxy/zbus/
 - Copyright:
-  - Copyright (c) Zeeshan Ali Khan zeeshanak@gnome.org, turbocooler turbocooler@cocaine.ninja (authors as declared in the package metadata)
+  - Copyright (c) Zeeshan Ali Khan, turbocooler (authors as declared in the package metadata)
 - Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE
 
 ### zwitch 2.0.4
