@@ -30,7 +30,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
-    detectLicences, extractCopyrights, fallbackCopyright, findExhibitB, listLicenceFiles,
+    detectLicences, extractCopyrights, authorName, fallbackCopyright, findExhibitB, listLicenceFiles,
     normalizeText, selectTexts, stripTemplateCopyright,
 } from './licence-texts.mjs';
 
@@ -138,6 +138,22 @@ describe('fallbackCopyright', () => {
 
     it('says so when no holder is known', () => {
         expect(fallbackCopyright({ name: 'x', authors: [] })).toMatch(/no holder named/);
+    });
+
+    it('never lets an e-mail address or an angle bracket through, whatever the metadata looks like', () => {
+        expect(fallbackCopyright({ name: 'x', authors: ['Jane Doe <jane@example.org>', 'John Roe <john@example.org>'] }))
+            .toBe('Copyright (c) Jane Doe, John Roe (authors as declared in the package metadata)');
+        for (const [author, name] of [
+            ['Jane Doe <jane@example.org', 'Jane Doe'],          // unclosed
+            ['Jane Doe <<jane@example.org>x>', 'Jane Doe'],      // nested
+            ['Jane Doe jane@example.org>', 'Jane Doe jane@example.org'], // no "<": not an address block, kept as written
+            ['<jane@example.org>', ''],                           // nothing but an address
+            ['Jane Doe', 'Jane Doe'],
+        ]) {
+            expect(authorName(author)).toBe(name);
+            expect(authorName(author)).not.toMatch(/[<>]/);
+        }
+        expect(fallbackCopyright({ name: 'x', authors: ['<jane@example.org>'] })).toMatch(/no holder named/);
     });
 });
 
