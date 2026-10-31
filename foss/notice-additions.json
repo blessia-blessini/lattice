@@ -3,11 +3,11 @@
   "source": {
     "product": {
       "repository": "blessia-blessini/lattice",
-      "ref": "a68e8f4a9d1f62fcc34b259b528a373cb5c3d205"
+      "ref": "4c5931548c7ba9e9ce7aa598d3420e07a0f4093c"
     },
-    "date": "2026-10-30",
-    "legattice": "a68e8f4a9d1f62fcc34b259b528a373cb5c3d205",
-    "run": "https://github.com/blessia-blessini/lattice/actions/runs/41104939156"
+    "date": "2026-10-31",
+    "legattice": "4c5931548c7ba9e9ce7aa598d3420e07a0f4093c",
+    "run": "https://github.com/blessia-blessini/lattice/actions/runs/41196490552"
   },
   "additions": [
     {
