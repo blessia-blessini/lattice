@@ -56,11 +56,11 @@ fn window_pid(d: &Display, window: c_ulong, atom: c_ulong) -> Option<u32> {
     if status != xlib::Success as c_int || data.is_null() {
         return None;
     }
-    // Format-32 properties are delivered as C `long`s, whatever their width.
+    // Format-32 properties are delivered as one 32-bit item.
     let pid = if format == 32 && items == 1 {
         // SAFETY: on this branch, XGetWindowProperty returned one 32-bit item in `data`.
         // Use unaligned read to avoid relying on pointer alignment guarantees.
-        Some(unsafe { ptr::read_unaligned(data as *const c_ulong) as u32 })
+        Some(unsafe { ptr::read_unaligned(data as *const u32) })
     } else {
         None
     };
