@@ -7,6 +7,9 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.53
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: merged DEV
+- CHORE: regenerate Foss notices
+- FIX: Licence Texts, Published SBOM, MRU File Menu
 - CHORE: Update dependencies (NPM, Cargo)
 - FIX: MRU Recent Files, SWBOM structure in release
 - FIX: Open Recent asks before removing an entry that is not found - review cycle 1

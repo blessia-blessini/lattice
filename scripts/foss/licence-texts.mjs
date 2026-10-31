@@ -207,7 +207,7 @@ export function extractCopyrights(texts) {
  * @returns {string}
  */
 export function fallbackCopyright(component) {
-    const names = (component.authors ?? []).map((a) => a.replace(/<[^>]*>/g, '').trim()).filter(Boolean);
+    const names = (component.authors ?? []).map((a) => a.replace(/[<>]/g, '').trim()).filter(Boolean);
     return names.length
         ? `Copyright (c) ${names.join(', ')} (authors as declared in the package metadata)`
         : `Copyright (c) the authors of ${component.name} (no holder named in the package)`;
