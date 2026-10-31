@@ -21,6 +21,7 @@ implementation artefacts. For the ID schema definition see `11-Traceability-Requ
   - [Chapter DLN — Daily Note](#chapter-dln-daily-note)
   - [Chapter VLT — Vault Selection](#chapter-vlt-vault-selection)
   - [Chapter WIN — Editor Window](#chapter-win-editor-window)
+  - [Chapter RCT — Recent Files](#chapter-rct-recent-files)
   - [Chapter FOS — Third-Party Licence Compliance](#chapter-fos-third-party-licence-compliance)
     - [General](#general)
     - [Severity Visualisation](#severity-visualisation)
@@ -1024,6 +1025,27 @@ ignored the same way, so that saving settings can never write to any other file.
 logical pixels (width × height; the operating system's title bar and frame come on top, and display scaling
 multiplies both).
 
+## Chapter RCT — Recent Files
+
+The File menu's **Open Recent** lists the documents the user worked on last, to open one again with a click.
+
+<!--REQ-LTTCE-RCT-00001-->
+**REQ-LTTCE-RCT-00001** — Open Recent SHALL list the paths of the documents most recently opened or saved,
+newest first, each path once, at most 20; choosing one SHALL open that document.
+
+<!--REQ-LTTCE-RCT-00002-->
+**REQ-LTTCE-RCT-00002** — When the chosen entry's file is not found, or its path now names a folder, the
+application SHALL NOT try to open it; it SHALL ask the user, naming the path, whether to remove the entry from
+Open Recent, and SHALL remove it only when the user agrees. When the entry cannot be checked for any other
+reason (access denied, an invalid path), the application SHALL try to open the document as before and SHALL
+keep the entry.
+
+*Rationale*: written 2026-10-30. The list filled with paths that could not be opened — fixture files of the
+automated tests, which shared the developer's WebView storage (fixed in the test harness) — and nothing ever
+removed a dead entry. "Not found" is not proof that a file is gone: an unplugged stick, an unmounted volume or a
+Windows path over 260 characters report it too. So the user decides; nothing is removed without asking (the
+first design removed automatically; review, 2026-10-30).
+
 ## Chapter FOS — Third-Party Licence Compliance
 
 Lattice is offered under the GNU Affero General Public License, version 3 or any later version
@@ -1050,7 +1072,9 @@ licence requires to accompany a copy. They SHALL be generated from the dependenc
 inputs SHALL always produce the same bytes. They SHALL open with a summary of the licences in use, each
 with its type — permissive, public-domain dedication, weak copyleft or strong copyleft — and its number of
 components, naming every component used under a copyleft licence. Each release SHALL publish them, together with one
-machine-readable bill of materials (CycloneDX) per built target, next to its installers. Every pull request
+machine-readable bill of materials (CycloneDX) per built target, next to its installers; the bills of
+materials SHALL be published together in one archive, so that the release lists them as one download
+beside the installers. Every pull request
 into the development branch — an automated dependency update included — SHALL be checked against the
 licence policy and the committed notices before it is merged, and so SHALL every change pushed to the
 development branch directly, right after it arrives; a mismatch SHALL fail that check and state how to
@@ -1106,7 +1130,7 @@ refer to; a missing one SHALL fail the build. The third-party notices SHALL list
 its licence and source package and every bundler part, and carry a written offer of the corresponding source
 code for every library under the LGPL, the GPL or the MPL, valid for at least three years. Each release
 SHALL publish, per AppImage, a machine-readable bill of materials (CycloneDX) with the exact package
-versions it contains.
+versions it contains, in the release's archive of bills of materials (REQ-LTTCE-FOS-00002).
 
 *Rationale*: until v0.3.37 every AppImage carried about 170 libraries from about 110 Ubuntu packages that no
 lock file lists — among them libjbig (GPL-2.0-or-later only), pulled in solely by GTK's TIFF image loader,
