@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.53
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: Update dependencies (NPM, Cargo)
 - FIX: MRU Recent Files, SWBOM structure in release
 - FIX: Open Recent asks before removing an entry that is not found - review cycle 1
 - FIX: Open Recent drops entries whose file is gone, and tests no longer write into the real recent-files list
