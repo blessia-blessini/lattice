@@ -896,13 +896,8 @@ line DOM.
 ### Overview
 
 Covers REQ-LTTCE-CPY-00001 / 00002. Copying from the preview pane puts the selected DOM subtree on
-<<<<<<< HEAD
 the clipboard as `text/html`. Two independent facts made `==highlight==` lose its yellow on paste
 into MS Word / the new Outlook:
-=======
-the clipboard as `text/html`. Two independent facts made the `==highlight==` yellow disappear when
-pasting into MS Word:
->>>>>>> dev
 
 1. **Stylesheets do not travel with the clipboard.** The colour lived in App.css as
    `.markdown-body mark { background-color: … }`, so the copied fragment carried no colour at all.
@@ -912,7 +907,6 @@ pasting into MS Word:
 **Decision: fix it at the source, not at the clipboard.** `rehypeHighlightMark`
 (IMPL-LTTCE-CPY-00001, `src/lib/rehype-highlight-mark.ts`) emits
 `<span class="lattice-mark" style="background-color:…">` instead of `<mark>`. `<span>` is understood
-<<<<<<< HEAD
 by every HTML reader, and the colour is part of the markup. Chromium — and therefore WebView2 —
 serializes the selected DOM subtree as-is, so the highlight survives **every** copy path (Ctrl+C,
 the WebView context menu, drag-and-drop) with **no clipboard-event interception anywhere**.
@@ -938,28 +932,6 @@ dispatches `copy` at the selection, whose target for a multi-block selection is 
 `<body>`); and an unscoped variant. The approach is inherently fragile because it depends on event
 targeting and on intercepting one specific copy path. Emitting correct markup has none of those
 dependencies and needs no runtime code at all.
-=======
-by every HTML reader, and the colour is part of the markup. The WebView serializes the selected DOM
-subtree as-is, so the highlight survives **every** copy path (keyboard, context menu,
-drag-and-drop) with **no clipboard-event interception anywhere**.
-
-- `App.css` keeps only *layout* for `.lattice-mark` (radius, padding). It deliberately carries no
-  `background-color`: a colour there would be invisible in the app (the inline style wins) and
-  would not reach the clipboard — i.e. exactly the original bug re-introduced.
-- The colour is data, supplied per preview theme from `MARK_COLORS` in App.tsx
-  (IMPL-LTTCE-CPY-00002) through the plugin's `{ color }` option. Both values are **opaque
-  `#rrggbb`**; the dark value `#423d12` is the former `rgba(255, 215, 0, 0.22)` flattened over the
-  dark preview background `#0d1117`, so it is pixel-identical on screen but copy-safe.
-- The print stylesheet restates the opaque light value with `print-color-adjust: exact`, since
-  paper is always white.
-
-**Rejected alternative — rewriting the clipboard in a `copy` handler.** Three variants were built
-and all failed in the release build: a React `onCopy` prop (never fires — the browser dispatches
-`copy` at the selection, whose target for a multi-block selection is an ancestor such as `<body>`);
-a document-level capture listener scoped by element containment (drops Ctrl+A and any drag released
-past the text); and an unscoped variant. The approach is inherently fragile because it depends on
-event targeting and on intercepting one specific copy path. Emitting correct markup has none of
-those dependencies and needs no runtime code at all.
 
 ### Platform Independence
 
@@ -971,7 +943,6 @@ rejected clipboard-event design: `clipboardData.setData()` semantics differ betw
 WebKit, and on iOS/Android copy is initiated from the native selection callout, which need not
 dispatch a JS `copy` event at all — that design could have passed on Windows and silently failed on
 iOS.
->>>>>>> dev
 
 ### Integration Point
 
@@ -980,26 +951,11 @@ iOS.
 unaffected (cursor-flash inversion composes with the inline background exactly as it did with the
 `<mark>` background).
 
-<<<<<<< HEAD
-### Platform Independence
-
-The mechanism is **markup only** — no clipboard API, no event handling, no OS-specific code, and
-therefore no platform variant in the sense of `DRY-and-Variants.md`. Every engine Lattice targets
-serializes a copied selection's inline styles: Chromium (Windows WebView2, Android System WebView),
-WebKit (macOS/iOS WKWebView), WebKitGTK (Linux). This was the decisive argument against the
-rejected clipboard-event design: `clipboardData.setData()` semantics differ between Chromium and
-WebKit, and on iOS/Android copy is initiated from the native selection callout, which need not
-dispatch a JS `copy` event at all — that design could have passed on Windows and silently failed on
-iOS.
-
-=======
->>>>>>> dev
 ### Verification
 
 `rehype-highlight-mark.test.ts` asserts the hast the plugin builds;
 `rehype-highlight-mark.render.test.tsx` asserts the **rendered DOM** — that a real
 `<span class="lattice-mark" style="background-color: rgb(255, 224, 0);">` reaches the document and
-<<<<<<< HEAD
 that no `<mark>` exists anywhere. The rendered-DOM assertion is the meaningful one: what Chromium
 serializes into the clipboard is the DOM, so a hast-only test can pass while the user-visible
 behaviour is broken.
@@ -1007,20 +963,8 @@ behaviour is broken.
 **Residual manual step.** Whether Word then honours `background-color` on a `<span>` cannot be
 asserted from the test suite — no automated harness available here can drive a foreign
 application's HTML importer. That single hop remains a manual paste check.
-=======
-that no `<mark>` exists anywhere. The rendered-DOM assertion is the meaningful one: what the WebView
-serializes into the clipboard is the DOM, so a hast-only test can pass while the user-visible
-behaviour is broken — which is precisely what happened during development.
-
-Confirmed end-to-end on Windows by dumping the real clipboard after a preview copy
-(`Get-Clipboard -TextFormatType Html`), which showed the expected
-`<span class="lattice-mark" style="…background-color: rgb(255, 224, 0);">`. The remaining hop —
-what the receiving application does with that markup — is a property of that application; see
-"Receiving-application constraints" in Chapter CPY of the requirements.
->>>>>>> dev
 
 ---
-
 ## Feature: Select All Scope
 
 <!--ARCH-LTTCE-SEL-00001-->
@@ -1809,6 +1753,54 @@ HTML, because the part that actually produces the bytes is host code behind an F
 
 ---
 
+## Feature: Command-Line Usage
+
+<!--ARCH-LTTCE-CLU-00001-->
+
+Covers REQ-LTTCE-CLU-00001 … 00003. One check, at the very start of `run()` (`lib.rs`,
+`exit_on_help_or_unknown_option`), before `tauri::Builder` exists — so a wrong command line costs no
+window, no WebView process and no log file:
+
+```
+run()
+  └─ platform::reads_command_line_options()       false on Android/iOS → return
+  └─ cli_args::check_options_in(args_os, lossy)    → Run | Help | Unknown(opt)
+        Run  → continue: Tauri starts, editor or headless export as before
+        else → platform::attach_parent_console()   (no-op except Windows release)
+               cli_args::respond_to_options(check, stdout, stderr) → 0 | 2
+               std::process::exit
+```
+
+**One classification of the command line.** `platform/cli_args.rs` owns what the command line means.
+Its private `classify` sorts each argument after the program name into *option* (starts with `-`, or a
+help option), *value* (the argument after an option that takes one — `VALUED_OPTIONS` or a macOS
+`-NS…`/`-Apple…` override — unless it starts with `-` itself) or *path*. Every scan reads that one result:
+`check_options_in` (options), `file_paths_in` (paths), `paper_size_in` (the value after `--paper`) and
+`export_format_in` (options). Before review cycle 1 the option check and the path scan had separate
+skip-the-value rules, and `--color --paper a3 notes.md` passed the check and then opened `a3` as a file.
+
+**One list of options.** The check and the usage text are built from the parser's constants
+(`ExportFormat::ALL`, `VALUED_OPTIONS`, `PAPER_FLAG`, `PaperSize::ALL`, `HELP_OPTIONS`): a new export format
+or paper is known to the check and listed in the help without a second edit. A new *kind* of option still
+needs its line in `usage_text`, and the unit tests name every user option, so a missing line fails. The
+decision (`check_options_in`) and the output (`respond_to_options`, one `write_all` per message to any
+`io::Write`) are pure and unit-tested; `lib.rs` only supplies the real arguments, streams and `exit`.
+
+**Platform variants** are `Platform` trait methods with defaults, so no consumer code branches on the OS:
+
+- `reads_command_line_options` — default `false`, the mobile stubs' answer: Android and iOS processes
+  carry the runtime's arguments, not the user's. Windows, Linux and macOS return `true`.
+- `attach_parent_console` (REQ-LTTCE-CLU-00003) — default no-op, right for every platform that inherits
+  its terminal, including a Windows debug build. `impls/windows.rs` overrides it for the windowed
+  (`/SUBSYSTEM:WINDOWS`) release build: when stdout or stderr has no handle it calls
+  `AttachConsole(ATTACH_PARENT_PROCESS)`, then
+  puts back with `SetStdHandle` every handle that was valid before, so a redirected stream keeps its
+  file or pipe. Rust's `std::io` looks the standard handle up on each write, so the attach takes effect
+  for the writes that follow. It needs only the `Win32_System_Console` feature of the `windows` crate
+  already in the manifest.
+
+---
+
 ## Feature: File Watching and External Reload
 
 <!--ARCH-LTTCE-FWT-00001-->
@@ -2064,10 +2056,17 @@ profile (localStorage: Open Recent) is isolated separately, by `WEBVIEW2_USER_DA
 diagonally. Tauri applies the size in logical pixels; the OS adds its frame and applies display scaling.
 The Settings window has its own size (600 × 400) and is not an editor window.
 
+<!--ARCH-LTTCE-WIN-00002-->
+**ARCH-LTTCE-WIN-00002** — covers REQ-LTTCE-WIN-00002. The dropdown of `Menu` (`src/components/Menu.tsx`)
+is sized by CSS alone: `width` `MENU_WIDTH` (`75vw`, three quarters of the WebView's width, which is the
+window's content area) and `min-width` `MENU_MIN_WIDTH_PX` (250 px), with `box-sizing: border-box`. No
+resize listener: the browser recomputes `vw` when the window changes size, also while the menu is open. The
+dropdown stays anchored at the right edge of the Menu button.
+
 ## Feature: Recent Files
 
 <!--ARCH-LTTCE-RCT-00001-->
-**ARCH-LTTCE-RCT-00001** — covers REQ-LTTCE-RCT-00001 and -00002. The list lives in the frontend, in
+**ARCH-LTTCE-RCT-00001** — covers REQ-LTTCE-RCT-00001, -00002 and -00003. The list lives in the frontend, in
 `localStorage` under `MRU_STORAGE_KEY` (`lattice-mru-list`), at most `MRU_MAX` (20) entries (`App.tsx`):
 `addToMRU` after a successful load or save, `removeFromMRU`, both through `updateMRU` (trim and persist in
 one place). The menu entry calls `openRecent(path)`, which first asks the backend command
@@ -2084,6 +2083,9 @@ frontend opens as before. `NotFound` is never treated as proof: an unplugged sti
 (`/Volumes/X`, `/media/<user>/X`, where the root `/` still exists) and a Windows path beyond `MAX_PATH` report
 it too, so the user decides. A first design dropped such entries automatically when the path's drive or root
 existed; review cycle 1 showed that wrong on macOS and Linux, and it cost an offline network share two timeouts.
+
+Each entry's label is the full path (`App.tsx` passes it unchanged); `Menu` renders a sub-item label as it is,
+with `overflow-wrap: anywhere`, so a path wider than the menu (ARCH-LTTCE-WIN-00002) wraps instead of being cut.
 
 **Test isolation of the WebView profile.** The app under test has the installed app's identifier, so WebView2
 used the developer's own profile (`%LOCALAPPDATA%\<identifier>\EBWebView`) — every full test run added the

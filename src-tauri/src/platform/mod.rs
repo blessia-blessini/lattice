@@ -112,6 +112,36 @@ pub(crate) trait Platform {
         false
     }
     // Platform::draws_page_header_footer END ********************
+
+
+    //**************************************************************
+    // Platform::attach_parent_console
+    //**************************************************************
+    /// Makes the process's stdout and stderr reach the terminal it was
+    /// started from, before the usage text is printed (REQ-LTTCE-CLU-00003).
+    ///
+    /// The default does nothing, which is right wherever a process simply
+    /// inherits its terminal: Linux, macOS, the mobile stubs, and a Windows
+    /// debug build (a console-subsystem executable). Only a Windows release
+    /// build, a GUI-subsystem executable, starts with no console and needs it.
+    fn attach_parent_console(&self) {}
+    // Platform::attach_parent_console END ***********************
+
+
+    //**************************************************************
+    // Platform::reads_command_line_options
+    //**************************************************************
+    /// Whether this platform is started from a command line whose options
+    /// Lattice checks (REQ-LTTCE-CLU-00001/00002).
+    ///
+    /// The default, `false`, is the mobile stubs': Android and iOS have no
+    /// command line a user types, and their process arguments are the
+    /// runtime's (zygote, Xcode), not Lattice's — checking them could only
+    /// refuse a launch. The desktop platforms return `true`.
+    fn reads_command_line_options(&self) -> bool {
+        false
+    }
+    // Platform::reads_command_line_options END *****************
 }
 
 // ── Platform implementation — injected by build.rs ──────────────────────────
@@ -171,6 +201,28 @@ pub fn page_margins() -> crate::paper::PageMargins {
     crate::paper::PageMargins::for_host(PlatformImpl.draws_page_header_footer())
 }
 // page_margins END ************************************************************
+
+
+//******************************************************************************
+// attach_parent_console
+//******************************************************************************
+/// Forwards to the selected platform implementation. See
+/// [`Platform::attach_parent_console`].
+pub(crate) fn attach_parent_console() {
+    PlatformImpl.attach_parent_console();
+}
+// attach_parent_console END ***************************************************
+
+
+//******************************************************************************
+// reads_command_line_options
+//******************************************************************************
+/// Forwards to the selected platform implementation. See
+/// [`Platform::reads_command_line_options`].
+pub(crate) fn reads_command_line_options() -> bool {
+    PlatformImpl.reads_command_line_options()
+}
+// reads_command_line_options END **********************************************
 
 
 //******************************************************************************

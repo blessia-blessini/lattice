@@ -369,7 +369,7 @@ describe('lintGfm — clean document', () => {
 
 describe('findTaskMarkerInvisible (pure helper)', () => {
     it('detects NBSP directly after the closing bracket', () => {
-        const hit = findTaskMarkerInvisible(`\t- [ ]${NBSP}(Leo: indeed a CR)`);
+        const hit = findTaskMarkerInvisible(`\t- [ ]${NBSP}(Note: indeed a CR)`);
         expect(hit).toEqual({ index: 6, code: 0x00a0, where: 'after-checkbox' });
     });
 
@@ -404,7 +404,7 @@ describe('findTaskMarkerInvisible (pure helper)', () => {
     });
 
     it('returns null for a clean ASCII task item', () => {
-        expect(findTaskMarkerInvisible('\t- [ ] (Leo: indeed a CR)')).toBeNull();
+        expect(findTaskMarkerInvisible('\t- [ ] (Note: indeed a CR)')).toBeNull();
         expect(findTaskMarkerInvisible('- [x] done')).toBeNull();
         expect(findTaskMarkerInvisible('- [X] done')).toBeNull();
         expect(findTaskMarkerInvisible('- [ ]\ttab separated')).toBeNull();
@@ -428,7 +428,7 @@ describe('findTaskMarkerInvisible (pure helper)', () => {
 
 describe('lintGfm — invisible whitespace in a task marker', () => {
     it('emits an error and points at the offending character', async () => {
-        const doc = `8. Priority logic.\n\t- [ ]${NBSP}(Leo: indeed a CR)\n\t- [ ] (Leo: indeed a CR)\n`;
+        const doc = `8. Priority logic.\n\t- [ ]${NBSP}(Note: indeed a CR)\n\t- [ ] (Note: indeed a CR)\n`;
         const diags = await lint(doc);
         const d = diags.find(x => x.severity === 'error' && x.message.includes('U+00A0'));
         expect(d, 'expected an error for the NBSP task marker').toBeTruthy();
@@ -476,7 +476,7 @@ describe('lintGfm — invisible whitespace in a task marker', () => {
 
 describe('findIndentInvisible (pure helper)', () => {
     it('detects an NBSP-indented line', () => {
-        const hit = findIndentInvisible(`${NBSP}${NBSP} (Leo: a comment)`);
+        const hit = findIndentInvisible(`${NBSP}${NBSP} (Note: a comment)`);
         expect(hit).toEqual({ index: 0, code: 0x00a0, where: 'indent' });
     });
 
@@ -503,7 +503,7 @@ describe('findIndentInvisible (pure helper)', () => {
 
 describe('lintGfm — invisible whitespace as indentation', () => {
     it('emits a warning for an NBSP-indented line', async () => {
-        const diags = await lint(`1. An item.\n${NBSP}${NBSP} (Leo: a comment)\n`);
+        const diags = await lint(`1. An item.\n${NBSP}${NBSP} (Note: a comment)\n`);
         const d = diags.find(x => x.severity === 'warning' && x.message.includes('U+00A0'));
         expect(d, 'expected a warning for the NBSP indent').toBeTruthy();
         expect(d!.message).toContain('does not');

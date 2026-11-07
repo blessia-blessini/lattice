@@ -104,6 +104,12 @@ const PDF_DELIMITERS: &[u8] = b"()<>[]{}/%";
 /// that is not going to exit at all.
 const RUN_TIMEOUT: Duration = Duration::from_secs(300);
 
+/// Upper bound for a `--help` / unknown-option run (`scenario_usage`). Those
+/// end before Tauri starts, in well under a second; 60 s only allows for a
+/// cold, overloaded CI runner, and still fails a binary that opened a window
+/// instead within a minute rather than [`RUN_TIMEOUT`]'s five.
+const USAGE_TIMEOUT: Duration = Duration::from_secs(60);
+
 /// The `alt` text `substituteDiagrams` (`src/lib/preview-copy.ts`,
 /// `DIAGRAM_ALT`) gives every rasterised diagram. It is what tells a diagram's
 /// `<img>` apart from an ordinary embedded picture: both are
@@ -1042,6 +1048,7 @@ fn run() -> i32 {
     }
     scenario_bad_paper(&bin, &scratch, &source, &mut all_pass);
     scenario_missing_file(&bin, &scratch, &mut all_pass);
+    scenario_usage(&bin, &scratch, &mut all_pass);
 
     // Publish only a complete, passing pair: a release page must never carry
     // a document that this very run just judged wrong.
@@ -1064,6 +1071,122 @@ fn run() -> i32 {
     1
 }
 // run END *****************************************************
+
+
+//**************************************************************
+// run_captured
+//**************************************************************
+/// Runs `<bin> <args...>` and returns its exit code, stdout and stderr,
+/// killing it after [`USAGE_TIMEOUT`].
+///
+/// For options that must end the process before any window exists, so a
+/// correct run takes well under a second. A binary that does not recognise
+/// the option starts as an ordinary editor and waits for a human — the
+/// timeout turns that into a failure instead of a hung job, as in
+/// [`run_export`]. The output is a few hundred bytes, far below any pipe
+/// buffer, so reading it after the exit cannot deadlock.
+fn run_captured(bin: &Path, scratch: &Path, args: &[&str]) -> Result<(i32, String, String), String> {
+    use std::io::Read;
+    use std::process::Stdio;
+    println!("  $ {} {}", bin.display(), args.join(" "));
+    let mut child = Command::new(bin)
+        .args(args)
+        .current_dir(scratch)
+        .env(WEBVIEW2_USER_DATA_ENV, scratch.join("webview2"))
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("cannot launch {}: {e}", bin.display()))?;
+
+    let start = Instant::now();
+    let code = loop {
+        match child.try_wait() {
+            Ok(Some(status)) => break status.code().unwrap_or(-1),
+            Ok(None) => {}
+            Err(e) => return Err(format!("cannot wait for {}: {e}", bin.display())),
+        }
+        if start.elapsed() >= USAGE_TIMEOUT {
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err(format!(
+                "did not exit within {}s — the binary started instead of printing its usage",
+                USAGE_TIMEOUT.as_secs()
+            ));
+        }
+        std::thread::sleep(Duration::from_millis(100));
+    };
+    let (mut out, mut err) = (String::new(), String::new());
+    if let Some(mut s) = child.stdout.take() {
+        let _ = s.read_to_string(&mut out);
+    }
+    if let Some(mut s) = child.stderr.take() {
+        let _ = s.read_to_string(&mut err);
+    }
+    Ok((code, out, err))
+}
+// run_captured END *********************************************
+
+
+//**************************************************************
+// scenario_usage
+//**************************************************************
+/// STST-LTTCE-CLU-00001 — REQ-LTTCE-CLU-00001 / 00002 on the real binary.
+///
+/// Each help option must print exactly `lattice_lib::usage_text()` on stdout,
+/// nothing on stderr, and exit 0. An unknown option must print the error line
+/// and the same text on stderr, nothing on stdout, and exit
+/// `lattice_lib::EXIT_USAGE` — and must not be taken for a file: no window,
+/// so the run ends at once. The parser and the text are unit-tested; only the
+/// binary proves the check runs before Tauri starts, and — on the Windows
+/// legs, where the release build is a GUI-subsystem executable — that the
+/// output still leaves the process when it is redirected.
+fn scenario_usage(bin: &Path, scratch: &Path, all_pass: &mut bool) {
+    let usage = lattice_lib::usage_text();
+    for help in lattice_lib::HELP_OPTIONS {
+        let name = format!("usage: {help}");
+        println!("\n[SCENARIO] {name}");
+        let problems = match run_captured(bin, scratch, &[help]) {
+            Err(e) => vec![e],
+            Ok((code, out, err)) => {
+                let mut p = Vec::new();
+                if code != EXIT_OK {
+                    p.push(format!("exit code {code}, expected {EXIT_OK}"));
+                }
+                if out != usage {
+                    p.push(format!("stdout is not the usage text:\n{out}"));
+                }
+                if !err.is_empty() {
+                    p.push(format!("stderr is not empty:\n{err}"));
+                }
+                p
+            }
+        };
+        report(&name, problems, all_pass);
+    }
+
+    const NAME: &str = "usage: unknown option --bogus";
+    println!("\n[SCENARIO] {NAME}");
+    let problems = match run_captured(bin, scratch, &["--bogus", "demo.md"]) {
+        Err(e) => vec![e],
+        Ok((code, out, err)) => {
+            let mut p = Vec::new();
+            if code != lattice_lib::EXIT_USAGE {
+                p.push(format!("exit code {code}, expected {}", lattice_lib::EXIT_USAGE));
+            }
+            if !out.is_empty() {
+                p.push(format!("stdout is not empty:\n{out}"));
+            }
+            let want = format!("lattice: unknown option '--bogus'\n\n{usage}");
+            if err != want {
+                p.push(format!("stderr is not the error plus the usage text:\n{err}"));
+            }
+            p
+        }
+    };
+    report(NAME, problems, all_pass);
+}
+// scenario_usage END *******************************************
 
 
 //**************************************************************

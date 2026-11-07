@@ -4,11 +4,31 @@ All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
 
-## v0.3.53
+## v0.3.56
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- RELEASE v0.3.55
+---
+
+- Correction of comments for Licence only
+- 
+## v0.3.55
+### Changes
+- DOCS: Resolve the leftover merge conflict in Preview Copy Fidelity
+- CHORE: Remove two stray blank lines in capture_linux.rs window_pid
+- DOCS: Apply the menu-width review nits; complete the subsystem codes table
+- FEAT: Show each Open Recent path in full, wrapped instead of cut
+- FEAT: Open the menu three quarters of the window wide, never under 250 px
+- FIX: Stop the notices pull request that brought back only the scan's provenance
+---
+- offline fix or PR#15
+- CHORE: Merge Preparation
+- Cleanup personal info
+- resolved old merge issue in document file
+- FIX: Act on review cycle 1 of the command-line usage check
+- FEAT: Print usage on unknown command-line options and on --help
+- Bumped version to 0.3.55
 - FIX: Tests of licence tests
-- --- chunk 1: legattice/ -- products/lattice/ledger/ (6 files), AFTER the review and signing with sign-ledger.mjs ---
 - CHORE: merged DEV
 - CHORE: regenerate Foss notices
 - FIX: Licence Texts, Published SBOM, MRU File Menu

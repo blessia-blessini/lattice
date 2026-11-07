@@ -1,6 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 
+/**
+ * IMPL-LTTCE-WIN-00002 — width of the open menu: three quarters of the window width, so it narrows
+ * with the window (REQ-LTTCE-WIN-00002).
+ */
+export const MENU_WIDTH = '75vw';
+/** IMPL-LTTCE-WIN-00002 — the menu is never narrower than this, its fixed width until v0.3.55. */
+export const MENU_MIN_WIDTH_PX = 250;
+
 
 /** Props for the {@link Menu} dropdown component. */
 export interface MenuProps {
@@ -148,7 +156,10 @@ export const Menu: React.FC<MenuProps> = ({ items, theme, buttonStyle }) => {
                                         padding: '6px 16px',
                                         cursor: 'pointer',
                                         color: theme === 'dark' ? '#8b949e' : '#57606a',
-                                        fontSize: '0.9em'
+                                        fontSize: '0.9em',
+                                        // IMPL-LTTCE-RCT-00003 — the whole label (a full path in Open
+                                        // Recent), wrapped at any character when it is wider than the menu.
+                                        overflowWrap: 'anywhere'
                                     }}
                                     onMouseEnter={(e) => {
                                         e.currentTarget.style.backgroundColor = theme === 'dark' ? 'rgba(31, 111, 235, 0.2)' : 'rgba(3, 102, 214, 0.1)';
@@ -157,7 +168,7 @@ export const Menu: React.FC<MenuProps> = ({ items, theme, buttonStyle }) => {
                                         e.currentTarget.style.backgroundColor = 'transparent';
                                     }}
                                 >
-                                    {truncatePath(subItem.label)}
+                                    {subItem.label}
                                 </div>
                             ))}
                         </div>
@@ -166,17 +177,6 @@ export const Menu: React.FC<MenuProps> = ({ items, theme, buttonStyle }) => {
             );
         });
     };
-
-    // Helper to truncate long paths
-    const truncatePath = (path: string) => {
-        if (path.length > 40) {
-            const parts = path.split(/[/\\]/);
-            const fileName = parts.pop();
-            return `.../${fileName}`;
-        }
-        return path;
-    };
-
 
     return (
         <div ref={menuRef} style={{ position: 'relative', display: 'inline-block' }}>
@@ -197,7 +197,10 @@ export const Menu: React.FC<MenuProps> = ({ items, theme, buttonStyle }) => {
                     borderRadius: '6px',
                     boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
                     zIndex: 1000,
-                    minWidth: '250px', // Wider for MRU paths
+                    // IMPL-LTTCE-WIN-00002 — three quarters of the window, never under 250 px.
+                    width: MENU_WIDTH,
+                    minWidth: `${MENU_MIN_WIDTH_PX}px`,
+                    boxSizing: 'border-box',
                     maxHeight: '80vh',
                     overflowY: 'auto'
                 }}>

@@ -27,6 +27,71 @@ impl Platform for PlatformImpl {
     }
 
     //**************************************************************
+    // attach_parent_console (windows)
+    //**************************************************************
+    /// IMPL-LTTCE-CLU-00002 — a release build is a GUI-subsystem executable
+    /// (`windows_subsystem = "windows"` in `main.rs`), so Windows starts it with
+    /// no console and no standard handles: whatever it prints is lost. When
+    /// either handle is missing, attach to the console of the process that
+    /// started it (cmd, PowerShell, Windows Terminal). Rust's `std::io` looks
+    /// the handle up again on every write, so stdout and stderr then reach that
+    /// console.
+    ///
+    /// A handle that is already there — redirected to a file or a pipe, or a
+    /// debug build's own console — is kept: `AttachConsole` may point the
+    /// standard handles at the console, so every handle that was valid before
+    /// is put back with `SetStdHandle` afterwards. `lattice --help > x.txt`,
+    /// a half-redirected `2> err.txt`, and a test capturing the output all keep
+    /// their destination. Started from Explorer there is no parent console,
+    /// `AttachConsole` fails, and the failure is ignored: the exit status still
+    /// reports the outcome.
+    fn attach_parent_console(&self) {
+        use windows::Win32::Foundation::HANDLE;
+        use windows::Win32::System::Console::{
+            ATTACH_PARENT_PROCESS, AttachConsole, GetStdHandle, STD_ERROR_HANDLE,
+            STD_HANDLE, STD_OUTPUT_HANDLE, SetStdHandle,
+        };
+        const STREAMS: [STD_HANDLE; 2] = [STD_OUTPUT_HANDLE, STD_ERROR_HANDLE];
+        // SAFETY: GetStdHandle only reads the process's handle table; it
+        // takes no pointers and has no preconditions.
+        let valid = |id: STD_HANDLE| -> Option<HANDLE> {
+            match unsafe { GetStdHandle(id) } {
+                Ok(h) if !h.is_invalid() && !h.0.is_null() => Some(h),
+                _ => None,
+            }
+        };
+        let before = STREAMS.map(valid);
+        if before.iter().all(Option::is_some) {
+            return;
+        }
+        // SAFETY: AttachConsole takes a process id by value and has no
+        // memory preconditions; it is called once, at startup, before any
+        // other thread exists that could use the standard handles.
+        if unsafe { AttachConsole(ATTACH_PARENT_PROCESS) }.is_err() {
+            return;
+        }
+        for (id, kept) in STREAMS.into_iter().zip(before) {
+            if let Some(h) = kept {
+                // SAFETY: SetStdHandle stores `h` in the process's handle
+                // table; `h` came from GetStdHandle above and was not closed,
+                // and no other thread exists yet to race on the table.
+                let _ = unsafe { SetStdHandle(id, h) };
+            }
+        }
+    }
+    // attach_parent_console (windows) END ***********************
+
+    //**************************************************************
+    // reads_command_line_options (windows)
+    //**************************************************************
+    /// A desktop started from a console, a shortcut or
+    /// a file association ("Open with" passes an absolute path).
+    fn reads_command_line_options(&self) -> bool {
+        true
+    }
+    // reads_command_line_options (windows) END ******************
+
+    //**************************************************************
     // print_to_pdf (windows)
     //**************************************************************
     /// IMPL-LTTCE-XPT-00005 — prints the settled document with WebView2's own

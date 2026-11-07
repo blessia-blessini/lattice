@@ -164,7 +164,7 @@ describe('the CLI over a synthetic repository', () => {
         fs.writeFileSync(file, header);
         fs.writeFileSync(path.join(root, 'foss', 'notice-additions.json'), JSON.stringify({
             format: 1,
-            source: { product: { repository: 'owner/lattice', ref: 'v9.9.9' }, date: '2026-10-28', legattice: null, run: null },
+            source: { product: { repository: 'owner/lattice', ref: 'v9.9.9' }, date: '2026-10-28', legattice: 'abc123', run: null },
             additions: [{
                 topic: 'LT-2c62835b1c',
                 package: { id: 'Crate::democrate:0.1.0', ecosystem: 'cargo', name: 'democrate', version: '0.1.0' },
@@ -179,7 +179,8 @@ describe('the CLI over a synthetic repository', () => {
         expect(commandCheck(inv, quiet)).toBe(0);
         expect(commandNotices(inv, { root, targets: WIN, check: false }, quiet)).toBe(0);
         const md = fs.readFileSync(path.join(root, NOTICES_FILE), 'utf8');
-        expect(md).toMatch(/recorded in foss\/notice-additions\.json \(a scan of owner\/lattice at v9\.9\.9, 2026-10-28\)/);
+        expect(md).toMatch(/recorded in foss\/notice-additions\.json \(decided in the Legattice ledger at abc123\);/);
+        expect(md).not.toMatch(/v9\.9\.9/); // the product commit changes every scan: never in the notices
         expect(md).toMatch(/- Also in its code: Apache-2\.0, in 1 file \(ledger decision LT-2c62835b1c\)\n {2}- Copyright 2014 Twitter Inc\./);
         expect(md).toMatch(/```text\n\/\/ Derived from Finagle, under the Apache License 2\.0\.\n```/);
 

@@ -58,9 +58,11 @@ fn window_pid(d: &Display, window: c_ulong, atom: c_ulong) -> Option<u32> {
     }
     // Format-32 properties are delivered as C `long`s, whatever their width.
     let pid = if format == 32 && items == 1 {
-        // SAFETY: on this branch, XGetWindowProperty returned one 32-bit item in `data`.
-        // Use unaligned read to avoid relying on pointer alignment guarantees.
-        Some(unsafe { ptr::read_unaligned(data as *const c_ulong) as u32 })
+        let mut vraw: c_ulong = 0;
+        // SAFETY: XGetWindowProperty allocated 1 `c_ulong` at `data`.
+        // to avoid ANY risk copy to an aligned location
+        unsafe { ptr::copy_nonoverlapping(data, (&raw mut vraw).cast::<c_uchar>(), size_of::<c_ulong>()) };
+        Some(vraw as u32)
     } else {
         None
     };

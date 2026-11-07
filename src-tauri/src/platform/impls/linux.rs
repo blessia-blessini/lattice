@@ -28,6 +28,16 @@ impl Platform for PlatformImpl {
     }
 
     //**************************************************************
+    // reads_command_line_options (linux)
+    //**************************************************************
+    /// A desktop started from a terminal or a
+    /// `.desktop` entry (`%F` passes absolute paths).
+    fn reads_command_line_options(&self) -> bool {
+        true
+    }
+    // reads_command_line_options (linux) END ********************
+
+    //**************************************************************
     // print_to_pdf (linux)
     //**************************************************************
     /// IMPL-LTTCE-XPT-00005 — prints the settled document with WebKitGTK's own

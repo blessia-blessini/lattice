@@ -61,6 +61,18 @@ impl Platform for PlatformImpl {
     // open_windows_on_startup END ***********************************************
 
     //**************************************************************************
+    // reads_command_line_options (macos)
+    //**************************************************************************
+    /// `lattice` started from a terminal takes options
+    /// here too; Finder launches pass none (files come as Apple Events), and
+    /// the `-psn_…` / `-NS…` / `-Apple…` host arguments are tolerated by
+    /// `cli_args`.
+    fn reads_command_line_options(&self) -> bool {
+        true
+    }
+    // reads_command_line_options (macos) END ************************************
+
+    //**************************************************************************
     // handle_run_event
     //**************************************************************************
     /// Called for every `RunEvent` from the Tauri event loop.

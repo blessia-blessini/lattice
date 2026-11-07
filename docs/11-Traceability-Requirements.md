@@ -81,9 +81,15 @@ related items. Example convention for `LNT`:
 | `TBL`   | SSS     | Spreadsheet paste (TSV clipboard → GFM[^gfm] table)   |
 | `DLN`   | SSS     | Daily note (menu/toolbar command, file name, title)   |
 | `VLT`   | SSS     | Vault selection (which vault's settings a window uses) |
-| `WIN`   | SSS     | Editor window (initial geometry)                      |
+| `WIN`   | SSS     | Editor window (initial geometry, application menu width) |
+| `RCT`   | SSS     | Recent files (Open Recent list, missing entries, full paths) |
+| `PRV`   | SSS     | Preview code syntax highlighting                      |
+| `SEL`   | SSS     | Select All scope                                      |
+| `MRC`   | SSS     | Copying rendered diagrams                             |
+| `FWT`   | SSS     | File watching and external reload                     |
 | `FOS`   | SSS     | Third-party licence compliance (gate, notices, SBOM)  |
 | `XPT`   | SSS     | Headless CLI export (HTML and PDF)                    |
+| `CLU`   | SSS     | Command-line usage (unknown options, help text)       |
 | `PLT`   | SSS     | Platform layer (`Platform` trait, per-OS selection)   |
 
 ---

@@ -18,6 +18,7 @@ implementation artefacts. For the ID schema definition see `11-Traceability-Requ
   - [Chapter CPY — Preview Copy Fidelity](#chapter-cpy-preview-copy-fidelity)
   - [Chapter SEL — Select All Scope](#chapter-sel-select-all-scope)
   - [Chapter TBL — Spreadsheet Paste](#chapter-tbl-spreadsheet-paste)
+  - [Chapter CLU — Command-Line Usage](#chapter-clu-command-line-usage)
   - [Chapter DLN — Daily Note](#chapter-dln-daily-note)
   - [Chapter VLT — Vault Selection](#chapter-vlt-vault-selection)
   - [Chapter WIN — Editor Window](#chapter-win-editor-window)
@@ -858,6 +859,51 @@ the file is styled in the theme the preview was rendered in.
 
 
 
+## Chapter CLU — Command-Line Usage
+
+`lattice` is started from a terminal to open files or to export them (Chapter XPT). Until 2026-11-06 an
+option it did not know was silently dropped: a mistyped `--exprot-pdf a.md` opened an editor window instead
+of exporting, and a script waiting for it hung. This chapter makes a wrong command line say so.
+
+An *option* is any argument starting with `-`, and the help option `/?`. Every other argument — `/home/…`
+included — remains a file path.
+
+<!--REQ-LTTCE-CLU-00001-->
+**REQ-LTTCE-CLU-00001** — When the command line contains an option Lattice does not know, Lattice SHALL
+write `lattice: unknown option '<option>'`, naming the first such option, followed by a short usage text,
+to standard error, and SHALL exit with status 2 without opening any window and without exporting anything.
+Arguments a host or tool injects without the user typing them SHALL NOT count as unknown — such as the
+`-psn_…` argument older macOS versions add, macOS user-defaults overrides (`-NS…` / `-Apple…`, each with its
+value, e.g. `-NSDocumentRevisionsDebugMode YES` from Xcode) and `--color` from `cargo tauri dev`; the value
+of such an argument SHALL NOT be taken for a file. An option's value (`--paper a3`) is not an option; an
+unknown *value* remains the error of the option it belongs to (REQ-LTTCE-XPT-00011). This applies to the
+desktop platforms; Android and iOS have no command line of their own and SHALL NOT check their process
+arguments.
+
+*Rationale*: an unknown option is a mistake, and the cheapest moment to report it is before anything
+happens. Status 2 is the usual "usage error" status and differs from the 1 an export failure returns
+(REQ-LTTCE-XPT-00003), so a script can tell "called wrongly" from "export failed".
+
+<!--REQ-LTTCE-CLU-00002-->
+**REQ-LTTCE-CLU-00002** — When the command line contains `--help`, `-h` or `/?`, Lattice SHALL write the
+same usage text to standard output and SHALL exit with status 0 without opening any window — also when the
+command line contains an unknown option too. The usage text SHALL fit on one screen (at most 15 lines, none
+wider than 80 columns) and SHALL name every option a user types — the export options, `--paper` with every
+accepted value, and the help options. Host-injected arguments (REQ-LTTCE-CLU-00001) are not user options and
+are not listed.
+
+<!--REQ-LTTCE-CLU-00003-->
+**REQ-LTTCE-CLU-00003** — On Windows, the text of REQ-LTTCE-CLU-00001/00002 SHALL appear in the console
+`lattice` was started from, although the release build is a windowed program (`/SUBSYSTEM:WINDOWS`) that Windows
+starts without a console, and SHALL go to the file or pipe instead when standard output or standard error
+is redirected.
+
+*Rationale*: without this the requirement above is met on paper and invisible in practice — the text is
+written to no console at all. Note that `cmd` and PowerShell do not wait for a windowed program, so the text
+can appear after the next prompt; piping (`lattice --help | more`) or `start /wait` avoid that.
+
+
+
 ## Chapter FWT — File Watching and External Reload
 
 Lattice watches the open file so a change made by another program (a `git checkout`, a sync client, a
@@ -1025,6 +1071,15 @@ ignored the same way, so that saving settings can never write to any other file.
 logical pixels (width × height; the operating system's title bar and frame come on top, and display scaling
 multiplies both).
 
+<!--REQ-LTTCE-WIN-00002-->
+**REQ-LTTCE-WIN-00002** — The application menu (the toolbar's **Menu** button) SHALL open three quarters of
+the window's width wide, so that it narrows as the window narrows, and SHALL never be narrower than
+250 logical pixels.
+
+*Rationale*: written 2026-11-07. Until v0.3.55 the menu was 250 pixels wide whatever the window's size, so
+long entries wrapped even in a wide window. The lower limit is that width, so a narrow window keeps the menu
+as it was.
+
 ## Chapter RCT — Recent Files
 
 The File menu's **Open Recent** lists the documents the user worked on last, to open one again with a click.
@@ -1045,6 +1100,14 @@ automated tests, which shared the developer's WebView storage (fixed in the test
 removed a dead entry. "Not found" is not proof that a file is gone: an unplugged stick, an unmounted volume or a
 Windows path over 260 characters report it too. So the user decides; nothing is removed without asking (the
 first design removed automatically; review, 2026-10-30).
+
+<!--REQ-LTTCE-RCT-00003-->
+**REQ-LTTCE-RCT-00003** — Each Open Recent entry SHALL show its document's full path. A path wider than the
+menu SHALL wrap onto further lines and SHALL NOT be shortened.
+
+*Rationale*: written 2026-11-07. Until v0.3.55 a path longer than 40 characters was shown as `.../<file name>`,
+so two documents of the same name in different folders could not be told apart. The wider menu
+(REQ-LTTCE-WIN-00002) was made for these paths.
 
 ## Chapter FOS — Third-Party Licence Compliance
 
@@ -1236,8 +1299,7 @@ although no step looked at the suffix.
     for making web content accessible to people with disabilities. <https://www.w3.org/WAI/standards-guidelines/wcag/>
 
 [^spice]: SPICE — Software Process Improvement and Capability dEtermination (ISO/IEC 15504). A framework
-    for assessing and improving software development processes. Automotive SPICE (ASPICE) is the automotive
-    industry's profile of this standard.
+    for assessing and improving software development processes.
 
 [^toc]: TOC — Table of Contents.
 

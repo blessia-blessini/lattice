@@ -23,7 +23,7 @@
 
 [package]
 name = "lattice"
-version = "0.3.53"
+version = "0.3.55"
 description = "A Markdown Editor that respects standards"
 license = "AGPL-3.0-or-later"
 authors = ["Blessia Blessini"]
@@ -88,7 +88,10 @@ tokio = { version = "1", features = ["sync", "time"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 webview2-com = "0.39"
-windows = { version = "0.62", features = ["Win32_Foundation"] }
+# Win32_System_Console: AttachConsole / GetStdHandle, so the usage text of a
+# GUI-subsystem release build reaches the terminal (IMPL-LTTCE-CLU-00002).
+# A feature of the crate already named here — no new crate.
+windows = { version = "0.62", features = ["Win32_Foundation", "Win32_System_Console"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 webkit2gtk = "2.0"

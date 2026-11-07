@@ -21,3 +21,6 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   `open_new_window` and `licences::open_licences_window` share; `readOnly` travels in the Direct Push
   payload; `licences::open_licences_window` registered in `generate_handler!`)
 - IMPL-LTTCE-FOS-00003 **covers** ARCH-LTTCE-FOS-00003
+- IMPL-LTTCE-CLU-00001 **covers** REQ-LTTCE-CLU-00001, REQ-LTTCE-CLU-00002  (`exit_on_help_or_unknown_option`,
+  called first in `run()`; the pure parts and their tests are recorded in `platform/cli_args.trace-cov.md`)
+- IMPL-LTTCE-CLU-00001 **covers** ARCH-LTTCE-CLU-00001

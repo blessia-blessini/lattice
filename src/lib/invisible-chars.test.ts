@@ -97,7 +97,7 @@ describe('INVISIBLE_CHAR_CLASS', () => {
     });
 
     it('finds every occurrence in a realistic pasted line', () => {
-        const line = '- [ ]\u00a0(Leo: indeed a CR)\u200b';
+        const line = '- [ ]\u00a0(Note: indeed a CR)\u200b';
         const found = line.match(new RegExp(INVISIBLE_CHAR_CLASS, 'g'));
         expect(found).toEqual(['\u00a0', '\u200b']);
     });

@@ -213,10 +213,14 @@ function fileList(files) {
 //**************************************************************
 // additionsIntro
 //**************************************************************
-/** The introduction's sentence on foss/notice-additions.json and where it came from. */
+/**
+ * The introduction's sentence on foss/notice-additions.json and the Legattice commit whose ledger
+ * decided it. Only that commit: the product commit, the date and the run change with every scan,
+ * so naming them made every release's notices differ from the committed ones and opened a pull
+ * request (REQ-LTTCE-FOS-00009) that brought back nothing but them. They stay in the file's `source`.
+ */
 export function additionsIntro(source) {
-    const scanned = [source.product?.repository, source.product?.ref].filter(Boolean).join(' at ');
-    const from = [scanned && `a scan of ${scanned}`, source.date, source.run].filter(Boolean).join(', ');
+    const from = source.legattice ? `decided in the Legattice ledger at ${source.legattice}` : '';
     return 'Some components contain code from other projects under licences of their own, found by a scan of the package sources and recorded in foss/notice-additions.json'
         + `${from ? ` (${escapeInline(from)})` : ''}; they are listed under each component as "Also in its code".`;
 }

@@ -1,11 +1,12 @@
 #################################################
 # File: .github/workflows/AntivirusOnUrl.yml
 # Copyright: 2024, 2025, 2026 - Owner of blessio.com
-# Copyright (c): 2026 - blessini.com
+# Copyright (c): 2026 - Owner of blessini.com
 # License: MIT
 #################################################
 # Used the starter here:
 # BUILDS KeepasXC
+# Then BUILDS Lattice / Lattice-md
 #################################################
 # Scans a RELEASE BINARY with VirusTotal.
 #

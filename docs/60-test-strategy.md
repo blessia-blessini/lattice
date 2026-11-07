@@ -215,6 +215,8 @@ which were previously compile-verified only.
 | `export-pdf --paper letter (relative path)` | the same on its own staged copy, with a US Letter portrait page — and the file given by its bare name, relative to the directory the CLI runs in, as a user types it (Linux refused relative output paths until 2026-09-28) |
 | `export-pdf --paper a5 (unknown)` | exit `1` and no PDF written (REQ-LTTCE-XPT-00011) |
 | `missing-input` | an unreadable path exits `1` and writes no output file (the `ensure_readable` defect) |
+| `usage: --help`, `-h`, `/?` | STST-LTTCE-CLU-00001: exit `0`; stdout = `usage_text()`; stderr empty; no window |
+| `usage: unknown option --bogus` | STST-LTTCE-CLU-00001: exit `2`; stderr = error + `usage_text()`; stdout empty |
 
 Run by `build-test.ps1` / `build-test.sh` as step **1d**, and by CI inside step 370.2. With
 `--out <dir> --label <platform>` it also copies the passing documents out — the HTML and one PDF per
@@ -230,9 +232,11 @@ frontend in `export.rs` and their `@page` rule in `print-style.test.ts`.
 
 Two traps this check is built around, both found by running it:
 
-- **A binary that does not recognise the flag never exits.** An unknown argument is taken for a
-  file path, which opens an ordinary editor window and waits for a human. The check kills and fails
-  the run after a timeout rather than hanging the suite.
+- **A binary that does not recognise the flag never exits.** Before 2026-11-06 an unknown option was
+  dropped silently, and the binary opened an ordinary editor window and waited for a human. Since
+  REQ-LTTCE-CLU-00001 it exits `2` at once — but a binary older than that check still opens a window,
+  and the check may be pointed at one (`LATTICE_EXPORT_BIN`), so it keeps killing and failing the run
+  after a timeout rather than hanging the suite.
 - **Only `npm run tauri build` produces a testable release binary.** A plain
   `cargo build --release` omits Tauri's `custom-protocol` feature, so the embedded assets are never
   served, no frontend JS runs, and every export times out with no other symptom.

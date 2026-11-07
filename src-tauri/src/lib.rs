@@ -68,6 +68,9 @@ mod platform;
 // Public so the CLI export check (examples/export_demo.rs) measures each PDF's
 // margins against the ones this build prints with — not a copy of the rule.
 pub use platform::page_margins;
+// Re-exported for the CLI check (examples/export_demo.rs), which asserts the
+// real binary prints exactly this text with exactly this status.
+pub use platform::cli_args::{EXIT_USAGE, HELP_OPTIONS, usage_text};
 
 #[cfg(test)]
 #[path = "test_fs_helpers.rs"]
@@ -1238,6 +1241,8 @@ pub fn run() {
         return; // LLVM runtime writes profraw on process exit — binary IS registered
     }
 
+    exit_on_help_or_unknown_option();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_log::Builder::default().build())
         .setup(|app| setup_handler(app))
@@ -1289,6 +1294,43 @@ pub fn run() {
             platform::handle_run_event(app_handle, event);
         });
 } // run END *******************************************************************
+
+//******************************************************************************
+// exit_on_help_or_unknown_option
+//******************************************************************************
+/// IMPL-LTTCE-CLU-00001 — checks the real command line before Tauri starts.
+/// For a help option or an unknown option it prints the usage text
+/// (`platform::cli_args::respond_to_options`) and ends the process, so no
+/// window, WebView or log file is ever created (REQ-LTTCE-CLU-00001/00002).
+/// Otherwise it returns and startup continues unchanged.
+///
+/// Reads `args_os` and converts lossily, unlike `std::env::args`, which
+/// panics on an argument that is not valid Unicode: this check must never be
+/// the thing that crashes a launch. A lossy file name still does not start
+/// with `-`, so its classification is unaffected.
+fn exit_on_help_or_unknown_option() {
+    // Mobile has no command line of its own (Platform::reads_command_line_options).
+    if !platform::reads_command_line_options() {
+        return;
+    }
+    let args: Vec<String> = std::env::args_os()
+        .map(|a| a.to_string_lossy().into_owned())
+        .collect();
+    let check = platform::cli_args::check_options_in(&args);
+    if check == platform::cli_args::OptionCheck::Run {
+        return;
+    }
+    platform::attach_parent_console();
+    let code = platform::cli_args::respond_to_options(
+        &check,
+        &mut std::io::stdout().lock(),
+        &mut std::io::stderr().lock(),
+    );
+    if let Some(code) = code {
+        std::process::exit(code);
+    }
+}
+// exit_on_help_or_unknown_option END ******************************************
 
 //******************************************************************************
 // exit_with_requested_code

@@ -196,9 +196,14 @@ describe('rendering additions', () => {
         expect(added.map(([, ids]) => ids)).toEqual([['ISC'], ['ISC (as found in the code)']]);
     });
 
-    it('names the scan in the introduction and counts added licences in the type summary', () => {
-        const source = { product: { repository: 'owner/product', ref: 'v1' }, date: '2026-10-28', run: 'https://example.org/run/1' };
-        expect(additionsIntro(source)).toMatch(/\(a scan of owner\/product at v1, 2026-10-28, https:\/\/example\.org\/run\/1\)/);
+    it('names only the Legattice commit in the introduction and counts added licences in the type summary', () => {
+        const source = { product: { repository: 'owner/product', ref: 'v1' }, date: '2026-10-28', legattice: 'abc123',
+            run: 'https://example.org/run/1' };
+        // Product commit, date and run change with every scan: naming them made every release's notices differ.
+        const intro = additionsIntro(source);
+        expect(intro).toMatch(/recorded in foss\/notice-additions\.json \(decided in the Legattice ledger at abc123\);/);
+        expect(intro).not.toMatch(/owner\/product|2026-10-28|example\.org/);
+        expect(additionsIntro({ ...source, legattice: null })).toMatch(/recorded in foss\/notice-additions\.json; they are/);
         const notices = renderNotices({
             entries: [{
                 component: { ecosystem: 'cargo', name: 'demo', version: '1.0.0', linkage: 'linked' },

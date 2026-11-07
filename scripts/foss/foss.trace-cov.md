@@ -167,7 +167,9 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   normalised, past the end, too many lines, too long a line, blank only; `quoteRanges` merges or keeps apart;
   `attachAdditions` quotes a matching file, fails on a changed or missing file, a denied added licence, a
   licence with neither text nor excerpt (a font), warns on a version not shipped, gives every entry [];
-  `renderAddition` lines, `additionsIntro`, added licences in the type summary.
+  `renderAddition` lines, `additionsIntro` (names only the Legattice commit: product commit, date and run
+  change every scan and made every release's notices differ — REQ-LTTCE-FOS-00009), added licences in the
+  type summary.
 - UTST `export-notices.test.mjs` (REQ-LTTCE-FOS-00008) — `topics` read and refused when not topic ids;
   `selectEmbedded` picks the named additions and fails for a topic the package has none for;
   `renderExportNotices` prints the added licence, its copyright lines and its standard text.

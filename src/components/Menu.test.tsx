@@ -24,7 +24,7 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Menu, MenuItem } from './Menu';
+import { Menu, MenuItem, MENU_MIN_WIDTH_PX, MENU_WIDTH } from './Menu';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -81,6 +81,21 @@ describe('Menu', () => {
         // Separator is a div with height 1px
         const sep = container.querySelector('div[style*="height: 1px"]');
         expect(sep).not.toBeNull();
+    });
+
+    // -----------------------------------------------------------------------
+    // Width (REQ-LTTCE-WIN-00002)
+    // -----------------------------------------------------------------------
+    it('opens three quarters of the window wide, never narrower than 250 px', () => {
+        const { getByRole, getByText } = render(<Menu items={items} theme="dark" />);
+        fireEvent.click(getByRole('button'));
+        const panel = getByText('Item 1').closest('.menu-item')!.parentElement!.parentElement as HTMLElement;
+        // Literal values, not the constants: the test pins the requirement, not the code.
+        expect(panel.style.width).toBe('75vw');
+        expect(panel.style.minWidth).toBe('250px');
+        // Padding and border inside the width, so the panel is exactly that wide.
+        expect(panel.style.boxSizing).toBe('border-box');
+        expect([MENU_WIDTH, MENU_MIN_WIDTH_PX]).toEqual(['75vw', 250]);
     });
 
     // -----------------------------------------------------------------------
@@ -197,11 +212,11 @@ describe('Menu', () => {
     });
 
     // -----------------------------------------------------------------------
-    // truncatePath
+    // Full sub-item labels (REQ-LTTCE-RCT-00003)
     // -----------------------------------------------------------------------
-    it('truncates sub-item labels longer than 40 characters', () => {
-        const longPath = '/very/long/path/to/some/deeply/nested/directory/file.md'; // > 40 chars
-        const { getByRole, getByText } = render(
+    it('shows a long path in full, wrapping at any character instead of cutting it', () => {
+        const longPath = '/very/long/path/to/some/deeply/nested/directory/file.md'; // > 40 chars: was cut to .../file.md
+        const { getByRole, getByText, queryByText } = render(
             <Menu
                 items={[{ label: 'Recent', submenu: [{ label: longPath, onClick: vi.fn() }] }]}
                 theme="dark"
@@ -209,11 +224,13 @@ describe('Menu', () => {
         );
         fireEvent.click(getByRole('button'));
         fireEvent.click(getByText('Recent'));
-        expect(getByText('.../file.md')).toBeTruthy();
+        const entry = getByText(longPath) as HTMLElement;
+        expect(entry.style.overflowWrap).toBe('anywhere');
+        expect(queryByText('.../file.md')).toBeNull();
     });
 
-    it('does not truncate sub-item labels of 40 characters or fewer', () => {
-        const shortPath = 'short-file.md'; // <= 40 chars
+    it('shows a short sub-item label unchanged', () => {
+        const shortPath = 'short-file.md';
         const { getByRole, getByText } = render(
             <Menu
                 items={[{ label: 'Recent', submenu: [{ label: shortPath, onClick: vi.fn() }] }]}
