@@ -56,7 +56,7 @@ fn window_pid(d: &Display, window: c_ulong, atom: c_ulong) -> Option<u32> {
     if status != xlib::Success as c_int || data.is_null() {
         return None;
     }
-    // Format-32 properties are delivered as C `long`s, whatever their width.
+    // Format-32 properties are delivered as one 32-bit item.
     let pid = if format == 32 && items == 1 {
         let mut vraw: c_ulong = 0;
         // SAFETY: XGetWindowProperty allocated 1 `c_ulong` at `data`.

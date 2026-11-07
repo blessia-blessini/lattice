@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.56
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- RELEASE v0.3.55 with MERGE
 - RELEASE v0.3.55
 ---
 
