@@ -211,9 +211,7 @@ export function extractCopyrights(texts) {
  */
 export function authorName(author) {
     return String(author)
-        .replace(/<[^<>]*>/g, '')
-        .replace(/<.*$/s, '')
-        .replace(/>/g, '')
+        .replace(/[<>]/g, '')
         .trim();
 }
 // authorName END **********************************************
