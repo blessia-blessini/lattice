@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.56
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: mail data to be removed from Third-party note
 - RELEASE v0.3.55 with MERGE
 - RELEASE v0.3.55
 ---
@@ -15,6 +16,7 @@ Edit the section for your next version **before** pushing the release tag like v
 - 
 ## v0.3.55
 ### Changes
+- FIX: mail data to be removed from THIRD-PARTY-NOTICES.md
 - DOCS: Resolve the leftover merge conflict in Preview Copy Fidelity
 - CHORE: Remove two stray blank lines in capture_linux.rs window_pid
 - DOCS: Apply the menu-width review nits; complete the subsystem codes table

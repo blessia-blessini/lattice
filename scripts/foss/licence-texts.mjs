@@ -202,17 +202,18 @@ export function extractCopyrights(texts) {
 //**************************************************************
 /**
  * The name part of a package-metadata author ("Jane Doe <jane@example.org>"
- * → "Jane Doe"): the e-mail address never reaches the notices. Drops every
- * "<…>" block, then anything from a "<" left unclosed, then a stray ">" --
- * so no address and no angle bracket survives malformed or nested input
- * (an earlier one-pass fix removed only the brackets and kept the address).
+ * → "Jane Doe"): the e-mail address never reaches the notices. Keeps only
+ * what comes before the first "<", then drops a stray ">" -- so no address
+ * and no angle bracket survives malformed or nested input. Removing only the
+ * brackets keeps the address; that one-pass fix has come back twice already
+ * (the last time as a code-scanning autofix), and the tests catch it.
  * @param {string} author
  * @returns {string}
  */
 export function authorName(author) {
-    return String(author)
-        .replace(/[<>]/g, '')
-        .trim();
+    const text = String(author);
+    const open = text.indexOf('<');
+    return (open < 0 ? text : text.slice(0, open)).replaceAll('>', '').trim();
 }
 // authorName END **********************************************
 
