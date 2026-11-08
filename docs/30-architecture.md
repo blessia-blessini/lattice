@@ -2453,6 +2453,50 @@ job runs `foss.mjs release-plan` (`release-plan.mjs`) once and every later job f
   re-run never opens a second one or overwrites. Merging
   is the maintainer's approval; the commit is made by Actions, co-authored by the maintainer account.
 
+## Feature: APT Repository on the Release Site
+
+<!--ARCH-LTTCE-APT-00001-->
+**ARCH-LTTCE-APT-00001** — covers REQ-LTTCE-APT-00001. A static, signed APT repository in `apt/` of the
+release site (`lattice-docs-releases`, served as `https://lattice-md.app/apt`), built by one bash script
+from tools every Ubuntu runner has (`dpkg-deb`, `dpkg-scanpackages`, `apt-ftparchive`, `gpg`, `gpgv`):
+
+```text
+apt/lattice-md.gpg, .asc            public key (binary for apt, text for people)
+apt/lattice-md-keyring.deb          keyring package under a fixed name: the user's one download
+apt/pool/main/l/lattice/            lattice_<v>_amd64.deb, lattice_<v>_arm64.deb  (this release only)
+apt/pool/main/l/lattice-md-keyring/ lattice-md-keyring_<version>_all.deb
+apt/dists/stable/                   Release, Release.gpg, InRelease;  main/binary-{amd64,arm64}/Packages(.gz)
+```
+
+- **`scripts/apt/apt-repo.sh`** builds the whole tree in a temporary folder beside the target, verifies
+  `InRelease` and `Release.gpg` with `gpgv` against the exported public key, and only then replaces `pool/`
+  and `dists/`: a failure (wrong passphrase, missing package) leaves the published repository as it was.
+  The pool holds only the packages given — apt needs only the newest; older ones stay on GitHub Releases.
+- **Keyring package**: `/usr/share/keyrings/lattice-md.gpg` and the deb822 source entry
+  `/etc/apt/sources.list.d/lattice-md.sources` (a conffile; `Signed-By` limits the key to this
+  repository). Its version is the date of the key's newest signature, so renewing (`gpg --quick-set-expire`)
+  or replacing the key makes a higher version, and the same key always builds the same bytes
+  (`SOURCE_DATE_EPOCH`, fixed mtimes). The update is accepted because the key already trusted signs the
+  index that lists its hash.
+- **`lattice-md`** is `Provides:` of the `lattice` package (`bundle.linux.deb.provides` in
+  `tauri.conf.json`); Tauri names the package after `productName`, shared by every installer, so the
+  package itself keeps that name.
+- **CI**: step **393** of both Linux legs runs `scripts/apt/apt-repo-test.sh` on the leg's own `.deb`
+  with a throwaway key — the real `apt-get`/`apt-cache`, without root, confined to private state
+  directories and the source entry from the keyring package. Step **903.7** of `publish-release-site`
+  (exact `vX.Y.Z` tags only) builds `release-site/apt/` from the release's two `.deb`s, before step 904,
+  so a failure publishes nothing; step **905** appends `scripts/apt/install-with-apt.md`, with the key
+  fingerprint, to the release page and commits `apt/` with it (`git add -A`, so removed packages go too).
+  903.7 runs only while `GPG_SIGNING_ENABLED` is `'true'`; it signs with the key step 903.6b imports from
+  `GPG_PRIVATE_KEY` / `GPG_PASSPHRASE`, chosen by `GPG_SIGNING_KEY_ID` — the key that signs
+  `SHA256SUMS.txt`. The passphrase reaches gpg on a file descriptor, never on a command line.
+- **Cost**: the site's history grows by ~16 MB per stable release (two `.deb`s), as it already does by the
+  mirrored Windows installers.
+- **Rejected**: the official Debian/Ubuntu archives (packaging every npm and Rust dependency, a sponsor:
+  months); a Snap (a store account, a sandbox that restricts an editor's file access, another bundle to
+  audit); linking `Filename:` to GitHub Releases (apt resolves it relative to the repository); the old
+  `apt-key add` (it trusts the key for every repository).
+
 ## Architectural Decisions
 
 ### ADR-01: External Image Fetches Blocked by Default

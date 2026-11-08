@@ -763,6 +763,19 @@ jobs:
         path: foss-appimage/
         if-no-files-found: warn
 
+    # REQ-LTTCE-APT-00001 (STST): the APT repository of the release site, built from
+    # this leg's .deb with a throwaway key and used by the real apt-get -- index
+    # signature, downloads, `lattice-md` -> `lattice`, tampering refused.
+    - name: 393. APT repository from this build (Linux)
+      if: matrix.config.platform == 'linux-desktop' || matrix.config.platform == 'linux-arm-desktop'
+      shell: bash
+      run: |
+        set -euo pipefail
+        git sparse-checkout add '/scripts/apt/'
+        command -v apt-ftparchive >/dev/null && command -v dpkg-scanpackages >/dev/null \
+          || { sudo apt-get update -q && sudo apt-get install -y -q apt-utils dpkg-dev; }
+        bash scripts/apt/apt-repo-test.sh "$(dirname ${{ matrix.config.upload_path2 }})"
+
     ################################################################
     # 400 / Upload Artifacts
     ################################################################
@@ -909,6 +922,7 @@ jobs:
           CHANGELOG.md
           public
           docs/demo
+          scripts/apt
         sparse-checkout-cone-mode: true
         fetch-depth: 1
         path: _src
@@ -1218,6 +1232,34 @@ jobs:
         fi
 
     ################################################################
+    # 903.7 / APT repository on the release site (REQ-LTTCE-APT-00001)
+    #         Rebuilds release-site/apt/ from this release's .deb files,
+    #         signed with the key 903.6b imported; step 905 commits it
+    #         with the release page and adds the install instructions.
+    #         Before 904, so a failure stops the release before anything
+    #         is published.
+    #         Off until GPG_SIGNING_ENABLED is 'true': without the key
+    #         there is no repository apt would accept.
+    ################################################################
+    - name: 903.7. APT repository on the release site
+      if: vars.GPG_SIGNING_ENABLED == 'true'
+      shell: bash
+      env:
+        GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        GPG_SIGNING_KEY_ID: ${{ vars.GPG_SIGNING_KEY_ID }}
+      run: |
+        set -euo pipefail
+        command -v apt-ftparchive >/dev/null && command -v dpkg-scanpackages >/dev/null \
+          || { sudo apt-get update -q && sudo apt-get install -y -q apt-utils dpkg-dev; }
+        debs="$RUNNER_TEMP/apt-debs"
+        mkdir -p "$debs"
+        cp staging/lattice_*_amd64.deb staging/lattice_*_arm64.deb "$debs/"
+        bash _src/scripts/apt/apt-repo.sh --debs "$debs" --out release-site/apt --key-id "$GPG_SIGNING_KEY_ID"
+        fingerprint=$(gpg --batch --with-colons --list-keys "$GPG_SIGNING_KEY_ID" | awk -F: '$1 == "fpr" { print $10; exit }')
+        sed "s/{{FINGERPRINT}}/$fingerprint/" _src/scripts/apt/install-with-apt.md > "$RUNNER_TEMP/install-with-apt.md"
+        echo "APT_INSTRUCTIONS=$RUNNER_TEMP/install-with-apt.md" >> "$GITHUB_ENV"
+
+    ################################################################
     # 904 / Create GitHub Release on blessia-blessini/lattice and
     #       upload all installers as release assets.
     #       Uses GITHUB_TOKEN (automatic, no extra secret needed).
@@ -1410,6 +1452,12 @@ jobs:
           printf '%s\t%s\t%s\n' "$name" "$dl_url" "$on_pages" >> "$SCAN_TARGETS"
 
         done <<< "$ASSETS_JSON"
+
+        # REQ-LTTCE-APT-00001: how to install with apt, when 903.7 built the repository.
+        if [ -n "${APT_INSTRUCTIONS:-}" ]; then
+          printf '\n' >> "$OUT"
+          cat "$APT_INSTRUCTIONS" >> "$OUT"
+        fi
 
         # Footer
         printf '%s\n' "" >> "$OUT"
@@ -1648,6 +1696,8 @@ jobs:
         fi
 
         git add Lattice-Releases/ THIRD_PARTY_LICENSES.md
+        # -A: also stages the previous release's packages that 903.7 removed.
+        if [ -d apt ]; then git add -A apt/; fi
         git commit -m "Release ${VERSION}: add index.md and coverage reports" \
           -m "Co-authored-by: Blessia-Blessini <273819958+blessia-blessini@users.noreply.github.com>"
         git push origin "$TARGET_BRANCH"

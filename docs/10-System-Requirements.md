@@ -24,6 +24,7 @@ implementation artefacts. For the ID schema definition see `11-Traceability-Requ
   - [Chapter WIN — Editor Window](#chapter-win-editor-window)
   - [Chapter RCT — Recent Files](#chapter-rct-recent-files)
   - [Chapter FOS — Third-Party Licence Compliance](#chapter-fos-third-party-licence-compliance)
+  - [Chapter APT — Installing with apt](#chapter-apt-installing-with-apt)
     - [General](#general)
     - [Severity Visualisation](#severity-visualisation)
     - [Rule: Setext Headings](#rule-setext-headings)
@@ -1262,6 +1263,26 @@ manual "remember to commit" step; one rule for tags ("exactly vX.Y.Z publishes, 
 and an optional, explicitly named Legattice keep the release process easy to remember and Lattice buildable
 without it (decided by the product owner, 2026-10-29/30). A suffix tag published like a release until then,
 although no step looked at the suffix.
+
+## Chapter APT — Installing with apt
+
+<!--REQ-LTTCE-APT-00001-->
+**REQ-LTTCE-APT-00001** — Every published release SHALL be installable and updatable on Debian and Ubuntu,
+x86-64 and ARM64, with `apt` from a package repository on the release site, under either package name
+`lattice` or `lattice-md`. Setting the repository up SHALL take installing one package,
+`lattice-md-keyring`, which carries the signing key and the package source entry. The repository SHALL be
+signed, so that apt refuses a modified index or package; a new signing key or a new expiry date SHALL
+reach users as an ordinary update of that package. The release page SHALL show how to install. While no
+signing key is configured for the repository, releases SHALL be published as before, without the
+repository; every build SHALL still build the repository from its own Debian package and check it with
+apt.
+
+*Rationale*: until v0.3.56 a Linux user downloaded the `.deb` by hand and got no updates. A repository on
+the existing release site needs no new account or service, and `apt` checks every download against the
+key — which a downloaded `.deb` does not. Shipping the key in a package removes the manual key step from
+renewal and rotation, which, done once in years, would otherwise go wrong (decided by the product owner,
+2026-11-08). `lattice` stays the package name: Tauri derives it from the product name, which also names
+the other installers; `lattice-md` is the declared alias.
 
 ---
 

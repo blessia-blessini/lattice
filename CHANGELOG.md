@@ -4,10 +4,19 @@ All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
 
+## v0.3.57
+### Changes
+  <!-- INSERT BULLETS UNDER THIS LINE -->
+- RELEASE v0.3.56: Linux apt install test
+---
+
 ## v0.3.56
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FEAT: Install and update Lattice with apt from the release site
+- CHORE: Version update
 - FIX: mail data to be removed from Third-party note
+---
 - RELEASE v0.3.55 with MERGE
 - RELEASE v0.3.55
 ---
