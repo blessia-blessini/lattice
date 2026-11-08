@@ -4,9 +4,20 @@ All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
 
-## v0.3.57
+
+## v0.3.58
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- RELEASE v0.3.57
+---
+
+## v0.3.57
+### Changes
+- FIX: Generate the release page in the layout TheOwner corrected by hand
+- FIX: State the limits of an apt key replacement, act on review cycle 2
+- DOCS: Say which apt repository steps only a full release can test
+- FIX: Replace the apt signing key in one release, act on review cycle 1
+- CHORE: Set version to 0.3.57
 - RELEASE v0.3.56: Linux apt install test
 ---
 

@@ -91,6 +91,7 @@ related items. Example convention for `LNT`:
 | `XPT`   | SSS     | Headless CLI export (HTML and PDF)                    |
 | `CLU`   | SSS     | Command-line usage (unknown options, help text)       |
 | `PLT`   | SSS     | Platform layer (`Platform` trait, per-OS selection)   |
+| `APT`   | SSS     | Installing with apt (signed repository on the release site) |
 
 ---
 

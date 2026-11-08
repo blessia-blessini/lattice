@@ -2453,7 +2453,7 @@ job runs `foss.mjs release-plan` (`release-plan.mjs`) once and every later job f
   re-run never opens a second one or overwrites. Merging
   is the maintainer's approval; the commit is made by Actions, co-authored by the maintainer account.
 
-## Feature: APT Repository on the Release Site
+## Feature: APT[^apt] Repository on the Release Site
 
 <!--ARCH-LTTCE-APT-00001-->
 **ARCH-LTTCE-APT-00001** — covers REQ-LTTCE-APT-00001. A static, signed APT repository in `apt/` of the
@@ -2468,16 +2468,27 @@ apt/pool/main/l/lattice-md-keyring/ lattice-md-keyring_<version>_all.deb
 apt/dists/stable/                   Release, Release.gpg, InRelease;  main/binary-{amd64,arm64}/Packages(.gz)
 ```
 
-- **`scripts/apt/apt-repo.sh`** builds the whole tree in a temporary folder beside the target, verifies
+- **`scripts/apt/apt-repo.sh`** builds the whole tree in a hidden folder inside the target, verifies
   `InRelease` and `Release.gpg` with `gpgv` against the exported public key, and only then replaces `pool/`
   and `dists/`: a failure (wrong passphrase, missing package) leaves the published repository as it was.
   The pool holds only the packages given — apt needs only the newest; older ones stay on GitHub Releases.
 - **Keyring package**: `/usr/share/keyrings/lattice-md.gpg` and the deb822 source entry
   `/etc/apt/sources.list.d/lattice-md.sources` (a conffile; `Signed-By` limits the key to this
-  repository). Its version is the date of the key's newest signature, so renewing (`gpg --quick-set-expire`)
-  or replacing the key makes a higher version, and the same key always builds the same bytes
+  repository). Its version is the date of the newest signature of its keys, so renewing
+  (`gpg --quick-set-expire`) makes a higher version, and the same key always builds the same bytes
   (`SOURCE_DATE_EPOCH`, fixed mtimes). The update is accepted because the key already trusted signs the
-  index that lists its hash.
+  index that lists its hash. The script refuses to publish changed package content without a higher version
+  than the package already on the site, since apt would never install it.
+- **Replacing the key, in one release**: `GPG_PRIVATE_KEY` holds both secret keys with the same passphrase,
+  `GPG_SIGNING_KEY_ID` names the new key and the repository variable `GPG_PREVIOUS_KEY_ID` the old one. The
+  script then signs the index with both and ships both in the keyring package, so a client with only the old
+  key accepts the index (a signature from a key it does not know does not count against it) and receives the
+  new key with `apt upgrade`. To retire the old key later: renew the new key, which raises the version,
+  update `GPG_PRIVATE_KEY` and clear `GPG_PREVIOUS_KEY_ID`. For either step the new key's newest signature
+  must be newer than every earlier one, so renew it first if it is older; otherwise the script stops the release.
+  Until the old key is retired every client trusts it, new installs included. That suits a planned change. After
+  a leak, the very next release must retire it: until users install that release, whoever holds the old key and
+  can serve them a forged repository can still sign for them, and apt does not check revocation certificates.
 - **`lattice-md`** is `Provides:` of the `lattice` package (`bundle.linux.deb.provides` in
   `tauri.conf.json`); Tauri names the package after `productName`, shared by every installer, so the
   package itself keeps that name.
@@ -2485,8 +2496,8 @@ apt/dists/stable/                   Release, Release.gpg, InRelease;  main/binar
   with a throwaway key — the real `apt-get`/`apt-cache`, without root, confined to private state
   directories and the source entry from the keyring package. Step **903.7** of `publish-release-site`
   (exact `vX.Y.Z` tags only) builds `release-site/apt/` from the release's two `.deb`s, before step 904,
-  so a failure publishes nothing; step **905** appends `scripts/apt/install-with-apt.md`, with the key
-  fingerprint, to the release page and commits `apt/` with it (`git add -A`, so removed packages go too).
+  so a failure publishes nothing; step **905** puts `scripts/apt/install-with-apt.md` on the release page,
+  before the download table, and commits `apt/` with it (`git add -A`, so removed packages go too).
   903.7 runs only while `GPG_SIGNING_ENABLED` is `'true'`; it signs with the key step 903.6b imports from
   `GPG_PRIVATE_KEY` / `GPG_PASSPHRASE`, chosen by `GPG_SIGNING_KEY_ID` — the key that signs
   `SHA256SUMS.txt`. The passphrase reaches gpg on a file descriptor, never on a command line.
@@ -2524,6 +2535,8 @@ image host could also be used as a side-channel beacon).
 - `src/App.tsx` — `img` renderer in `previewComponents` enforces the gate
 
 ---
+
+[^apt]: APT — Advanced Package Tool. The package manager of Debian and Ubuntu.
 
 [^gfm]: GFM — GitHub Flavored Markdown. The Markdown dialect specified by GitHub, extending CommonMark
     with tables, task lists, strikethrough, and autolinks. <https://github.github.com/gfm/>

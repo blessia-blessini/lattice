@@ -1,4 +1,6 @@
-## Install with apt (Ubuntu, Debian — x86-64 and ARM64)
+## LINUX Ubuntu and Debian (x86-64 and ARM64)
+
+Install with **apt**
 
 Once, add the Lattice package source and its signing key:
 
@@ -23,7 +25,3 @@ To remove Lattice, and the package source with it:
 sudo apt remove lattice
 sudo apt purge lattice-md-keyring
 ```
-
-The package source works on Ubuntu 22.04 and newer and Debian 12 and newer. Every download is checked
-against the Lattice signing key, fingerprint `{{FINGERPRINT}}` — to see it on your machine:
-`gpg --show-keys /usr/share/keyrings/lattice-md.gpg`.

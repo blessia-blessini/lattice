@@ -766,6 +766,10 @@ jobs:
     # REQ-LTTCE-APT-00001 (STST): the APT repository of the release site, built from
     # this leg's .deb with a throwaway key and used by the real apt-get -- index
     # signature, downloads, `lattice-md` -> `lattice`, tampering refused.
+    # Runs on every build. Only a full vX.Y.Z release can exercise the rest:
+    #   - signing with the real key (step 903.7)
+    #   - the upload to lattice-md.app (step 905)
+    #   - a real `sudo apt install` from the site (by hand, after the release)
     - name: 393. APT repository from this build (Linux)
       if: matrix.config.platform == 'linux-desktop' || matrix.config.platform == 'linux-arm-desktop'
       shell: bash
@@ -774,7 +778,7 @@ jobs:
         git sparse-checkout add '/scripts/apt/'
         command -v apt-ftparchive >/dev/null && command -v dpkg-scanpackages >/dev/null \
           || { sudo apt-get update -q && sudo apt-get install -y -q apt-utils dpkg-dev; }
-        bash scripts/apt/apt-repo-test.sh "$(dirname ${{ matrix.config.upload_path2 }})"
+        bash scripts/apt/apt-repo-test.sh "$(dirname "${{ matrix.config.upload_path2 }}")"
 
     ################################################################
     # 400 / Upload Artifacts
@@ -1205,9 +1209,9 @@ jobs:
         # Import the signing key into an ephemeral keyring (runner is throwaway).
         echo "$GPG_PRIVATE_KEY" | gpg --batch --import
         cd staging
-        gpg --batch --yes --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" \
+        gpg --batch --yes --pinentry-mode loopback --passphrase-fd 3 \
             --local-user "$GPG_SIGNING_KEY_ID" \
-            --armor --detach-sign --output SHA256SUMS.txt.asc SHA256SUMS.txt
+            --armor --detach-sign --output SHA256SUMS.txt.asc SHA256SUMS.txt 3<<<"$GPG_PASSPHRASE"
         # Self-check before publishing.
         gpg --verify SHA256SUMS.txt.asc SHA256SUMS.txt
 
@@ -1240,6 +1244,8 @@ jobs:
     #         is published.
     #         Off until GPG_SIGNING_ENABLED is 'true': without the key
     #         there is no repository apt would accept.
+    #         Signing with the real key is tested only here, on a full
+    #         vX.Y.Z release; step 393 uses a throwaway key.
     ################################################################
     - name: 903.7. APT repository on the release site
       if: vars.GPG_SIGNING_ENABLED == 'true'
@@ -1247,6 +1253,7 @@ jobs:
       env:
         GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         GPG_SIGNING_KEY_ID: ${{ vars.GPG_SIGNING_KEY_ID }}
+        GPG_PREVIOUS_KEY_ID: ${{ vars.GPG_PREVIOUS_KEY_ID }}
       run: |
         set -euo pipefail
         command -v apt-ftparchive >/dev/null && command -v dpkg-scanpackages >/dev/null \
@@ -1254,10 +1261,9 @@ jobs:
         debs="$RUNNER_TEMP/apt-debs"
         mkdir -p "$debs"
         cp staging/lattice_*_amd64.deb staging/lattice_*_arm64.deb "$debs/"
-        bash _src/scripts/apt/apt-repo.sh --debs "$debs" --out release-site/apt --key-id "$GPG_SIGNING_KEY_ID"
-        fingerprint=$(gpg --batch --with-colons --list-keys "$GPG_SIGNING_KEY_ID" | awk -F: '$1 == "fpr" { print $10; exit }')
-        sed "s/{{FINGERPRINT}}/$fingerprint/" _src/scripts/apt/install-with-apt.md > "$RUNNER_TEMP/install-with-apt.md"
-        echo "APT_INSTRUCTIONS=$RUNNER_TEMP/install-with-apt.md" >> "$GITHUB_ENV"
+        bash _src/scripts/apt/apt-repo.sh --debs "$debs" --out release-site/apt --key-id "$GPG_SIGNING_KEY_ID" \
+          ${GPG_PREVIOUS_KEY_ID:+--previous-key "$GPG_PREVIOUS_KEY_ID"}
+        echo "APT_INSTRUCTIONS=$GITHUB_WORKSPACE/_src/scripts/apt/install-with-apt.md" >> "$GITHUB_ENV"
 
     ################################################################
     # 904 / Create GitHub Release on blessia-blessini/lattice and
@@ -1376,13 +1382,20 @@ jobs:
         printf '%s\n' "$( [ -f release-notes.md ] && cat release-notes.md )" >> "$OUT"
         printf '%s\n' "## Download Lattice"                  >> "$OUT"
         printf '%s\n' ""                                     >> "$OUT"
-        printf '%s\n' "**Windows users: install from the Microsoft Store**" >> "$OUT"
+        printf '%s\n' "## **Windows users: install from the Microsoft Store**" >> "$OUT"
         printf '%s\n' ""                                     >> "$OUT"
         printf '%s\n' "$MS_STORE_BADGE"                      >> "$OUT"
         printf '%s\n' ""                                     >> "$OUT"
         printf '%s\n' "$MS_STORE_LINK"                       >> "$OUT"
         printf '%s\n' ""                                     >> "$OUT"
-        printf '%s\n' "Or download a package directly:"      >> "$OUT"
+        # REQ-LTTCE-APT-00001: how to install with apt, when 903.7 built the repository.
+        if [ -n "${APT_INSTRUCTIONS:-}" ]; then
+          cat "$APT_INSTRUCTIONS" >> "$OUT"
+          printf '\n' >> "$OUT"
+        fi
+        printf '%s\n' "## Manual Installation and DOWNLOAD for ALL platforms including the already explained" >> "$OUT"
+        printf '%s\n' ""                                     >> "$OUT"
+        printf '%s\n' "Here are the installation packages:"  >> "$OUT"
         printf '%s\n' ""                                     >> "$OUT"
         printf '%s\n' "| File | Install on | Size |"         >> "$OUT"
         printf '%s\n' "|:-----|:-----------|-----:|"         >> "$OUT"
@@ -1452,12 +1465,6 @@ jobs:
           printf '%s\t%s\t%s\n' "$name" "$dl_url" "$on_pages" >> "$SCAN_TARGETS"
 
         done <<< "$ASSETS_JSON"
-
-        # REQ-LTTCE-APT-00001: how to install with apt, when 903.7 built the repository.
-        if [ -n "${APT_INSTRUCTIONS:-}" ]; then
-          printf '\n' >> "$OUT"
-          cat "$APT_INSTRUCTIONS" >> "$OUT"
-        fi
 
         # Footer
         printf '%s\n' "" >> "$OUT"
@@ -1697,6 +1704,8 @@ jobs:
 
         git add Lattice-Releases/ THIRD_PARTY_LICENSES.md
         # -A: also stages the previous release's packages that 903.7 removed.
+        # The push below publishes the APT repository: only a full vX.Y.Z
+        # release tests this upload to lattice-md.app; step 393 stays local.
         if [ -d apt ]; then git add -A apt/; fi
         git commit -m "Release ${VERSION}: add index.md and coverage reports" \
           -m "Co-authored-by: Blessia-Blessini <273819958+blessia-blessini@users.noreply.github.com>"

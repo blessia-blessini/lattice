@@ -22,7 +22,7 @@
 # See LICENCE file in GitHUB root folder of the repository.
 # END OF NOTE
 ################################################################################
-# apt-repo.sh --debs DIR --out DIR --key-id KEY [--url URL]
+# apt-repo.sh --debs DIR --out DIR --key-id KEY [--previous-key OLD] [--url URL]
 #
 # IMPL-LTTCE-APT-00001 — REQ-LTTCE-APT-00001. Builds the signed APT repository
 # of the release site from the Lattice .deb files in DIR:
@@ -37,12 +37,18 @@
 # OUT/pool and OUT/dists are rebuilt from scratch: the repository holds only the
 # packages given now. The keyring package (key + source entry) takes its version
 # from the key's newest signature, so it changes exactly when the key does —
-# a renewed or replaced key reaches users with `apt upgrade`.
+# a renewed key reaches users with `apt upgrade`.
 #
-# KEY must be in gpg's keyring with its secret part; GPG_PASSPHRASE, if set,
-# unlocks it. Needs dpkg-deb, dpkg-scanpackages, apt-ftparchive, gpg, gpgv.
+# To replace the key in one release, give the new key as --key-id and the old one
+# as --previous-key: the index is signed by both and the keyring package carries
+# both, so clients that still trust only the old key accept the update.
+#
+# KEY (and OLD) must be in gpg's keyring with the secret part; GPG_PASSPHRASE, if
+# set, unlocks them, so both need the same passphrase.
+# Needs dpkg, dpkg-deb, dpkg-scanpackages, apt-ftparchive, gpg, gpgv.
 ################################################################################
 set -euo pipefail
+export LC_ALL=C
 
 readonly SUITE=stable
 readonly COMPONENT=main
@@ -52,18 +58,25 @@ readonly KEYRING_PKG=lattice-md-keyring
 readonly SOURCES_FILE=/etc/apt/sources.list.d/lattice-md.sources
 readonly KEYRING_PATH=/usr/share/keyrings/lattice-md.gpg
 
+#**************************************************************
+# die
+#**************************************************************
 die() { echo "apt-repo: $*" >&2; exit 1; }
+# die END *****************************************************
 
 
 #**************************************************************
 # gpg_sign
 #**************************************************************
-# gpg in batch mode; the passphrase, when given, goes in on fd 3, never on the command line.
+# gpg in batch mode, one signature per key; the passphrase, when given, goes in
+# on fd 3, never on the command line.
 gpg_sign() {
+    local key signers=()
+    for key in "${KEYS[@]}"; do signers+=( --local-user "$key" ); done
     if [ -n "${GPG_PASSPHRASE:-}" ]; then
-        gpg --batch --yes --pinentry-mode loopback --passphrase-fd 3 --local-user "$KEY" "$@" 3<<<"$GPG_PASSPHRASE"
+        gpg --batch --yes --pinentry-mode loopback --passphrase-fd 3 "${signers[@]}" "$@" 3<<<"$GPG_PASSPHRASE"
     else
-        gpg --batch --yes --local-user "$KEY" "$@"
+        gpg --batch --yes "${signers[@]}" "$@"
     fi
 }
 # gpg_sign END ************************************************
@@ -75,14 +88,13 @@ gpg_sign() {
 # Writes the keyring package into pool and under its fixed name.
 build_keyring_package() {
     local epoch version uid tmp pool
-    epoch=$(gpg --batch --with-colons --list-sigs "$KEY" | awk -F: '$1 == "sig" && $6 > m { m = $6 } END { print m + 0 }')
+    epoch=$(gpg --batch --with-colons --list-sigs "${KEYS[@]}" | awk -F: '$1 == "sig" && $6 > m { m = $6 } END { print m + 0 }')
     [ "$epoch" -gt 0 ] || die "no signature date on key $KEY"
     version=$(date -u -d "@$epoch" +%Y.%m.%d.%H%M%S)
     uid=$(gpg --batch --with-colons --list-keys "$KEY" | awk -F: '$1 == "uid" { print $10; exit }')
     [ -n "$uid" ] || die "key $KEY has no user id"
 
-    tmp=$(mktemp -d)
-    chmod 0755 "$tmp"
+    tmp="$OUT/keyring-root"
     install -d -m 0755 "$tmp/DEBIAN" "$tmp$(dirname "$KEYRING_PATH")" "$tmp$(dirname "$SOURCES_FILE")"
     install -m 0644 "$OUT/$KEY_FILE" "$tmp$KEYRING_PATH"
     printf 'Types: deb\nURIs: %s\nSuites: %s\nComponents: %s\nSigned-By: %s\n' \
@@ -107,9 +119,31 @@ EOF
     mkdir -p "$pool"
     SOURCE_DATE_EPOCH=$epoch dpkg-deb --root-owner-group -Zxz --build "$tmp" "$pool/${KEYRING_PKG}_${version}_all.deb" >/dev/null
     cp "$pool/${KEYRING_PKG}_${version}_all.deb" "$OUT/$KEYRING_PKG.deb"
-    rm -rf "$tmp"
 }
 # build_keyring_package END ***********************************
+
+
+#**************************************************************
+# require_higher_keyring_version
+#**************************************************************
+# apt installs only a higher version, so changed content under the same or a
+# lower version would never reach users. Compares with the package already
+# published in DEST, by content: another dpkg or xz may compress differently.
+# Only the installed files count: a change to the control text alone changes
+# nothing on a user's machine and must not stop a release.
+require_higher_keyring_version() {
+    local old="$DEST/$KEYRING_PKG.deb" new="$OUT/$KEYRING_PKG.deb" old_v new_v
+    [ -f "$old" ] || return 0
+    mkdir "$OUT/keyring-old" "$OUT/keyring-new"
+    dpkg-deb -x "$old" "$OUT/keyring-old"
+    dpkg-deb -x "$new" "$OUT/keyring-new"
+    diff -r "$OUT/keyring-old" "$OUT/keyring-new" >/dev/null && return 0
+    old_v=$(dpkg-deb -f "$old" Version)
+    new_v=$(dpkg-deb -f "$new" Version)
+    dpkg --compare-versions "$new_v" gt "$old_v" \
+        || die "keyring package changed but needs a higher version than $old_v (got $new_v): renew the --key-id key (gpg --quick-set-expire) so that its newest signature is newer than any before"
+}
+# require_higher_keyring_version END **************************
 
 
 #**************************************************************
@@ -143,23 +177,31 @@ write_index() {
 # write_index END *********************************************
 
 
-DEBS='' OUT='' KEY='' URL='https://lattice-md.app/apt'
+DEBS='' OUT='' KEY='' PREVIOUS_KEY='' URL='https://lattice-md.app/apt'
 while [ $# -gt 0 ]; do
+    case "$1" in --debs|--out|--key-id|--previous-key|--url) [ $# -ge 2 ] || die "$1 needs a value" ;; esac
     case "$1" in
         --debs) DEBS=${2:-}; shift 2 ;;
         --out) OUT=${2:-}; shift 2 ;;
         --key-id) KEY=${2:-}; shift 2 ;;
+        --previous-key) PREVIOUS_KEY=${2:-}; shift 2 ;;
         --url) URL=${2:-}; shift 2 ;;
-        *) die "unknown argument '$1' (usage: apt-repo.sh --debs DIR --out DIR --key-id KEY [--url URL])" ;;
+        *) die "unknown argument '$1' (usage: apt-repo.sh --debs DIR --out DIR --key-id KEY [--previous-key OLD] [--url URL])" ;;
     esac
 done
 [ -d "$DEBS" ] || die "--debs: '$DEBS' is not a directory"
 [ -n "$OUT" ] || die "--out is required"
 [ -n "$KEY" ] || die "--key-id is required"
-for tool in dpkg-deb dpkg-scanpackages apt-ftparchive gpg gpgv; do
+[ -n "$URL" ] || die "--url must not be empty"
+[ "$PREVIOUS_KEY" != "$KEY" ] || die "--previous-key must differ from --key-id"
+KEYS=( "$KEY" )
+[ -z "$PREVIOUS_KEY" ] || KEYS+=( "$PREVIOUS_KEY" )
+for tool in dpkg dpkg-deb dpkg-scanpackages apt-ftparchive gpg gpgv; do
     command -v "$tool" >/dev/null || die "$tool not found (Ubuntu packages dpkg-dev, apt-utils, gnupg, gpgv)"
 done
-gpg --batch --list-secret-keys "$KEY" >/dev/null 2>&1 || die "no secret key '$KEY' in gpg's keyring"
+for key in "${KEYS[@]}"; do
+    gpg --batch --list-secret-keys "$key" >/dev/null 2>&1 || die "no secret key '$key' in gpg's keyring"
+done
 
 shopt -s nullglob
 debs=( "$DEBS"/lattice_*.deb )
@@ -170,7 +212,8 @@ for deb in "${debs[@]}"; do
     [ "$(dpkg-deb -f "$deb" Package)" = lattice ] || die "$deb: package is not 'lattice'"
 done
 
-# Built beside DEST and moved in only when complete and verified, so a failure
+# Built in a hidden folder inside DEST (same file system, so the final mv is a
+# rename) and moved in only when complete and verified, so a failure
 # (e.g. a wrong passphrase) never leaves a half-built or unsigned repository.
 mkdir -p "$OUT"
 DEST=$(cd "$OUT" && pwd)
@@ -178,12 +221,13 @@ OUT=$(mktemp -d "$DEST/.apt-repo.XXXXXX")
 trap 'rm -rf "$OUT"' EXIT
 mkdir -p "$OUT/pool/$COMPONENT/l/lattice"
 cp "${debs[@]}" "$OUT/pool/$COMPONENT/l/lattice/"
-gpg --batch --export "$KEY" > "$OUT/$KEY_FILE"
-gpg --batch --armor --export "$KEY" > "$OUT/${KEY_FILE%.gpg}.asc"
+gpg --batch --export "${KEYS[@]}" > "$OUT/$KEY_FILE"
+gpg --batch --armor --export "${KEYS[@]}" > "$OUT/${KEY_FILE%.gpg}.asc"
 [ -s "$OUT/$KEY_FILE" ] || die "could not export the public key of $KEY"
 build_keyring_package
+require_higher_keyring_version
 write_index
 rm -rf "$DEST/pool" "$DEST/dists"
 mv "$OUT/pool" "$OUT/dists" "$DEST/"
 mv -f "$OUT/$KEY_FILE" "$OUT/${KEY_FILE%.gpg}.asc" "$OUT/$KEYRING_PKG.deb" "$DEST/"
-echo "apt-repo: $DEST — ${#debs[@]} lattice package(s) + $KEYRING_PKG, signed by $KEY"
+echo "apt-repo: $DEST — ${#debs[@]} lattice package(s) + $KEYRING_PKG, signed by ${KEYS[*]}"

@@ -11,20 +11,6 @@ implementation artefacts. For the ID schema definition see `11-Traceability-Requ
 - [Lattice — System Requirements](#lattice-system-requirements)
   - [Table of Contents](#table-of-contents)
   - [Chapter LNT — GFM Linter](#chapter-lnt-gfm-linter)
-  - [Chapter LNK — Preview Link Routing](#chapter-lnk-preview-link-routing)
-  - [Chapter DVW — Dual-View Cursor Flash](#chapter-dvw-dual-view-cursor-flash)
-  - [Chapter WSP — Show Whitespace](#chapter-wsp-show-whitespace)
-  - [Chapter SET — Settings Robustness](#chapter-set-settings-robustness)
-  - [Chapter CPY — Preview Copy Fidelity](#chapter-cpy-preview-copy-fidelity)
-  - [Chapter SEL — Select All Scope](#chapter-sel-select-all-scope)
-  - [Chapter TBL — Spreadsheet Paste](#chapter-tbl-spreadsheet-paste)
-  - [Chapter CLU — Command-Line Usage](#chapter-clu-command-line-usage)
-  - [Chapter DLN — Daily Note](#chapter-dln-daily-note)
-  - [Chapter VLT — Vault Selection](#chapter-vlt-vault-selection)
-  - [Chapter WIN — Editor Window](#chapter-win-editor-window)
-  - [Chapter RCT — Recent Files](#chapter-rct-recent-files)
-  - [Chapter FOS — Third-Party Licence Compliance](#chapter-fos-third-party-licence-compliance)
-  - [Chapter APT — Installing with apt](#chapter-apt-installing-with-apt)
     - [General](#general)
     - [Severity Visualisation](#severity-visualisation)
     - [Rule: Setext Headings](#rule-setext-headings)
@@ -39,6 +25,20 @@ implementation artefacts. For the ID schema definition see `11-Traceability-Requ
     - [Rule: Empty Image Alt Text](#rule-empty-image-alt-text)
     - [Rule: Duplicate Heading Text](#rule-duplicate-heading-text)
     - [Rule: Unclosed Fenced Code Block](#rule-unclosed-fenced-code-block)
+  - [Chapter LNK — Preview Link Routing](#chapter-lnk-preview-link-routing)
+  - [Chapter DVW — Dual-View Cursor Flash](#chapter-dvw-dual-view-cursor-flash)
+  - [Chapter WSP — Show Whitespace](#chapter-wsp-show-whitespace)
+  - [Chapter SET — Settings Robustness](#chapter-set-settings-robustness)
+  - [Chapter CPY — Preview Copy Fidelity](#chapter-cpy-preview-copy-fidelity)
+  - [Chapter SEL — Select All Scope](#chapter-sel-select-all-scope)
+  - [Chapter TBL — Spreadsheet Paste](#chapter-tbl-spreadsheet-paste)
+  - [Chapter CLU — Command-Line Usage](#chapter-clu-command-line-usage)
+  - [Chapter DLN — Daily Note](#chapter-dln-daily-note)
+  - [Chapter VLT — Vault Selection](#chapter-vlt-vault-selection)
+  - [Chapter WIN — Editor Window](#chapter-win-editor-window)
+  - [Chapter RCT — Recent Files](#chapter-rct-recent-files)
+  - [Chapter FOS — Third-Party Licence Compliance](#chapter-fos-third-party-licence-compliance)
+  - [Chapter APT — Installing with apt](#chapter-apt-installing-with-apt)
 <!-- /TOC -->
 
 ---
@@ -1271,8 +1271,10 @@ although no step looked at the suffix.
 x86-64 and ARM64, with `apt` from a package repository on the release site, under either package name
 `lattice` or `lattice-md`. Setting the repository up SHALL take installing one package,
 `lattice-md-keyring`, which carries the signing key and the package source entry. The repository SHALL be
-signed, so that apt refuses a modified index or package; a new signing key or a new expiry date SHALL
-reach users as an ordinary update of that package. The release page SHALL show how to install. While no
+signed, so that apt refuses a modified index or package. A renewed or replaced signing key SHALL reach
+users as an ordinary update of that package, in one release: while a key is replaced, the index SHALL be
+signed by both the old and the new key and the package SHALL carry both. A release SHALL NOT publish
+that package with changed content unless its version is higher. The release page SHALL show how to install. While no
 signing key is configured for the repository, releases SHALL be published as before, without the
 repository; every build SHALL still build the repository from its own Debian package and check it with
 apt.
@@ -1281,7 +1283,8 @@ apt.
 the existing release site needs no new account or service, and `apt` checks every download against the
 key — which a downloaded `.deb` does not. Shipping the key in a package removes the manual key step from
 renewal and rotation, which, done once in years, would otherwise go wrong (decided by the product owner,
-2026-11-08). `lattice` stays the package name: Tauri derives it from the product name, which also names
+2026-11-08). During a replacement the old key stays trusted, so after a leak the next release must drop it.
+`lattice` stays the package name: Tauri derives it from the product name, which also names
 the other installers; `lattice-md` is the declared alias.
 
 ---
