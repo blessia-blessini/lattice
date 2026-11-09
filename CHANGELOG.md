@@ -8,6 +8,8 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.58
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: Release scrip generated page enhancemen
+- FIX: Generate the release page with the v0.3.57 hand-made layout
 - RELEASE v0.3.57
 ---
 
