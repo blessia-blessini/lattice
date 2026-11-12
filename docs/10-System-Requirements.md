@@ -1243,26 +1243,81 @@ among them dav1d and x264 assembly, W3C text, the Sun and FreeBSD maths code, Ka
 and the Alliance for Open Media Patent License, whose section 1.2.1(b) asks for its text with every binary.
 
 <!--REQ-LTTCE-FOS-00009-->
-**REQ-LTTCE-FOS-00009** — A release SHALL be published only from a tag of exactly the form `vX.Y.Z`. Every
-other tag (e.g. `vX.Y.Za`, `vX.Y.Z-rc1`) SHALL build and check exactly like a release and SHALL NOT be
-published. When the deep scan is configured for the repository (Legattice named by the repository variable
-`LEGATTICE_URL`), for every tag one build SHALL scan the sources of every shipped component and of Lattice itself at that commit before it builds
-the installers, and SHALL stop while any finding, of whatever severity, has no current decision (none, its
-evidence changed, or it expired). Once the missing decisions are made, re-running the stopped parts of the same
-build SHALL let it continue. The installers SHALL carry notices generated from this build's scan. The release
-SHALL attach the scan's report and the notice additions it used, and when its notices differ from those
-committed, the build SHALL open a pull request that brings them, as released, to the development branch.
-When the deep scan is not configured, a tag SHALL build, check and publish as without the deep scan, with the
-committed notices; a variable naming anything other than the supported Legattice SHALL stop the build.
+**REQ-LTTCE-FOS-00009** — Builds, their licence check and the release gate.
 
-*Rationale*: until v0.3.51 the deep scan of the sources ran only by hand, so a release could ship with an
-undecided finding, and notices made for older dependency versions. Scanning first and always shipping the
-scan's notices makes "the installers carry what the signed decisions say" hold for every release, at the cost
-of waiting for the scan; blocking on every severity means nothing ships undecided; the pull request replaces a
-manual "remember to commit" step; one rule for tags ("exactly vX.Y.Z publishes, everything else rehearses")
-and an optional, explicitly named Legattice keep the release process easy to remember and Lattice buildable
-without it (decided by the product owner, 2026-10-29/30). A suffix tag published like a release until then,
-although no step looked at the suffix.
+*Starting and publishing.* A build SHALL start only from a pushed tag or by hand ("Run workflow"); a push to a
+branch SHALL NOT start one. A release SHALL be published only from a tag of exactly the form `vX.Y.Z` (a
+**final release**). Every other tag (a **candidate**, e.g. `vX.Y.Za`, `vX.Y.Z-rc1`) SHALL build and check
+exactly like a final release and SHALL NOT be published; a build by hand on a branch SHALL NOT be published.
+
+*Parameters.* Which licence check runs SHALL depend on these parameters only:
+
+| Parameter | Where it is set | Default |
+| --- | --- | --- |
+| `LEGATTICE_URL` | repository variable: **where** Legattice is | — |
+| USE_LEGATTICE (`use_legattice`) | the form of a build by hand: **whether** Legattice is used | FALSE |
+| ForceDeepScan (`force_deep_scan`) | the form of a build by hand | FALSE |
+
+A pushed tag has no form; its parameters have their defaults. Every tag build, final release or candidate,
+SHALL use Legattice: USE_LEGATTICE SHALL be TRUE for it whatever the form says, and when the form said FALSE
+(or there was none) the build summary SHALL say **in bold** that the tag is the reason. On a branch,
+USE_LEGATTICE SHALL be the form's value. ForceDeepScan SHALL always be the form's value.
+
+| Build | USE_LEGATTICE |
+| --- | --- |
+| final release tag `vX.Y.Z`, pushed or by hand | TRUE (bold note when the form said FALSE) |
+| candidate tag, pushed or by hand | TRUE (bold note when the form said FALSE) |
+| by hand on a branch | the form's value |
+
+*The licence check.*
+
+| USE_LEGATTICE | `LEGATTICE_URL` | ForceDeepScan | Licence check | Results of earlier scans |
+| --- | --- | --- | --- | --- |
+| FALSE | empty or the supported Legattice | any | **lightweight** (REQ-LTTCE-FOS-00002); a ticked ForceDeepScan is ignored with a warning | — |
+| TRUE | the supported Legattice | FALSE | **Legattice, optimal** | used |
+| TRUE | the supported Legattice | TRUE | **Legattice, deep** | ignored; the scan summary says it was asked for by this run |
+| TRUE | empty | any | the build SHALL stop at once: "Legattice is to be used, but LEGATTICE_URL is empty" | — |
+| any | anything else | any | the build SHALL stop at once, naming the supported Legattice | — |
+
+A **Legattice scan** SHALL list every component Lattice ships and Lattice itself at the build's commit, and
+SHALL decide the licence topics from all of them. An **optimal** scan SHALL scan the sources only of what no
+usable earlier scan of this repository has scanned (a new component, a new version, Lattice's own changed
+code), and SHALL take the rest from the newest usable earlier scan, from any branch or tag; a component no longer
+shipped SHALL drop out of the results. A **deep** scan SHALL scan the sources of everything again. Whenever a
+scan uses no earlier results, its summary SHALL say so and why. Every scan that completes its scanning SHALL keep
+its results for later scans, also when the build's publication is then blocked.
+
+*Building.* The build SHALL NOT wait for the Legattice scan: the installers SHALL carry the committed notices,
+and the scan runs at the same time. After the installers are built, the notices generated from the scan SHALL
+be compared with the committed ones.
+
+*Release gate.* Publication of a **final release** SHALL be blocked if, and only if, the build failed (a build
+leg, the MSIX bundle, or a licence check of REQ-LTTCE-FOS-00002/00004/00007 on the scan's notices), or the
+Legattice scan failed or reports a finding without a current decision (open, reopened or pending removal,
+REQ-LTTCE-FOS-00008), or the notices generated from the scan differ from the committed ones. When blocked, the
+build SHALL still complete and keep its installers, and its summary SHALL say why publication was blocked and
+what to correct (which topics to decide in the ledger, or which part of the scan failed). Once the missing
+decisions are made, re-running the stopped parts of the same build SHALL let it publish. For a
+candidate or a build on a branch, findings without a decision and different notices SHALL be reported in the
+summary and SHALL NOT fail the build. A published release SHALL attach the scan's report and the notice
+additions it used.
+
+*Notices back to dev.* When a final release's Legattice scan succeeded (no finding without a current decision,
+no scan failure) and the notices generated from it differ from the committed ones, the build SHALL open a pull
+request that brings them to the development branch; publication is then blocked by the difference alone.
+Merging it and building again from a new tag SHALL let that build publish. When the scan did not succeed, the
+build SHALL NOT open a pull request: it SHALL only report the results and what to correct.
+
+*Rationale*: until v0.3.51 the scan of the sources ran only by hand, so a release could ship with an undecided
+finding, and notices made for older dependency versions. From v0.3.52 every tag scanned first and the build
+waited for it (decided by the product owner, 2026-10-29/30). From 2026-11-12 (product owner): the scan keeps
+its results across tags, so a release scans only what changed; the build no longer waits for it, and the gate
+moves from "before building" to "before publishing" — a release is still never published undecided or with
+notices other than the scan's, and a blocked release brings the right notices to dev through a pull request, so
+the next tag passes. The scan is decided by explicit parameters instead of by the tag's name, so a build by hand
+can run it too (for example to fill the store of scan results before a release); "only exactly vX.Y.Z
+publishes" stays the one rule tied to the name. A deep scan stays possible, by hand, when the earlier results
+must not be trusted. The trigger on branch names (`*build*`) is removed: it was never used.
 
 ## Chapter APT — Installing with apt
 

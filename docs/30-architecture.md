@@ -284,7 +284,7 @@ to validate the file-conflict detection flow end-to-end.
 
 ## Continuous Integration (CI) Architecture
 
-The CI pipeline is defined in `.github/workflows/buildAndTest.yml` and is triggered on pushes to specific branches or manually. It uses a matrix strategy to ensure the application builds and passes tests across all major desktop platforms.
+The CI pipeline is defined in `.github/workflows/buildAndTest.yml` and is triggered by a pushed tag `v*.*.*` or manually (no branch triggers; ARCH-LTTCE-FOS-00009). It uses a matrix strategy to ensure the application builds and passes tests across all major desktop platforms.
 
 ### CI Pipeline Flow
 
@@ -311,7 +311,7 @@ The **FOSS compliance** job and step 390 (licence files inside every installer) 
 [Feature: Third-Party Licence Compliance](#feature-third-party-licence-compliance-foss-line).
 
 ### Key CI Steps:
-1.  **Setup Job**: A preliminary job determines which platforms (e.g., `windows-desktop`, `linux-desktop`, `all`) to run on based on the manual trigger input or the branch name. It generates a JSON matrix for the next job.
+1.  **Setup Job**: A preliminary job determines which platforms (e.g., `windows-desktop`, `linux-desktop`, `all`) to run on based on the manual trigger input (a pushed tag builds all of them). It generates a JSON matrix for the next job.
     Every desktop leg builds natively on a runner of its own architecture — `windows-11-arm` and
     `ubuntu-24.04-arm` for the ARM64 Windows and Linux legs — except `macos-intel`, which is
     cross-built on an arm64 macOS runner.
@@ -2402,60 +2402,90 @@ own checks never wait for the slow scan.
   something the scan knows.
 
 <!--ARCH-LTTCE-FOS-00009-->
-**ARCH-LTTCE-FOS-00009** — covers REQ-LTTCE-FOS-00009. The release gate lives in `buildAndTest.yml`; its setup
-job runs `foss.mjs release-plan` (`release-plan.mjs`) once and every later job follows its two outputs:
+**ARCH-LTTCE-FOS-00009** — covers REQ-LTTCE-FOS-00009. **CI design of a build, its licence check and the
+release gate**, all in `buildAndTest.yml`.
+
+*Triggers.* `push` of tags `v*.*.*` and `workflow_dispatch`; no branch trigger (the `*build*` one and the
+branch-name platform choice of the setup job are gone). The form has `platform`, `use_legattice` and
+`force_deep_scan` (booleans, default false).
+
+*Decision, once.* The setup job runs `foss.mjs release-plan` (`release-plan.mjs`); every later job follows its
+outputs:
 
 - **`kind`**: `release` (a tag matching `^v[0-9]+\.[0-9]+\.[0-9]+$`), `candidate` (any other tag) or `build`
-  (branch, manual run). Release and candidate build all platforms, the MSIX bundle included; only `release`
-  runs `publish-release-site`. Every former `startsWith(github.ref, 'refs/tags/v')` is replaced by it.
-- **`deep_scan`**: `true` only for a release or candidate while the repository variable `LEGATTICE_URL`
-  (`vars.LEGATTICE_URL`, passed to the step as an environment variable) is the supported Legattice URL —
-  `LEGATTICE_URL` in `release-plan.mjs`, which must match the fixed `uses:` line of `foss-scan`, since GitHub
-  takes no expression there. Not set → `false`: the tag builds as before the deep scan existed (`foss-compliance`
-  with the committed notices, no scan, no `notices-to-dev`). Any other value → setup fails with exit 2, so a typo
-  cannot silently release without the scan. Loose coupling has one limit: GitHub resolves the called workflow
-  when the run starts, so a deleted, renamed or private Legattice repository stops every run until the
-  `foss-scan` job is removed.
+  (by hand on a branch). Only `release` publishes; tags also build the MSIX bundle.
+- **`use_legattice`**: `true` for every tag, else the form's `use_legattice` (`USE_LEGATTICE` in the step's
+  environment, empty on a push). A tag overriding a false or missing box writes the bold note into the job
+  summary.
+- **`deep`**: the form's `force_deep_scan` when `use_legattice` is true; ticked without it, `false` and a warning.
+- **Stops (exit 2)**, before any other job starts: `use_legattice` true while `LEGATTICE_URL` is empty; or
+  `LEGATTICE_URL` set to anything but `LEGATTICE_URL` in `release-plan.mjs` (case, trailing `/` or `.git`
+  ignored), which must match the fixed `uses:` line of `foss-scan` — GitHub takes no expression there, so the
+  variable can only confirm that one Legattice. GitHub itself fails every run at its start while that repository
+  is deleted, renamed or private.
+
+*Sequence.* The build and the scan run side by side; the gate waits for both.
 
 ```text
- deep_scan false:     setup ─┬─► foss-compliance (committed texts)
-                             └─► build-and-test (starts at once)
- deep_scan true:      setup ─► foss-scan ─► foss-compliance-release ─► build-and-test ─► package-msix
-                                                     (fresh texts)                          │
-                      release only:                       publish-release-site ◄──────────┘ ─► notices-to-dev
+               ┌─► build-and-test (8 legs, committed notices) ──► package-msix-bundle (tags) ──────┐
+               │                                                                                    │
+               ├─► foss-compliance  (lightweight; use_legattice false) ────────────────────────────┤
+ setup ────────┤                                                                                    ▼
+ (kind,        └─► foss-scan: broker ─► 12 shards ─► merge ──► foss-compliance-release ──────► release-gate
+  use_legattice,   (Legattice; use_legattice true;  (store      (the scan's notices,                │
+  deep)             optimal, or deep when deep)      kept)       compared: changed?)                │
+                                                                         │          release, not blocked
+                                                                         │                          ▼
+                                                                         │                 publish-release-site
+                                                                         └─► notices-to-dev (release, scan
+                                                                             succeeded, changed: pull request
+                                                                             into dev)
 ```
 
-- **The deep scan** is Legattice's `scan.yml` as a reusable workflow (`uses:
-  blessia-blessini/legattice/.github/workflows/scan.yml@main`) on `github.sha`, 16 shards, `block_at: low`: its
-  merge job fails while any topic is open, reopened or pending removal, and the ledger is Legattice's `main` as it
-  is when the job starts. Deciding there and **Re-run failed jobs** here continues the same run. Its artifact
-  (`results_artifact`) carries `topics/topics.md` and `topics/notice-additions.json`.
-- **`actions: read`** is the one permission `foss-scan` adds to the workflow's `contents: read`: the scan finds
-  and downloads the store of earlier scan results (artifact `ort-store`) that the previous deep scan of this
-  repository left, so a new tag scans only what changed instead of everything. A called workflow cannot have
-  more permissions than its caller, so without it GitHub would not start the scan.
-- **`@main`, not pinned — an accepted risk** (decided 2026-10-29): Legattice and Lattice have the same owner,
-  so whoever can change Legattice's `main` can change Lattice too. Pinning the caller to a commit would not be
+- **`build-and-test`** needs only `setup`: it always builds with the committed notices (no step 102 any
+  more), so it never waits for the scan. Step 390 checks the installers against those committed files.
+- **`foss-scan`** (`if: use_legattice`) calls `blessia-blessini/legattice/.github/workflows/scan.yml@main` on
+  `github.sha` with `shards: '12'` — 8 build legs + 12 shards = the 20 jobs GitHub runs at once for a public
+  repository on the free plan; broker and merge run before and after the shards. `block_at: low` for a
+  `release`, `none` otherwise: on a release its merge job fails while any topic is open, reopened or pending
+  removal; elsewhere the topics are only listed. `fresh: deep` (new Legattice input) makes the broker skip the
+  store and say "asked for by this run". `permissions: contents: read, actions: read` (the store, `ort-store`).
+  The merge job keeps the store before it lists the topics, so a release blocked on topics still leaves it.
+- **`foss-compliance-release`** (`if: use_legattice`; needs `foss-scan` to succeed, so after a failed scan it
+  is skipped and nothing is compared): `foss-compliance.yml` with `fresh_additions` compares the scan's
+  additions with the committed file (`compare-additions`, ignoring `source`, step 135b), puts them in place,
+  regenerates both notices files, compares those with the committed ones (step 141b) and uploads them
+  (`release-notices`); either difference makes its output `changed` true. A difference does not fail it.
+- **`release-gate`** (new; `if: !cancelled()`; needs every job above) decides and writes into the job summary,
+  one line per reason, each with what to correct (`foss.mjs release-gate`, `gateReasons` in
+  `release-plan.mjs`): a build leg or the MSIX bundle failed (see that job); the licence check failed —
+  `foss-compliance`, or `foss-compliance-release` (licence policy, vulnerability audit, notices);
+  `foss-scan` did not succeed — topics without a decision (decide them in the Legattice ledger, then "Re-run
+  failed jobs") or a scan failure (see the scan's job); `changed` is true (merge the notices pull request, then
+  a new tag). For a `release` any reason **fails** the job; for a `candidate` or `build` it only reports and
+  succeeds.
+- **`publish-release-site`** (`kind == 'release'`) needs `release-gate` to succeed, and attaches
+  `FOSS-TOPICS.md` and `notice-additions.json` next to the notices and SBOMs.
+- **`notices-to-dev`** (`kind == 'release'`, `changed == 'true'`; needs `foss-compliance-release`, so only after
+  a successful scan — a failed scan opens no pull request, it only reports; not the publication) commits the scan's three files on branch `foss-notices-<tag>` and opens a pull request into `dev`
+  (`GITHUB_TOKEN`, `contents`/`pull-requests: write`; needs the repository setting allowing Actions to create
+  pull requests). A pull request of the same tag in any state, or an already pushed branch, is reused, so a
+  re-run never opens a second one. Merging is the maintainer's approval; a new tag then builds with the right
+  notices and passes the gate.
+- **Re-run after deciding topics**: "Re-run failed jobs" repeats the failed merge job of `foss-scan` (it reads
+  the ledger from Legattice's `main` as it is then) and everything that depends on it —
+  `foss-compliance-release`, `notices-to-dev`, `release-gate`, `publish-release-site`; the build legs are not
+  rebuilt.
+- **`@main`, not pinned — an accepted risk** (decided 2026-10-29): Legattice and Lattice have the same owner, so
+  whoever can change Legattice's `main` can change Lattice too. Pinning the caller to a commit would not be
   enough on its own: `scan.yml` checks out Legattice's code together with the ledger from `main`, and only the
-  ledger must follow `main` (decisions made between a stop and its re-run). Accepted consequence: a Legattice push
-  can stop or change a Lattice release without a Lattice commit; the scan records the Legattice commit it used.
-- **Fresh texts**: `foss-compliance.yml` with `fresh_additions` puts the scan's file in place of the committed
-  one, runs the gate (`check --block`), regenerates both notices files instead of checking them for drift, and
-  uploads them as `release-notices`; step 102 of every leg downloads them over the checkout before anything is
-  built, so the bundle and the frontend carry them and step 390 checks the installers against them.
-- **Two FOSS jobs**: a job's `needs` cannot depend on an output, so `foss-compliance` (no deep scan, beside the
-  legs) and `foss-compliance-release` (deep scan, before the legs) are separate jobs with opposite `if:`s on
-  `deep_scan`; only one runs.
-- **Publish** needs the FOSS jobs of its path to succeed — `foss-scan` and `foss-compliance-release` with the deep
-  scan, `foss-compliance` without — and with the deep scan attaches `FOSS-TOPICS.md` and `notice-additions.json`
-  next to the notices and SBOMs.
-- **`notices-to-dev`** (after publish, deep scan only): `compare-additions` (output `changed`, ignoring `source`) and a
-  `git diff` of the two notices files against the released commit; if either differs it commits the three files
-  as released on branch `foss-notices-<tag>` and opens a pull request into `dev` (`GITHUB_TOKEN`,
-  `contents`/`pull-requests: write`; needs the repository setting allowing Actions to create pull requests).
-  A pull request of the same tag in any state (open, merged, closed) or an already pushed branch is reused, so a
-  re-run never opens a second one or overwrites. Merging
-  is the maintainer's approval; the commit is made by Actions, co-authored by the maintainer account.
+  ledger must follow `main` (decisions made between a stop and its re-run). Accepted consequence: a Legattice
+  push can stop or change a Lattice release without a Lattice commit; the scan records the Legattice commit it
+  used.
+
+*Time.* The legs take 20–28 minutes. A deep scan takes about 30–35 minutes (broker 3.5, slowest shard about 25,
+merge 3, measured on v0.3.56/57 with 16 shards; somewhat more with 12); an optimal one is estimated at 10–15
+(not measured yet). The gate waits for the slower of the two.
 
 ## Feature: APT[^apt] Repository on the Release Site
 
