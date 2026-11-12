@@ -2430,6 +2430,10 @@ job runs `foss.mjs release-plan` (`release-plan.mjs`) once and every later job f
   merge job fails while any topic is open, reopened or pending removal, and the ledger is Legattice's `main` as it
   is when the job starts. Deciding there and **Re-run failed jobs** here continues the same run. Its artifact
   (`results_artifact`) carries `topics/topics.md` and `topics/notice-additions.json`.
+- **`actions: read`** is the one permission `foss-scan` adds to the workflow's `contents: read`: the scan finds
+  and downloads the store of earlier scan results (artifact `ort-store`) that the previous deep scan of this
+  repository left, so a new tag scans only what changed instead of everything. A called workflow cannot have
+  more permissions than its caller, so without it GitHub would not start the scan.
 - **`@main`, not pinned — an accepted risk** (decided 2026-10-29): Legattice and Lattice have the same owner,
   so whoever can change Legattice's `main` can change Lattice too. Pinning the caller to a commit would not be
   enough on its own: `scan.yml` checks out Legattice's code together with the ledger from `main`, and only the
