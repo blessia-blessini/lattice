@@ -7,11 +7,17 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.59
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
-- MAKE FOSSscan result be stored in last build artifacts
+- CHORE: REDESIGN CLEAR CI BUILD CONCURRENCY LOGIC
 
 ---
 ## v0.3.58
 ### Changes
+- CHORE: REDESIGN CLEAR CI BUILD CONCURRENCY LOGIC
+- FEAT: CONCURENT RUN of Licence scan and product builds
+- FEAT: Licence check by parameters, beside the build; gate before publishing
+- DOCS: No notices pull request after a failed scan, only the report
+- DOCS: Rewrite the build's licence check and release gate as decided
+- FEAT: Add a "force deep scan" box to the manual build
 - FEAT: MAKE FOSSscan result be stored in last build artifacts
 - FIX: Grant the deep scan actions: read for its store of earlier results
 - FIX: Release scrip generated page enhancemen

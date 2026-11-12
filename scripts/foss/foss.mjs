@@ -37,9 +37,12 @@
 ///                                               check a built AppImage F, unpacked at R, on its
 ///                                               Linux build machine; writes its SBOM (REQ-LTTCE-FOS-00006)
 ///   node scripts/foss/foss.mjs release-plan --ref <ref>
-///                                               build kind (release, candidate, build) and whether the
-///                                               deep scan runs (env LEGATTICE_URL; job outputs kind,
-///                                               deep_scan; REQ-LTTCE-FOS-00009)
+///                                               build kind (release, candidate, build) and the licence
+///                                               check (env LEGATTICE_URL, USE_LEGATTICE, FORCE_DEEP_SCAN;
+///                                               job outputs kind, use_legattice, deep; REQ-LTTCE-FOS-00009)
+///   node scripts/foss/foss.mjs release-gate     after the builds: what blocks publishing (env KIND,
+///                                               USE_LEGATTICE, *_RESULT, NOTICES_CHANGED); exit 1 when
+///                                               a release is blocked (REQ-LTTCE-FOS-00009)
 ///   node scripts/foss/foss.mjs compare-additions --fresh <file>
 ///                                               whether a scan's notice additions differ from
 ///                                               foss/notice-additions.json (job output changed; REQ-LTTCE-FOS-00009)
@@ -77,7 +80,7 @@ import { ADDITIONS_FILE, attachAdditions, loadAdditions, validateAdditions } fro
 import { enrichFromManifest, inventoryFromLockfile } from './npm-inventory.mjs';
 import { escapeInline, renderNotices } from './notices-render.mjs';
 import { evaluateComponent, licenceTypeMap, loadPolicy, obligationNote, unusedPolicyEntries } from './policy.mjs';
-import { additionsDifference, deepScanSetting, releaseKind } from './release-plan.mjs';
+import { additionsDifference, gateReasons, KINDS, licenceCheckPlan, releaseKind } from './release-plan.mjs';
 import { leafKey } from './spdx-expr.mjs';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -533,46 +536,100 @@ function writeOutputs(values, env) {
 //**************************************************************
 /**
  * REQ-LTTCE-FOS-00009 — what kind of build this is (release, candidate or
- * build) and whether the deep scan takes part (a tag, and the repository
- * variable LEGATTICE_URL, passed in as env.LEGATTICE_URL, names Legattice).
- * Writes the job outputs `kind` and `deep_scan` and a job summary line.
+ * build) and which licence check it runs (licenceCheckPlan): the repository
+ * variable LEGATTICE_URL and the form's USE_LEGATTICE and ForceDeepScan,
+ * passed in as env.LEGATTICE_URL, env.USE_LEGATTICE, env.FORCE_DEEP_SCAN.
+ * Writes the job outputs `kind`, `use_legattice` and `deep`, and the job
+ * summary -- in bold when a tag switched Legattice on.
  * @param {object} options
  * @param {string} options.ref the build's git ref (github.ref)
  * @param {Record<string, string|undefined>} [options.env]
- * @returns {number} exit code: 0, or 2 when LEGATTICE_URL names something else
+ * @returns {number} exit code: 0, or 2 (no outputs) when LEGATTICE_URL is
+ *   wrong, or empty while Legattice is to be used
  */
 export function commandReleasePlan({ ref, env = process.env }, log = console) {
     const kind = releaseKind(ref);
-    const setting = deepScanSetting(env.LEGATTICE_URL);
-    if (setting.error) {
-        log.error(`foss release-plan: ${setting.error}`);
-        writeStepSummary(['### Release plan', '', `**Stopped**: ${escapeInline(setting.error)}.`], env, log);
+    const plan = licenceCheckPlan({ kind, url: env.LEGATTICE_URL, useLegattice: env.USE_LEGATTICE, forceDeepScan: env.FORCE_DEEP_SCAN });
+    if (plan.error) {
+        log.error(`foss release-plan: ${plan.error}`);
+        writeStepSummary(['### Release plan', '', `**Stopped**: ${escapeInline(plan.error)}.`], env, log);
         return 2;
     }
-    const deepScan = kind !== 'build' && setting.scan;
-    let plan;
-    if (kind === 'build') plan = 'no deep scan; the build legs ship the committed notices';
-    else if (!deepScan) plan = 'LEGATTICE_URL not set: no deep scan; the build legs ship the committed notices';
-    else plan = 'deep scan first (any undecided topic stops the run), then the build legs ship its fresh notices';
-    if (kind === 'release') plan += deepScan ? '; publish; a pull request brings changed notices back to dev' : '; publish';
-    if (kind === 'candidate') plan += '; never published';
-    log.log(`foss release-plan: kind ${kind}, deep scan ${deepScan} (${plan})`);
-    writeOutputs({ kind, deep_scan: String(deepScan) }, env);
-    writeStepSummary(['### Release plan', '', `Kind: **${kind}** (${escapeInline(ref)}). Deep scan: **${deepScan}**. ${plan}.`], env, log);
+    let check = 'lightweight (no Legattice)';
+    if (plan.useLegattice) check = plan.deep ? 'Legattice, deep: everything scanned again' : 'Legattice, optimal: earlier scan results used';
+    const publish = {
+        release: 'published only if the release gate passes after the builds',
+        candidate: 'never published',
+        build: 'never published',
+    }[kind];
+    const lines = ['### Release plan', '', `Kind: **${kind}** (${escapeInline(ref)}), ${publish}. Licence check: **${check}**.`];
+    if (plan.tagOverride) lines.push('', `**Legattice is used because this is a tag build (${escapeInline(ref)}); USE_LEGATTICE was not ticked.**`);
+    if (plan.forceIgnored) {
+        log.log('::warning title=ForceDeepScan ignored::ForceDeepScan was ticked, but USE_LEGATTICE was not: the lightweight check runs');
+        lines.push('', 'ForceDeepScan was ticked but is ignored: USE_LEGATTICE was not.');
+    }
+    log.log(`foss release-plan: kind ${kind}, use_legattice ${plan.useLegattice}, deep ${plan.deep}`);
+    writeOutputs({ kind, use_legattice: String(plan.useLegattice), deep: String(plan.deep) }, env);
+    writeStepSummary(lines, env, log);
     return 0;
 }
 // commandReleasePlan END **************************************
 
 
 //**************************************************************
+// commandReleaseGate
+//**************************************************************
+/**
+ * REQ-LTTCE-FOS-00009 — after the builds and the licence check: may this
+ * build be published? Reads the job results from the environment (KIND,
+ * USE_LEGATTICE, BUILD_RESULT, MSIX_RESULT, LIGHT_RESULT, SCAN_RESULT,
+ * NOTICES_RESULT, NOTICES_CHANGED) and writes every reason, with what to
+ * correct, into the job summary (gateReasons).
+ * @param {{env?: Record<string, string|undefined>}} options
+ * @returns {number} exit code: 1 when a release is blocked; else 0 (a
+ *   candidate or a build only reports)
+ */
+export function commandReleaseGate({ env = process.env } = {}, log = console) {
+    const kind = KINDS.includes(env.KIND) ? env.KIND : null;
+    if (kind === null) throw new Error(`KIND must be one of ${KINDS.join(', ')}, not "${env.KIND ?? ''}"`);
+    const reasons = gateReasons({
+        kind,
+        useLegattice: env.USE_LEGATTICE === 'true',
+        results: {
+            build: env.BUILD_RESULT, msix: env.MSIX_RESULT, light: env.LIGHT_RESULT, scan: env.SCAN_RESULT, notices: env.NOTICES_RESULT,
+        },
+        changed: env.NOTICES_CHANGED,
+    });
+    const blocked = kind === 'release' && reasons.length > 0;
+    const lines = ['### Release gate', ''];
+    if (reasons.length === 0) {
+        lines.push(kind === 'release' ? 'Nothing blocks the publication.' : `Nothing to report (a ${kind} is never published).`);
+    } else {
+        lines.push(blocked
+            ? '**Publication blocked.** The build itself is complete; its installers are kept as artifacts. To correct:'
+            : `Reported only (a ${kind} is never published):`, '');
+        for (const r of reasons) lines.push(`- ${escapeInline(r.what)} — ${escapeInline(r.fix)}`);
+    }
+    for (const r of reasons) {
+        const level = blocked ? 'error' : 'warning';
+        log.log(`::${level} title=${blocked ? 'Publication blocked' : 'Release gate'}::${r.what} -- ${r.fix}`);
+    }
+    log.log(`foss release-gate: kind ${kind}, ${reasons.length} reason(s), ${blocked ? 'publication blocked' : 'not blocked'}`);
+    writeStepSummary(lines, env, log);
+    return blocked ? 1 : 0;
+}
+// commandReleaseGate END **************************************
+
+
+//**************************************************************
 // commandCompareAdditions
 //**************************************************************
 /**
- * REQ-LTTCE-FOS-00009 — after a release: does the deep scan's notice-additions
- * file, which the released installers were made from, say something else than
- * the committed foss/notice-additions.json (ignoring `source`)? Writes the job
- * output `changed` (true/false) and lists the differing topics; the release
- * build then opens a pull request into dev with the fresh files.
+ * REQ-LTTCE-FOS-00009 — does the Legattice scan's notice-additions file say
+ * something else than the committed foss/notice-additions.json (ignoring
+ * `source`)? Writes the job output `changed` (true/false) and lists the
+ * differing topics; the release gate then blocks a release, and the build
+ * opens a pull request into dev with the scan's files.
  * @param {{root: string, fresh: string, env?: Record<string, string|undefined>}} options
  * @returns {number} exit code: 0 (the answer is in the output)
  */
@@ -595,7 +652,7 @@ export function commandCompareAdditions({ root, fresh, env = process.env }, log 
     writeStepSummary([
         '### Notice additions changed',
         '',
-        `The released notices come from this deep scan, which adds other notices than the committed ${ADDITIONS_FILE}:`,
+        `This scan adds other notices than the committed ${ADDITIONS_FILE}:`,
         '',
         ...lines.map((l) => `- ${escapeInline(l)}`),
     ], env, log);
@@ -614,8 +671,8 @@ export function commandCompareAdditions({ root, fresh, env = process.env }, log 
  */
 export function parseArgs(argv) {
     const [command, ...rest] = argv;
-    if (!['check', 'notices', 'sbom', 'appimage', 'audit', 'release-plan', 'compare-additions'].includes(command)) {
-        throw new Error(`unknown command "${command ?? ''}" (check [--block] | notices [--check] | sbom --out-dir <dir> | appimage --appimage <file> --root <dir> --target <label> --out-dir <dir> | audit [--block] | release-plan --ref <ref> | compare-additions --fresh <file>)`);
+    if (!['check', 'notices', 'sbom', 'appimage', 'audit', 'release-plan', 'release-gate', 'compare-additions'].includes(command)) {
+        throw new Error(`unknown command "${command ?? ''}" (check [--block] | notices [--check] | sbom --out-dir <dir> | appimage --appimage <file> --root <dir> --target <label> --out-dir <dir> | audit [--block] | release-plan --ref <ref> | release-gate | compare-additions --fresh <file>)`);
     }
     const opts = { command, check: false, block: false, outDir: null, appImage: null, appRoot: null, label: null, ref: null, fresh: null, targets: [...TARGETS] };
     for (let i = 0; i < rest.length; i++) {
@@ -662,10 +719,12 @@ export async function main(argv, { root = ROOT, today = new Date().toISOString()
         console.error(`foss: ${e.message}`);
         return 2;
     }
-    // The release plan and the additions comparison need no inventory either:
-    // they run in the build's setup job and after publishing (REQ-LTTCE-FOS-00009).
+    // The release plan, the release gate and the additions comparison need no
+    // inventory either: they run in the build's setup job, after the builds and
+    // after the scan (REQ-LTTCE-FOS-00009).
     try {
         if (opts.command === 'release-plan') return commandReleasePlan({ ref: opts.ref });
+        if (opts.command === 'release-gate') return commandReleaseGate();
         if (opts.command === 'compare-additions') return commandCompareAdditions({ root, fresh: path.resolve(opts.fresh) });
     } catch (e) {
         console.error(`foss ${opts.command}: ${e.message}`);
