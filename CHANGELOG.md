@@ -7,6 +7,8 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.59
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: Merged bac dev
+- FEAT: Start view (REQ-LTTCE-WIN-00003, ARCH-LTTCE-WIN-00003, IMPL-LTTCE-WIN-00003..00006)
 - TEST: Stop the trace_log mocks recursing (cause of the App.coverage timeouts)
 - FIX: Start view defaults also when a failed session restore finds no vault
 - FEAT: Start view settings: the view a window opens in, with and without a file
