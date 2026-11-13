@@ -167,10 +167,10 @@ export function gateReasons({ kind, useLegattice, results, changed }) {
         });
     } else if (String(changed ?? '').trim() === 'true') {
         reasons.push({
-            what: 'the notices made from the scan differ from the committed ones',
+            what: 'the notices made from the scan differ in content from the committed ones',
             fix: kind === 'release'
-                ? 'merge the pull request that brings them to dev (job notices-to-dev), then build again from a new tag'
-                : 'commit the scan\'s notices to dev (artifact release-notices), as a release would by pull request',
+                ? 'merge the pull request that brings them (job notices-to-dev), then build again from a new tag'
+                : 'merge the pull request that brings them (job notices-to-dev)',
         });
     }
     return reasons;
@@ -179,17 +179,39 @@ export function gateReasons({ kind, useLegattice, results, changed }) {
 
 
 //**************************************************************
+// canonicalJson
+//**************************************************************
+/**
+ * JSON text of a value with every object's keys sorted, so two values with
+ * the same content give the same text whatever order their keys were written
+ * in. Array order is kept: it is content.
+ * @param {unknown} value
+ * @returns {string}
+ */
+export function canonicalJson(value) {
+    const sorted = (v) => {
+        if (Array.isArray(v)) return v.map(sorted);
+        if (v && typeof v === 'object') return Object.fromEntries(Object.keys(v).sort().map((k) => [k, sorted(v[k])]));
+        return v;
+    };
+    return JSON.stringify(sorted(value));
+}
+// canonicalJson END *******************************************
+
+
+//**************************************************************
 // additionsDifference
 //**************************************************************
 /**
  * Whether two notice-additions files say the same, ignoring `source` (which
- * scan, when): the topics only in one of them, and those that differ.
+ * scan, when) and the order of keys: the topics only in one of them, and
+ * those that differ. Its answer blocks a release (REQ-LTTCE-FOS-00009).
  * @param {{additions: object[]}} committed foss/notice-additions.json
  * @param {{additions: object[]}} fresh the scan's notice-additions.json
  * @returns {{equal: boolean, added: string[], removed: string[], changed: string[]}} topic ids
  */
 export function additionsDifference(committed, fresh) {
-    const byTopic = (data) => new Map((data?.additions ?? []).map((a) => [a.topic, JSON.stringify(a)]));
+    const byTopic = (data) => new Map((data?.additions ?? []).map((a) => [a.topic, canonicalJson(a)]));
     const before = byTopic(committed);
     const after = byTopic(fresh);
     const added = [...after.keys()].filter((t) => !before.has(t)).sort();

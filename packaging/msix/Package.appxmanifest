@@ -13,8 +13,9 @@
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+  xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  IgnorableNamespaces="uap uap3 rescap">
+  IgnorableNamespaces="uap uap3 uap5 rescap">
 
   <Identity
     Name="Blessia.lattice-md"
@@ -76,6 +77,19 @@
             <uap:DisplayName>Markdown File</uap:DisplayName>
           </uap3:FileTypeAssociation>
         </uap3:Extension>
+        <!--
+          REQ-LTTCE-CLU-00004: `lattice` in a new terminal starts the Store
+          app. Windows puts the alias into %LOCALAPPDATA%\Microsoft\WindowsApps,
+          which is on every user's PATH; the user can switch it off under
+          Settings > Apps > Advanced app settings > App execution aliases.
+        -->
+        <uap5:Extension Category="windows.appExecutionAlias"
+                        Executable="lattice.exe"
+                        EntryPoint="Windows.FullTrustApplication">
+          <uap5:AppExecutionAlias>
+            <uap5:ExecutionAlias Alias="lattice.exe" />
+          </uap5:AppExecutionAlias>
+        </uap5:Extension>
       </Extensions>
     </Application>
   </Applications>

@@ -903,6 +903,23 @@ is redirected.
 written to no console at all. Note that `cmd` and PowerShell do not wait for a windowed program, so the text
 can appear after the next prompt; piping (`lattice --help | more`) or `start /wait` avoid that.
 
+<!--REQ-LTTCE-CLU-00004-->
+**REQ-LTTCE-CLU-00004** — After an ordinary install, typing `lattice` in a terminal opened afterwards SHALL
+start the installed Lattice, with no setup by the user: on Windows from the installer and from the Microsoft
+Store, and on Linux from the `.deb` package. The Windows installer SHALL add only its install folder to the
+current user's `PATH`, never to the system-wide one, and SHALL leave every other entry — its order, its spelling
+and unexpanded variables such as `%USERPROFILE%` — unchanged; installing again SHALL NOT add it twice; and
+uninstalling SHALL take it off again, restoring the user's `PATH` as it was before the install. Failing to change
+the `PATH` SHALL NOT fail the install or the uninstall. The Store package SHALL provide the command as an app
+execution alias. The command is `lattice` only. The Linux AppImage and macOS are not covered yet (AppImage: the
+user places the file; macOS: a `.pkg` installer is planned), and running Lattice in a session without a desktop
+(for example over SSH) is not required.
+
+*Rationale*: the command-line export (Chapter XPT) and the help (REQ-LTTCE-CLU-00002) are only useful when
+`lattice` can be typed without a full path. A `PATH` damaged by an installer breaks every other program of the
+user, hence "only its own entry, everything else unchanged": a long `PATH` read into an installer's
+fixed-length string and written back would lose its end. Decided by the product owner, 2026-11-09 and 2026-11-13.
+
 
 
 ## Chapter FWT — File Watching and External Reload
@@ -1288,13 +1305,14 @@ scan uses no earlier results, its summary SHALL say so and why. Every scan that 
 its results for later scans, also when the build's publication is then blocked.
 
 *Building.* The build SHALL NOT wait for the Legattice scan: the installers SHALL carry the committed notices,
-and the scan runs at the same time. After the installers are built, the notices generated from the scan SHALL
-be compared with the committed ones.
+and the scan runs at the same time. The committed notices SHALL first be checked to be up to date with the
+committed notice additions and the shipped components; then the notices generated from the scan SHALL be
+compared with the committed ones **in content**: which scan and which ledger commit made them is not a difference.
 
 *Release gate.* Publication of a **final release** SHALL be blocked if, and only if, the build failed (a build
 leg, the MSIX bundle, or a licence check of REQ-LTTCE-FOS-00002/00004/00007 on the scan's notices), or the
 Legattice scan failed or reports a finding without a current decision (open, reopened or pending removal,
-REQ-LTTCE-FOS-00008), or the notices generated from the scan differ from the committed ones. When blocked, the
+REQ-LTTCE-FOS-00008), or the notices generated from the scan differ in content from the committed ones. When blocked, the
 build SHALL still complete and keep its installers, and its summary SHALL say why publication was blocked and
 what to correct (which topics to decide in the ledger, or which part of the scan failed). Once the missing
 decisions are made, re-running the stopped parts of the same build SHALL let it publish. For a
@@ -1302,11 +1320,14 @@ candidate or a build on a branch, findings without a decision and different noti
 summary and SHALL NOT fail the build. A published release SHALL attach the scan's report and the notice
 additions it used.
 
-*Notices back to dev.* When a final release's Legattice scan succeeded (no finding without a current decision,
-no scan failure) and the notices generated from it differ from the committed ones, the build SHALL open a pull
-request that brings them to the development branch; publication is then blocked by the difference alone.
-Merging it and building again from a new tag SHALL let that build publish. When the scan did not succeed, the
-build SHALL NOT open a pull request: it SHALL only report the results and what to correct.
+*Notices back by pull request.* For every build that used Legattice — final release, candidate or a build by hand
+— whose scan succeeded (no finding without a current decision, no scan failure) and whose scan's notices differ
+in content from the committed ones, the build SHALL open a pull request that brings the scan's notices: into
+the development branch for a tag, into the branch that was built for a build by hand. It SHALL open at most one
+per built commit, and a re-run SHALL reuse it. For a final release, publication is then blocked by the
+difference alone; merging the pull request and building again from a new tag SHALL let that build publish.
+When the scan did not succeed, the build SHALL NOT open a pull request: it SHALL only report the results and
+what to correct.
 
 *Rationale*: until v0.3.51 the scan of the sources ran only by hand, so a release could ship with an undecided
 finding, and notices made for older dependency versions. From v0.3.52 every tag scanned first and the build

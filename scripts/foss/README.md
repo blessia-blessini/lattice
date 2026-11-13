@@ -41,26 +41,45 @@ They need the sources of all packages on disk first: `npm ci --ignore-scripts` a
 | On your machine, full `build-test` | runs; a failure fails the build-test | does not run |
 | Pull request into `dev` | runs; a failure turns the check red | reports only |
 | Push to `dev` | runs **right after** the push; a failure turns the commit's check red. It cannot undo the push — fix it in the next commit | reports only |
-| A build (manual, `*build*` branch) | runs | reports only |
-| A release (`v*` tag) | runs; a failure **stops the release** | **stops the release** if a shipped package has a known vulnerability (unless excepted, see below) |
+| A build by hand on a branch ("Run workflow") | runs | reports only |
+| A release (`vX.Y.Z` tag) | runs; a failure **blocks publishing** (the build itself completes) | **blocks publishing** if a shipped package has a known vulnerability (unless excepted, see below) |
 
-**Releases and the deep scan.** One rule: a tag of exactly the form `vX.Y.Z` publishes; **every other tag**
-(`v0.3.52a`, `v0.3.52-rc1`, …) is a dress rehearsal: it builds and checks everything a release does, and
-publishes nothing. Branch builds never scan and never publish.
+**Builds, the Legattice scan and publishing** (REQ-LTTCE-FOS-00009). A build starts only from a pushed tag
+or by hand ("Run workflow"); pushing a branch starts nothing. A tag of exactly the form `vX.Y.Z` is a
+**release** and may publish; **every other tag** (`v0.3.52a`, `v0.3.52-rc1`, …) is a dress rehearsal: it builds
+and checks everything a release does, and publishes nothing. A build by hand on a branch never publishes.
 
-The deep scan is switched on by the repository variable **`LEGATTICE_URL`** = `https://github.com/blessia-blessini/legattice`
-(GitHub: the repository → Settings → Secrets and variables → Actions → tab *Variables*). Without it, tags
-build and publish as before the deep scan existed. With it, on every tag the build first runs the deep scan of all package sources (Legattice) and **stops while
-any finding is undecided** — low, medium or high:
+Which licence check runs:
 
-1. The run's summary lists the open topics; the scan's results artifact holds a draft for each.
-2. Decide them in the Legattice ledger (`products/lattice/ledger/`), commit and push there.
-3. On the stopped run here: **Re-run failed jobs**. The scan reads your decisions and the build goes on.
+| Build | Check |
+| :--- | :--- |
+| Every tag | the **Legattice scan** of all package sources, always |
+| By hand, box **USE_LEGATTICE** ticked | the Legattice scan |
+| By hand, box not ticked (the default) | the lightweight check of this folder only |
 
-When the deep scan runs, the installers of a release or candidate carry the notices made from that
-scan, never the committed ones. After such a release whose notices differ from the committed ones, the build opens a pull
-request into `dev` ("Bring the notices released in vX.Y.Z back to dev") with the files as released —
-merge it, nothing else to do.
+The repository variable **`LEGATTICE_URL`** = `https://github.com/blessia-blessini/legattice` says where
+Legattice is (GitHub: the repository → Settings → Secrets and variables → Actions → tab *Variables*). If the
+scan is to run and the variable is empty, or names anything else, the build stops at once and says so.
+
+The scan takes up the results of the previous scan and scans only what changed (new or updated packages,
+Lattice's own code). Tick **ForceDeepScan** (by hand only) to have it ignore them and scan everything again.
+
+The scan runs **beside** the build: the installers always carry the **committed** notices. After the builds,
+the job **release-gate** says in its summary what is wrong, if anything, and what to correct. On a release it
+**blocks publishing** — the build still completes and keeps its installers — when:
+
+- a build leg, the MSIX bundle or a licence check failed;
+- the scan found topics nobody has decided (low, medium or high). The run's summary lists them, and the scan's
+  results artifact holds a draft for each. Decide them in the Legattice ledger (`products/lattice/ledger/`),
+  commit and push there; then, on the stopped run here, **Re-run failed jobs**. The scan reads your decisions,
+  the build legs are not rebuilt, and the release publishes;
+- the notices made from the scan differ **in content** from the committed ones (which Legattice commit made
+  them does not count). Then the build opens a pull request ("Bring the notices of the … scan to …") with the
+  scan's files: merge it, and tag again.
+
+On a candidate tag or a build by hand the same findings are only reported. The notices pull request is opened
+for every build whose scan succeeded and whose notices differ: into `dev` for a tag, into the branch that was
+built otherwise. A scan that failed opens no pull request; the summary says what to correct.
 
 "Reports only" means: you see the findings in the job summary and as yellow warnings, but the
 check stays green.

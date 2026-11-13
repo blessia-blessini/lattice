@@ -29,7 +29,8 @@ import os from 'os';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { commandCompareAdditions, commandReleaseGate, commandReleasePlan, parseArgs } from './foss.mjs';
-import { additionsDifference, deepScanSetting, gateReasons, LEGATTICE_URL, licenceCheckPlan, releaseKind } from './release-plan.mjs';
+import { additionsIntro } from './notices-render.mjs';
+import { additionsDifference, canonicalJson, deepScanSetting, gateReasons, LEGATTICE_URL, licenceCheckPlan, releaseKind } from './release-plan.mjs';
 
 const quiet = { log: () => {}, warn: () => {}, error: () => {} };
 const addition = (topic, extra = {}) => ({ topic, package: { ecosystem: 'npm', name: 'katex', version: '1' }, licences: ['OFL-1.1'], files: [{ path: 'a', sha1: '0'.repeat(40), lines: [[1, 1]] }], copyrights: [], ...extra });
@@ -124,8 +125,9 @@ describe('gateReasons', () => {
         expect(scan[0].fix).toMatch(/decide the topics in the Legattice ledger, then "Re-run failed jobs"/);
         expect(reasons('release', true, { notices: 'failure' })[0].fix).toMatch(/foss-compliance-release/);
         const changed = reasons('release', true, {}, 'true');
-        expect(changed.map((r) => r.what)).toEqual(['the notices made from the scan differ from the committed ones']);
-        expect(changed[0].fix).toMatch(/merge the pull request .*then build again from a new tag/);
+        expect(changed.map((r) => r.what)).toEqual(['the notices made from the scan differ in content from the committed ones']);
+        expect(changed[0].fix).toMatch(/merge the pull request .*\(job notices-to-dev\), then build again from a new tag/);
+        expect(reasons('build', true, { msix: 'skipped' }, 'true')[0].fix).toBe('merge the pull request that brings them (job notices-to-dev)');
         expect(reasons('build', false, { msix: 'skipped', light: 'failure' })[0].what).toMatch(/lightweight licence check did not succeed/);
     });
 
@@ -145,6 +147,25 @@ describe('additionsDifference', () => {
         expect(additionsDifference(committed, { source: { date: '2026-11-01' }, additions: committed.additions }).equal).toBe(true);
         const fresh = { additions: [addition('LT-0000000001', { copyrights: ['Copyright X'] }), addition('LT-0000000003')] };
         expect(additionsDifference(committed, fresh)).toEqual({ equal: false, added: ['LT-0000000003'], removed: ['LT-0000000002'], changed: ['LT-0000000001'] });
+    });
+
+    it('ignores the order of keys, at any depth, but not the order of list items', () => {
+        const one = addition('LT-0000000001');
+        const reordered = Object.fromEntries(Object.entries({ ...one, package: { version: '1', name: 'katex', ecosystem: 'npm' } }).reverse());
+        expect(Object.keys(reordered)).not.toEqual(Object.keys(one));
+        expect(additionsDifference({ additions: [one] }, { additions: [reordered] }).equal).toBe(true);
+        const two = addition('LT-0000000001', { licences: ['OFL-1.1', 'MIT'] });
+        const swapped = addition('LT-0000000001', { licences: ['MIT', 'OFL-1.1'] });
+        expect(additionsDifference({ additions: [two] }, { additions: [swapped] }).changed).toEqual(['LT-0000000001']);
+    });
+});
+
+
+describe('canonicalJson', () => {
+    it('sorts object keys recursively and keeps arrays and scalars', () => {
+        expect(canonicalJson({ b: 1, a: { d: [3, { y: 1, x: 2 }], c: null } })).toBe('{"a":{"c":null,"d":[3,{"x":2,"y":1}]},"b":1}');
+        expect(canonicalJson('s')).toBe('"s"');
+        expect(canonicalJson(undefined)).toBeUndefined();
     });
 });
 
@@ -236,6 +257,21 @@ describe('release-plan and compare-additions commands', () => {
         expect(fs.readFileSync(summary, 'utf8')).toMatch(/### Notice additions changed[\s\S]*LT-0000000002/);
     });
 
+    // Run 43324816118 (2026-11-12): the same 28 additions, only the Legattice ledger
+    // commit differed -- and the notices text names it (additionsIntro). A text diff
+    // of the notices called that a change; the comparison must be by content.
+    it('compare-additions: the same additions from another Legattice ledger commit are no change', () => {
+        const committedSource = { product: { repository: 'o/p', ref: 'a' }, date: '2026-11-08', legattice: '7dbda7b1', run: 'r1' };
+        const scanSource = { product: { repository: 'o/p', ref: 'b' }, date: '2026-11-12', legattice: 'a9b81f34', run: 'r2' };
+        fs.writeFileSync(path.join(root, 'foss', 'notice-additions.json'),
+            JSON.stringify({ format: 1, source: committedSource, additions: [addition('LT-0000000001')] }));
+        const fresh = path.join(root, 'fresh.json');
+        fs.writeFileSync(fresh, JSON.stringify({ format: 1, source: scanSource, additions: [addition('LT-0000000001')] }));
+        expect(additionsIntro(committedSource)).not.toBe(additionsIntro(scanSource));
+        expect(commandCompareAdditions({ root, fresh, env: { GITHUB_OUTPUT: out } }, quiet)).toBe(0);
+        expect(outputs()).toEqual({ changed: 'false' });
+    });
+
     it('compare-additions with no committed file: every fresh addition is new', () => {
         fs.rmSync(path.join(root, 'foss', 'notice-additions.json'));
         const fresh = path.join(root, 'fresh.json');
@@ -283,7 +319,7 @@ describe('release-plan and compare-additions commands', () => {
             for (const kind of ['candidate', 'build']) {
                 const r = gate({ KIND: kind, ...passed, NOTICES_CHANGED: 'true' });
                 expect(r.code).toBe(0);
-                expect(r.summary).toMatch(new RegExp(`Reported only \\(a ${kind} is never published\\)[\\s\\S]*notices made from the scan differ`));
+                expect(r.summary).toMatch(new RegExp(`Reported only \\(a ${kind} is never published\\)[\\s\\S]*notices made from the scan differ in content`));
                 expect(r.logged.some((l) => l.startsWith('::warning title=Release gate::'))).toBe(true);
             }
         });

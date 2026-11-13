@@ -65,7 +65,7 @@ on:
         default: ''
     outputs:
       changed:
-        description: 'With fresh_additions: "true" when the notices made from the scan differ from the committed ones (additions ignoring source, or either notices file)'
+        description: 'With fresh_additions: "true" when the notices made from the scan differ in content from the committed ones (notice additions compared ignoring source)'
         value: ${{ jobs.foss-compliance.outputs.changed }}
   pull_request:
     branches: [ "dev" ]
@@ -76,7 +76,7 @@ jobs:
   foss-compliance:
     runs-on: ubuntu-latest
     outputs:
-      changed: ${{ steps.notices-diff.outputs.changed }}
+      changed: ${{ steps.additions.outputs.changed }}
     steps:
     - name: 100. Checkout
       uses: actions/checkout@v6
@@ -99,9 +99,13 @@ jobs:
     ################################################################
     # 135 / Builds with Legattice only (REQ-LTTCE-FOS-00009): the
     #       Legattice scan of this commit, run before this job, decided
-    #       what the notices add. First compared with the committed file
-    #       (ignoring source), then it replaces it for everything below,
-    #       so gate, notices and SBOMs use it.
+    #       what the notices add. First the committed notices must be up to
+    #       date (the installers carry them); then the scan's file is
+    #       compared with the committed one BY CONTENT -- `source` (which
+    #       scan, which ledger commit) is ignored, and the notices text is
+    #       not diffed, since it names the ledger commit, which changes with
+    #       every Legattice push. Then it replaces the committed file for
+    #       everything below, so gate, notices and SBOMs use it.
     ################################################################
     - name: 135a. Get the Legattice scan's results
       if: inputs.fresh_additions
@@ -110,12 +114,17 @@ jobs:
         name: ${{ inputs.fresh_additions }}
         path: legattice-results
 
-    - name: 135b. Compare its notice additions with the committed ones
+    - name: 135b. Committed third-party notices up to date
+      if: inputs.fresh_additions
+      run: node scripts/foss/foss.mjs notices --check
+
+    # Output "changed": the job's output, read by release-gate and notices-to-dev.
+    - name: 135c. Compare its notice additions with the committed ones
       id: additions
       if: inputs.fresh_additions
       run: node scripts/foss/foss.mjs compare-additions --fresh legattice-results/topics/notice-additions.json
 
-    - name: 135c. Use its notice additions
+    - name: 135d. Use its notice additions
       if: inputs.fresh_additions
       shell: bash
       run: |
@@ -136,29 +145,14 @@ jobs:
       if: (success() || failure()) && steps.fetch.outcome == 'success' && !inputs.fresh_additions
       run: node scripts/foss/foss.mjs notices --check
 
-    # With fresh additions the notices are regenerated from the scan and
-    # compared with the committed ones the installers carry: any difference
-    # blocks a release (release-gate) and brings them to dev by pull
-    # request (notices-to-dev; REQ-LTTCE-FOS-00009). Not an error here.
+    # With fresh additions the notices are regenerated from the scan, for
+    # the pull request that brings them back when they differ in content
+    # (notices-to-dev; REQ-LTTCE-FOS-00009).
     - name: 141a. Regenerate the notices from the fresh additions
       if: inputs.fresh_additions
       run: node scripts/foss/foss.mjs notices
 
-    - name: 141b. Do the scan's notices differ from the committed ones?
-      id: notices-diff
-      if: inputs.fresh_additions
-      shell: bash
-      env:
-        ADDITIONS_CHANGED: ${{ steps.additions.outputs.changed }}
-      run: |
-        set -euo pipefail
-        changed=false
-        [ "$ADDITIONS_CHANGED" = "true" ] && changed=true
-        git diff --quiet -- THIRD-PARTY-NOTICES.md src/lib/export-notices.generated.txt || changed=true
-        echo "changed=$changed" >> "$GITHUB_OUTPUT"
-        echo "The notices made from the scan differ from the committed ones: $changed"
-
-    - name: 141c. Upload the release notices
+    - name: 141b. Upload the release notices
       if: inputs.fresh_additions
       uses: actions/upload-artifact@v7
       with:

@@ -7,7 +7,18 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.59
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
-- CHORE: REDESIGN CLEAR CI BUILD CONCURRENCY LOGIC
+- FEAT: Added path in installer for Windows and Linux
+- FEAT: Added path in staller for Windows and Linux
+- FEAT: `lattice` on the command line after installing on Windows
+- DOCS: Trace canonicalJson in the FOSS coverage file
+- FIX: Review cycle 1 of the release gate: README, key order, input merge order
+- DOCS: Bring the CI pipeline graph up to date
+- FIX: Compare the scan's notices by content; notices pull request for every build
+- FEAT: Licence check by parameters, beside the build; gate before publishing
+- DOCS: No notices pull request after a failed scan, only the report
+- DOCS: Rewrite the build's licence check and release gate as decided
+- FEAT: Add a "force deep scan" box to the manual build
+- FEAT: MAKE FOSSscan result be stored in last build artifacts
 
 ---
 ## v0.3.58

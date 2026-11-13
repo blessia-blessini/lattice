@@ -55,15 +55,16 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   `selectEmbedded`, `renderExportNotices`; `foss/licenses/OFL-1.1.txt` and the AOM patent licence text)
 - IMPL-LTTCE-FOS-00008 **covers** ARCH-LTTCE-FOS-00008
 - IMPL-LTTCE-FOS-00009 **covers** REQ-LTTCE-FOS-00009  (`release-plan.mjs`: `releaseKind`, `deepScanSetting`,
-  `licenceCheckPlan`, `gateReasons`, `additionsDifference`; `foss.mjs` `commandReleasePlan` (env
+  `licenceCheckPlan`, `gateReasons`, `additionsDifference` (by `canonicalJson`: key order ignored); `foss.mjs` `commandReleasePlan` (env
   `LEGATTICE_URL`, `USE_LEGATTICE`, `FORCE_DEEP_SCAN`; job outputs `kind`, `use_legattice`, `deep`; the bold
   tag note, the ignored-ForceDeepScan warning; exit 2 on a wrong `LEGATTICE_URL` or an empty one while Legattice is
   used), `commandReleaseGate` (exit 1 only for a blocked release) and `commandCompareAdditions` (job output
   `changed`); `buildAndTest.yml`: tag-only push trigger, inputs `use_legattice` / `force_deep_scan`, setup job,
   `foss-compliance` / `foss-scan` (12 shards, `block_at` low on a release, `fresh`) / `foss-compliance-release`
   beside `build-and-test` (committed notices), job `release-gate` (steps 960-962), `publish-release-site` after
-  it, steps 903.2a/b, job `notices-to-dev` (steps 950-954); `foss-compliance.yml` input `fresh_additions`,
-  output `changed`, steps 135a-c, 141a-c; Legattice `scan.yml` as a reusable workflow, input `fresh`)
+  it, steps 903.2a/b, job `notices-to-dev` (every kind; into dev for a tag, the built branch otherwise; branch
+  `foss-notices-<commit>`; steps 950-954); `foss-compliance.yml` input `fresh_additions`, output `changed` (by
+  content: `compare-additions`), steps 135a-d (135b: the committed notices up to date), 141a-b; Legattice `scan.yml` as a reusable workflow, input `fresh`)
 - IMPL-LTTCE-FOS-00009 **covers** ARCH-LTTCE-FOS-00009
 
 ## Tests
@@ -200,7 +201,10 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   `kind`, `use_legattice`, `deep`, the check in the summary, the bold note), the ignored ForceDeepScan warning,
   exit 2 with no outputs on an empty URL while Legattice is used (tag, candidate, branch with the box) and on a
   wrong one; `release-gate`: a release passes, is blocked (exit 1, errors, "Publication blocked"), a candidate or
-  build only reports (exit 0, warnings), an unknown KIND is refused; `compare-additions` writes `changed=false` on equal additions,
+  build only reports (exit 0, warnings), an unknown KIND is refused; `compare-additions` writes `changed=false` on equal additions
+  (also when only the Legattice ledger commit differs, which the notices text names — run 43324816118, and when
+  only the key order differs, at any depth; a different list order is a change); `canonicalJson` sorts keys
+  recursively and keeps arrays and scalars;
   `changed=true` with the topics (log and summary) on others and when no committed file exists; argument
   parsing (the removed `--since` is refused).
 - ITST on the real tree: `release-plan` for `refs/tags/v0.3.52` = release, `v0.3.52a` = candidate, with and

@@ -297,6 +297,8 @@ jobs:
       contents: read
       actions: read
     # @main on purpose, an accepted risk (same owner): ARCH-LTTCE-FOS-00009.
+    # An input passed below must be declared on Legattice's main first, or
+    # GitHub refuses the call and the run fails at its start.
     uses: blessia-blessini/legattice/.github/workflows/scan.yml@main
     with:
       repository: ${{ github.repository }}
@@ -715,6 +717,42 @@ jobs:
       if: matrix.config.platform != 'ios' && matrix.config.platform != 'android'
       shell: bash
       run: bash scripts/foss/assert-bundled.sh ${{ matrix.config.upload_path1 }} ${{ matrix.config.upload_path2 }} dist-msix-*.msix
+
+    # REQ-LTTCE-CLU-00004 (STST): the Windows installer puts `lattice` on the
+    # user's PATH and its uninstaller takes it off again, leaving the rest of
+    # PATH exactly as it was. "A new terminal" is a shell whose PATH is read
+    # from the registry, machine part then user part, as Explorer builds it.
+    # Runs after step 390, whose own silent install already added its folder:
+    # this step compares against PATH as it finds it.
+    - name: 394. Command line after installing (Windows)
+      if: matrix.config.platform == 'windows-desktop' || matrix.config.platform == 'windows-arm-desktop'
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Stop'
+        $setup = @(Get-ChildItem 'src-tauri/target/release/bundle/nsis/*-setup.exe')
+        if ($setup.Count -ne 1) { throw "expected one installer, found $($setup.Count)" }
+        $readUserPath = { (Get-Item 'HKCU:\Environment').GetValue('Path', '', 'DoNotExpandEnvironmentNames') }
+        $before = & $readUserPath
+        $dir = Join-Path $env:RUNNER_TEMP 'lattice-cli-test'
+        Start-Process -Wait -FilePath $setup[0].FullName -ArgumentList "/S /D=$dir"
+        $installed = & $readUserPath
+        if (-not (($installed -split ';') -contains $dir)) { throw "the installer did not put $dir on the user's PATH: $installed" }
+        Write-Output "PATH entry added: $dir"
+
+        $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
+        $found = (Get-Command lattice -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+        if ($found -ne (Join-Path $dir 'lattice.exe')) { throw "a new terminal finds lattice at $found, not in $dir" }
+        # Piped, so PowerShell waits for the windowed program (REQ-LTTCE-CLU-00003).
+        $help = (& lattice --help 2>&1 | Out-String)
+        if ($LASTEXITCODE -ne 0 -or $help -notmatch 'Usage: lattice') { throw "lattice --help: exit $LASTEXITCODE, output: $help" }
+        Write-Output "A new terminal runs $found; lattice --help exits 0"
+
+        # _?= keeps the uninstaller in place, so -Wait waits for it.
+        Start-Process -Wait -FilePath (Join-Path $dir 'uninstall.exe') -ArgumentList "/S _?=$dir"
+        $after = & $readUserPath
+        if ($after -cne $before) { throw "the uninstaller did not restore the user's PATH:`n before: $before`n after:  $after" }
+        Write-Output "PATH after uninstalling is the PATH before installing"
+        "### Command line (REQ-LTTCE-CLU-00004)`n`nInstall puts ``lattice`` on the user's PATH, a new terminal runs it, uninstall restores PATH exactly." >> $env:GITHUB_STEP_SUMMARY
 
     # REQ-LTTCE-FOS-00006: every library in the AppImage must come from a package
     # reviewed in foss/appimage-packages.json, with an unchanged copyright file and
@@ -1787,15 +1825,16 @@ jobs:
 
   ################################################################################################################################
   ################################################################################################################################
-  # JOB 5: BRING THE SCAN'S NOTICES TO DEV  (tag vX.Y.Z, after a successful Legattice scan; REQ-LTTCE-FOS-00009)
+  # JOB 5: BRING THE SCAN'S NOTICES BACK  (every build with Legattice, after a successful scan; REQ-LTTCE-FOS-00009)
   #   The installers carry the committed notices. When the notices made from
-  #   this release's scan differ, release-gate blocks the publication and this
-  #   opens a pull request into dev with foss/notice-additions.json and the
-  #   two notices files as the scan made them; merging it is the maintainer's
-  #   approval, and a new tag then builds with them and passes the gate.
+  #   this build's scan differ in content, this opens a pull request with
+  #   foss/notice-additions.json and the two notices files as the scan made
+  #   them -- into dev for a tag, into the built branch for a build by hand.
+  #   Merging it is the maintainer's approval; on a release, release-gate has
+  #   blocked the publication, and a new tag then builds with them and passes.
   #   A failed scan opens nothing: release-gate reports what to correct.
-  #   Re-running is safe: a pull request of the same tag in any state, or its
-  #   pushed branch, is reused, never overwritten or opened twice.
+  #   Re-running is safe: a pull request of the same commit in any state, or
+  #   its pushed branch, is reused, never overwritten or opened twice.
   #   **Needs the repository setting "Allow GitHub Actions to create and
   #   approve pull requests"**. Pull requests made with GITHUB_TOKEN start no
   #   workflows; the files were checked by this run already.
@@ -1803,7 +1842,7 @@ jobs:
   notices-to-dev:
     needs: [setup, foss-scan, foss-compliance-release]
     if: >-
-      !cancelled() && needs.setup.outputs.kind == 'release' && needs.setup.outputs.use_legattice == 'true'
+      !cancelled() && needs.setup.outputs.use_legattice == 'true'
       && needs.foss-scan.result == 'success' && needs.foss-compliance-release.result == 'success'
       && needs.foss-compliance-release.outputs.changed == 'true'
     runs-on: ubuntu-latest
@@ -1832,21 +1871,29 @@ jobs:
         path: .
 
     # Runs only when foss-compliance-release found them changed (job if:).
-    - name: 954. Open the pull request into dev
+    # Into dev for a tag; into the built branch for a build by hand, since a
+    # pull request into dev from another branch would carry its other commits.
+    # One per built commit: the branch is named after it.
+    - name: 954. Open the pull request with the scan's notices
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
-        TAG: ${{ github.ref_name }}
+        REF_NAME: ${{ github.ref_name }}
+        BASE: ${{ startsWith(github.ref, 'refs/tags/') && 'dev' || github.ref_name }}
+        KIND: ${{ needs.setup.outputs.kind }}
       run: |
         set -euo pipefail
         NOTICES="THIRD-PARTY-NOTICES.md src/lib/export-notices.generated.txt"
-        BRANCH="foss-notices-${TAG}"
+        SHORT=$(git rev-parse --short=12 HEAD)
+        BRANCH="foss-notices-${SHORT}"
+        AFTER="merge it."
+        [ "$KIND" = "release" ] && AFTER="merge it, then build again from a new tag: ${REF_NAME} was not published."
         # Any state: open (waiting), merged (done) or closed (the maintainer
         # declined it) -- a re-run never opens a second one.
-        EXISTING=$(gh pr list --base dev --head "$BRANCH" --state all --json state,url --jq '.[0] // empty | "\(.state) \(.url)"')
+        EXISTING=$(gh pr list --base "$BASE" --head "$BRANCH" --state all --json state,url --jq '.[0] // empty | "\(.state) \(.url)"')
         if [ -n "$EXISTING" ]; then
-          echo "Pull request for this release already exists: $EXISTING"
-          echo "### Notices: pull request into dev already exists ($EXISTING)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Pull request for this commit already exists: $EXISTING"
+          echo "### Notices: pull request into ${BASE} already exists ($EXISTING)" >> "$GITHUB_STEP_SUMMARY"
           exit 0
         fi
         if ! git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
@@ -1856,17 +1903,17 @@ jobs:
           git switch -c "$BRANCH"
           # shellcheck disable=SC2086
           git add foss/notice-additions.json $NOTICES
-          git commit -m "CHORE: Bring the notices of the ${TAG} scan to dev" \
-            -m "The Legattice scan of ${TAG} made other notices than the committed ones, so ${TAG} was not published (REQ-LTTCE-FOS-00009); this commits the scan's notices. Merge, then tag again." \
+          git commit -m "CHORE: Bring the notices of the ${REF_NAME} scan (${SHORT}) to ${BASE}" \
+            -m "The Legattice scan of ${REF_NAME} at ${SHORT} decided other notice additions than the committed ones (REQ-LTTCE-FOS-00009); this commits the scan's notices." \
             -m "Co-authored-by: Blessia-Blessini <273819958+blessia-blessini@users.noreply.github.com>"
           git push origin "$BRANCH"
         fi
         # The repository setting cannot be read with GITHUB_TOKEN (it needs
         # administration rights), so it is recognised by the refusal itself;
         # the branch is pushed by then and a re-run reuses it.
-        if ! URL=$(gh pr create --base dev --head "$BRANCH" \
-          --title "CHORE: Bring the notices of the ${TAG} scan to dev" \
-          --body "The Legattice scan of ${TAG} made other third-party notices than the committed ones, so ${TAG} was not published. This brings \`foss/notice-additions.json\`, \`THIRD-PARTY-NOTICES.md\` and \`src/lib/export-notices.generated.txt\` to dev as the scan made them; merge it, then build again from a new tag. Made by run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}." \
+        if ! URL=$(gh pr create --base "$BASE" --head "$BRANCH" \
+          --title "CHORE: Bring the notices of the ${REF_NAME} scan (${SHORT}) to ${BASE}" \
+          --body "The Legattice scan of ${REF_NAME} at ${SHORT} decided other notice additions than the committed ones. This brings \`foss/notice-additions.json\`, \`THIRD-PARTY-NOTICES.md\` and \`src/lib/export-notices.generated.txt\` to ${BASE} as the scan made them; ${AFTER} Made by run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}." \
           2> pr-create-error.txt); then
           cat pr-create-error.txt >&2
           SETTINGS="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/settings/actions"
@@ -1875,11 +1922,11 @@ jobs:
             HOW="Open ${SETTINGS}, box 'Workflow permissions' at the bottom: tick 'Allow GitHub Actions to create and approve pull requests', Save. Then 'Re-run failed jobs' on this run: the branch ${BRANCH} is already pushed and is reused."
           else
             WHY="gh pr create failed (see the log above)."
-            HOW="Fix the cause, then 'Re-run failed jobs' on this run, or open the pull request from branch ${BRANCH} into dev by hand."
+            HOW="Fix the cause, then 'Re-run failed jobs' on this run, or open the pull request from branch ${BRANCH} into ${BASE} by hand."
           fi
           echo "::error title=Notices pull request not opened::${WHY} ${HOW}"
           { echo "### Notices: pull request NOT opened"; echo; echo "${WHY}"; echo; echo "${HOW}"; } >> "$GITHUB_STEP_SUMMARY"
           exit 1
         fi
         echo "Opened $URL"
-        echo "### Notices: pull request into dev opened: $URL" >> "$GITHUB_STEP_SUMMARY"
+        echo "### Notices: pull request into ${BASE} opened: $URL" >> "$GITHUB_STEP_SUMMARY"

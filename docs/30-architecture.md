@@ -290,35 +290,36 @@ The CI pipeline is defined in `.github/workflows/buildAndTest.yml` and is trigge
 
 ```mermaid
 graph TD
-    A[Push to 'build' branch or Manual Dispatch] --> B{Setup Job};
-    B --> C{Define Build Matrix};
-    C --> D1[Windows Build & Test];
-    C --> D2[macOS Build & Test];
-    C --> D3[Linux Build & Test];
-    
-    D1 --> E[Upload Artifacts];
-    D2 --> E[Upload Artifacts];
-    D3 --> E[Upload Artifacts];
-
-    D3 --> F[Generate & Upload Documentation];
-
-    A --> G[FOSS Compliance: licence gate, notices drift, SBOMs, vulnerability audit];
-    E --> H[Publish Release - tags only];
-    G --> H;
+    T["Pushed tag v*.*.* or manual run"] --> S{"Setup: kind, use_legattice, deep, build matrix"};
+    S --> L["Build & Test legs: Windows x64/ARM64, macOS ARM64/Intel, Linux x64/ARM64, Android, iOS - committed notices"];
+    S -->|use_legattice false| G["FOSS Compliance, lightweight: licence gate, notices drift, SBOMs, vulnerability audit"];
+    S -->|use_legattice true| FS["Legattice scan: broker, 12 shards, merge - keeps the ort-store"];
+    FS --> FR["FOSS Compliance with the scan's notice additions: changed?"];
+    L --> A["Artifacts: installers, documentation, coverage"];
+    L --> M["MSIX bundle - tags only"];
+    L --> RG{"Release gate"};
+    M --> RG;
+    G --> RG;
+    FS --> RG;
+    FR --> RG;
+    FR -->|scan succeeded, notices changed| N["Pull request with the scan's notices: into dev for a tag, into the built branch otherwise"];
+    RG -->|"release vX.Y.Z, nothing blocks"| P["Publish release"];
 ```
 
-The **FOSS compliance** job and step 390 (licence files inside every installer) are described in
+The build legs and the licence check run side by side; only the release gate waits for both. Which licence
+check runs, the gate and the notices pull request are described in ARCH-LTTCE-FOS-00009; the FOSS compliance job
+and step 390 (licence files inside every installer) in
 [Feature: Third-Party Licence Compliance](#feature-third-party-licence-compliance-foss-line).
 
 ### Key CI Steps:
-1.  **Setup Job**: A preliminary job determines which platforms (e.g., `windows-desktop`, `linux-desktop`, `all`) to run on based on the manual trigger input (a pushed tag builds all of them). It generates a JSON matrix for the next job.
+1.  **Setup Job**: A preliminary job determines which platforms (e.g., `windows-desktop`, `linux-desktop`, `all`) to run on based on the manual trigger input (a pushed tag builds all of them). It generates a JSON matrix for the next job, and decides the kind of build and the licence check (ARCH-LTTCE-FOS-00009).
     Every desktop leg builds natively on a runner of its own architecture — `windows-11-arm` and
     `ubuntu-24.04-arm` for the ARM64 Windows and Linux legs — except `macos-intel`, which is
     cross-built on an arm64 macOS runner.
 2.  **Build & Test Job**: This job runs in parallel for each configuration in the matrix.
     -   **Environment**: Sets up Node.js, Rust (including cross-compilation targets if needed), and caches dependencies.
     -   **Build**: Compiles the Rust backend and builds the frontend, finally bundling them into a native application (`.exe`, `.dmg`, `.AppImage`).
-    -   **Test**: Executes `scripts/build-test.sh` (Linux/macOS) or `build-test.ps1` (Windows), which runs the full multi-phase test pipeline — see [01-test-strategy.md](01-test-strategy.md) for the complete pipeline description.
+    -   **Test**: Executes `scripts/build-test.sh` (Linux/macOS) or `build-test.ps1` (Windows), which runs the full multi-phase test pipeline — see [60-test-strategy.md](60-test-strategy.md) for the complete pipeline description.
     -   **Artifacts**: The final compiled applications and documentation are uploaded as artifacts for download and deployment.
 
 ---
@@ -1799,6 +1800,39 @@ decision (`check_options_in`) and the output (`respond_to_options`, one `write_a
   for the writes that follow. It needs only the `Win32_System_Console` feature of the `windows` crate
   already in the manifest.
 
+<!--ARCH-LTTCE-CLU-00002-->
+**ARCH-LTTCE-CLU-00002** — covers REQ-LTTCE-CLU-00004. `lattice` on the command line, per package; the program
+itself is not involved.
+
+| Package | How | Where |
+| --- | --- | --- |
+| Linux `.deb` | the binary is `/usr/bin/lattice` | Tauri's deb bundler |
+| Windows installer (NSIS, per user) | `$INSTDIR` on the user's `PATH` (`HKCU\Environment`) | `src-tauri/windows/hooks.nsh`, `user-path.ps1` |
+| Microsoft Store (MSIX) | app execution alias `lattice.exe` (`uap5:AppExecutionAlias`) | `packaging/msix/Package.appxmanifest` |
+
+- **Windows-only configuration**: `src-tauri/tauri.windows.conf.json`, which Tauri merges into
+  `tauri.conf.json` on Windows only, names the hooks (`bundle.windows.nsis.installerHooks`) and adds
+  `user-path.ps1` to the resources, so it is installed next to `lattice.exe`. Linux and macOS packages do not
+  carry it; the MSIX build (`scripts/build-msix.ps1`) reads only `tauri.conf.json` and does not either.
+- **Hooks**: `NSIS_HOOK_POSTINSTALL` runs `user-path.ps1 -Add $INSTDIR`, `NSIS_HOOK_PREUNINSTALL` runs
+  `-Remove $INSTDIR` while the script is still there — through `$SYSDIR\WindowsPowerShell\v1.0\powershell.exe`
+  by full path, Windows PowerShell 5.1, which every Windows 10/11 has. A non-zero exit is written to the
+  installer's log and does not fail it.
+- **Why PowerShell, not NSIS**: Tauri's NSIS has 1024-character strings; a `PATH` read into one is cut, and
+  writing it back would destroy the rest. `user-path.ps1` reads and writes the value whole and raw
+  (`DoNotExpandEnvironmentNames`), keeps its type (`REG_EXPAND_SZ` stays expandable), compares entries after
+  expanding variables and trimming quotes, blanks and a trailing `\`, without regard to case — so
+  `%LOCALAPPDATA%\lattice` and the same folder spelled out are one entry — adds nothing that is there already,
+  removes every spelling of its folder and nothing else, and deletes a `Path` value it emptied (there was none
+  before the install). After a change it broadcasts `WM_SETTINGCHANGE` ("Environment"), so terminals started
+  from Explorer afterwards see it; one already open does not.
+- **Store alias**: Windows places `lattice.exe` in `%LOCALAPPDATA%\Microsoft\WindowsApps`, which is on every
+  user's `PATH`; the user can switch it off under App execution aliases.
+
+Tests: `src-tauri/windows/user-path.test.mjs` (Windows only; Windows PowerShell 5.1, on a registry key of its
+own); CI step 394 on both Windows legs (STST); the MSIX manifest is validated by `makeappx` on every Windows
+build that packs it.
+
 ---
 
 ## Feature: File Watching and External Reload
@@ -2437,9 +2471,9 @@ outputs:
                                                                          │          release, not blocked
                                                                          │                          ▼
                                                                          │                 publish-release-site
-                                                                         └─► notices-to-dev (release, scan
-                                                                             succeeded, changed: pull request
-                                                                             into dev)
+                                                                         └─► notices-to-dev (scan succeeded,
+                                                                             changed: pull request into dev,
+                                                                             or into the built branch)
 ```
 
 - **`build-and-test`** needs only `setup`: it always builds with the committed notices (no step 102 any
@@ -2451,27 +2485,35 @@ outputs:
   removal; elsewhere the topics are only listed. `fresh: deep` (new Legattice input) makes the broker skip the
   store and say "asked for by this run". `permissions: contents: read, actions: read` (the store, `ort-store`).
   The merge job keeps the store before it lists the topics, so a release blocked on topics still leaves it.
+  **Merge order for a new input:** GitHub refuses to call a workflow with an input it does not declare, so an
+  input added to Legattice's `scan.yml` must be on Legattice's `main` before Lattice passes it (as with `fresh`,
+  2026-11-12) — otherwise every build that uses Legattice fails at its start.
 - **`foss-compliance-release`** (`if: use_legattice`; needs `foss-scan` to succeed, so after a failed scan it
-  is skipped and nothing is compared): `foss-compliance.yml` with `fresh_additions` compares the scan's
-  additions with the committed file (`compare-additions`, ignoring `source`, step 135b), puts them in place,
-  regenerates both notices files, compares those with the committed ones (step 141b) and uploads them
-  (`release-notices`); either difference makes its output `changed` true. A difference does not fail it.
+  is skipped and nothing is compared): `foss-compliance.yml` with `fresh_additions` first checks the committed
+  notices against the committed additions and the shipped components (`notices --check`, step 135b — stale
+  notices fail the job), then compares the scan's additions with the committed file (`compare-additions`, step
+  135c) as output `changed`, puts them in place (135d), regenerates both notices files and uploads them
+  (`release-notices`). The comparison is by content: `source` (which scan, which Legattice ledger commit) is
+  ignored. The notices text itself is not diffed, because it names that ledger commit, which changes with every
+  Legattice push (seen 2026-11-12, run 43324816118). A difference does not fail the job.
 - **`release-gate`** (new; `if: !cancelled()`; needs every job above) decides and writes into the job summary,
   one line per reason, each with what to correct (`foss.mjs release-gate`, `gateReasons` in
   `release-plan.mjs`): a build leg or the MSIX bundle failed (see that job); the licence check failed —
   `foss-compliance`, or `foss-compliance-release` (licence policy, vulnerability audit, notices);
   `foss-scan` did not succeed — topics without a decision (decide them in the Legattice ledger, then "Re-run
-  failed jobs") or a scan failure (see the scan's job); `changed` is true (merge the notices pull request, then
-  a new tag). For a `release` any reason **fails** the job; for a `candidate` or `build` it only reports and
+  failed jobs") or a scan failure (see the scan's job); `changed` is true (merge the notices pull request; for a
+  release, then a new tag). For a `release` any reason **fails** the job; for a `candidate` or `build` it only reports and
   succeeds.
 - **`publish-release-site`** (`kind == 'release'`) needs `release-gate` to succeed, and attaches
   `FOSS-TOPICS.md` and `notice-additions.json` next to the notices and SBOMs.
-- **`notices-to-dev`** (`kind == 'release'`, `changed == 'true'`; needs `foss-compliance-release`, so only after
-  a successful scan — a failed scan opens no pull request, it only reports; not the publication) commits the scan's three files on branch `foss-notices-<tag>` and opens a pull request into `dev`
-  (`GITHUB_TOKEN`, `contents`/`pull-requests: write`; needs the repository setting allowing Actions to create
-  pull requests). A pull request of the same tag in any state, or an already pushed branch, is reused, so a
-  re-run never opens a second one. Merging is the maintainer's approval; a new tag then builds with the right
-  notices and passes the gate.
+- **`notices-to-dev`** (every kind; `use_legattice`, `changed == 'true'`; needs `foss-compliance-release`, so only
+  after a successful scan — a failed scan opens no pull request, it only reports; not the publication) commits the
+  scan's three files on branch `foss-notices-<short commit id>` and opens a pull request into `dev` for a tag, or
+  into the branch that was built for a build by hand (a pull request into `dev` from another branch would carry
+  that branch's other commits too). `GITHUB_TOKEN`, `contents`/`pull-requests: write`; needs the repository
+  setting allowing Actions to create pull requests. A pull request of the same branch in any state, or an already
+  pushed branch, is reused, so a re-run never opens a second one; a new commit gets its own. Merging is the
+  maintainer's approval; for a release, a new tag then builds with the right notices and passes the gate.
 - **Re-run after deciding topics**: "Re-run failed jobs" repeats the failed merge job of `foss-scan` (it reads
   the ledger from Legattice's `main` as it is then) and everything that depends on it —
   `foss-compliance-release`, `notices-to-dev`, `release-gate`, `publish-release-site`; the build legs are not
