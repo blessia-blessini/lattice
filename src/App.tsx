@@ -1339,7 +1339,8 @@ function App() {
             sessionStorage.removeItem('lattice-last-open-path');
             // No document after all — unless the start view was applied already.
             if (startViewPendingRef.current !== null) startViewPendingRef.current = false;
-            await enforceVaultPath("");
+            // No vault at all means no settings load: the defaults apply.
+            if (!(await enforceVaultPath(""))) applyPendingStartView(null);
           }
         } else {
           startViewPendingRef.current = false; // IMPL-LTTCE-WIN-00006 — no document
