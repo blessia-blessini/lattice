@@ -30,7 +30,9 @@ authors = ["Blessia Blessini"]
 edition = "2024"
 default-run = "lattice"
 
+#
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+#
 
 [lib]
 # This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519

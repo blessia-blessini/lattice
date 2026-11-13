@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.59
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: merged dev
 - CHORE: Bumped version
 - FEAT: Added path in installer for Windows and Linux
 - FEAT: Added path in staller for Windows and Linux
