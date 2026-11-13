@@ -1830,8 +1830,10 @@ itself is not involved.
   user's `PATH`; the user can switch it off under App execution aliases.
 
 Tests: `src-tauri/windows/user-path.test.mjs` (Windows only; Windows PowerShell 5.1, on a registry key of its
-own); CI step 394 on both Windows legs (STST); the MSIX manifest is validated by `makeappx` on every Windows
-build that packs it.
+own); CI step 394 on both Windows legs (STST); CI step 395 on both Linux legs (STST: the leg's `.deb` installed
+with `apt-get`, a login shell with an empty environment finds `/usr/bin/lattice` and `lattice --help` exits 0,
+removing the package takes it off again); the MSIX manifest is validated by `makeappx` on every Windows build
+that packs it.
 
 ---
 
