@@ -22,6 +22,11 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - IMPL-LTTCE-DLN-00006 **covers** REQ-LTTCE-DLN-00008  (`expand_daily_notes_path` on load, `condense_daily_notes_path` on save)
 - IMPL-LTTCE-DLN-00006 **covers** REQ-LTTCE-DLN-00009  (`get_vault_root`: home vault → `<home>/lattice-notes`)
 - IMPL-LTTCE-DLN-00006 **covers** ARCH-LTTCE-DLN-00001
+- IMPL-LTTCE-WIN-00003 **covers** REQ-LTTCE-WIN-00003  (`ViewMode`, `start_view_with_file` default Preview,
+  `start_view_without_file` default Edit) — UTST/ITST `settings_tests.rs`: `test_start_views_default`,
+  `test_start_views_round_trip_every_mode`, `test_start_views_invalid_value_costs_only_itself`,
+  `test_start_view_invalid_value_is_refused_on_save_payload`, `test_save_settings_internal_persists_start_views`
+- IMPL-LTTCE-WIN-00003 **covers** ARCH-LTTCE-WIN-00003
 
 ## Tests — IMPL-LTTCE-DLN-00006
 

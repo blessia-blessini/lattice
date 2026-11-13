@@ -798,6 +798,35 @@ jobs:
           || { sudo apt-get update -q && sudo apt-get install -y -q apt-utils dpkg-dev; }
         bash scripts/apt/apt-repo-test.sh "$(dirname "${{ matrix.config.upload_path2 }}")"
 
+    # REQ-LTTCE-CLU-00004 (STST): installing this leg's .deb puts `lattice` on the
+    # command line and removing the package takes it off again. "A new terminal"
+    # is a login shell started with an empty environment, so it finds `lattice`
+    # through the PATH every user gets, not through the runner's. `--help` is
+    # answered before any window code runs (lib.rs), so no display is needed.
+    - name: 395. Command line after installing (Linux)
+      if: matrix.config.platform == 'linux-desktop' || matrix.config.platform == 'linux-arm-desktop'
+      shell: bash
+      run: |
+        set -euo pipefail
+        shopt -s nullglob
+        debs=( ${{ matrix.config.upload_path2 }} )
+        if [ "${#debs[@]}" -ne 1 ]; then echo "expected one .deb, found ${#debs[@]}" >&2; exit 1; fi
+        new_terminal() { env -i HOME="$HOME" TERM=dumb bash -lc "$1"; }
+        if dpkg -s lattice >/dev/null 2>&1; then echo "lattice is installed already, before the test" >&2; exit 1; fi
+
+        # "./" makes apt-get take the file, not a package name.
+        sudo apt-get install -y -q "./${debs[0]}"
+        found=$(new_terminal 'command -v lattice') || { echo "a new terminal does not find lattice" >&2; exit 1; }
+        if [ "$found" != /usr/bin/lattice ]; then echo "a new terminal finds lattice at $found, not /usr/bin/lattice" >&2; exit 1; fi
+        help=$(new_terminal 'lattice --help' 2>&1) || { echo "lattice --help failed: $help" >&2; exit 1; }
+        case "$help" in "Usage: lattice"*) ;; *) echo "lattice --help printed no usage text: $help" >&2; exit 1 ;; esac
+        echo "A new terminal runs $found; lattice --help exits 0"
+
+        sudo apt-get remove -y -q lattice
+        if found=$(new_terminal 'command -v lattice'); then echo "lattice is still found after removing the package: $found" >&2; exit 1; fi
+        echo "After removing the package, a new terminal no longer finds lattice"
+        printf '### Command line (REQ-LTTCE-CLU-00004)\n\nInstalling the .deb puts `lattice` on the command line, a new terminal runs it, removing the package takes it off again.\n' >> "$GITHUB_STEP_SUMMARY"
+
     ################################################################
     # 400 / Upload Artifacts
     ################################################################

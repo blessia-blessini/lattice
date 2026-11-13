@@ -32,6 +32,8 @@
 //!    the editor, and the second click leaves it untouched (STST, Chapter DLN)
 //! 6. `last_vault` — a launch without a document works in the last vault, and
 //!    in the home vault once that vault is gone (STST, Chapter VLT)
+//! 7. `start_view` — a window opens in the view its settings choose, with and
+//!    without a document (STST, REQ-LTTCE-WIN-00003)
 //!
 //! Every launch gets an isolated home (`LATTICE_E2E_HOME`, honoured by E2E
 //! builds only), so no scenario reads or writes the real home vault.
@@ -683,6 +685,118 @@ fn scenario_last_vault(bin: &PathBuf, root: &PathBuf) -> bool {
 }
 // scenario_last_vault END *****************************************************
 
+
+//******************************************************************************
+// start_view_launch
+//******************************************************************************
+/// Protocol of `src/services/StaticRuntime/StartViewE2EDriver.ts` (documented
+/// pairing — the harness cannot import the TS constants).
+const START_VIEW_E2E_MARKER: &str = "e2e_start_view";
+const START_VIEW_E2E_REPORT: &str = "e2e_start_view.txt";
+
+/// One launch: the driver reports the view the window settled in, which must
+/// be `expected`. `args` empty = launch without a document. Signals are
+/// cleared before and after.
+fn start_view_launch(
+    bin: &PathBuf,
+    root: &PathBuf,
+    home: &Path,
+    args: &[&str],
+    profile: &str,
+    expected: &str,
+) -> Result<(), String> {
+    let clear = || {
+        let _ = fs::remove_dir(root.join(START_VIEW_E2E_MARKER));
+        let _ = fs::remove_file(root.join(START_VIEW_E2E_REPORT));
+    };
+    clear();
+    let _ = fs::remove_file(root.join("e2e_startup_ok.txt"));
+    fs::create_dir(root.join(START_VIEW_E2E_MARKER))
+        .map_err(|e| format!("cannot create scenario marker: {e}"))?;
+
+    let child = launch_in_home(bin, root, args, profile, home);
+    let (started, child) = wait_for_startup(root, child, Duration::from_secs(15));
+    let (result, child) = if started {
+        // The driver reports within its 15 s change budget plus 1.5 s settling.
+        let (reported, child) = wait_for_signal(&root.join(START_VIEW_E2E_REPORT), child, Duration::from_secs(30));
+        thread::sleep(Duration::from_millis(200)); // content flushed after the file appears
+        let view = fs::read_to_string(root.join(START_VIEW_E2E_REPORT)).unwrap_or_default();
+        let view = view.trim();
+        println!("\n  {profile}: started in {view:?}");
+        let result = if !reported {
+            Err("no start-view report within 30 s".to_string())
+        } else if view == expected {
+            Ok(())
+        } else {
+            Err(format!("started in {view:?}, expected {expected:?}"))
+        };
+        (result, child)
+    } else {
+        (Err("frontend did not signal startup within 15 s".into()), child)
+    };
+
+    shutdown(child, root);
+    clear();
+    result
+}
+// start_view_launch END *******************************************************
+
+
+//******************************************************************************
+// scenario_start_view
+//******************************************************************************
+/// Scenario 7: the start view (STST for REQ-LTTCE-WIN-00003).
+///
+/// 1. A document in a vault with settings `{}` → the default, Preview.
+/// 2. A document in a vault whose `startViewWithFile` is `dual-top` → that.
+/// 3. No document, the home vault's `startViewWithoutFile` is `dual` → that.
+///
+/// The default without a document, Edit, is also the view before the settings
+/// arrive, so a launch cannot tell it from "nothing applied"; the unit tests
+/// (src/lib/view-mode.test.ts, App.test.tsx) cover it. Each launch has its own
+/// isolated home.
+fn scenario_start_view(bin: &PathBuf, root: &PathBuf) -> bool {
+    println!("\n[SCENARIO] start_view");
+    let base = root.join("src-tauri").join("target").join("e2e-start-view");
+    let _ = fs::remove_dir_all(&base);
+
+    let vault = |name: &str, settings: &str| -> Result<String, String> {
+        let dir = base.join(name);
+        fs::create_dir_all(dir.join(".lattice"))
+            .and_then(|_| fs::write(dir.join(".lattice").join("settings.json"), settings))
+            .and_then(|_| fs::write(dir.join("start.md"), "# Start view E2E\n"))
+            .map_err(|e| format!("cannot create fixture {name}: {e}"))?;
+        Ok(dir.join("start.md").to_string_lossy().into_owned())
+    };
+    let steps = || -> Result<(), String> {
+        let default_doc = vault("default", "{}")?;
+        start_view_launch(bin, root, &base.join("home-1"), &[&default_doc], "start_view_1_file_default", "preview")?;
+
+        let set_doc = vault("set", r#"{ "startViewWithFile": "dual-top" }"#)?;
+        start_view_launch(bin, root, &base.join("home-2"), &[&set_doc], "start_view_2_file_set", "dual-top")?;
+
+        // Without a document a fresh home has no last vault: the home vault applies.
+        let home = base.join("home-3");
+        fs::create_dir_all(home.join(".lattice"))
+            .and_then(|_| fs::write(home.join(".lattice").join("settings.json"), r#"{ "startViewWithoutFile": "dual" }"#))
+            .map_err(|e| format!("cannot create the home vault: {e}"))?;
+        start_view_launch(bin, root, &home, &[], "start_view_3_no_file_set", "dual")
+    };
+
+    match steps() {
+        Ok(()) => {
+            let _ = fs::remove_dir_all(&base);
+            println!(" → PASS");
+            true
+        }
+        Err(e) => {
+            println!("\n → FAIL ({e}); fixture kept at {}", base.display());
+            false
+        }
+    }
+}
+// scenario_start_view END *****************************************************
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Entry point
 // ─────────────────────────────────────────────────────────────────────────────
@@ -719,6 +833,7 @@ fn main() {
         (DAILY_NOTE_VARIANTS[0].name, scenario_daily_note(&bin, &root, &DAILY_NOTE_VARIANTS[0])),
         (DAILY_NOTE_VARIANTS[1].name, scenario_daily_note(&bin, &root, &DAILY_NOTE_VARIANTS[1])),
         ("last_vault", scenario_last_vault(&bin, &root)),
+        ("start_view", scenario_start_view(&bin, &root)),
     ];
 
     println!("\n══════════════════════════════════════════════════════");

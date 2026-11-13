@@ -34,6 +34,7 @@ import App from './App';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as TauriCore from '@tauri-apps/api/core';
 import { StaticRuntime } from '@services/StaticRuntime';
+import { answerTraceLog } from './test/trace-log-mock';
 import { openUrl } from '@tauri-apps/plugin-opener';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
@@ -85,11 +86,7 @@ const makeInvokeMock = (vaultPath: string | null = '/vault/.lattice/settings.jso
         if (cmd === 'write_text_file') return Promise.resolve({ path: args?.path || 'unknown', hash: 'new-hash' });
         if (cmd === 'watch_file') return Promise.resolve();
         if (cmd === 'read_file_base64') return Promise.resolve('data:image/png;base64,iVBORw==');
-        if (cmd === 'trace_log') {
-            const time = new Date().toISOString().split('T')[1].replace('Z', '');
-            StaticRuntime.log(`[MOCK_TRACE:${time}] ${args?.msg || ''}\n`);
-            return Promise.resolve();
-        }
+        if (cmd === 'trace_log') return answerTraceLog(); // must not log: see trace-log-mock.ts
         return Promise.resolve(null);
     };
 

@@ -1830,8 +1830,10 @@ itself is not involved.
   user's `PATH`; the user can switch it off under App execution aliases.
 
 Tests: `src-tauri/windows/user-path.test.mjs` (Windows only; Windows PowerShell 5.1, on a registry key of its
-own); CI step 394 on both Windows legs (STST); the MSIX manifest is validated by `makeappx` on every Windows
-build that packs it.
+own); CI step 394 on both Windows legs (STST); CI step 395 on both Linux legs (STST: the leg's `.deb` installed
+with `apt-get`, a login shell with an empty environment finds `/usr/bin/lattice` and `lattice --help` exits 0,
+removing the package takes it off again); the MSIX manifest is validated by `makeappx` on every Windows build
+that packs it.
 
 ---
 
@@ -2096,6 +2098,33 @@ is sized by CSS alone: `width` `MENU_WIDTH` (`75vw`, three quarters of the WebVi
 window's content area) and `min-width` `MENU_MIN_WIDTH_PX` (250 px), with `box-sizing: border-box`. No
 resize listener: the browser recomputes `vw` when the window changes size, also while the menu is open. The
 dropdown stays anchored at the right edge of the Menu button.
+
+<!--ARCH-LTTCE-WIN-00003-->
+**ARCH-LTTCE-WIN-00003** — covers REQ-LTTCE-WIN-00003. The start view of a window.
+
+| Part | Where | What it does |
+| --- | --- | --- |
+| Stored values | `src-tauri/src/settings.rs` (IMPL-LTTCE-WIN-00003) | `startViewWithFile` / `startViewWithoutFile`, of the enum `ViewMode` (`edit`, `preview`, `dual`, `dual-swap`, `dual-top`, `dual-bottom`); defaults Preview / Edit. An unknown string is not a `ViewMode`: on load it costs only its own setting (REQ-LTTCE-SET-00001), on save the whole write is refused. |
+| The six modes | `src/lib/view-mode.ts` (IMPL-LTTCE-WIN-00004) | The values (also `data-view-mode`), the labels, `toViewMode` (anything else → a fallback) and `startViewMode(settings, openedWithFile)`. One list for the toolbar dropdown and Settings; paired with the Rust enum by a test on each side. |
+| The dropdowns | `src/components/Settings.tsx` (IMPL-LTTCE-WIN-00005) | Section "Start View", two `ViewModeSelect`s; a choice is saved at once. |
+| Applying it | `src/App.tsx` (IMPL-LTTCE-WIN-00006) | `startViewPendingRef` |
+
+**Applying it once.** Settings belong to a vault, and the vault is only known once the launch has resolved the
+document, so the start view cannot be decided at mount. `checkLaunch` records how the window opened —
+`startViewPendingRef` = true (a document, also one restored after a WebView reload) or false (none) — *before*
+it resolves the vault. Resolving it changes the vault path, which loads the settings; `loadSettings` then
+applies `startViewMode(settings, openedWithFile)` and clears the ref. A failed load applies the defaults, and
+so does a launch that resolves no vault at all. Because the ref is cleared, a later load — another vault's
+document, the Settings window closing — does not change the view. A choice in the toolbar dropdown clears the
+ref too, so a view the user picks before the settings arrive stays. An export window never sets the ref and
+keeps the view the export sets (ARCH-LTTCE-XPT-00001). The Settings window itself runs the same code; its view
+is never shown.
+
+Tests: `settings_tests.rs` (defaults, every mode round-trips, an invalid value costs only itself, refused on
+save, written and read back); `src/lib/view-mode.test.ts`; `Settings.test.tsx` ("Start View"); `App.test.tsx`
+("App — start view": both settings and defaults, unreadable and invalid settings, applied once, the user's
+choice wins, export untouched); STST `examples/e2e_harness.rs` scenario `start_view` (a document with default
+settings opens in Preview, one with `dual-top` in Dual-top, no document with `dual` in Dual).
 
 ## Feature: Recent Files
 

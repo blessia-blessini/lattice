@@ -5,6 +5,28 @@ use std::path::{Path, PathBuf};
 use crate::daily_note::DailyNotePrefix;
 
 //**************************************************************
+// ViewMode
+//**************************************************************
+/// IMPL-LTTCE-WIN-00003 — a view mode of the editor window as stored in
+/// settings.json (REQ-LTTCE-WIN-00003). The strings are the frontend's
+/// `data-view-mode` values (`src/lib/view-mode.ts`; the two codebases cannot
+/// share one list without codegen). An unknown string is not a `ViewMode`, so
+/// `parse_settings_lenient` drops it back to the field's default and
+/// `save_settings` refuses it.
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum ViewMode {
+    Edit,
+    Preview,
+    Dual,
+    DualSwap,
+    DualTop,
+    DualBottom,
+}
+// ViewMode END ************************************************
+
+
+//**************************************************************
 // Settings
 //**************************************************************
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -61,6 +83,15 @@ pub struct Settings {
     // because the documents people paste into are overwhelmingly white.
     #[serde(default = "default_copy_diagrams_light")]
     pub copy_diagrams_light: bool,
+
+    // IMPL-LTTCE-WIN-00003 — persisted start views (REQ-LTTCE-WIN-00003): the
+    // view a window opens in when it starts with a document (default
+    // Preview) and without one (default Edit).
+    #[serde(default = "default_start_view_with_file")]
+    pub start_view_with_file: ViewMode,
+
+    #[serde(default = "default_start_view_without_file")]
+    pub start_view_without_file: ViewMode,
 }
 
 fn default_theme() -> String {
@@ -90,6 +121,12 @@ fn default_block_external_images() -> bool {
 fn default_copy_diagrams_light() -> bool {
     true
 }
+fn default_start_view_with_file() -> ViewMode {
+    ViewMode::Preview
+}
+fn default_start_view_without_file() -> ViewMode {
+    ViewMode::Edit
+}
 fn default_mermaid_init() -> String {
     " {'theme': 'base', 'themeVariables': {\n  'signalColor':     '#1a1a1a',\n  'signalTextColor': '#1a1a1a',\n  'lineColor':       '#1a1a1a',\n  'actorLineColor':  '#1a1a1a',\n  'fontSize':        '16px'\n}}".to_string()
 }
@@ -109,6 +146,8 @@ impl Default for Settings {
             block_external_images: default_block_external_images(),
             default_mermaid_init: default_mermaid_init(),
             copy_diagrams_light: default_copy_diagrams_light(),
+            start_view_with_file: default_start_view_with_file(),
+            start_view_without_file: default_start_view_without_file(),
         }
     }
 }

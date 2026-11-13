@@ -24,6 +24,7 @@
 import '@testing-library/react';
 import { vi } from 'vitest';
 import { StaticRuntime } from "@services/StaticRuntime";
+import { answerTraceLog } from './trace-log-mock';
 
 // Spec-compliant mock storage implementation to bypass Node.js 25+ native Web Storage shadowing JSDOM
 const createStorageMock = () => {
@@ -91,13 +92,8 @@ if (typeof Range !== 'undefined') {
 
 // Mock Tauri API
 vi.mock('@tauri-apps/api/core', () => ({
-    invoke: vi.fn((cmd, args) => {
-        if (cmd === 'trace_log') {
-            const time = new Date().toISOString().split('T')[1].replace('Z', '');
-            // Use process.stdout to avoid recursion with patched console.error
-            StaticRuntime.log(`[MOCK_TRACE:${time}] ${args?.msg || ''}\n`);
-            return Promise.resolve();
-        }
+    invoke: vi.fn((cmd) => {
+        if (cmd === 'trace_log') return answerTraceLog(); // must not log: see trace-log-mock.ts
         if (cmd === 'get_version_string') return Promise.resolve('0.0.0-TEST');
         return Promise.resolve(null);
     }),

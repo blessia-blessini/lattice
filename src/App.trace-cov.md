@@ -93,3 +93,8 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   UTST: `src/App.coverage.test.tsx`, *App — MRU submenu item click* (file; not found + OK; not found + Cancel;
   unavailable; check throws)
 - IMPL-LTTCE-RCT-00002 **covers** ARCH-LTTCE-RCT-00001
+- IMPL-LTTCE-WIN-00006 **covers** REQ-LTTCE-WIN-00003  (`startViewPendingRef` set in `checkLaunch` before the vault
+  is resolved, never for an export window; `applyPendingStartView` in `loadSettings`, defaults on a failed load or
+  no vault; cleared by the view dropdown; the dropdown renders `VIEW_MODE_OPTIONS`) — UTST: `src/App.test.tsx`,
+  *App — start view* — STST: `examples/e2e_harness.rs` scenario `start_view`
+- IMPL-LTTCE-WIN-00006 **covers** ARCH-LTTCE-WIN-00003

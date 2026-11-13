@@ -7,6 +7,15 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.59
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Start view (REQ-LTTCE-WIN-00003, ARCH-LTTCE-WIN-00003, IMPL-LTTCE-WIN-00003..00006)
+- TEST: Stop the trace_log mocks recursing (cause of the App.coverage timeouts)
+- FIX: Start view defaults also when a failed session restore finds no vault
+- FEAT: Start view settings: the view a window opens in, with and without a file
+- DOCS: Record the first CI pass of the Windows command-line install check
+- TEST: Check on CI that the Linux .deb puts lattice on the command line
+- CHORE: merged a dev fix again
+- CHORE: merged dev
+- CHORE: Bumped version
 - FIX: Give the Windows PATH script tests time for PowerShell start-up
 - Make version 0.3.58
 - FEAT: Added path in installer for Windows and Linux
