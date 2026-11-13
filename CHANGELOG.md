@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.59
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- DOCS: Record the first CI pass of the Windows command-line install check
 - TEST: Check on CI that the Linux .deb puts lattice on the command line
 - CHORE: merged a dev fix again
 - CHORE: merged dev

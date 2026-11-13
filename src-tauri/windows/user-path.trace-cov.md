@@ -25,7 +25,7 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   Mutation checks (2026-11-13): writing without the type, or matching by exact spelling, each fail 2 tests.
 - STST CI step 394 (`buildAndTest.yml`, both Windows legs): the real installer, silent, puts its folder on the
   user's PATH; a shell with PATH read from the registry finds `lattice` there and `lattice --help` exits 0 with
-  the usage text; the real uninstaller restores the user's PATH exactly. Not yet run (2026-11-13).
+  the usage text; the real uninstaller restores the user's PATH exactly. First passed on both Windows legs in run 43379611060 (2026-11-13).
 - The Store alias: `makeappx pack` validates the manifest against the schema on every Windows build that packs
   the MSIX (checked locally 2026-11-13, including that a wrong attribute in the alias is refused). Installing the
   Store package and typing `lattice` is not automated: an unsigned MSIX cannot be installed on a CI runner.
