@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.59
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- TEST: Stop the trace_log mocks recursing (cause of the App.coverage timeouts)
 - FIX: Start view defaults also when a failed session restore finds no vault
 - FEAT: Start view settings: the view a window opens in, with and without a file
 - DOCS: Record the first CI pass of the Windows command-line install check

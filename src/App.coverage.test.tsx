@@ -28,6 +28,7 @@ import * as TauriEvent from '@tauri-apps/api/event';
 import * as TauriWebview from '@tauri-apps/api/webviewWindow';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { StaticRuntime } from '@services/StaticRuntime';
+import { answerTraceLog } from './test/trace-log-mock';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Capture Editor callbacks (onDirtyChange, onChange) via vi.hoisted so they
@@ -84,7 +85,7 @@ type InvokeOpts = {
 };
 
 const makeInvoke = (opts: InvokeOpts = {}) => (cmd: string, args: any) => {
-    if (cmd === 'trace_log')  { StaticRuntime.log(''); return Promise.resolve(); }
+    if (cmd === 'trace_log')  return answerTraceLog(); // must not log: see trace-log-mock.ts
     if (cmd === 'calc_base_path')    return Promise.resolve();
     if (cmd === 'find_vault_settings_file')
         return Promise.resolve(opts.vaultPath !== undefined ? opts.vaultPath : '/vault/.lattice/settings.json');
