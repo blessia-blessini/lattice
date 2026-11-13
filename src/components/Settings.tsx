@@ -4,6 +4,7 @@ import { Licences, LATTICE_LICENSE } from '../services/Licences';
 import { invoke } from '@tauri-apps/api/core';
 import { clampTabSize, TAB_SIZE_MIN, TAB_SIZE_MAX } from '../lib/tab-size';
 import { DAILY_NOTE_PREFIX_MAX_LEN, sanitizeDailyNotePrefixInput } from '../lib/daily-note';
+import { VIEW_MODE_OPTIONS, type ViewMode } from '../lib/view-mode';
 
 /** Props for the {@link Settings} panel component. */
 export interface SettingsProps {
@@ -68,6 +69,14 @@ export interface SettingsProps {
     copyDiagramsLight: boolean;
     /** Called when the user flips the copy-diagrams-light toggle. */
     onCopyDiagramsLightChange: (enabled: boolean) => void;
+    /** View a window starts in when opened with a document (REQ-LTTCE-WIN-00003, default Preview). */
+    startViewWithFile: ViewMode;
+    /** Called with the view chosen for a start with a document. IMPL-LTTCE-WIN-00005. */
+    onStartViewWithFileChange: (mode: ViewMode) => void;
+    /** View a window starts in when opened without a document (REQ-LTTCE-WIN-00003, default Edit). */
+    startViewWithoutFile: ViewMode;
+    /** Called with the view chosen for a start without a document. IMPL-LTTCE-WIN-00005. */
+    onStartViewWithoutFileChange: (mode: ViewMode) => void;
     /** Optional override for the close button; falls back to `close_settings_window` Tauri command. */
     onClose?: () => void;
     /** Absolute path of the settings file; shown at the bottom of the panel. */
@@ -121,6 +130,43 @@ const Toggle: React.FC<ToggleProps> = ({ on, onClick }) => (
 
 
 //******************************************************************************
+// ViewModeSelect
+//******************************************************************************
+/** Props for the shared {@link ViewModeSelect} dropdown. */
+interface ViewModeSelectProps {
+    /** The view mode shown as selected. */
+    value: ViewMode;
+    /** Called with the view mode the user picked. */
+    onChange: (mode: ViewMode) => void;
+    /** Accessible name, also used by tests to find the dropdown. */
+    label: string;
+    /** Panel theme, for the colours. */
+    theme: 'light' | 'dark';
+}
+/**
+ * IMPL-LTTCE-WIN-00005 — a dropdown of the six view modes, with the toolbar's
+ * labels (one list: lib/view-mode.ts). Used by both start-view settings.
+ */
+const ViewModeSelect: React.FC<ViewModeSelectProps> = ({ value, onChange, label, theme }) => (
+    <select
+        value={value}
+        onChange={e => onChange(e.target.value as ViewMode)}
+        aria-label={label}
+        style={{
+            padding: '0.4rem',
+            borderRadius: '4px',
+            border: `1px solid ${theme === 'dark' ? '#30363d' : '#e1e4e8'}`,
+            backgroundColor: theme === 'dark' ? '#161b22' : '#f6f8fa',
+            color: theme === 'dark' ? '#c9d1d9' : '#24292e',
+        }}
+    >
+        {VIEW_MODE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
+);
+// ViewModeSelect END **********************************************************
+
+
+//******************************************************************************
 // Settings
 //******************************************************************************
 /**
@@ -144,9 +190,11 @@ interface SettingsPayload {
     blockExternalImages: boolean;
     defaultMermaidInit: string;
     copyDiagramsLight: boolean;
+    startViewWithFile: ViewMode;
+    startViewWithoutFile: ViewMode;
 }
 
-export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultThemeChange, wordWrap, onWordWrapChange, saveOnBlur, dailyNotesPath, onDailyNotesPathChange, dailyNotePrefix, onDailyNotePrefixChange, useCalendarWeekTitle, onUseCalendarWeekTitleChange, highlightMark, onHighlightMarkChange, showWhitespace, onShowWhitespaceChange, tabSize, onTabSizeChange, blockExternalImages, onBlockExternalImagesChange, defaultMermaidInit, onDefaultMermaidInitChange, copyDiagramsLight, onCopyDiagramsLightChange, onClose, settingsPath }) => {
+export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultThemeChange, wordWrap, onWordWrapChange, saveOnBlur, dailyNotesPath, onDailyNotesPathChange, dailyNotePrefix, onDailyNotePrefixChange, useCalendarWeekTitle, onUseCalendarWeekTitleChange, highlightMark, onHighlightMarkChange, showWhitespace, onShowWhitespaceChange, tabSize, onTabSizeChange, blockExternalImages, onBlockExternalImagesChange, defaultMermaidInit, onDefaultMermaidInitChange, copyDiagramsLight, onCopyDiagramsLightChange, startViewWithFile, onStartViewWithFileChange, startViewWithoutFile, onStartViewWithoutFileChange, onClose, settingsPath }) => {
     const [status, setStatus] = useState<string>('');
 
     //**************************************************************************
@@ -175,6 +223,8 @@ export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultTheme
             blockExternalImages,
             defaultMermaidInit,
             copyDiagramsLight,
+            startViewWithFile,
+            startViewWithoutFile,
             ...overrides,
         };
         try {
@@ -264,6 +314,18 @@ export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultTheme
         const newValue = !copyDiagramsLight;
         onCopyDiagramsLightChange(newValue);
         persist({ copyDiagramsLight: newValue });
+    };
+
+    // IMPL-LTTCE-WIN-00005 — the two start views: propagate + persist. They
+    // take effect in the next window that opens, not in the open ones.
+    const handleStartViewWithFileChange = (mode: ViewMode) => {
+        onStartViewWithFileChange(mode);
+        persist({ startViewWithFile: mode });
+    };
+
+    const handleStartViewWithoutFileChange = (mode: ViewMode) => {
+        onStartViewWithoutFileChange(mode);
+        persist({ startViewWithoutFile: mode });
     };
 
     return (
@@ -388,6 +450,35 @@ export const Settings: React.FC<SettingsProps> = ({ defaultTheme, onDefaultTheme
                     <span>{blockExternalImages ? 'Blocked' : 'Allowed'}</span>
                 </div>
 
+            </div>
+
+            {/* IMPL-LTTCE-WIN-00005 — REQ-LTTCE-WIN-00003 */}
+            <div style={{ marginBottom: '2rem' }}>
+                <h3>Start View</h3>
+
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <span title="The view a window opens in when it starts with a file — opened from the command line, by double-click, or in a new window. Takes effect in the next window that opens.">
+                        When Started With a File:
+                    </span>
+                    <ViewModeSelect
+                        value={startViewWithFile}
+                        onChange={handleStartViewWithFileChange}
+                        label="When Started With a File"
+                        theme={defaultTheme}
+                    />
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '1.5rem' }}>
+                    <span title="The view a window opens in when it starts without a file, such as a new empty window. Takes effect in the next window that opens.">
+                        When Started Without a File:
+                    </span>
+                    <ViewModeSelect
+                        value={startViewWithoutFile}
+                        onChange={handleStartViewWithoutFileChange}
+                        label="When Started Without a File"
+                        theme={defaultTheme}
+                    />
+                </div>
             </div>
 
             <div style={{ marginBottom: '2rem' }}>

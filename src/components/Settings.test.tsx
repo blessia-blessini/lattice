@@ -54,6 +54,10 @@ const DEFAULT_PROPS = {
     onDefaultMermaidInitChange: vi.fn(),
     copyDiagramsLight: true,
     onCopyDiagramsLightChange: vi.fn(),
+    startViewWithFile: 'preview' as const,
+    onStartViewWithFileChange: vi.fn(),
+    startViewWithoutFile: 'edit' as const,
+    onStartViewWithoutFileChange: vi.fn(),
     onClose: vi.fn(),
     settingsPath: '/vault/.lattice/settings.json',
 };
@@ -679,6 +683,63 @@ describe('Settings', () => {
     });
 
     // -----------------------------------------------------------------------
+    // Start View (REQ-LTTCE-WIN-00003, IMPL-LTTCE-WIN-00005)
+    // -----------------------------------------------------------------------
+    const START_VIEW_LABELS = ['When Started With a File', 'When Started Without a File'] as const;
+
+    it('offers the six view modes, with the toolbar labels, in both start-view dropdowns', () => {
+        const { getByLabelText } = render(<Settings {...DEFAULT_PROPS} />);
+        for (const label of START_VIEW_LABELS) {
+            const select = getByLabelText(label) as HTMLSelectElement;
+            expect(Array.from(select.options).map(o => [o.value, o.textContent])).toEqual([
+                ['edit', '▤  Edit'], ['preview', '▥ Preview'],
+                ['dual', '◨ Dual (edit on the left)'], ['dual-swap', '◧ Dual (edit on the right)'],
+                ['dual-top', '⬓ Dual (edit on top)'], ['dual-bottom', '⬒ Dual (edit on bottom)'],
+            ]);
+        }
+    });
+
+    it('shows the current start views', () => {
+        const { getByLabelText } = render(
+            <Settings {...DEFAULT_PROPS} startViewWithFile="dual-top" startViewWithoutFile="dual-swap" />
+        );
+        expect((getByLabelText('When Started With a File') as HTMLSelectElement).value).toBe('dual-top');
+        expect((getByLabelText('When Started Without a File') as HTMLSelectElement).value).toBe('dual-swap');
+    });
+
+    it('reports and persists the start view chosen for a start with a file, and only that one', async () => {
+        const onWith = vi.fn();
+        const onWithout = vi.fn();
+        const { getByLabelText } = render(
+            <Settings {...DEFAULT_PROPS} onStartViewWithFileChange={onWith} onStartViewWithoutFileChange={onWithout} />
+        );
+        await act(async () => {
+            fireEvent.change(getByLabelText('When Started With a File'), { target: { value: 'dual-bottom' } });
+        });
+        expect(onWith).toHaveBeenCalledWith('dual-bottom');
+        expect(onWithout).not.toHaveBeenCalled();
+        expect(TauriCore.invoke).toHaveBeenCalledWith('save_settings', expect.objectContaining({
+            settings: expect.objectContaining({ startViewWithFile: 'dual-bottom', startViewWithoutFile: 'edit' }),
+        }));
+    });
+
+    it('reports and persists the start view chosen for a start without a file, and only that one', async () => {
+        const onWith = vi.fn();
+        const onWithout = vi.fn();
+        const { getByLabelText } = render(
+            <Settings {...DEFAULT_PROPS} onStartViewWithFileChange={onWith} onStartViewWithoutFileChange={onWithout} />
+        );
+        await act(async () => {
+            fireEvent.change(getByLabelText('When Started Without a File'), { target: { value: 'dual' } });
+        });
+        expect(onWithout).toHaveBeenCalledWith('dual');
+        expect(onWith).not.toHaveBeenCalled();
+        expect(TauriCore.invoke).toHaveBeenCalledWith('save_settings', expect.objectContaining({
+            settings: expect.objectContaining({ startViewWithFile: 'preview', startViewWithoutFile: 'dual' }),
+        }));
+    });
+
+    // -----------------------------------------------------------------------
     // Payload completeness — every save writes the whole object
     // -----------------------------------------------------------------------
     // `save_settings` merges a complete object, and each handler now sends
@@ -704,6 +765,8 @@ describe('Settings', () => {
                     blockExternalImages: DEFAULT_PROPS.blockExternalImages,
                     defaultMermaidInit: DEFAULT_PROPS.defaultMermaidInit,
                     copyDiagramsLight: DEFAULT_PROPS.copyDiagramsLight,
+                    startViewWithFile: DEFAULT_PROPS.startViewWithFile,
+                    startViewWithoutFile: DEFAULT_PROPS.startViewWithoutFile,
                 }),
             })
         );

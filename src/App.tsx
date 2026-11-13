@@ -57,6 +57,11 @@ import { resolveRelativePath, isDocumentLink } from './lib/link-utils';
 import { toSourceRange, findInnermostBlockIndex, isBlockTag } from './lib/cursor-block';
 import { PREVIEW_THEME_COLORS } from './lib/preview-theme';
 import {
+  VIEW_EDIT, VIEW_PREVIEW, VIEW_DUAL_SWAP, VIEW_DUAL_TOP, VIEW_DUAL_BOTTOM, VIEW_MODE_OPTIONS,
+  START_VIEW_WITH_FILE_DEFAULT, START_VIEW_WITHOUT_FILE_DEFAULT,
+  isDual, isVertical, startViewMode, type ViewMode,
+} from './lib/view-mode';
+import {
   buildCopyHtml,
   buildExportHtml,
   describeUnsettledPreview,
@@ -173,17 +178,6 @@ const MARK_COLORS = {
   dark: '#423d12',
 };
 
-const VIEW_EDIT = 'edit' as const;
-const VIEW_PREVIEW = 'preview' as const;
-const VIEW_DUAL = 'dual' as const;
-const VIEW_DUAL_SWAP = 'dual-swap' as const;
-const VIEW_DUAL_TOP = 'dual-top' as const;
-const VIEW_DUAL_BOTTOM = 'dual-bottom' as const;
-type ViewMode = typeof VIEW_EDIT | typeof VIEW_PREVIEW | typeof VIEW_DUAL | typeof VIEW_DUAL_SWAP
-  | typeof VIEW_DUAL_TOP | typeof VIEW_DUAL_BOTTOM;
-const DUAL_MODES = [VIEW_DUAL, VIEW_DUAL_SWAP, VIEW_DUAL_TOP, VIEW_DUAL_BOTTOM] as const;
-const isDual = (m: ViewMode) => (DUAL_MODES as readonly string[]).includes(m);
-const isVertical = (m: ViewMode) => m === VIEW_DUAL_TOP || m === VIEW_DUAL_BOTTOM;
 
 //******************************************************************************
 // App
@@ -255,6 +249,9 @@ function App() {
   const [m_defaultMermaidInit, setDefaultMermaidInit] = useState<string>('');
   // REQ-LTTCE-MRC-00005 — copy diagrams light-on-white regardless of theme.
   const [m_copyDiagramsLight, setCopyDiagramsLight] = useState(true);
+  // REQ-LTTCE-WIN-00003 — the start views, as shown and saved by Settings.
+  const [m_startViewWithFile, setStartViewWithFile] = useState<ViewMode>(START_VIEW_WITH_FILE_DEFAULT);
+  const [m_startViewWithoutFile, setStartViewWithoutFile] = useState<ViewMode>(START_VIEW_WITHOUT_FILE_DEFAULT);
   const [m_dailyNotesPath, setDailyNotesPath] = useState<string>('');
   // REQ-LTTCE-DLN-00005 / -00006 — daily-note file-name prefix and title style.
   const [m_dailyNotePrefix, setDailyNotePrefix] = useState<string>(DAILY_NOTE_PREFIX_DEFAULT);
@@ -353,6 +350,13 @@ function App() {
   const isDirtyRef = useRef(false);
   const currentFilePathRef = useRef<string | null>(null);
   const viewModeRef = useRef<ViewMode>(VIEW_EDIT);
+  // IMPL-LTTCE-WIN-00006 — REQ-LTTCE-WIN-00003: the start view still owed to
+  // this window. checkLaunch sets it (true = opened with a document, false =
+  // without) before resolving the vault; the first settings load after that
+  // applies the matching setting once and clears it, so a later reload (the
+  // Settings window closing, a vault switch) never changes the view. A choice
+  // in the view dropdown clears it too. Never set for an export window.
+  const startViewPendingRef = useRef<boolean | null>(null);
 
   //****************************************************************************
   // applyLoadedDocument
@@ -589,11 +593,28 @@ function App() {
       // REQ-LTTCE-MRC-00005 — default ON: pasted diagrams land in white
       // documents far more often than dark ones.
       setCopyDiagramsLight(settings.copyDiagramsLight !== false);
+      setStartViewWithFile(startViewMode(settings, true));
+      setStartViewWithoutFile(startViewMode(settings, false));
+      applyPendingStartView(settings);
 
     } catch (error) {
       console.log("Settings file not found or invalid, using default.", error);
+      applyPendingStartView(null); // the defaults
     }
   };// Settings Loading END ****************************************************
+
+
+  //****************************************************************************
+  // applyPendingStartView
+  //****************************************************************************
+  /** IMPL-LTTCE-WIN-00006 — apply the start view once, if one is still owed. */
+  const applyPendingStartView = (settings: Parameters<typeof startViewMode>[0]) => {
+    const openedWithFile = startViewPendingRef.current;
+    if (openedWithFile === null) return;
+    startViewPendingRef.current = null;
+    setViewMode(startViewMode(settings, openedWithFile));
+  };
+  // applyPendingStartView END *************************************************
 
 
   //****************************************************************************
@@ -1174,8 +1195,13 @@ function App() {
           setSaveOnBlur(true);
           if (initData.readOnly === true) setReadOnlyPath(initData.path);
 
+          // IMPL-LTTCE-WIN-00006 — an interactive window opened with a
+          // document; an export window keeps the view the export sets.
+          if (!exportFormat) startViewPendingRef.current = true;
+
           // Strict Enforce
-          await enforceVaultPath(initData.path);
+          // No vault at all means no settings load: the defaults apply.
+          if (!(await enforceVaultPath(initData.path))) applyPendingStartView(null);
           FileSystem.watchFile(initData.path);
 
           // IMPL-LTTCE-XPT-00002 — REQ-LTTCE-XPT-00001 / 00004 — headless
@@ -1300,6 +1326,7 @@ function App() {
         const lastPath = sessionStorage.getItem('lattice-last-open-path');
         if (lastPath) {
           console.log("Info: Restoring last open file after refresh:", lastPath);
+          startViewPendingRef.current = true; // IMPL-LTTCE-WIN-00006 — a document is shown
           try {
             await enforceVaultPath(lastPath);
             const response = await FileSystem.readTextFile(lastPath);
@@ -1310,10 +1337,14 @@ function App() {
           } catch (e) {
             console.error("Failed to restore last file:", e);
             sessionStorage.removeItem('lattice-last-open-path');
+            // No document after all — unless the start view was applied already.
+            if (startViewPendingRef.current !== null) startViewPendingRef.current = false;
             await enforceVaultPath("");
           }
         } else {
-          await enforceVaultPath(""); // Get global fallback
+          startViewPendingRef.current = false; // IMPL-LTTCE-WIN-00006 — no document
+          // Get global fallback; no vault at all means no settings load: the defaults apply.
+          if (!(await enforceVaultPath(""))) applyPendingStartView(null);
           console.log("Info: No Direct Push Data found. App opened without any file");
         }
       }
@@ -2086,6 +2117,10 @@ function App() {
       onDefaultMermaidInitChange={setDefaultMermaidInit}
       copyDiagramsLight={m_copyDiagramsLight}
       onCopyDiagramsLightChange={setCopyDiagramsLight}
+      startViewWithFile={m_startViewWithFile}
+      onStartViewWithFileChange={setStartViewWithFile}
+      startViewWithoutFile={m_startViewWithoutFile}
+      onStartViewWithoutFileChange={setStartViewWithoutFile}
       settingsPath={m_vaultSettingsPath || ""}
     />;
 
@@ -2129,6 +2164,10 @@ function App() {
             onDefaultMermaidInitChange={setDefaultMermaidInit}
             copyDiagramsLight={m_copyDiagramsLight}
             onCopyDiagramsLightChange={setCopyDiagramsLight}
+            startViewWithFile={m_startViewWithFile}
+            onStartViewWithFileChange={setStartViewWithFile}
+            startViewWithoutFile={m_startViewWithoutFile}
+            onStartViewWithoutFileChange={setStartViewWithoutFile}
             onClose={() => setShowSettingsModal(false)}
             settingsPath={m_vaultSettingsPath || ""}
           />
@@ -2197,7 +2236,12 @@ function App() {
           <select
             data-testid="view-mode-select"
             value={viewMode}
-            onChange={e => setViewMode(e.target.value as ViewMode)}
+            onChange={e => {
+              // REQ-LTTCE-WIN-00003 — the user's own choice wins over a start
+              // view the settings have not delivered yet.
+              startViewPendingRef.current = null;
+              setViewMode(e.target.value as ViewMode);
+            }}
             style={{
               ...toolbarBtnStyle,
               // All vendor prefixes — WebView2/WebKit can still draw their own
@@ -2214,16 +2258,8 @@ function App() {
               backgroundSize: '12px 12px',
             }}
           >
-            {/* Use a single family of monochrome geometric markers so all
-                rows render from the same font (no color-emoji vs outline
-                mismatch). The filled half-square also conveys which pane is
-                the editor at a glance. */}
-            <option value={VIEW_EDIT}>▤  Edit</option>
-            <option value={VIEW_PREVIEW}>▥ Preview</option>
-            <option value={VIEW_DUAL}>◨ Dual (edit on the left)</option>
-            <option value={VIEW_DUAL_SWAP}>◧ Dual (edit on the right)</option>
-            <option value={VIEW_DUAL_TOP}>⬓ Dual (edit on top)</option>
-            <option value={VIEW_DUAL_BOTTOM}>⬒ Dual (edit on bottom)</option>
+            {/* The labels and why they look alike: lib/view-mode.ts. */}
+            {VIEW_MODE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
 
           <button

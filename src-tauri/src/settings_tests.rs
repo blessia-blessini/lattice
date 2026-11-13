@@ -228,6 +228,100 @@ fn test_copy_diagrams_light_corrupt_value_costs_only_itself() {
 }
 
 // -----------------------------------------------------------------------
+// startViewWithFile / startViewWithoutFile (REQ-LTTCE-WIN-00003 /
+// IMPL-LTTCE-WIN-00003)
+// -----------------------------------------------------------------------
+/// The six view modes with the strings the frontend uses as `data-view-mode`
+/// (src/lib/view-mode.ts). Spelled out here, not derived, so a renamed
+/// variant breaks this test instead of silently changing the file format.
+const VIEW_MODE_STRINGS: [(ViewMode, &str); 6] = [
+    (ViewMode::Edit, "edit"),
+    (ViewMode::Preview, "preview"),
+    (ViewMode::Dual, "dual"),
+    (ViewMode::DualSwap, "dual-swap"),
+    (ViewMode::DualTop, "dual-top"),
+    (ViewMode::DualBottom, "dual-bottom"),
+];
+
+/// UTST — defaults: Preview with a document, Edit without one, also for a
+/// settings file that predates the two settings.
+#[test]
+fn test_start_views_default() {
+    let s = Settings::default();
+    assert_eq!(s.start_view_with_file, ViewMode::Preview);
+    assert_eq!(s.start_view_without_file, ViewMode::Edit);
+
+    let parsed = parse_settings_lenient(r#"{"wordWrap": true}"#);
+    assert_eq!(parsed.start_view_with_file, ViewMode::Preview);
+    assert_eq!(parsed.start_view_without_file, ViewMode::Edit);
+}
+
+/// UTST — every view mode round-trips under its frontend string, in both
+/// settings, under the camelCase keys.
+#[test]
+fn test_start_views_round_trip_every_mode() {
+    for (mode, text) in VIEW_MODE_STRINGS {
+        let json = format!(r#"{{"startViewWithFile": "{text}", "startViewWithoutFile": "{text}"}}"#);
+        let s = parse_settings_lenient(&json);
+        assert_eq!(s.start_view_with_file, mode, "{text}");
+        assert_eq!(s.start_view_without_file, mode, "{text}");
+
+        let v = serde_json::to_value(&s).unwrap();
+        assert_eq!(v["startViewWithFile"], text);
+        assert_eq!(v["startViewWithoutFile"], text);
+    }
+}
+
+/// UTST for REQ-LTTCE-SET-00001 — an unknown or mistyped hand-edited value
+/// costs only its own setting, which falls back to its default.
+#[test]
+fn test_start_views_invalid_value_costs_only_itself() {
+    for bad in [r#""split""#, r#""Preview""#, r#""""#, "3", "null"] {
+        let json = format!(r#"{{"startViewWithFile": {bad}, "startViewWithoutFile": "dual-top", "wordWrap": true}}"#);
+        let s = parse_settings_lenient(&json);
+        assert_eq!(s.start_view_with_file, ViewMode::Preview, "{bad} must fall back to the default");
+        assert_eq!(s.start_view_without_file, ViewMode::DualTop, "the valid sibling survives ({bad})");
+        assert!(s.word_wrap, "the valid sibling survives ({bad})");
+    }
+}
+
+/// UTST — the write-side gate: an unknown view mode arriving over IPC cannot
+/// become a `Settings`, so `save_settings` refuses it before writing.
+#[test]
+fn test_start_view_invalid_value_is_refused_on_save_payload() {
+    let payload = json!({ "startViewWithoutFile": "split", "wordWrap": true });
+    assert!(serde_json::from_value::<Settings>(payload).is_err());
+}
+
+/// ITST — both settings are written by save_settings_internal and read back
+/// by load_settings_internal.
+#[test]
+fn test_save_settings_internal_persists_start_views() {
+    let temp = tempfile::tempdir().unwrap();
+    let lattice_dir = temp.path().join("vault").join(".lattice");
+    fs::create_dir_all(&lattice_dir).unwrap();
+    let settings_path = lattice_dir.join("settings.json");
+    fs::write(&settings_path, "{}").unwrap();
+    let home = temp.path().join("home");
+
+    let s = Settings {
+        start_view_with_file: ViewMode::DualBottom,
+        start_view_without_file: ViewMode::DualSwap,
+        ..Default::default()
+    };
+    save_settings_internal(&settings_path.to_string_lossy(), s, &home).unwrap();
+
+    let v: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(&settings_path).unwrap()).unwrap();
+    assert_eq!(v["startViewWithFile"], "dual-bottom");
+    assert_eq!(v["startViewWithoutFile"], "dual-swap");
+
+    let back = load_settings_internal(&settings_path.to_string_lossy(), &home).unwrap();
+    assert_eq!(back.start_view_with_file, ViewMode::DualBottom);
+    assert_eq!(back.start_view_without_file, ViewMode::DualSwap);
+}
+
+// -----------------------------------------------------------------------
 // dailyNotePrefix / useCalendarWeekTitle (REQ-LTTCE-DLN-00005 /
 // REQ-LTTCE-DLN-00006 / IMPL-LTTCE-DLN-00004)
 // -----------------------------------------------------------------------

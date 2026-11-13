@@ -1098,6 +1098,19 @@ the window's width wide, so that it narrows as the window narrows, and SHALL nev
 long entries wrapped even in a wide window. The lower limit is that width, so a narrow window keeps the menu
 as it was.
 
+<!--REQ-LTTCE-WIN-00003-->
+**REQ-LTTCE-WIN-00003** — Settings SHALL offer two choices of start view, **When Started With a File** and
+**When Started Without a File**, each a dropdown of the six view modes of the toolbar (Edit, Preview, and the
+four Dual modes), with the toolbar's labels. A window that opens with a document — given on the command line,
+opened from the operating system, or opened in a new window — SHALL show the view chosen by the first; a window
+that opens without one SHALL show the view chosen by the second. The defaults SHALL be **Preview** with a
+document and **Edit** without one, also when the stored value is missing or not one of the six. The start view
+SHALL be applied once, when the window opens: a change in Settings SHALL apply to windows opened afterwards, a
+view the user picks SHALL NOT be replaced by it, and a headless export (Chapter XPT) SHALL be unaffected.
+
+*Rationale*: written 2026-11-13, requested by the product owner. Until then every window opened in Edit. A
+document opened from outside is usually opened to be read, a new empty window to be written in.
+
 ## Chapter RCT — Recent Files
 
 The File menu's **Open Recent** lists the documents the user worked on last, to open one again with a click.

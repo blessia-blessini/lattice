@@ -30,7 +30,7 @@ import { EXPORT_MODE_ATTR } from './lib/preview-copy';
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
 import * as TauriCore from '@tauri-apps/api/core';
 import { StaticRuntime } from "@services/StaticRuntime";
-import { save } from '@tauri-apps/plugin-dialog';
+import { open, save } from '@tauri-apps/plugin-dialog';
 import { openUrl } from '@tauri-apps/plugin-opener';
 
 // Mock dialog
@@ -1666,5 +1666,111 @@ describe('App — StrictMode double-mount resilience', () => {
         const watchCalls = vi.mocked(TauriCore.invoke).mock.calls
             .filter(([cmd]) => cmd === 'watch_file');
         expect(watchCalls.length).toBe(1);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Start view (REQ-LTTCE-WIN-00003) — UTST for IMPL-LTTCE-WIN-00006
+// ---------------------------------------------------------------------------
+describe('App — start view', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        sessionStorage.clear();
+        localStorage.clear();
+        delete (window as any).__LATTICE_INIT_DATA__;
+    });
+
+    /** load_settings answers `settings` (a promise for a deferred answer). */
+    const mockSettings = (settings: object | null | Promise<object | null>) =>
+        vi.mocked(TauriCore.invoke).mockImplementation((cmd: string, args: any) =>
+            cmd === 'load_settings' ? Promise.resolve(settings) : makeInvokeMock()(cmd, args));
+    const viewModeOf = (container: HTMLElement) =>
+        container.querySelector('.main-content')?.getAttribute('data-view-mode');
+    const settingsLoads = () =>
+        vi.mocked(TauriCore.invoke).mock.calls.filter(([cmd]) => cmd === 'load_settings').length;
+    const openWithFile = () => {
+        (window as any).__LATTICE_INIT_DATA__ = { path: '/vault/a.md', content: '# A' };
+    };
+    const SET = { startViewWithFile: 'dual-top', startViewWithoutFile: 'dual' };
+
+    it.each([
+        ['with a file, default', {}, true, 'preview'],
+        ['with a file, set', SET, true, 'dual-top'],
+        ['without a file, set', SET, false, 'dual'],
+        ['with a file, settings unreadable', null, true, 'preview'],
+        ['with a file, invalid value', { startViewWithFile: 'split' }, true, 'preview'],
+    ] as const)('starts %s in the matching view', async (_name, settings, withFile, expected) => {
+        mockSettings(settings);
+        if (withFile) openWithFile();
+        const { container } = render(<App />);
+        await waitFor(() => expect(viewModeOf(container)).toBe(expected));
+    });
+
+    it('starts without a file in Edit by default', async () => {
+        // Edit is also the view before the settings arrive, so wait for the
+        // load and a turn after it before looking.
+        mockSettings({ startViewWithFile: 'dual-top' });
+        const { container } = render(<App />);
+        await waitFor(() => expect(settingsLoads()).toBeGreaterThan(0));
+        await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+        expect(viewModeOf(container)).toBe('edit');
+    });
+
+    it('applies the start view once: a later settings load leaves the view alone', async () => {
+        // A document from another vault loads that vault's settings — the
+        // second load of this window. Its start view differs and the user
+        // has not touched the view: it must still not change.
+        vi.mocked(TauriCore.invoke).mockImplementation((cmd: string, args: any) => {
+            if (cmd === 'load_settings') {
+                return Promise.resolve(String(args?.settingsPath).startsWith('/other')
+                    ? { startViewWithFile: 'dual-bottom' } : SET);
+            }
+            if (cmd === 'find_vault_settings_file') {
+                return Promise.resolve(String(args?.path ?? args?.filePath ?? '').startsWith('/other')
+                    ? '/other/.lattice/settings.json' : '/vault/.lattice/settings.json');
+            }
+            return makeInvokeMock()(cmd, args);
+        });
+        openWithFile();
+        const { container, getByText } = render(<App />);
+        await waitFor(() => expect(viewModeOf(container)).toBe('dual-top'));
+
+        const loadsBefore = settingsLoads();
+
+        vi.mocked(open).mockResolvedValueOnce('/other/b.md');
+        await waitFor(() => expect(getByText('☰ Menu')).toBeTruthy());
+        fireEvent.click(getByText('☰ Menu'));
+        const openHere = await waitFor(() => getByText('Open here ...'));
+        await act(async () => { fireEvent.click(openHere); });
+        await waitFor(() => expect(settingsLoads()).toBe(loadsBefore + 1));
+        await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+        expect(viewModeOf(container)).toBe('dual-top');
+    });
+
+    it('keeps a view the user picked before the settings arrived', async () => {
+        let answer!: (s: object) => void;
+        mockSettings(new Promise<object>(r => { answer = r; }));
+        openWithFile();
+        const { container } = render(<App />);
+        await waitFor(() => expect(settingsLoads()).toBeGreaterThan(0));
+
+        const select = container.querySelector('[data-testid="view-mode-select"]') as HTMLSelectElement;
+        await act(async () => { fireEvent.change(select, { target: { value: 'dual-bottom' } }); });
+        await act(async () => { answer(SET); await new Promise(r => setTimeout(r, 0)); });
+        expect(viewModeOf(container)).toBe('dual-bottom');
+    });
+
+    it('leaves an HTML export window in the view the export needs', async () => {
+        mockSettings(SET);
+        (window as any).__LATTICE_INIT_DATA__ = { path: '/vault/a.md', content: '# A', exportFormat: 'html' };
+        const { container } = render(<App />);
+        // The export first waits for the preview to settle — over 1 s at times.
+        await waitFor(() => expect(
+            vi.mocked(TauriCore.invoke).mock.calls.some(([cmd]) => cmd === 'export_ready')).toBe(true),
+            { timeout: 5000 });
+        await waitFor(() => expect(settingsLoads()).toBeGreaterThan(0));
+        await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+        expect(viewModeOf(container)).toBe('edit');
+        document.documentElement.removeAttribute(EXPORT_MODE_ATTR);
     });
 });

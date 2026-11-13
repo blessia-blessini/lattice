@@ -21,3 +21,7 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   Open-source licences" → `Licences.openNotices()`; a failure is shown in the status line) — UTST:
   `src/components/Settings.test.tsx` ("Settings — open-source licences")
 - IMPL-LTTCE-FOS-00003 **covers** ARCH-LTTCE-FOS-00003
+- IMPL-LTTCE-WIN-00005 **covers** REQ-LTTCE-WIN-00003  (section "Start View": two `ViewModeSelect` dropdowns of
+  `VIEW_MODE_OPTIONS`, each choice reported and saved with the whole settings object) — UTST:
+  `src/components/Settings.test.tsx` ("Start View", "writes every setting")
+- IMPL-LTTCE-WIN-00005 **covers** ARCH-LTTCE-WIN-00003

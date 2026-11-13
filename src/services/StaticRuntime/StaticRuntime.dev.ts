@@ -27,6 +27,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { IStaticRuntime } from "./IStaticRuntime";
 import { listen } from "@tauri-apps/api/event";
 import { runDailyNoteE2EDriver } from "./DailyNoteE2EDriver";
+import { runStartViewE2EDriver } from "./StartViewE2EDriver";
 
 /**
  * DEVELOPMENT Implementation.
@@ -129,6 +130,8 @@ export const StaticRuntime: IStaticRuntime = {
         // created its marker directory before launch. Not awaited: it waits
         // for harness signals for up to a minute.
         void runDailyNoteE2EDriver();
+        // Start view scenario (REQ-LTTCE-WIN-00003) — inert without its marker.
+        void runStartViewE2EDriver();
     }
     // setupTestModeListeners END ***********************************
 
