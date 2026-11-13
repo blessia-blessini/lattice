@@ -7,8 +7,11 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.59
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: merged a dev fix again
 - CHORE: merged dev
 - CHORE: Bumped version
+- FIX: Give the Windows PATH script tests time for PowerShell start-up
+- Make version 0.3.58
 - FEAT: Added path in installer for Windows and Linux
 - FEAT: Added path in staller for Windows and Linux
 - FEAT: `lattice` on the command line after installing on Windows

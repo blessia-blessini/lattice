@@ -69,7 +69,12 @@ const writePath = (value, kind = 'ExpandString') => ps(
 const deleteKey = () => ps(`[Microsoft.Win32.Registry]::CurrentUser.DeleteSubKeyTree(${psQuote(TEST_KEY)}, $false)`);
 
 
-describe.skipIf(!onWindows)('user-path.ps1 (Windows PowerShell 5.1)', () => {
+// Every ps() / runScript() call starts a fresh powershell.exe (~0.4 s here, several
+// times that on a loaded CI runner), and one test makes up to 9 of them -- far over
+// vitest's 5 s default (both Windows legs of run 43339932460 timed out on it).
+const POWERSHELL_TEST_TIMEOUT_MS = 120_000;
+
+describe.skipIf(!onWindows)('user-path.ps1 (Windows PowerShell 5.1)', { timeout: POWERSHELL_TEST_TIMEOUT_MS }, () => {
     describe('Add-PathEntry and Remove-PathEntry', () => {
         it('appends a folder, once, whatever its spelling in PATH', () => {
             expect(ps(`Add-PathEntry 'C:\\a;C:\\b' 'C:\\Lattice'`)).toBe('C:\\a;C:\\b;C:\\Lattice');
