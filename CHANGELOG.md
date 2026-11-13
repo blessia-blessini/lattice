@@ -7,6 +7,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.59
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- Make version 0.3.58
 - FEAT: Added path in installer for Windows and Linux
 - FEAT: Added path in staller for Windows and Linux
 - FEAT: `lattice` on the command line after installing on Windows
