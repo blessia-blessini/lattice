@@ -3,11 +3,11 @@
   "source": {
     "product": {
       "repository": "blessia-blessini/lattice",
-      "ref": "401434c019cc152939ce62ed2dbd59f40f626d18"
+      "ref": "b9df0924e9d44678e5dc894941d85dff857fdf3b"
     },
     "date": "2026-11-14",
-    "legattice": "a9b81f341c834763b2c9434bf6ec0d8d8c9c71ff",
-    "run": "https://github.com/blessia-blessini/lattice/actions/runs/43644336678"
+    "legattice": "1ef1d3ae14e578b45fbd2886b98bac5e44d545b6",
+    "run": "https://github.com/blessia-blessini/lattice/actions/runs/43651691710"
   },
   "additions": [
     {
@@ -558,6 +558,76 @@
       ]
     },
     {
+      "topic": "LT-68dee1e133",
+      "package": {
+        "id": "Crate::derive_more:2.1.1",
+        "ecosystem": "cargo",
+        "name": "derive_more",
+        "version": "2.1.1"
+      },
+      "licences": [
+        "Apache-2.0"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "Apache-2.0",
+        "rationale": "REASON-011: Prefer Apache-2.0 over MIT (patent grant); as_dyn_error.rs taken from thiserror, dual licensed MIT and Apache-2.0; thiserror declares MIT OR Apache-2.0 and ships no NOTICE file",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-11-14"
+      },
+      "files": [
+        {
+          "path": "src/as_dyn_error.rs",
+          "sha1": "402a75b1b7f9d136ea0e17ea82579fd12512b04c",
+          "lines": [
+            [
+              8,
+              9
+            ],
+            [
+              14,
+              14
+            ]
+          ]
+        }
+      ],
+      "copyrights": []
+    },
+    {
+      "topic": "LT-408a1ed156",
+      "package": {
+        "id": "Crate::dom_query:0.28.0",
+        "ecosystem": "cargo",
+        "name": "dom_query",
+        "version": "0.28.0"
+      },
+      "licences": [
+        "Apache-2.0"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "Apache-2.0",
+        "rationale": "REASON-011: Prefer Apache-2.0 over MIT (patent grant); LICENSE:27 portions from nipper, dual licensed MIT and Apache-2.0; nipper declares MIT/Apache-2.0 (a choice) and ships no NOTICE file",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-11-14"
+      },
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha1": "009595097d96ae22fac4bd3f1d5be0d2bc139841",
+          "lines": [
+            [
+              27,
+              27
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright (c) 2023 Mykola Humanov"
+      ]
+    },
+    {
       "topic": "LT-336583a4b2",
       "package": {
         "id": "Crate::icu_provider:2.4.0",
@@ -566,14 +636,14 @@
         "version": "2.4.0"
       },
       "licences": [
-        "MIT"
+        "Apache-2.0"
       ],
       "decision": {
         "outcome": "accept-as",
-        "licence": "MIT",
-        "rationale": "REASON-001: Prefer MIT over Apache-2.0; marker.rs reproduces Rust project code under MIT OR Apache-2.0",
+        "licence": "Apache-2.0",
+        "rationale": "REASON-011: Prefer Apache-2.0 over MIT (patent grant); marker.rs reproduces Rust project code under MIT OR Apache-2.0",
         "decidedBy": "Blessia Blessini",
-        "date": "2026-10-28"
+        "date": "2026-11-14"
       },
       "files": [
         {
@@ -604,14 +674,14 @@
         "version": "2.4.0"
       },
       "licences": [
-        "MIT"
+        "Apache-2.0"
       ],
       "decision": {
         "outcome": "accept-as",
-        "licence": "MIT",
-        "rationale": "REASON-001: Prefer MIT over Apache-2.0; marker.rs reproduces Rust project code under MIT OR Apache-2.0",
+        "licence": "Apache-2.0",
+        "rationale": "REASON-011: Prefer Apache-2.0 over MIT (patent grant); marker.rs reproduces Rust project code under MIT OR Apache-2.0",
         "decidedBy": "Blessia Blessini",
-        "date": "2026-10-28"
+        "date": "2026-11-14"
       },
       "files": [
         {
@@ -2307,6 +2377,145 @@
       "copyrights": [
         "Copyright 2018 Vladimir Agafonkin",
         "Copyright 2021 Mike Bostock"
+      ]
+    },
+    {
+      "topic": "LT-638e15459a",
+      "package": {
+        "id": "NPM::d3-geo:3.1.2",
+        "ecosystem": "npm",
+        "name": "d3-geo",
+        "version": "3.1.2"
+      },
+      "licences": [
+        "MIT"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "MIT",
+        "rationale": "REASON-003: Bundled code under its own licence; GeographicLib (Charles Karney), the MIT part of its LICENSE; already in notices",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-11-14"
+      },
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha1": "225af5659652a0daf44ad6e397cc610d13f5ee02",
+          "lines": [
+            [
+              19,
+              34
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright 2008-2012 Charles Karney",
+        "Copyright 2010-2026 Mike Bostock"
+      ]
+    },
+    {
+      "topic": "LT-232db81609",
+      "package": {
+        "id": "NPM::d3-scale-chromatic:3.1.1",
+        "ecosystem": "npm",
+        "name": "d3-scale-chromatic",
+        "version": "3.1.1"
+      },
+      "licences": [
+        "Apache-2.0"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "Apache-2.0",
+        "rationale": "REASON-003: Bundled code under its own licence; ColorBrewer schemes, the Apache-2.0 part of its LICENSE; already in notices",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-11-14"
+      },
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha1": "1a0a94ae85fe44ea821448c183fa5e50b97f51c9",
+          "lines": [
+            [
+              15,
+              15
+            ],
+            [
+              15,
+              28
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "Copyright 2002 Cynthia Brewer, Mark Harrower, and The Pennsylvania State University",
+        "Copyright 2010-2026 Mike Bostock"
+      ]
+    },
+    {
+      "topic": "LT-7c66dbb35e",
+      "package": {
+        "id": "NPM::dompurify:3.4.18",
+        "ecosystem": "npm",
+        "name": "dompurify",
+        "version": "3.4.18"
+      },
+      "licences": [
+        "MIT"
+      ],
+      "decision": {
+        "outcome": "accept-as",
+        "licence": "MIT",
+        "rationale": "REASON-003: Bundled code under its own licence; Babel's regenerator-runtime helper inlined in dist (Facebook, MIT); not yet in notices",
+        "decidedBy": "Blessia Blessini",
+        "date": "2026-11-14"
+      },
+      "files": [
+        {
+          "path": "dist/purify.cjs.js",
+          "sha1": "60d7b34bf0d2e64db9524750d134bf3d5b44e4b8",
+          "lines": [
+            [
+              38,
+              38
+            ]
+          ]
+        },
+        {
+          "path": "dist/purify.es.mjs",
+          "sha1": "ad37b081e5c0bbde63aa39cf4e39440e84f0b70c",
+          "lines": [
+            [
+              37,
+              37
+            ]
+          ]
+        },
+        {
+          "path": "dist/purify.js",
+          "sha1": "f506468335660ee0d8d3f54eb8faac19ce88dc74",
+          "lines": [
+            [
+              41,
+              41
+            ]
+          ]
+        },
+        {
+          "path": "dist/purify.min.js",
+          "sha1": "1b93ea843b488114c1d04404bd0c9ea7fea27641",
+          "lines": [
+            [
+              4,
+              4
+            ]
+          ]
+        }
+      ],
+      "copyrights": [
+        "(c) Cure53 and other contributors",
+        "Copyright (c) 2014-present, Facebook, Inc."
       ]
     },
     {
