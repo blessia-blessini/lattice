@@ -3,10 +3,31 @@
 All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
+## v0.3.61
+### Changes
+  <!-- INSERT BULLETS UNDER THIS LINE -->
+- FEAT: Copy PNG image button on Mermaid diagrams, E2E clipboard test, release guard
+---
 
 ## v0.3.60
 ### Changes
-  <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: Update npm and cargo dependencies
+- TEST: Diagram copy buttons - outcome on a button whose tooltip differs
+- FEAT: Diagram copy buttons - short screen-reader names, full tooltips
+- DOCS: Diagram copy buttons - use the new names everywhere
+- FEAT: Diagram copy buttons - clearer tooltips
+- TEST: E2E copy_diagram - close a Windows shell panel holding the front
+- CHORE: CI - free the foreground for the E2E clicks on Windows runners
+- TEST: E2E copy_diagram - diagnose a window that will not come to the front
+- TEST: E2E copy_diagram - get past the foreground lock; portable sabotage test
+- TEST: E2E copy_diagram - pass on the Windows ARM runner
+- FIX: Release guard - import it with its file extension
+- TEST: E2E copy_diagram - check the target right before clicking, DPI V2
+- TEST: E2E copy_diagram - click with one SendInput, name a missed click
+- TEST: Release guard - a production build fails if E2E test code is in it
+- TEST: E2E copy_diagram - real clicks on the copy buttons, clipboard read back
+- FIX: Copy image - scope the HTML copy listener to its textarea
+- FEAT: Copy image button on Mermaid diagrams in the preview
 - CHORE: Set version to 0.3.60
 - - bump version to v0.3.60
 - CHORE: Change Log corrections

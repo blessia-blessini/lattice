@@ -1468,8 +1468,25 @@ mod test_utils {
     #[allow(unused_imports)]
     use super::*;
 
+    /// The only file the internal bad actor modifies — the conflict scenario's
+    /// (`reproduce_conflict.rs`, `e2e_harness.rs` `conflict_detection`).
+    #[cfg(any(test, integration_test))]
+    pub const SABOTAGE_TARGET_NAME: &str = "conflict_test.md";
+
+    /// Is `fpath` the conflict scenario's file? Every other document a test
+    /// opens is left alone: rewriting it every 2 s reloads the window under
+    /// a scenario that is busy with something else (it broke `copy_diagram`).
+    #[cfg(any(test, integration_test))]
+    pub fn is_sabotage_target(fpath: &str) -> bool {
+        std::path::Path::new(fpath).file_name().and_then(|n| n.to_str()) == Some(SABOTAGE_TARGET_NAME)
+    }
+
     #[cfg(integration_test)]
     pub fn maybe_sabotage_file(fpath: &str) {
+        if !is_sabotage_target(fpath) {
+            info!("[TEST] Sabotage skipped: {} is not {}", fpath, SABOTAGE_TARGET_NAME);
+            return;
+        }
         let target_file = fpath.to_string();
         std::thread::spawn(move || {
             std::thread::sleep(std::time::Duration::from_secs(2));

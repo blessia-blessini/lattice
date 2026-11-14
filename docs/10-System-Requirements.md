@@ -330,13 +330,15 @@ tag — SHALL offer a copy button at its top-right corner, visible while the poi
 while the button has keyboard focus, and at all times on devices without a hovering pointer.
 Activating it SHALL put the block's text content on the clipboard as plain text — exactly the text
 between the fences, without the line break that ends the last line — and SHALL show for a short time
-whether the copy succeeded or failed. A `mermaid` block, although rendered as a diagram, SHALL have
-the same button and SHALL copy its source text in the same way. Inline code SHALL have no copy button.
+whether the copy succeeded or failed. Its tooltip and accessible name SHALL read **"Copy code"**. A
+`mermaid` block, although rendered as a diagram, SHALL have the same button and SHALL copy its source
+text in the same way; there its tooltip and accessible name SHALL read **"Copy Mermaid Code"**. Inline
+code SHALL have no copy button.
 
 *Rationale*: the text is taken from the Markdown source of the block, not from what is displayed or
 selected, so highlighting (REQ-LTTCE-PRV-00002), a rendered diagram and the selection's boundaries
-cannot change it. One button with one meaning on every block; copying the diagram as a picture stays
-with the selection copy (REQ-LTTCE-MRC-00002). Showing a failure as well as a
+cannot change it. One button with one meaning on every block; copying the diagram as a picture or as
+SVG has buttons of its own (REQ-LTTCE-PRV-00007 / 00006). Showing a failure as well as a
 success matters because the clipboard is not visible: a silent failure leaves the user pasting stale
 content.
 
@@ -348,7 +350,9 @@ copied preview selection.
 
 <!--REQ-LTTCE-PRV-00006-->
 **REQ-LTTCE-PRV-00006** — A `mermaid` block SHALL offer, next to its copy button of
-REQ-LTTCE-PRV-00004 and with the same visibility and feedback, a second button **"Copy SVG"**. It
+REQ-LTTCE-PRV-00004 and with the same visibility and feedback, a second button with the tooltip
+**"Copy SVG (Vector Graphics to be pasted to a txt file with extension .svg)"** and the shorter
+accessible name **"Copy SVG"**. It
 SHALL put the rendered diagram on the clipboard as plain text holding a standalone, well-formed SVG
 document. Its colours SHALL follow the setting "Copy Diagrams On Light Background"
 (REQ-LTTCE-MRC-00005) exactly as the diagram's raster copy does. When the diagram could not be
@@ -359,6 +363,23 @@ user needs who takes the picture into another tool — a vector file, a slide, a
 quality. Following the light-background setting keeps the two diagram copies (picture and SVG)
 consistent with each other: a dark-theme SVG pasted into a white page would otherwise show
 light lines on white.
+
+<!--REQ-LTTCE-PRV-00007-->
+**REQ-LTTCE-PRV-00007** — A `mermaid` block SHALL offer, before its "Copy SVG" button of
+REQ-LTTCE-PRV-00006 and with the same visibility and feedback, a button with the tooltip **"Copy PNG
+image (can be pasted anywhere)"** and the shorter accessible name **"Copy PNG image"**. It SHALL
+put the rendered diagram on the clipboard as a picture — the same PNG raster, at the same on-screen
+size and with the same background, that a copy of a preview selection carries for the diagram
+(REQ-LTTCE-MRC-00001 / 00005) — as an image (`image/png`) where the WebView supports one, and as an
+HTML image otherwise. When the diagram has no such raster — it could not be rendered or rasterised,
+or has not been rasterised yet — the button SHALL report a failed copy and leave the clipboard
+unchanged.
+
+*Rationale*: SVG text pastes as text into most applications; a user who wants the diagram in a
+document, slide, mail or chat needs a picture, and should not have to select the diagram to get one.
+Reusing the selection copy's raster keeps every picture of the diagram identical. An image on the
+clipboard is what image editors and chat applications accept; the HTML image is what Word and mail
+clients accept, and is the fallback for a WebView that cannot put images on the clipboard.
 
 ---
 

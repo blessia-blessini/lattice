@@ -562,6 +562,22 @@ jobs:
         echo "iOS build requires provisioning profiles. Skipping actual build command for CI demo."
         echo "  ideally, it should be done like in the step above (even _in_ the step above (not just _like_ in step above))"
 
+    - name: 370.1 Free the foreground for the E2E clicks (Windows)
+      # The E2E scenario copy_diagram clicks with the real mouse, which needs
+      # the app window in front. On the windows-11-arm image a packaged web
+      # app (WWAHost.exe, class Windows.UI.Core.CoreWindow) holds the
+      # foreground and refuses to give it up (diagnosed in CI run
+      # 43629777943). Close it; log what was closed. A no-op where none runs.
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $hosts = Get-Process -Name WWAHost -ErrorAction SilentlyContinue
+        if (-not $hosts) { Write-Output "No WWAHost process - nothing to close."; exit 0 }
+        $hosts | ForEach-Object { Write-Output "Closing WWAHost pid $($_.Id): '$($_.MainWindowTitle)'" }
+        $hosts | Stop-Process -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 2
+        Get-Process -Name WWAHost -ErrorAction SilentlyContinue | ForEach-Object { Write-Output "Still running: pid $($_.Id)" }
+
     - name: 370.2 Run Frontend AND Backend Tests (React/Tauri)
       # TODO: Consider uncommenting for now we are saving some action minutes by not running tests on mobile
       # windows-arm-desktop now runs natively on windows-11-arm, so its tests

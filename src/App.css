@@ -159,7 +159,7 @@ body {
   margin-bottom: 0;
 }
 
-/* Bar of buttons: "Copy code", and "Copy SVG" before it on a diagram */
+/* Bar of buttons: "Copy code", and "Copy PNG image" and "Copy SVG" before it on a diagram */
 .markdown-body .code-copy-bar {
   position: absolute;
   top: 8px;

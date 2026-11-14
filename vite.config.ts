@@ -22,6 +22,7 @@
 // END OF NOTE
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { releaseGuard } from "./vite-release-guard.ts";
 
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
@@ -44,7 +45,8 @@ if (!process.env.LATTICEBUILD_NO) {
  */
 export function makeViteConfig(isE2EBuild: boolean) {
   return defineConfig(async ({ mode }) => ({
-    plugins: [react()],
+    // A production build fails if E2E test code reached it (CSTR-LTTCE-BLD-00001).
+    plugins: [react(), ...(mode === 'production' && !isE2EBuild ? [releaseGuard()] : [])],
     define: {
       // @ts-expect-error process is a nodejs global
       __APP_VERSION__: JSON.stringify(process.env.LATTICEBUILD_NO),

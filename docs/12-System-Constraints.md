@@ -20,6 +20,7 @@ A change that introduces or changes an internal constraint records it here.
   - [Chapter PLT — Platform Layer](#chapter-plt-platform-layer)
   - [Chapter XPT — Headless CLI Export](#chapter-xpt-headless-cli-export)
   - [Chapter FOS — Third-Party Licence Compliance](#chapter-fos-third-party-licence-compliance)
+  - [Chapter BLD — Build Outputs](#chapter-bld-build-outputs)
 <!-- /TOC -->
 
 ---
@@ -84,6 +85,23 @@ modules only — no npm dependencies. Its tests may use the project's existing t
 *Rationale*: a tool that gates the dependency graph should not enlarge it, and it runs on every pull
 request into `dev`, Dependabot's included, where a dependency's install scripts are kept from running.
 *Design*: ARCH-LTTCE-FOS-00004.
+
+---
+
+## Chapter BLD — Build Outputs
+
+<!--CSTR-LTTCE-BLD-00001-->
+**CSTR-LTTCE-BLD-00001** — A production frontend bundle SHALL contain no end-to-end test code: neither
+`src/services/StaticRuntime/StaticRuntime.dev.ts` nor any `*E2EDriver.ts` module, and no name of the E2E
+file protocol (`e2e_…`). Every production build SHALL check this and fail when it does not hold.
+
+*Rationale*: the E2E drivers act on the user's files and clipboard on a harness's signal. They reach the
+app only through `StaticRuntime.dev.ts`, which `vite.config.ts` replaces with the empty
+`StaticRuntime.prod.ts` in production builds — correct by construction, but a construction one import
+can bypass silently. The check turns that into a build failure.
+*Design*: `vite-release-guard.ts` (`releaseGuard`, a Vite plugin added to production builds only; the
+E2E build, `vite.e2e_test.config.ts`, is exempt). The Rust side's test hooks are compiled out by the
+`e2e_test` feature (`e2e::is_e2e_tst_build()`), which no release build enables.
 
 ---
 

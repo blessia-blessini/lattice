@@ -637,6 +637,29 @@ fn test_maybe_sabotage_file_noop() {
 }
 // test_maybe_sabotage_file_noop END ***************************************
 
+
+//**************************************************************************
+// test_sabotage_targets_only_the_conflict_file
+//**************************************************************************
+/// The internal bad actor (integration_test builds) modifies only the conflict
+/// scenario's file — not other documents a test opens, such as the
+/// copy_diagram scenario's.
+#[test]
+fn test_sabotage_targets_only_the_conflict_file() {
+    use super::test_utils::is_sabotage_target;
+    // Paths in the host's own separator: the app receives native paths.
+    let path = |parts: &[&str]| -> String {
+        parts.iter().collect::<std::path::PathBuf>().to_string_lossy().into_owned()
+    };
+    assert!(is_sabotage_target("conflict_test.md"));
+    assert!(is_sabotage_target(&path(&["repo", "conflict_test.md"])));
+    assert!(!is_sabotage_target(&path(&["repo", "target", "e2e-copy-diagram", "diagram.md"])));
+    assert!(!is_sabotage_target(&path(&["repo", "not_conflict_test.md"])));
+    assert!(!is_sabotage_target(&path(&["repo", "conflict_test.md", "inner.md"])));
+    assert!(!is_sabotage_target(""));
+}
+// test_sabotage_targets_only_the_conflict_file END ************************
+
 //**************************************************************************
 // test_save_image_invalid_base64_returns_err
 //**************************************************************************

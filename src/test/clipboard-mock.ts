@@ -13,7 +13,10 @@
  * `navigator` would also take away `userAgent` and friends, which React and
  * Testing Library read.
  */
-export function setClipboard(clip: { writeText: (text: string) => Promise<void> } | undefined): void {
+export function setClipboard(clip: {
+    writeText?: (text: string) => Promise<void>;
+    write?: (items: unknown[]) => Promise<void>;
+} | undefined): void {
     Object.defineProperty(navigator, 'clipboard', { value: clip, configurable: true, writable: true });
 }
 // setClipboard END ************************************************************

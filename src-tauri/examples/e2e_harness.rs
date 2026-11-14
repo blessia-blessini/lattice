@@ -34,6 +34,9 @@
 //!    in the home vault once that vault is gone (STST, Chapter VLT)
 //! 7. `start_view` — a window opens in the view its settings choose, with and
 //!    without a document (STST, REQ-LTTCE-WIN-00003)
+//! 8. `copy_diagram` — a Mermaid diagram's "Copy Mermaid Code", "Copy SVG" and "Copy
+//!    PNG image" buttons, clicked in the real WebView; the system clipboard is read
+//!    back after each (STST, REQ-LTTCE-PRV-00004 / 00006 / 00007)
 //!
 //! Every launch gets an isolated home (`LATTICE_E2E_HOME`, honoured by E2E
 //! builds only), so no scenario reads or writes the real home vault.
@@ -797,6 +800,399 @@ fn scenario_start_view(bin: &PathBuf, root: &PathBuf) -> bool {
 }
 // scenario_start_view END *****************************************************
 
+
+/// Protocol of `src/services/StaticRuntime/CopyDiagramE2EDriver.ts` (documented
+/// pairing — the harness cannot import the TS constants). Click n is button
+/// n of "Copy Mermaid Code", "Copy SVG", "Copy PNG image".
+const COPY_DIAGRAM_E2E_MARKER: &str = "e2e_copy_diagram";
+const COPY_DIAGRAM_E2E_TARGETS: &str = "e2e_copy_diagram_targets.txt";
+/// The diagram buttons' accessible names (aria-label) in click order (`COPY_MERMAID_CODE_LABEL`,
+/// `COPY_SVG_LABEL`, `COPY_IMAGE_LABEL` in `CodeBlock.tsx`).
+const COPY_DIAGRAM_BUTTONS: [&str; 3] = ["Copy Mermaid Code", "Copy SVG", "Copy PNG image"];
+fn copy_diagram_click_signal(n: u32) -> String { format!("e2e_copy_diagram_click_{n}") }
+fn copy_diagram_done_file(n: u32) -> String { format!("e2e_copy_diagram_click_{n}_done.txt") }
+
+/// The Mermaid source of the fixture — what "Copy Mermaid Code" must put on the clipboard.
+const COPY_DIAGRAM_SOURCE: &str = "graph TD; A-->B";
+
+/// Loads the clipboard class of .NET, which ships with Windows PowerShell.
+const CLIPBOARD_PRELUDE: &str =
+    "Add-Type -AssemblyName System.Windows.Forms; [Console]::OutputEncoding = [Text.Encoding]::UTF8; ";
+
+
+//******************************************************************************
+// clipboard_powershell
+//******************************************************************************
+/// Run `script` (after [`CLIPBOARD_PRELUDE`]) in Windows PowerShell, in a
+/// single-threaded apartment as the clipboard class requires; its stdout.
+/// Windows only, like the harness itself — elsewhere this fails with an error.
+fn clipboard_powershell(script: &str) -> Result<String, String> {
+    let out = Command::new("powershell.exe")
+        .args(["-NoProfile", "-NonInteractive", "-STA", "-Command", &format!("{CLIPBOARD_PRELUDE}{script}")])
+        .output()
+        .map_err(|e| format!("cannot run powershell.exe: {e}"))?;
+    if !out.status.success() {
+        return Err(format!("clipboard script failed: {}", String::from_utf8_lossy(&out.stderr).trim()));
+    }
+    Ok(String::from_utf8_lossy(&out.stdout).into_owned())
+}
+// clipboard_powershell END ****************************************************
+
+
+//******************************************************************************
+// read_clipboard
+//******************************************************************************
+/// The system clipboard as an application pasting from it sees it: the size of
+/// the image on it (`None` without one) and its text (empty without any).
+fn read_clipboard() -> Result<(Option<(u32, u32)>, String), String> {
+    let out = clipboard_powershell(
+        "$i = [System.Windows.Forms.Clipboard]::GetImage(); \
+         if ($i) { [Console]::Out.Write('image=' + $i.Width + 'x' + $i.Height + \"`n\") } \
+         else { [Console]::Out.Write(\"image=none`n\") }; \
+         [Console]::Out.Write([System.Windows.Forms.Clipboard]::GetText())",
+    )?;
+    let (first, text) = out.split_once('\n').ok_or_else(|| format!("unexpected clipboard report {out:?}"))?;
+    let image = first.trim().strip_prefix("image=")
+        .and_then(|s| s.split_once('x'))
+        .and_then(|(w, h)| Some((w.parse().ok()?, h.parse().ok()?)));
+    // The clipboard holds Windows line endings.
+    Ok((image, text.replace("\r\n", "\n")))
+}
+// read_clipboard END **********************************************************
+
+
+//******************************************************************************
+// os_click
+//******************************************************************************
+/// Click the real mouse at physical client pixel `(x, y)` of the main window of
+/// process `pid` — a genuine user gesture, which the WebView requires for a
+/// copy and a script's `click()` is not. Windows' own `user32` functions, called
+/// from Windows PowerShell: no new dependency.
+///
+/// Refuses (an error, no click) unless, checked immediately before the click,
+/// the app window is in front, not minimised, and the window under the target
+/// point is the app's own (`WindowFromPoint` → root ancestor) — so neither a
+/// window that popped up, nor an always-on-top one, nor a target off-screen can
+/// take the click on a developer's desktop. Moves the developer's mouse pointer.
+///
+/// Move, press and release go to Windows in **one** `SendInput` call, which
+/// inserts them back to back: a user moving the mouse during the run cannot
+/// slip a movement between "move there" and "press" (with `SetCursorPos`, a
+/// pause, then `mouse_event`, a full-suite run did exactly that and missed).
+///
+/// Bringing the window to the front (`Front`) has to get past Windows' foreground
+/// lock, which lets a process do it only in some situations: first after
+/// moving the pointer to the target (a move, no button — the process then sent
+/// the last input), then — if a Windows shell panel (class
+/// `Windows.UI.Core.CoreWindow`, e.g. the search panel) is in front — by
+/// closing it with Escape, then by attaching to the current front window's
+/// input thread (`AttachThreadInput`), finally with an Alt key tap. The method
+/// that worked is logged. On the `windows-11-arm` CI runner shell panels held
+/// the front (WWAHost, then SearchHost; 2026-11-14); on `windows-latest` and a
+/// desktop the first step works at once, so the later ones never run there.
+///
+/// The script runs per-monitor DPI aware (V2, like the WebView), so physical
+/// coordinates also hold on a second monitor with a different scale; on a
+/// Windows too old for that it falls back to system DPI awareness.
+fn os_click(pid: u32, x: i32, y: i32) -> Result<(), String> {
+    let script = format!(
+        "Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; \
+         public struct E2EPoint {{ public int X; public int Y; }} \
+         [StructLayout(LayoutKind.Sequential)] public struct E2EMouse {{ \
+           public int dx; public int dy; public uint data; public uint flags; public uint time; public IntPtr extra; }} \
+         [StructLayout(LayoutKind.Sequential)] public struct E2EInput {{ public uint type; public E2EMouse mi; }} \
+         public static class E2EUser32 {{ \
+           [DllImport(\"user32.dll\")] public static extern bool SetProcessDpiAwarenessContext(IntPtr c); \
+           [DllImport(\"user32.dll\")] public static extern bool SetProcessDPIAware(); \
+           [DllImport(\"user32.dll\")] public static extern bool SetForegroundWindow(IntPtr h); \
+           [DllImport(\"user32.dll\")] public static extern IntPtr GetForegroundWindow(); \
+           [DllImport(\"user32.dll\")] public static extern bool IsIconic(IntPtr h); \
+           [DllImport(\"user32.dll\")] public static extern IntPtr WindowFromPoint(E2EPoint p); \
+           [DllImport(\"user32.dll\")] public static extern IntPtr GetAncestor(IntPtr h, uint flags); \
+           [DllImport(\"user32.dll\")] public static extern bool ClientToScreen(IntPtr h, ref E2EPoint p); \
+           [DllImport(\"user32.dll\")] public static extern int GetSystemMetrics(int i); \
+           [DllImport(\"user32.dll\", SetLastError = true)] public static extern uint SendInput(uint n, E2EInput[] i, int size); \
+           [DllImport(\"user32.dll\")] public static extern uint GetWindowThreadProcessId(IntPtr h, IntPtr pid); \
+           [DllImport(\"kernel32.dll\")] public static extern uint GetCurrentThreadId(); \
+           [DllImport(\"user32.dll\")] public static extern bool AttachThreadInput(uint a, uint b, bool attach); \
+           [DllImport(\"user32.dll\")] public static extern bool BringWindowToTop(IntPtr h); \
+           [DllImport(\"user32.dll\")] public static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra); \
+           [DllImport(\"user32.dll\")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid); \
+           [DllImport(\"user32.dll\", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr h, System.Text.StringBuilder s, int n); \
+           [DllImport(\"user32.dll\", SetLastError = true)] public static extern IntPtr OpenInputDesktop(uint flags, bool inherit, uint access); \
+           [DllImport(\"user32.dll\")] public static extern bool CloseDesktop(IntPtr d); \
+           public static string Describe(IntPtr h) {{ \
+             if (h == IntPtr.Zero) return \"none\"; \
+             System.Text.StringBuilder c = new System.Text.StringBuilder(256); GetClassName(h, c, 256); \
+             uint pid; GetWindowThreadProcessId(h, out pid); \
+             string name = \"?\"; try {{ name = System.Diagnostics.Process.GetProcessById((int)pid).ProcessName; }} catch {{ }} \
+             return \"0x\" + h.ToString(\"X\") + \" class=\" + c + \" process=\" + name; }} \
+           public static string Diagnose(IntPtr h) {{ \
+             IntPtr d = OpenInputDesktop(0, false, 0x0100); \
+             string desk = d == IntPtr.Zero ? \"not reachable (error \" + Marshal.GetLastWin32Error() + \")\" : \"reachable\"; \
+             if (d != IntPtr.Zero) CloseDesktop(d); \
+             return \"front window: \" + Describe(GetForegroundWindow()) + \"; app window: \" + Describe(h) \
+               + \"; input desktop: \" + desk \
+               + \"; session: \" + System.Diagnostics.Process.GetCurrentProcess().SessionId \
+               + \"; interactive: \" + Environment.UserInteractive; }} \
+           static bool IsShellPanel(IntPtr w) {{ \
+             if (w == IntPtr.Zero) return false; \
+             System.Text.StringBuilder c = new System.Text.StringBuilder(256); GetClassName(w, c, 256); \
+             return c.ToString() == \"Windows.UI.Core.CoreWindow\"; }} \
+           static bool InFront(IntPtr h) {{ \
+             for (int i = 0; i < 10; i++) {{ if (GetForegroundWindow() == h) return true; System.Threading.Thread.Sleep(50); }} \
+             return false; }} \
+           public static string Front(IntPtr h) {{ \
+             if (GetForegroundWindow() == h) return \"already in front\"; \
+             SetForegroundWindow(h); \
+             if (InFront(h)) return \"SetForegroundWindow\"; \
+             if (IsShellPanel(GetForegroundWindow())) {{ \
+               keybd_event(0x1B, 0, 0, UIntPtr.Zero); keybd_event(0x1B, 0, 2, UIntPtr.Zero); \
+               System.Threading.Thread.Sleep(300); \
+               SetForegroundWindow(h); \
+               if (InFront(h)) return \"Escape closed a shell panel\"; }} \
+             IntPtr fg = GetForegroundWindow(); \
+             uint me = GetCurrentThreadId(); \
+             uint other = fg == IntPtr.Zero ? 0 : GetWindowThreadProcessId(fg, IntPtr.Zero); \
+             bool attached = other != 0 && other != me && AttachThreadInput(me, other, true); \
+             try {{ BringWindowToTop(h); SetForegroundWindow(h); }} \
+             finally {{ if (attached) AttachThreadInput(me, other, false); }} \
+             if (InFront(h)) return \"AttachThreadInput\"; \
+             keybd_event(0x12, 0, 0, UIntPtr.Zero); keybd_event(0x12, 0, 2, UIntPtr.Zero); \
+             SetForegroundWindow(h); \
+             if (InFront(h)) return \"Alt tap\"; \
+             return \"\"; }} \
+           public static void DpiAware() {{ \
+             try {{ if (SetProcessDpiAwarenessContext(new IntPtr(-4))) return; }} catch (EntryPointNotFoundException) {{ }} \
+             SetProcessDPIAware(); }} \
+           public static uint Send(E2EPoint p, uint[] actions) {{ \
+             int left = GetSystemMetrics(76), top = GetSystemMetrics(77); \
+             int width = GetSystemMetrics(78), height = GetSystemMetrics(79); \
+             int nx = (int)(((long)(p.X - left) * 65535 + (width - 1) / 2) / (width - 1)); \
+             int ny = (int)(((long)(p.Y - top) * 65535 + (height - 1) / 2) / (height - 1)); \
+             E2EInput[] seq = new E2EInput[actions.Length]; \
+             for (int i = 0; i < actions.Length; i++) {{ \
+               seq[i].mi.dx = nx; seq[i].mi.dy = ny; seq[i].mi.flags = actions[i] | 0x4000 | 0x8000; }} \
+             return SendInput((uint)seq.Length, seq, Marshal.SizeOf(typeof(E2EInput))); }} \
+           public static string Click(IntPtr h, E2EPoint p) {{ \
+             if (IsIconic(h)) return \"the app window is minimised\"; \
+             if (GetForegroundWindow() != h) return \"the app window is not in front\"; \
+             if (GetAncestor(WindowFromPoint(p), 2) != h) return \"another window, or no window, is at the target point\"; \
+             uint sent = Send(p, new uint[] {{ 0x0001, 0x0002, 0x0004 }}); \
+             return sent == 3 ? \"\" : \"SendInput sent \" + sent + \" of 3 mouse events\"; }} }}'; \
+         [E2EUser32]::DpiAware(); \
+         $h = (Get-Process -Id {pid}).MainWindowHandle; \
+         if ($h -eq [IntPtr]::Zero) {{ throw 'the app has no main window' }}; \
+         $p = New-Object E2EPoint; $p.X = {x}; $p.Y = {y}; \
+         [E2EUser32]::ClientToScreen($h, [ref]$p) | Out-Null; \
+         $moved = [E2EUser32]::Send($p, [uint32[]]@(1)); \
+         $how = [E2EUser32]::Front($h); \
+         if (-not $how) {{ throw ('no click: the app window could not be brought to the front (pointer move: ' + $moved + ' of 1 event accepted; ' + [E2EUser32]::Diagnose($h) + ')') }}; \
+         Start-Sleep -Milliseconds 200; \
+         $refused = [E2EUser32]::Click($h, $p); \
+         if ($refused) {{ throw \"no click: $refused\" }}; \
+         [Console]::Out.Write($how)"
+    );
+    let how = clipboard_powershell(&script)?;
+    println!("\n  window to the front: {}", how.trim());
+    Ok(())
+}
+// os_click END ****************************************************************
+
+
+//******************************************************************************
+// copy_diagram_click
+//******************************************************************************
+/// Clear the clipboard, click button `n` at `target` with the real mouse,
+/// signal the click, wait for the driver's report and require
+/// `state=copied`; then return the report and the clipboard content.
+fn copy_diagram_click(
+    root: &Path,
+    n: u32,
+    target: (i32, i32),
+    child: Child,
+) -> (Result<(String, Option<(u32, u32)>, String), String>, Child) {
+    // Cleared first, so a copy from an earlier run can never pass for this one.
+    // Retried: another process may hold the clipboard open for a moment
+    // (CLIPBRD_E_CANT_OPEN), and Clear() itself does not retry.
+    if let Err(e) = clipboard_powershell(
+        "for ($i = 1; $i -le 10; $i++) { \
+           try { [System.Windows.Forms.Clipboard]::Clear(); break } \
+           catch { if ($i -eq 10) { throw }; Start-Sleep -Milliseconds 100 } }",
+    ) {
+        return (Err(e), child);
+    }
+    if let Err(e) = os_click(child.id(), target.0, target.1) {
+        return (Err(format!("click {n}: {e}")), child);
+    }
+    if let Err(e) = fs::create_dir(root.join(copy_diagram_click_signal(n))) {
+        return (Err(format!("cannot create click {n} signal: {e}")), child);
+    }
+    let done = root.join(copy_diagram_done_file(n));
+    let (ok, child) = wait_for_signal(&done, child, Duration::from_secs(20));
+    if !ok {
+        return (Err(format!("no done file for click {n} within 20 s")), child);
+    }
+    thread::sleep(Duration::from_millis(200)); // content flushed after the file appears
+    let report = fs::read_to_string(&done).unwrap_or_default().replace("\r\n", "\n");
+    println!("\n  click {n}: {}", report.lines().collect::<Vec<_>>().join(" | "));
+    // A click that missed its button is a harness problem (moved window,
+    // stale position), not a copy defect — say so rather than "idle".
+    let expected = COPY_DIAGRAM_BUTTONS[(n - 1) as usize];
+    if let Some(pointer) = report.lines().find_map(|l| l.strip_prefix("pointer=")) {
+        if !pointer.ends_with(&format!("on={expected}")) {
+            return (Err(format!("click {n} did not reach \"{expected}\"; the page's last click was {pointer}")), child);
+        }
+    }
+    if !report.starts_with("state=copied") {
+        return (Err(format!("click {n}: the button reported {report:?}")), child);
+    }
+    match read_clipboard() {
+        Ok((image, text)) => (Ok((report, image, text)), child),
+        Err(e) => (Err(e), child),
+    }
+}
+// copy_diagram_click END ******************************************************
+
+
+//******************************************************************************
+// check_copy_diagram_clicks
+//******************************************************************************
+/// The three clicks of [`scenario_copy_diagram`] and what each must leave on
+/// the system clipboard.
+fn check_copy_diagram_clicks(root: &Path, child: Child) -> (Result<(), String>, Child) {
+    // The driver reports the buttons' positions once the diagram has its PNG
+    // (up to 20 s for rendering and rasterising).
+    let targets_file = root.join(COPY_DIAGRAM_E2E_TARGETS);
+    let (ok, child) = wait_for_signal(&targets_file, child, Duration::from_secs(40));
+    if !ok {
+        return (Err("no button positions from the driver within 40 s".into()), child);
+    }
+    thread::sleep(Duration::from_millis(200)); // content flushed after the file appears
+    let report = fs::read_to_string(&targets_file).unwrap_or_default();
+    let targets: Vec<(i32, i32)> = report.lines()
+        .filter_map(|l| l.trim().split_once(','))
+        .filter_map(|(x, y)| Some((x.parse().ok()?, y.parse().ok()?)))
+        .collect();
+    println!("\n  button positions: {}", report.lines().collect::<Vec<_>>().join(" | "));
+    if targets.len() != 3 {
+        return (Err(format!("driver reported {report:?} instead of 3 button positions")), child);
+    }
+
+    // 1. "Copy Mermaid Code" — the Mermaid source, as plain text.
+    let (r, child) = copy_diagram_click(root, 1, targets[0], child);
+    match r {
+        Ok((_, _, text)) if text == COPY_DIAGRAM_SOURCE => {}
+        Ok((_, _, text)) => return (Err(format!("Copy Mermaid Code put {text:?} on the clipboard")), child),
+        Err(e) => return (Err(e), child),
+    }
+    // 2. "Copy SVG" — a standalone SVG document, as plain text.
+    let (r, child) = copy_diagram_click(root, 2, targets[1], child);
+    match r {
+        Ok((_, _, text)) if text.starts_with("<svg") && text.contains("xmlns=\"http://www.w3.org/2000/svg\"") => {}
+        Ok((_, _, text)) => {
+            let head: String = text.chars().take(80).collect();
+            return (Err(format!("Copy SVG put {head:?}… on the clipboard")), child);
+        }
+        Err(e) => return (Err(e), child),
+    }
+    // 3. "Copy PNG image" — a picture of exactly the diagram's PNG size.
+    let (r, child) = copy_diagram_click(root, 3, targets[2], child);
+    let result = match r {
+        Ok((report, image, _)) => {
+            let png = report.lines().find_map(|l| l.strip_prefix("png=")).unwrap_or("unknown").to_string();
+            match image {
+                Some((w, h)) if format!("{w}x{h}") == png => Ok(()),
+                Some((w, h)) => Err(format!("Copy PNG image put a {w}x{h} image on the clipboard, the PNG is {png}")),
+                None => Err("Copy PNG image left no image on the clipboard".to_string()),
+            }
+        }
+        Err(e) => Err(e),
+    };
+    (result, child)
+}
+// check_copy_diagram_clicks END ***********************************************
+
+
+//******************************************************************************
+// clear_copy_diagram_signals
+//******************************************************************************
+/// Remove every signal of the copy-diagram protocol from `root`.
+fn clear_copy_diagram_signals(root: &Path) {
+    let _ = fs::remove_dir(root.join(COPY_DIAGRAM_E2E_MARKER));
+    let _ = fs::remove_file(root.join(COPY_DIAGRAM_E2E_TARGETS));
+    for n in 1..=3 {
+        let _ = fs::remove_dir(root.join(copy_diagram_click_signal(n)));
+        let _ = fs::remove_file(root.join(copy_diagram_done_file(n)));
+    }
+}
+// clear_copy_diagram_signals END **********************************************
+
+
+//******************************************************************************
+// scenario_copy_diagram
+//******************************************************************************
+/// Scenario 8: the copy buttons of a Mermaid diagram (STST for
+/// REQ-LTTCE-PRV-00004 / 00006 / 00007). A document with one diagram opens in
+/// Preview (the default with a document); the driver reports where its "Copy
+/// Mermaid Code", "Copy SVG" and "Copy PNG image" buttons are, the harness clicks each
+/// with the real mouse ([`os_click`]) and reads the system clipboard back
+/// through Windows PowerShell — what a paste into another application gets.
+///
+/// Side effects on a developer machine: the mouse pointer moves, the app
+/// window comes to the front, and the clipboard ends up holding the picture.
+fn scenario_copy_diagram(bin: &PathBuf, root: &PathBuf) -> bool {
+    println!("\n[SCENARIO] copy_diagram");
+    // Clicking and the clipboard go through Windows PowerShell and user32; the
+    // harness itself only runs on Windows (docs/60-test-strategy.md, step 1c).
+    if !cfg!(target_os = "windows") {
+        println!(" → SKIP (Windows only: real clicks and the clipboard use Windows PowerShell)");
+        return true;
+    }
+    let vault = root.join("src-tauri").join("target").join("e2e-copy-diagram");
+    let _ = fs::remove_dir_all(&vault);
+
+    let steps = || -> Result<(), String> {
+        fs::create_dir_all(vault.join(".lattice"))
+            .and_then(|_| fs::write(vault.join(".lattice").join("settings.json"), "{}"))
+            .and_then(|_| fs::write(
+                vault.join("diagram.md"),
+                format!("# Copy diagram E2E\n\n```mermaid\n{COPY_DIAGRAM_SOURCE}\n```\n"),
+            ))
+            .map_err(|e| format!("cannot create fixture: {e}"))?;
+        let doc = vault.join("diagram.md").to_string_lossy().into_owned();
+
+        clear_copy_diagram_signals(root);
+        let _ = fs::remove_file(root.join("e2e_startup_ok.txt"));
+        fs::create_dir(root.join(COPY_DIAGRAM_E2E_MARKER))
+            .map_err(|e| format!("cannot create scenario marker: {e}"))?;
+
+        let child = launch(bin, root, &[&doc], "copy_diagram");
+        let (started, child) = wait_for_startup(root, child, Duration::from_secs(15));
+        let (result, child) = if started {
+            check_copy_diagram_clicks(root, child)
+        } else {
+            (Err("frontend did not signal startup within 15 s".into()), child)
+        };
+        shutdown(child, root);
+        clear_copy_diagram_signals(root);
+        result
+    };
+
+    match steps() {
+        Ok(()) => {
+            let _ = fs::remove_dir_all(&vault);
+            println!(" → PASS");
+            true
+        }
+        Err(e) => {
+            println!("\n → FAIL ({e}); fixture kept at {}", vault.display());
+            false
+        }
+    }
+}
+// scenario_copy_diagram END ***************************************************
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Entry point
 // ─────────────────────────────────────────────────────────────────────────────
@@ -834,6 +1230,7 @@ fn main() {
         (DAILY_NOTE_VARIANTS[1].name, scenario_daily_note(&bin, &root, &DAILY_NOTE_VARIANTS[1])),
         ("last_vault", scenario_last_vault(&bin, &root)),
         ("start_view", scenario_start_view(&bin, &root)),
+        ("copy_diagram", scenario_copy_diagram(&bin, &root)),
     ];
 
     println!("\n══════════════════════════════════════════════════════");

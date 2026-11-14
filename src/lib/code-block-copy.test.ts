@@ -35,6 +35,9 @@ import {
     diagramSvgText,
     rememberDiagramSvg,
     forgetDiagramSvg,
+    copyDiagramImage,
+    defaultImageClipboardRoutes,
+    pngBlob,
 } from './code-block-copy';
 import { setClipboard } from '../test/clipboard-mock';
 
@@ -247,5 +250,136 @@ describe('diagramSvgText', () => {
         expect(diagramSvgText(block)).toContain('id="light"');
         forgetDiagramSvg(container!);
         expect(diagramSvgText(block)).toContain('id="screen"');
+    });
+});
+
+// UTST for IMPL-LTTCE-PRV-00004 (REQ-LTTCE-PRV-00007) — "Copy image" logic.
+describe('copyDiagramImage', () => {
+    // A 1×1 PNG; any base64 the safety check accepts would do.
+    const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+    const blockWith = (attrs: string, inner = '<svg></svg>') => {
+        const block = document.createElement('div');
+        block.innerHTML = `<pre><div class="mermaid" ${attrs}>${inner}</div></pre>`;
+        return block;
+    };
+    const ready = () => blockWith(
+        `data-lattice-diagram-png="${PNG}" data-lattice-diagram-width="120" data-lattice-diagram-height="80"`);
+
+    it('starts both routes inside the click: the <img> HTML copy, then the PNG item', () => {
+        const execHtmlCopy = vi.fn().mockReturnValue(true);
+        const writePng = vi.fn().mockResolvedValue(undefined);
+        // Not awaited: both must have been called when it returns to the click handler.
+        void copyDiagramImage(ready(), { execHtmlCopy, writePng });
+
+        expect(execHtmlCopy).toHaveBeenCalledTimes(1);
+        const [plain, html] = execHtmlCopy.mock.calls[0];
+        expect(plain).toBe('Mermaid diagram');
+        expect(html).toContain(`src="${PNG}"`);
+        expect(html).toContain('width="120"');
+        expect(html).toContain('height="80"');
+
+        expect(writePng).toHaveBeenCalledTimes(1);
+        const blob = writePng.mock.calls[0][0] as Blob;
+        expect(blob.type).toBe('image/png');
+        expect(blob.size).toBe(atob(PNG.split(',')[1]).length);
+        expect(execHtmlCopy.mock.invocationCallOrder[0]).toBeLessThan(writePng.mock.invocationCallOrder[0]);
+    });
+
+    it('succeeds on the PNG item alone when the HTML copy fails', async () => {
+        const writePng = vi.fn().mockResolvedValue(undefined);
+        expect(await copyDiagramImage(ready(), { execHtmlCopy: () => { throw new Error('x'); }, writePng })).toBe(true);
+    });
+
+    it('keeps the HTML copy as the result when the PNG item is refused or unavailable', async () => {
+        const refused = () => Promise.reject(new Error('no images'));
+        expect(await copyDiagramImage(ready(), { execHtmlCopy: () => true, writePng: refused })).toBe(true);
+        expect(await copyDiagramImage(ready(), { execHtmlCopy: () => true })).toBe(true);
+        expect(await copyDiagramImage(ready(), { execHtmlCopy: () => false, writePng: refused })).toBe(false);
+    });
+
+    it('fails without touching the clipboard when the diagram has no PNG', async () => {
+        const execHtmlCopy = vi.fn().mockReturnValue(true);
+        const writePng = vi.fn().mockResolvedValue(undefined);
+        const routes = { execHtmlCopy, writePng };
+        // Not rasterised yet, rasterising failed, a render error, no diagram at all.
+        expect(await copyDiagramImage(blockWith(''), routes)).toBe(false);
+        expect(await copyDiagramImage(blockWith('data-lattice-diagram-png-failed=""'), routes)).toBe(false);
+        expect(await copyDiagramImage(blockWith('', '<pre class="error">bad</pre>'), routes)).toBe(false);
+        expect(await copyDiagramImage(blockWith('data-lattice-diagram-png="javascript:alert(1)"'), routes)).toBe(false);
+        const plain = document.createElement('div');
+        plain.innerHTML = '<pre><code>x</code></pre>';
+        expect(await copyDiagramImage(plain, routes)).toBe(false);
+        expect(execHtmlCopy).not.toHaveBeenCalled();
+        expect(writePng).not.toHaveBeenCalled();
+    });
+});
+
+describe('pngBlob', () => {
+    it('decodes the base64 payload into an image/png Blob', async () => {
+        const blob = pngBlob('data:image/png;base64,AAEC/w==');
+        expect(blob.type).toBe('image/png');
+        expect(Array.from(new Uint8Array(await blob.arrayBuffer()))).toEqual([0, 1, 2, 255]);
+    });
+});
+
+describe('execCommandCopy with HTML', () => {
+    const original = (document as any).execCommand;
+    afterEach(() => { (document as any).execCommand = original; });
+
+    /** Stand-in for the copy command: fires a `copy` event, with or without clipboardData. */
+    const fireCopy = (data: Record<string, string> | null) => vi.fn(() => {
+        const ev = new Event('copy', { bubbles: true, cancelable: true });
+        Object.defineProperty(ev, 'clipboardData', {
+            value: data && { setData: (type: string, value: string) => { data[type] = value; } },
+        });
+        document.querySelector('textarea')!.dispatchEvent(ev);
+        return true;
+    });
+
+    it('fills the text and HTML flavours itself', () => {
+        const data: Record<string, string> = {};
+        (document as any).execCommand = fireCopy(data);
+        expect(execCommandCopy('alt', document, '<img src="x">')).toBe(true);
+        expect(data).toEqual({ 'text/plain': 'alt', 'text/html': '<img src="x">' });
+    });
+
+    it('reports failure when the WebView offers no clipboardData to write the HTML into', () => {
+        (document as any).execCommand = fireCopy(null);
+        expect(execCommandCopy('alt', document, '<img src="x">')).toBe(false);
+    });
+
+    it('leaves later copies alone', () => {
+        (document as any).execCommand = fireCopy({});
+        execCommandCopy('alt', document, '<img src="x">');
+        const later: Record<string, string> = {};
+        (document as any).execCommand = fireCopy(later);
+        execCommandCopy('plain only');
+        expect(later).toEqual({});
+    });
+});
+
+describe('defaultImageClipboardRoutes', () => {
+    const g = globalThis as { ClipboardItem?: unknown };
+    const originalItem = g.ClipboardItem;
+    afterEach(() => { setClipboard(undefined); g.ClipboardItem = originalItem; });
+
+    it('writes an image/png ClipboardItem when the WebView supports one', async () => {
+        const write = vi.fn().mockResolvedValue(undefined);
+        setClipboard({ write });
+        g.ClipboardItem = class { constructor(public items: Record<string, Blob>) {} };
+        const png = new Blob([new Uint8Array([1])], { type: 'image/png' });
+        await defaultImageClipboardRoutes().writePng!(png);
+        const [[items]] = write.mock.calls;
+        expect((items[0] as { items: Record<string, Blob> }).items).toEqual({ 'image/png': png });
+    });
+
+    it('offers only the HTML route without ClipboardItem or clipboard.write', () => {
+        setClipboard({ write: vi.fn() });
+        g.ClipboardItem = undefined;
+        expect(defaultImageClipboardRoutes().writePng).toBeUndefined();
+        setClipboard({ writeText: vi.fn() });
+        g.ClipboardItem = class {};
+        expect(defaultImageClipboardRoutes().writePng).toBeUndefined();
     });
 });

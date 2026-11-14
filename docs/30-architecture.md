@@ -479,7 +479,7 @@ The test involves three cooperating actors:
 | Actor                  | Source File                                                                  | Role                                                                                                     |
 | ---------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | **Test Harness**       | `src-tauri/examples/reproduce_conflict.rs`                                   | Orchestrator — creates a test file, launches the app with the feature flag, polls for a success marker   |
-| **Internal Bad Actor** | `src-tauri/src/lib.rs` → `test_utils::maybe_sabotage_file`                   | Simulates an external process modifying the file behind the app's back (30 writes, one every 2 s)        |
+| **Internal Bad Actor** | `src-tauri/src/lib.rs` → `test_utils::maybe_sabotage_file`                   | Simulates an external process modifying the file behind the app's back (30 writes, one every 2 s) — only a file named `conflict_test.md`; any other document a test opens is left alone |
 | **Success Reporter**   | `src/services/StaticRuntime/StaticRuntime.dev.ts` → `setupTestModeListeners` | Frontend listener — detects the `file-changed` event and writes `conflict_success.txt` to signal success |
 
 #### How It Works
@@ -772,10 +772,10 @@ with token colors (both are plain CSS on descendants).
 <!--ARCH-LTTCE-PRV-00003-->
 ### Code Block Copy Buttons
 
-Covers REQ-LTTCE-PRV-00004 / 00005 / 00006. A `pre(props)` renderer in `previewComponents` (App.tsx) wraps
+Covers REQ-LTTCE-PRV-00004 / 00005 / 00006 / 00007. A `pre(props)` renderer in `previewComponents` (App.tsx) wraps
 every `<pre>` — a Mermaid fence included — in `<div class="code-block">` and lays a bar of buttons
 (`<div class="code-copy-bar">`) over its top-right corner: "Copy code" on every block, and before it
-"Copy SVG" on a Mermaid fence. The `<pre>` itself is passed through unchanged — its `data-source-line`
+"Copy PNG image" and "Copy SVG" on a Mermaid fence. The `<pre>` itself is passed through unchanged — its `data-source-line`
 attributes stay where scroll sync and the cursor flash look for them. Four parts, split like the
 highlighting above:
 
@@ -784,7 +784,7 @@ highlighting above:
      fences, one trailing line break dropped. Not the DOM: a Mermaid fence shows an SVG there, and a
      highlighted fence has its text split into `tok-*` spans that may not have arrived yet; the hast
      node is the same for every kind of block. `isMermaidFence(node)` picks the blocks that also get
-     "Copy SVG".
+     "Copy PNG image" and "Copy SVG".
    - `diagramSvgText(block)` gives the SVG for "Copy SVG": the *copy SVG* recorded for the diagram's
      container (below), or the SVG on screen while none is recorded yet; `null` for a diagram that
      failed to render. `serializeSvg` writes it with `XMLSerializer` — not `outerHTML`, which leaves
@@ -797,13 +797,26 @@ highlighting above:
      a rejection could reach the copy command after the gesture had expired. The textarea route puts
      the user's previous focus and text selection back afterwards. It resolves a success flag and
      never rejects.
+   - `copyDiagramImage(block)` (REQ-LTTCE-PRV-00007) copies the diagram's cached PNG
+     (IMPL-LTTCE-MRC-00001) as a picture. The `<img>` comes from `diagramImage` in `preview-copy.ts`,
+     the same function the selection copy substitutes diagrams with, so both paste the same picture.
+     Two routes, both *started* before anything is awaited, so both run inside the click: first the
+     copy command with that `<img>` in the HTML flavour (`execCommandCopy` with `html`, which fills
+     `text/plain` and `text/html` from a `copy` listener on its textarea and fails when the WebView gives it
+     no `clipboardData`), then `navigator.clipboard.write` with an `image/png` `ClipboardItem` built
+     synchronously from the data URI (`pngBlob`), which replaces the first. If the image route is
+     missing or refused (e.g. a WebView without image support on the clipboard), the HTML copy stays
+     and decides the result. No PNG yet → failure, clipboard untouched; the PNG is rasterised in an
+     idle slot after rendering, so this is only possible in the first moments after a diagram appears.
 
    No new dependency: no clipboard plugin, no icon library — the icons are inline SVG paths.
 2. **React glue** — `src/components/CodeBlock.tsx` (IMPL-LTTCE-PRV-00005): the wrapper and the bar; one
-   `CopyButton` component for both buttons, each with its own `idle | copied | failed` state shown as
+   `CopyButton` component for all buttons (on a diagram: "Copy PNG image", "Copy SVG", "Copy Mermaid Code"), each
+   with its own `idle | copied | failed` state shown as
    icon, `title` and `aria-label`, reset after `COPY_FEEDBACK_MS` — restarted by every click, also one
-   with the same outcome as the last (each click sets a new feedback object). A button asks for its
-   text at click time; no text counts as a failed copy. A `mousedown` default is suppressed so clicking does not
+   with the same outcome as the last (each click sets a new feedback object). A button runs its copy
+   function synchronously in the click and shows the flag it resolves; nothing to copy counts as a
+   failed copy. A `mousedown` default is suppressed so clicking does not
    destroy the user's selection.
 3. **The copy SVG** — `src/components/Mermaid.tsx` (IMPL-LTTCE-PRV-00007): the diagram's PNG cache
    (IMPL-LTTCE-MRC-00001) already chooses the SVG the clipboard should carry — the light re-render in

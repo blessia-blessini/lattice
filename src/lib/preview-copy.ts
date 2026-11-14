@@ -109,6 +109,37 @@ function isSafePngDataUri(value: string): boolean {
 
 
 //******************************************************************************
+// diagramImage
+//******************************************************************************
+/**
+ * An `<img>` carrying the cached PNG of the diagram `container`, or `null`
+ * when it has none (not rasterised yet, failed, or not a safe PNG data URI).
+ * Created in the container's document, not inserted anywhere.
+ *
+ * The image keeps the diagram's on-screen size in CSS pixels so it pastes at
+ * the size the user saw, independent of the raster scale factor. Shared by
+ * the selection copy (`substituteDiagrams`) and the "Copy PNG image" button
+ * (REQ-LTTCE-PRV-00007), so both paste the same picture.
+ */
+export function diagramImage(container: Element): HTMLImageElement | null {
+    const png = container.getAttribute(DIAGRAM_PNG_ATTR);
+    if (!png || !isSafePngDataUri(png)) return null;
+
+    const img = container.ownerDocument.createElement('img');
+    img.setAttribute('src', png);
+    img.setAttribute('alt', DIAGRAM_ALT);
+
+    // Width/height come from the source SVG when it recorded them; without
+    // them a high-DPI raster would paste at twice its on-screen size.
+    const width = container.getAttribute('data-lattice-diagram-width');
+    const height = container.getAttribute('data-lattice-diagram-height');
+    if (width) img.setAttribute('width', width);
+    if (height) img.setAttribute('height', height);
+    return img;
+} // diagramImage END **********************************************************
+
+
+//******************************************************************************
 // fragmentHasDiagram
 //******************************************************************************
 /**
@@ -128,30 +159,16 @@ export function fragmentHasDiagram(fragment: DocumentFragment): boolean {
 //******************************************************************************
 /**
  * Replace every diagram container in `fragment` with an `<img>` carrying the
- * cached PNG. Mutates the fragment (it is a throw-away clone) and returns the
- * number of substitutions made.
- *
- * The image keeps the diagram's on-screen size in CSS pixels so it pastes at
- * the size the user saw, independent of the raster scale factor.
+ * cached PNG (`diagramImage`). Mutates the fragment (it is a throw-away clone)
+ * and returns the number of substitutions made.
  */
 export function substituteDiagrams(fragment: DocumentFragment): number {
     const containers = fragment.querySelectorAll(`[${DIAGRAM_PNG_ATTR}]`);
     let count = 0;
 
     containers.forEach((container) => {
-        const png = container.getAttribute(DIAGRAM_PNG_ATTR);
-        if (!png || !isSafePngDataUri(png)) return;
-
-        const img = container.ownerDocument.createElement('img');
-        img.setAttribute('src', png);
-        img.setAttribute('alt', DIAGRAM_ALT);
-
-        // Width/height come from the source SVG when it recorded them; without
-        // them a high-DPI raster would paste at twice its on-screen size.
-        const width = container.getAttribute('data-lattice-diagram-width');
-        const height = container.getAttribute('data-lattice-diagram-height');
-        if (width) img.setAttribute('width', width);
-        if (height) img.setAttribute('height', height);
+        const img = diagramImage(container);
+        if (!img) return;
 
         container.replaceWith(img);
         count++;

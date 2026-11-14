@@ -23,9 +23,11 @@
 
 // IMPL-LTTCE-PRV-00004
 //
-// Pure logic behind the preview code block's copy button (REQ-LTTCE-PRV-00004):
-// what text it copies, and how that text reaches the clipboard. The React glue
-// is `components/CodeBlock.tsx` (IMPL-LTTCE-PRV-00005).
+// Pure logic behind the preview code block's copy buttons (REQ-LTTCE-PRV-00004
+// / 00006 / 00007): what they copy, and how it reaches the clipboard. The React
+// glue is `components/CodeBlock.tsx` (IMPL-LTTCE-PRV-00005).
+
+import { diagramImage } from './preview-copy';
 
 /** Minimal shape of the hast node react-markdown passes to a `pre` renderer. */
 export interface HastLike {
@@ -79,8 +81,8 @@ export function fenceText(pre: HastLike | undefined): string {
 // isMermaidFence
 //******************************************************************************
 /**
- * Is this `<pre>` a Mermaid fence? Those are rendered as a diagram and get a
- * second button, "Copy SVG" (REQ-LTTCE-PRV-00006).
+ * Is this `<pre>` a Mermaid fence? Those are rendered as a diagram and get
+ * two more buttons, "Copy PNG image" and "Copy SVG" (REQ-LTTCE-PRV-00007 / 00006).
  */
 export function isMermaidFence(pre: HastLike | undefined): boolean {
     const code = pre?.children?.find(c => c.type === 'element' && c.tagName === 'code');
@@ -183,8 +185,14 @@ export interface ClipboardRoutes {
  *
  * The textarea goes on `document.body`, outside the preview pane, so the
  * pane's own `copy` listener (IMPL-LTTCE-MRC-00002) never sees this copy.
+ *
+ * With `html`, the copy carries that HTML as well as `text`: a `copy`
+ * listener on the textarea itself — the copy command's target, so no other
+ * copy can reach it — fills both flavours. It reports success only when
+ * that listener could write them — a WebView without `clipboardData` would
+ * otherwise copy the plain text alone and still say "copied".
  */
-export function execCommandCopy(text: string, doc: Document = document): boolean {
+export function execCommandCopy(text: string, doc: Document = document, html?: string): boolean {
     const selection = doc.getSelection();
     const savedRanges = selection
         ? Array.from({ length: selection.rangeCount }, (_, i) => selection.getRangeAt(i))
@@ -198,13 +206,25 @@ export function execCommandCopy(text: string, doc: Document = document): boolean
     area.style.top = '-1000px';
     area.style.opacity = '0';
     doc.body.appendChild(area);
+
+    let htmlWritten = false;
+    const fillHtml = (e: Event) => {
+        const data = (e as ClipboardEvent).clipboardData;
+        if (!data || html === undefined) return;
+        data.setData('text/plain', text);
+        data.setData('text/html', html);
+        e.preventDefault();
+        htmlWritten = true;
+    };
+    if (html !== undefined) area.addEventListener('copy', fillHtml);
     try {
         area.focus({ preventScroll: true });
         area.select();
-        return doc.execCommand('copy');
+        return doc.execCommand('copy') && (html === undefined || htmlWritten);
     } catch {
         return false;
     } finally {
+        if (html !== undefined) area.removeEventListener('copy', fillHtml);
         area.remove();
         savedFocus?.focus?.({ preventScroll: true });
         if (selection) {
@@ -263,3 +283,86 @@ export async function copyText(
     }
 }
 // copyText END ****************************************************************
+
+
+/** Clipboard routes `copyDiagramImage` tries, injectable for tests. */
+export interface ImageClipboardRoutes {
+    /** Legacy route — the copy command, carrying `<img>` HTML (`execCommandCopy`). */
+    execHtmlCopy: (text: string, html: string) => boolean;
+    /** Async Clipboard API — `navigator.clipboard.write` with an `image/png` item, when present. */
+    writePng?: (png: Blob) => Promise<void>;
+}
+
+
+//******************************************************************************
+// defaultImageClipboardRoutes
+//******************************************************************************
+/** The image routes of the running WebView. */
+export function defaultImageClipboardRoutes(): ImageClipboardRoutes {
+    const clip = typeof navigator !== 'undefined' ? navigator.clipboard : undefined;
+    const Item = (globalThis as { ClipboardItem?: typeof ClipboardItem }).ClipboardItem;
+    return {
+        execHtmlCopy: (t: string, h: string) => execCommandCopy(t, document, h),
+        writePng: clip?.write && Item
+            ? (png: Blob) => clip.write([new Item({ [png.type]: png })])
+            : undefined,
+    };
+}
+// defaultImageClipboardRoutes END *********************************************
+
+
+//******************************************************************************
+// pngBlob
+//******************************************************************************
+/** The bytes of a `data:image/png;base64,…` URI as an `image/png` Blob. Synchronous. */
+export function pngBlob(dataUri: string): Blob {
+    const binary = atob(dataUri.slice(dataUri.indexOf(',') + 1));
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type: 'image/png' });
+}
+// pngBlob END *****************************************************************
+
+
+//******************************************************************************
+// copyDiagramImage
+//******************************************************************************
+/**
+ * IMPL-LTTCE-PRV-00004 — REQ-LTTCE-PRV-00007 — put the diagram inside `block`
+ * on the clipboard as a picture: its cached PNG (IMPL-LTTCE-MRC-00001), the
+ * same image a selection copy carries. Resolves `true` when one route
+ * reported success; `false` without touching the clipboard when the diagram
+ * has no PNG (not rendered, failed, or not rasterised yet). Never rejects.
+ *
+ * Both routes are *started* before anything is awaited, so both run inside
+ * the click (WebKit requires the user gesture for each):
+ *   1. the copy command with an `<img>` in the HTML flavour — what a selection
+ *      copy carries; Word, Outlook and mail clients paste it as a picture;
+ *   2. the Async Clipboard API with a real `image/png` item, which replaces
+ *      the first and is what image editors and chat apps need.
+ * Route 2 failing (e.g. a WebView without image support on the clipboard)
+ * leaves route 1's copy in place, so the result is the better of the two.
+ */
+export async function copyDiagramImage(
+    block: Element,
+    routes: ImageClipboardRoutes = defaultImageClipboardRoutes(),
+): Promise<boolean> {
+    const container = block.querySelector(DIAGRAM_CONTAINER_SELECTOR);
+    const img = container ? diagramImage(container) : null;
+    if (!img) return false;
+
+    let htmlOk = false;
+    try {
+        htmlOk = routes.execHtmlCopy(img.getAttribute('alt') ?? '', img.outerHTML);
+    } catch {
+        // Unsupported — the Async Clipboard API below may still work.
+    }
+    if (!routes.writePng) return htmlOk;
+    try {
+        await routes.writePng(pngBlob(img.getAttribute('src') ?? ''));
+        return true;
+    } catch {
+        return htmlOk;
+    }
+}
+// copyDiagramImage END ********************************************************

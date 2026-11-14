@@ -22,7 +22,7 @@
 // END OF NOTE
 //
 // ---------------------------------------------------------------------------
-// ITST for REQ-LTTCE-PRV-00004 / 00005 / 00006 (ARCH-LTTCE-PRV-00003) — the code block
+// ITST for REQ-LTTCE-PRV-00004 / 00005 / 00006 / 00007 (ARCH-LTTCE-PRV-00003) — the code block
 // copy button, wired into the real App's Markdown pipeline: which blocks get
 // one, what a click puts on the clipboard, and that the HTML export of the
 // same preview carries no button.
@@ -36,7 +36,7 @@ import * as TauriCore from '@tauri-apps/api/core';
 import { answerTraceLog } from './test/trace-log-mock';
 import { setClipboard } from './test/clipboard-mock';
 import { buildExportHtml } from './lib/preview-copy';
-import { COPY_CODE_LABEL, COPY_SVG_LABEL } from './components/CodeBlock';
+import { COPY_CODE_LABEL, COPY_MERMAID_CODE_LABEL, COPY_SVG_LABEL, COPY_IMAGE_LABEL } from './components/CodeBlock';
 
 vi.mock('./components/Editor', () => ({
     Editor: React.forwardRef((_props: any, ref: any) => {
@@ -117,7 +117,7 @@ describe('App — copy button on preview code blocks', () => {
         return body.querySelector('.mermaid')!.closest('.code-block')!;
     };
 
-    it('gives code blocks "Copy code", the diagram also "Copy SVG", inline code nothing', async () => {
+    it('gives code blocks "Copy code", the diagram also "Copy PNG image" and "Copy SVG", inline code nothing', async () => {
         const { body } = await renderPreview();
         const diagram = await diagramBlock(body);
 
@@ -125,15 +125,15 @@ describe('App — copy button on preview code blocks', () => {
         expect(blocks).toHaveLength(3);
         blocks.filter(b => b !== diagram)
             .forEach(b => expect(labelsOf(b)).toEqual([COPY_CODE_LABEL]));
-        expect(labelsOf(diagram)).toEqual([COPY_SVG_LABEL, COPY_CODE_LABEL]);
+        expect(labelsOf(diagram)).toEqual([COPY_IMAGE_LABEL, COPY_SVG_LABEL, COPY_MERMAID_CODE_LABEL]);
 
         expect(body.querySelector('p > code')!.closest('.code-block')).toBeNull();
     });
 
-    it('"Copy code" on a diagram copies its Mermaid source text, not the drawing', async () => {
+    it('"Copy Mermaid Code" on a diagram copies its Mermaid source text, not the drawing', async () => {
         const { body } = await renderPreview();
         const btn = (await diagramBlock(body))
-            .querySelector(`[aria-label="${COPY_CODE_LABEL}"]`) as HTMLButtonElement;
+            .querySelector(`[aria-label="${COPY_MERMAID_CODE_LABEL}"]`) as HTMLButtonElement;
         await act(async () => { fireEvent.click(btn); });
         expect(writeText).toHaveBeenCalledWith('graph TD; A-->B');
     });

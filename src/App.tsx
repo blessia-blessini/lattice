@@ -1974,7 +1974,8 @@ function App() {
     },
     // IMPL-LTTCE-PRV-00005 — every code block, a Mermaid fence included,
     // gets a copy button for its source text (REQ-LTTCE-PRV-00004); a Mermaid
-    // fence also gets "Copy SVG" for the rendered diagram (REQ-LTTCE-PRV-00006).
+    // fence also gets "Copy PNG image" and "Copy SVG" for the rendered diagram
+    // (REQ-LTTCE-PRV-00007 / 00006).
     // CodeBlock is a stable import, so the useMemo identity holds.
     pre(props) {
       const { node, children, ...rest } = props;

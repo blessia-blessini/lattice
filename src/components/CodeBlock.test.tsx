@@ -21,11 +21,12 @@
 // See LICENCE file in GitHUB root folder of the repository.
 // END OF NOTE
 //
-// UTST for IMPL-LTTCE-PRV-00005 (REQ-LTTCE-PRV-00004 / 00005 / 00006) — the copy buttons.
+// UTST for IMPL-LTTCE-PRV-00005 (REQ-LTTCE-PRV-00004 / 00005 / 00006 / 00007) — the copy buttons.
 
 import { render, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import { CodeBlock, COPY_FEEDBACK_MS, COPY_CODE_LABEL, COPY_SVG_LABEL } from './CodeBlock';
+import { CodeBlock, COPY_FEEDBACK_MS, COPY_CODE_LABEL, COPY_MERMAID_CODE_LABEL, COPY_SVG_LABEL, COPY_IMAGE_LABEL, COPY_KIND_ATTR,
+    COPY_SVG_TOOLTIP, COPY_IMAGE_TOOLTIP } from './CodeBlock';
 import { PREVIEW_UI_ATTR } from '../lib/preview-copy';
 import { setClipboard } from '../test/clipboard-mock';
 
@@ -113,7 +114,7 @@ describe('CodeBlock', () => {
     });
 });
 
-// UTST for IMPL-LTTCE-PRV-00005 (REQ-LTTCE-PRV-00006) — "Copy SVG" on a diagram.
+// UTST for IMPL-LTTCE-PRV-00005 (REQ-LTTCE-PRV-00006 / 00007) — "Copy SVG" and "Copy PNG image" on a diagram.
 describe('CodeBlock — diagram', () => {
     let writeText: ReturnType<typeof vi.fn<(text: string) => Promise<void>>>;
 
@@ -133,11 +134,17 @@ describe('CodeBlock — diagram', () => {
     const button = (container: HTMLElement, label: string) =>
         container.querySelector(`.code-copy-btn[aria-label="${label}"]`) as HTMLButtonElement;
 
-    it('has "Copy SVG" before "Copy code"', () => {
+    it('has "Copy PNG image", then "Copy SVG", then "Copy Mermaid Code"', () => {
         const { container } = renderDiagram('<svg><g/></svg>');
         const labels = Array.from(container.querySelectorAll('.code-copy-btn'))
             .map(b => b.getAttribute('aria-label'));
-        expect(labels).toEqual([COPY_SVG_LABEL, COPY_CODE_LABEL]);
+        expect(labels).toEqual([COPY_IMAGE_LABEL, COPY_SVG_LABEL, COPY_MERMAID_CODE_LABEL]);
+        // Short names for screen readers, the full explanation as the tooltip.
+        expect(Array.from(container.querySelectorAll('.code-copy-btn')).map(b => b.getAttribute('title')))
+            .toEqual([COPY_IMAGE_TOOLTIP, COPY_SVG_TOOLTIP, COPY_MERMAID_CODE_LABEL]);
+        // The kind stays put while the label changes with the feedback.
+        expect(Array.from(container.querySelectorAll('.code-copy-btn'))
+            .map(b => b.getAttribute(COPY_KIND_ATTR))).toEqual(['image', 'svg', 'code']);
     });
 
     it('"Copy SVG" copies the rendered diagram as a standalone SVG', async () => {
@@ -150,9 +157,9 @@ describe('CodeBlock — diagram', () => {
         expect(btn.getAttribute('data-state')).toBe('copied');
     });
 
-    it('"Copy code" on a diagram still copies the source text', async () => {
+    it('"Copy Mermaid Code" on a diagram still copies the source text', async () => {
         const { container } = renderDiagram('<svg><g/></svg>');
-        await act(async () => { fireEvent.click(button(container, COPY_CODE_LABEL)); });
+        await act(async () => { fireEvent.click(button(container, COPY_MERMAID_CODE_LABEL)); });
         expect(writeText).toHaveBeenCalledWith('graph TD; A-->B');
     });
 
@@ -161,6 +168,49 @@ describe('CodeBlock — diagram', () => {
         const btn = button(container, COPY_SVG_LABEL);
         await act(async () => { fireEvent.click(btn); });
         expect(writeText).not.toHaveBeenCalled();
+        expect(btn.getAttribute('data-state')).toBe('failed');
+    });
+});
+
+// UTST for IMPL-LTTCE-PRV-00005 (REQ-LTTCE-PRV-00007) — "Copy PNG image" puts the cached PNG on the clipboard.
+describe('CodeBlock — Copy PNG image', () => {
+    const PNG = 'data:image/png;base64,AAEC/w==';
+    const g = globalThis as { ClipboardItem?: unknown };
+    const originalItem = g.ClipboardItem;
+    let write: ReturnType<typeof vi.fn<(items: unknown[]) => Promise<void>>>;
+
+    beforeEach(() => {
+        write = vi.fn<(items: unknown[]) => Promise<void>>().mockResolvedValue(undefined);
+        setClipboard({ write });
+        g.ClipboardItem = class { constructor(public items: Record<string, Blob>) {} };
+    });
+    afterEach(() => { setClipboard(undefined); g.ClipboardItem = originalItem; });
+
+    const imageButton = (attrs: Record<string, string>) => {
+        const { container } = render(
+            <CodeBlock text="graph TD; A-->B" diagram>
+                <div className="mermaid" {...attrs}><svg /></div>
+            </CodeBlock>,
+        );
+        return container.querySelector(`.code-copy-btn[aria-label="${COPY_IMAGE_LABEL}"]`) as HTMLButtonElement;
+    };
+
+    it('copies the diagram\'s PNG as an image and shows success', async () => {
+        const btn = imageButton({ 'data-lattice-diagram-png': PNG });
+        await act(async () => { fireEvent.click(btn); });
+        expect(write).toHaveBeenCalledTimes(1);
+        const item = (write.mock.calls[0][0] as { items: Record<string, Blob> }[])[0];
+        expect(item.items['image/png'].type).toBe('image/png');
+        expect(btn.getAttribute('data-state')).toBe('copied');
+        // Name and tooltip differ while idle, yet both show the outcome.
+        expect(btn.getAttribute('aria-label')).toBe('Copied');
+        expect(btn.getAttribute('title')).toBe('Copied');
+    });
+
+    it('reports failure, without copying, while the diagram has no PNG', async () => {
+        const btn = imageButton({});
+        await act(async () => { fireEvent.click(btn); });
+        expect(write).not.toHaveBeenCalled();
         expect(btn.getAttribute('data-state')).toBe('failed');
     });
 });
