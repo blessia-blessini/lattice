@@ -4,27 +4,31 @@ All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
 
-## v0.3.59
+## v0.3.60
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: Change Log corrections
+---
+
 - CHORE: Ledger - signed REASON-011 decisions replace the old ones
 - CHORE: Prefer Apache-2.0 over MIT in the FOSS licence policy
+
+## v0.3.59
+### Changes
 - DOCS: Correct the code-block margin comment on CSS specificity
 - FIX: Copy buttons - copy inside the click, restart feedback, keep margins
 - FEAT: Copy SVG button on Mermaid diagrams in the preview
 - FEAT: Copy button on Mermaid blocks too, copying their source
 - FEAT: Copy button on preview code blocks
-- CHORE: Merged bac dev
+- CHORE: Merged back dev
 - FEAT: Start view (REQ-LTTCE-WIN-00003, ARCH-LTTCE-WIN-00003, IMPL-LTTCE-WIN-00003..00006)
 - TEST: Stop the trace_log mocks recursing (cause of the App.coverage timeouts)
 - FIX: Start view defaults also when a failed session restore finds no vault
 - FEAT: Start view settings: the view a window opens in, with and without a file
 - DOCS: Record the first CI pass of the Windows command-line install check
 - TEST: Check on CI that the Linux .deb puts lattice on the command line
-- CHORE: merged a dev fix again
-- CHORE: merged dev
-- CHORE: Bumped version
 - FIX: Give the Windows PATH script tests time for PowerShell start-up
+---
 - Make version 0.3.58
 - FEAT: Added path in installer for Windows and Linux
 - FEAT: Added path in staller for Windows and Linux
