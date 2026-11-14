@@ -7,6 +7,8 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.60
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: Set version to 0.3.60
+- - bump version to v0.3.60
 - CHORE: Change Log corrections
 ---
 
