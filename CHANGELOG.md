@@ -6,12 +6,14 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.61
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: Update npm and cargo dependencies and updated the legal notices
 - FEAT: Copy PNG image button on Mermaid diagrams, E2E clipboard test, release guard
 ---
 
 ## v0.3.60
 ### Changes
-- CHORE: Update npm and cargo dependencies
+- CHORE: Update npm and cargo dependencies and updated the legal notices
+- RELEASEcd : Copy PNG image button on Mermaid diagrams, E2E clipboard test, release guard
 - TEST: Diagram copy buttons - outcome on a button whose tooltip differs
 - FEAT: Diagram copy buttons - short screen-reader names, full tooltips
 - DOCS: Diagram copy buttons - use the new names everywhere
