@@ -30,7 +30,7 @@ import path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { commandCompareAdditions, commandReleaseGate, commandReleasePlan, parseArgs } from './foss.mjs';
 import { additionsIntro } from './notices-render.mjs';
-import { additionsDifference, canonicalJson, deepScanSetting, gateReasons, LEGATTICE_URL, licenceCheckPlan, releaseKind } from './release-plan.mjs';
+import { additionsDifference, canonicalJson, deepScanSetting, gateReasons, LEGATTICE_URL, licenceCheckPlan, releaseKind, SCAN_FIX } from './release-plan.mjs';
 
 const quiet = { log: () => {}, warn: () => {}, error: () => {} };
 const addition = (topic, extra = {}) => ({ topic, package: { ecosystem: 'npm', name: 'katex', version: '1' }, licences: ['OFL-1.1'], files: [{ path: 'a', sha1: '0'.repeat(40), lines: [[1, 1]] }], copyrights: [], ...extra });
@@ -122,7 +122,15 @@ describe('gateReasons', () => {
         const scan = reasons('release', true, { scan: 'failure', notices: 'skipped' });
         expect(scan).toHaveLength(1);
         expect(scan[0].what).toMatch(/Legattice scan did not succeed \(failure\): topics without a decision, or a scan failure/);
-        expect(scan[0].fix).toMatch(/decide the topics in the Legattice ledger, then "Re-run failed jobs"/);
+        // Step by step: where the topics are listed, where the drafts are, sign, push, re-run.
+        expect(scan[0].fix).toBe(SCAN_FIX);
+        expect(SCAN_FIX).toMatch(/\(1\) the summary of the job "foss-scan \/ merge" lists each topic/);
+        expect(SCAN_FIX).toMatch(/\(2\) the artifact "ort-\.\.\.-results" holds in topics\/drafts\//);
+        expect(SCAN_FIX).toMatch(/\(3\) put them into the Legattice ledger \(products\/lattice\/ledger\).*sign/);
+        expect(SCAN_FIX).toMatch(/\(4\) push Legattice main/);
+        expect(SCAN_FIX).toMatch(/\(5\) "Re-run failed jobs" here/);
+        // One line: it also becomes a workflow annotation.
+        expect(SCAN_FIX).not.toMatch(/\n/);
         expect(reasons('release', true, { notices: 'failure' })[0].fix).toMatch(/foss-compliance-release/);
         const changed = reasons('release', true, {}, 'true');
         expect(changed.map((r) => r.what)).toEqual(['the notices made from the scan differ in content from the committed ones']);

@@ -77,7 +77,10 @@ the job **release-gate** says in its summary what is wrong, if anything, and wha
   them does not count). Then the build opens a pull request ("Bring the notices of the … scan to …") with the
   scan's files: merge it, and tag again.
 
-On a candidate tag or a build by hand the same findings are only reported. The notices pull request is opened
+On a candidate tag the scan stops on an undecided topic exactly as on a release, so a candidate shows what the
+release would hit (it is still never published); different notices are only reported. On a build by hand on a
+branch everything is only reported. The release gate's summary says step by step how to decide the topics. The
+notices pull request is opened
 for every build whose scan succeeded and whose notices differ: into `dev` for a tag, into the branch that was
 built otherwise. A scan that failed opens no pull request; the summary says what to correct.
 

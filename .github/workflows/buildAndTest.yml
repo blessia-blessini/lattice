@@ -274,9 +274,10 @@ jobs:
   #                            -> foss-compliance-release: the notices made
   #                            from its decisions, compared with the
   #                            committed ones (output changed).
-  #   On a release, foss-scan fails while ANY topic is undecided -- decide
-  #   it in the Legattice ledger, then "Re-run failed jobs" here (the legs
-  #   are not rebuilt). Elsewhere the topics are only listed.
+  #   On a tag build (release or candidate), foss-scan fails while ANY topic
+  #   is undecided -- decide it in the Legattice ledger (release-gate's
+  #   summary lists the steps), then "Re-run failed jobs" here (the legs are
+  #   not rebuilt). On a build by hand on a branch the topics are only listed.
   #
   #   The FOSS job appears twice so that only one runs: foss-compliance
   #   alone, or foss-compliance-release after the scan.
@@ -305,8 +306,10 @@ jobs:
       ref: ${{ github.sha }}
       # Beside the 8 build legs: 8 + 12 = the 20 jobs GitHub runs at once.
       shards: '12'
-      # Only a release stops on undecided topics; elsewhere they are listed.
-      block_at: ${{ needs.setup.outputs.kind == 'release' && 'low' || 'none' }}
+      # Every tag build — final release and candidate — stops on an undecided
+      # topic, so a candidate shows what the release would hit; a build by
+      # hand on a branch only lists them (REQ-LTTCE-FOS-00009).
+      block_at: ${{ needs.setup.outputs.kind != 'build' && 'low' || 'none' }}
       fresh: ${{ needs.setup.outputs.deep == 'true' }}
 
   foss-compliance-release:

@@ -125,6 +125,20 @@ export function licenceCheckPlan({ kind, url, useLegattice, forceDeepScan }) {
 // licenceCheckPlan END ****************************************
 
 
+/**
+ * What to do when the Legattice scan failed — step by step, because the usual
+ * cause, a topic without a current decision, is corrected outside this
+ * repository (REQ-LTTCE-FOS-00009). One line: it also becomes an annotation.
+ */
+export const SCAN_FIX = 'decide the topics: (1) the summary of the job "foss-scan / merge" lists each topic to decide '
+    + 'and why (open, or reopened by a new version); (2) the artifact "ort-...-results" holds in topics/drafts/ '
+    + 'one ready draft per topic, with the new evidence and the previous decision filled in; '
+    + '(3) put them into the Legattice ledger (products/lattice/ledger), check each decision and sign it '
+    + '(decidedBy, date; Legattice docs/ledger.md); (4) push Legattice main -- tag builds scan with the ledger '
+    + 'on its main; (5) "Re-run failed jobs" here. If no topic is listed, the scan itself failed: '
+    + 'see the foss-scan jobs';
+
+
 //**************************************************************
 // gateReasons
 //**************************************************************
@@ -132,7 +146,9 @@ export function licenceCheckPlan({ kind, url, useLegattice, forceDeepScan }) {
  * What blocks the publication of a build (REQ-LTTCE-FOS-00009), from the
  * results of its jobs ("success", "failure", "cancelled", "skipped", or
  * empty). Each reason comes with what to correct. Only a release is
- * blocked by them; for a candidate or a build they are only reported.
+ * blocked by them; for a candidate or a build they are only reported here —
+ * but a tag build's scan, candidate included, already fails on a topic
+ * without a decision (block_at in buildAndTest.yml).
  * @param {object} state
  * @param {'release'|'candidate'|'build'} state.kind
  * @param {boolean} state.useLegattice
@@ -158,7 +174,7 @@ export function gateReasons({ kind, useLegattice, results, changed }) {
     } else if (result('scan') !== 'success') {
         reasons.push({
             what: `the Legattice scan did not succeed (${result('scan')}): topics without a decision, or a scan failure`,
-            fix: 'decide the topics in the Legattice ledger, then "Re-run failed jobs" here; or see the foss-scan jobs for the failure',
+            fix: SCAN_FIX,
         });
     } else if (result('notices') !== 'success') {
         reasons.push({

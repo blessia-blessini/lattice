@@ -60,7 +60,7 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   tag note, the ignored-ForceDeepScan warning; exit 2 on a wrong `LEGATTICE_URL` or an empty one while Legattice is
   used), `commandReleaseGate` (exit 1 only for a blocked release) and `commandCompareAdditions` (job output
   `changed`); `buildAndTest.yml`: tag-only push trigger, inputs `use_legattice` / `force_deep_scan`, setup job,
-  `foss-compliance` / `foss-scan` (12 shards, `block_at` low on a release, `fresh`) / `foss-compliance-release`
+  `foss-compliance` / `foss-scan` (12 shards, `block_at` low on a release and a candidate, `fresh`) / `foss-compliance-release`
   beside `build-and-test` (committed notices), job `release-gate` (steps 960-962), `publish-release-site` after
   it, steps 903.2a/b, job `notices-to-dev` (every kind; into dev for a tag, the built branch otherwise; branch
   `foss-notices-<commit>`; steps 950-954); `foss-compliance.yml` input `fresh_additions`, output `changed` (by

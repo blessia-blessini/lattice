@@ -2580,8 +2580,10 @@ outputs:
 - **`foss-scan`** (`if: use_legattice`) calls `blessia-blessini/legattice/.github/workflows/scan.yml@main` on
   `github.sha` with `shards: '12'` — 8 build legs + 12 shards = the 20 jobs GitHub runs at once for a public
   repository on the free plan; broker and merge run before and after the shards. `block_at: low` for a
-  `release`, `none` otherwise: on a release its merge job fails while any topic is open, reopened or pending
-  removal; elsewhere the topics are only listed. `fresh: deep` (new Legattice input) makes the broker skip the
+  `release` and a `candidate`, `none` for a build by hand: on a tag build its merge job fails while any topic is
+  open, reopened or pending removal; on a branch build the topics are only listed. The release gate's fix text
+  (`SCAN_FIX` in `release-plan.mjs`) then lists the steps: topics in the merge job's summary, ready drafts in the
+  `ort-…-results` artifact, sign in the ledger, push Legattice `main`, re-run. `fresh: deep` (new Legattice input) makes the broker skip the
   store and say "asked for by this run". `permissions: contents: read, actions: read` (the store, `ort-store`).
   The merge job keeps the store before it lists the topics, so a release blocked on topics still leaves it.
   **Merge order for a new input:** GitHub refuses to call a workflow with an input it does not declare, so an

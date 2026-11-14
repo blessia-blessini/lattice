@@ -1392,9 +1392,14 @@ REQ-LTTCE-FOS-00008), or the notices generated from the scan differ in content f
 build SHALL still complete and keep its installers, and its summary SHALL say why publication was blocked and
 what to correct (which topics to decide in the ledger, or which part of the scan failed). Once the missing
 decisions are made, re-running the stopped parts of the same build SHALL let it publish. For a
-candidate or a build on a branch, findings without a decision and different notices SHALL be reported in the
-summary and SHALL NOT fail the build. A published release SHALL attach the scan's report and the notice
-additions it used.
+**candidate**, a finding without a current decision SHALL fail its Legattice scan exactly as for a final
+release, so that a candidate shows in advance what the release would hit; different notices SHALL only be
+reported, and a candidate is never published either way. For a build by hand on a branch, findings without a
+decision and different notices SHALL be reported in the summary and SHALL NOT fail the build. Whenever the scan
+fails, the summary SHALL say step by step how to correct it: where the topics to decide are listed, where the
+scan's ready drafts for them are, that they are signed in the Legattice ledger, that Legattice's main is pushed
+(tag builds scan with the ledger on it), and that the stopped parts are then re-run. A published release SHALL
+attach the scan's report and the notice additions it used.
 
 *Notices back by pull request.* For every build that used Legattice — final release, candidate or a build by hand
 — whose scan succeeded (no finding without a current decision, no scan failure) and whose scan's notices differ
