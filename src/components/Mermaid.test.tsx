@@ -46,6 +46,7 @@ import mermaid from 'mermaid';
 import { Mermaid } from './Mermaid';
 import { rasterizeSvg } from '../lib/svg-raster';
 import { DIAGRAM_PNG_ATTR, DIAGRAM_PNG_FAILED_ATTR, EXPORT_MODE_ATTR } from '../lib/preview-copy';
+import { diagramSvgText } from '../lib/code-block-copy';
 
 const CHART = 'graph TD; A-->B';
 
@@ -376,5 +377,56 @@ describe('Mermaid — PNG cache final state and export mode', () => {
         await act(async () => { await Promise.resolve(); });
         expect(rasterizeSvg).not.toHaveBeenCalled();
         expect(box(view).hasAttribute(DIAGRAM_PNG_ATTR)).toBe(false);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// The SVG "Copy SVG" copies (REQ-LTTCE-PRV-00006, IMPL-LTTCE-PRV-00007)
+// ---------------------------------------------------------------------------
+// It is the SVG the PNG is made from, so it follows "Copy Diagrams On Light
+// Background" exactly as the picture copy does; and a re-render must not
+// leave the SVG of the previous chart behind.
+describe('Mermaid — copy SVG', () => {
+    let runIdle: boolean;
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        vi.mocked(rasterizeSvg).mockResolvedValue(null);
+        runIdle = true;
+        vi.stubGlobal('requestIdleCallback', (cb: () => void) => { if (runIdle) cb(); return 1; });
+    });
+    afterEach(() => { vi.unstubAllGlobals(); });
+
+    it('is the light re-render in dark theme with copyLight on', async () => {
+        vi.mocked(mermaid.render)
+            .mockResolvedValueOnce({ svg: '<svg id="on-screen"></svg>', diagramType: 'graph' })
+            .mockResolvedValueOnce({ svg: '<svg id="light-copy"></svg>', diagramType: 'graph' });
+        let view!: ReturnType<typeof render>;
+        await act(async () => { view = render(<Mermaid chart={CHART} theme="dark" copyLight={true} />); });
+        await waitFor(() => expect(diagramSvgText(view.container)).toContain('id="light-copy"'));
+    });
+
+    it('is the diagram on screen when copyLight is off', async () => {
+        vi.mocked(mermaid.render).mockResolvedValue({ svg: '<svg id="on-screen"></svg>', diagramType: 'graph' });
+        let view!: ReturnType<typeof render>;
+        await act(async () => { view = render(<Mermaid chart={CHART} theme="dark" copyLight={false} />); });
+        await waitFor(() => expect(rasterizeSvg).toHaveBeenCalled());
+        expect(diagramSvgText(view.container)).toContain('id="on-screen"');
+    });
+
+    it('never outlives a re-render of a different chart', async () => {
+        vi.mocked(mermaid.render)
+            .mockResolvedValueOnce({ svg: '<svg id="first"></svg>', diagramType: 'graph' })
+            .mockResolvedValueOnce({ svg: '<svg id="first-light"></svg>', diagramType: 'graph' })
+            .mockResolvedValue({ svg: '<svg id="second"></svg>', diagramType: 'graph' });
+        let view!: ReturnType<typeof render>;
+        await act(async () => { view = render(<Mermaid chart={CHART} theme="dark" copyLight={true} />); });
+        await waitFor(() => expect(diagramSvgText(view.container)).toContain('id="first-light"'));
+
+        // The new chart's copy is never prepared: its idle slot does not come.
+        runIdle = false;
+        await act(async () => { view.rerender(<Mermaid chart="graph LR; X-->Y" theme="dark" copyLight={true} />); });
+        await waitFor(() => expect(view.container.querySelector('#second')).not.toBeNull());
+        expect(diagramSvgText(view.container)).toContain('id="second"');
     });
 });

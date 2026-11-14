@@ -28,3 +28,7 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   backstop into a failure) — UTST: `src/lib/preview-copy.test.ts`, *the settle wait covers code
   highlighting* (5 cases)
 - IMPL-LTTCE-XPT-00001 **covers** ARCH-LTTCE-XPT-00004
+- IMPL-LTTCE-PRV-00004 **covers** REQ-LTTCE-PRV-00005  (`PREVIEW_UI_ATTR`; `stripPreviewUi`, called by
+  `buildExportHtml` and `buildCopyHtml`, removes the code block copy button from every serialised HTML)
+  — UTST: `src/lib/preview-copy.test.ts`, *preview controls stay out of serialised HTML* (3 cases)
+- IMPL-LTTCE-PRV-00004 **covers** ARCH-LTTCE-PRV-00003

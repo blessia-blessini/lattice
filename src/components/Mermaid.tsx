@@ -3,6 +3,7 @@ import mermaid from 'mermaid';
 import { rasterizeSvg, svgIntrinsicSize } from '../lib/svg-raster';
 import { DIAGRAM_PNG_ATTR, DIAGRAM_PNG_FAILED_ATTR, EXPORT_MODE_ATTR } from '../lib/preview-copy';
 import { PREVIEW_THEME_COLORS } from '../lib/preview-theme';
+import { rememberDiagramSvg, forgetDiagramSvg } from '../lib/code-block-copy';
 
 /** Props for the {@link Mermaid} diagram renderer. */
 export interface MermaidProps {
@@ -153,7 +154,12 @@ export const Mermaid: React.FC<MermaidProps> = ({ chart, theme, mermaidInit, cop
   // screen keeps the theme the user chose.
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || !svg) return;
+    if (!container) return;
+    // IMPL-LTTCE-PRV-00007 — the copy SVG of an earlier render shows a
+    // different chart or theme; until `cache` records the new one, "Copy SVG"
+    // falls back to the SVG on screen (REQ-LTTCE-PRV-00006).
+    forgetDiagramSvg(container);
+    if (!svg) return;
 
     const wantLight = copyLight && theme === 'dark';
     const background = PREVIEW_THEME_COLORS[wantLight ? 'light' : theme].backgroundColor;
@@ -161,6 +167,9 @@ export const Mermaid: React.FC<MermaidProps> = ({ chart, theme, mermaidInit, cop
     let cancelled = false;
 
     const cache = async (el: SVGSVGElement, size: { width: number; height: number }) => {
+      // The SVG the PNG is made from is also what "Copy SVG" copies, so both
+      // follow the light-background setting (IMPL-LTTCE-PRV-00007).
+      rememberDiagramSvg(container, el);
       const png = await rasterizeSvg(el, background, size.width > 0 ? size : undefined);
       if (cancelled) return;
       if (!png) {

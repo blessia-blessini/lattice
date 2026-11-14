@@ -23,15 +23,15 @@ The Linux AppImage additionally carries system libraries from the Ubuntu release
 | MPL-2.0 | weak copyleft | 5 | 4 |
 | LGPL-2.1-only | weak copyleft | 1 | 0 |
 | OFL-1.1 | weak copyleft | 1 | 1 |
-| MIT | permissive | 755 | 655 |
+| MIT | permissive | 439 | 401 |
+| Apache-2.0 | permissive | 327 | 265 |
 | ISC | permissive | 41 | 41 |
 | Unicode-3.0 | permissive | 19 | 16 |
-| BSD-3-Clause | permissive | 18 | 17 |
-| Apache-2.0 | permissive | 11 | 11 |
+| BSD-3-Clause | permissive | 16 | 15 |
 | BSD-2-Clause | permissive | 7 | 6 |
 | LicenseRef-scancode-alliance-open-media-patent-1.0 | permissive | 4 | 4 |
+| Apache-2.0 WITH LLVM-exception | permissive | 3 | 2 |
 | Zlib | permissive | 3 | 2 |
-| Apache-2.0 WITH LLVM-exception | permissive | 1 | 0 |
 | SunPro | permissive | 1 | 1 |
 | W3C | permissive | 1 | 1 |
 | W3C-20150513 | permissive | 1 | 1 |
@@ -107,9 +107,9 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 | @lezer/yaml | 1.0.4 | npm package | MIT | MIT | linked | all |
 | @marijn/find-cluster-break | 1.0.4 | npm package | MIT | MIT | linked | all |
 | @mermaid-js/parser | 1.2.1 | npm package | MIT | MIT | linked | all |
-| @tauri-apps/api | 2.12.4 | npm package | Apache-2.0 OR MIT | MIT | linked | all |
-| @tauri-apps/plugin-dialog | 2.8.4 | npm package | MIT OR Apache-2.0 | MIT | linked | all |
-| @tauri-apps/plugin-opener | 2.7.2 | npm package | MIT OR Apache-2.0 | MIT | linked | all |
+| @tauri-apps/api | 2.12.4 | npm package | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
+| @tauri-apps/plugin-dialog | 2.8.4 | npm package | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| @tauri-apps/plugin-opener | 2.7.2 | npm package | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | @types/d3 | 7.4.3 | npm package | MIT | MIT | linked | all |
 | @types/d3-array | 3.2.2 | npm package | MIT | MIT | linked | all |
 | @types/d3-axis | 3.0.6 | npm package | MIT | MIT | linked | all |
@@ -192,104 +192,104 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 | @uiw/codemirror-themes-all | 4.25.12 | npm package | MIT | MIT | linked | all |
 | @ungap/structured-clone | 1.4.0 | npm package | ISC | ISC | linked | all |
 | @upsetjs/venn.js | 2.0.0 | npm package | MIT | MIT | linked | all |
-| adler2 | 2.0.1 | Rust crate | 0BSD OR MIT OR Apache-2.0 | MIT | linked | all |
+| adler2 | 2.0.1 | Rust crate | 0BSD OR MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | aho-corasick | 1.1.5 | Rust crate | Unlicense OR MIT | MIT | linked | all |
-| aligned | 0.4.3 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| aligned | 0.4.3 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | aligned-vec | 0.6.4 | Rust crate | MIT | MIT | linked | all |
 | alloc-no-stdlib | 3.0.0 | Rust crate | BSD-3-Clause | BSD-3-Clause | linked | all |
 | alloc-stdlib | 0.3.0 | Rust crate | BSD-3-Clause | BSD-3-Clause | linked | all |
-| android_log-sys | 0.3.2 | Rust crate | MIT OR Apache-2.0 | MIT | linked | android |
-| android_logger | 0.15.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | android |
+| android_log-sys | 0.3.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | android |
+| android_logger | 0.15.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | android |
 | android_system_properties | 0.1.6 | Rust crate | MIT OR Apache-2.0 | MIT | linked | android |
-| anyhow | 1.0.104 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| anyhow | 1.0.104 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | AppImage type 2 runtime | fedfad5 | other component | MIT | MIT | separate-program | linux-x64, linux-arm64 |
 | AppImageKit AppRun | continuous, mirrored by Tauri (binary-releases apprun-old) | other component | MIT | MIT | separate-program | linux-x64, linux-arm64 |
 | arg_enum_proc_macro | 0.3.4 | Rust crate | MIT | MIT | build-time | all |
-| arrayvec | 0.7.8 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| as-slice | 0.2.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| async-broadcast | 0.7.2 | Rust crate | MIT OR Apache-2.0 | MIT | linked | linux-x64, linux-arm64 |
-| async-channel | 2.5.0 | Rust crate | Apache-2.0 OR MIT | MIT | linked | linux-x64, linux-arm64 |
-| async-executor | 1.14.0 | Rust crate | Apache-2.0 OR MIT | MIT | linked | linux-x64, linux-arm64 |
-| async-io | 2.6.0 | Rust crate | Apache-2.0 OR MIT | MIT | linked | linux-x64, linux-arm64 |
-| async-lock | 3.4.2 | Rust crate | Apache-2.0 OR MIT | MIT | linked | linux-x64, linux-arm64 |
-| async-process | 2.5.0 | Rust crate | Apache-2.0 OR MIT | MIT | linked | linux-x64, linux-arm64 |
-| async-recursion | 1.2.0 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | linux-x64, linux-arm64 |
-| async-signal | 0.2.14 | Rust crate | Apache-2.0 OR MIT | MIT | linked | linux-x64, linux-arm64 |
-| async-task | 4.7.1 | Rust crate | Apache-2.0 OR MIT | MIT | linked | linux-x64, linux-arm64 |
-| async-trait | 0.1.92 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | linux-x64, linux-arm64 |
+| arrayvec | 0.7.8 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| as-slice | 0.2.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| async-broadcast | 0.7.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | linux-x64, linux-arm64 |
+| async-channel | 2.5.0 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | linux-x64, linux-arm64 |
+| async-executor | 1.14.0 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | linux-x64, linux-arm64 |
+| async-io | 2.6.0 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | linux-x64, linux-arm64 |
+| async-lock | 3.4.2 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | linux-x64, linux-arm64 |
+| async-process | 2.5.0 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | linux-x64, linux-arm64 |
+| async-recursion | 1.2.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | linux-x64, linux-arm64 |
+| async-signal | 0.2.14 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | linux-x64, linux-arm64 |
+| async-task | 4.7.1 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | linux-x64, linux-arm64 |
+| async-trait | 0.1.92 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | linux-x64, linux-arm64 |
 | atk | 0.18.2 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | atk-sys | 0.18.2 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
-| atomic-waker | 1.1.2 | Rust crate | Apache-2.0 OR MIT | MIT | linked | linux-x64, linux-arm64, android, ios |
-| autocfg | 1.5.1 | Rust crate | Apache-2.0 OR MIT | MIT | build-time | all |
+| atomic-waker | 1.1.2 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | linux-x64, linux-arm64, android, ios |
+| autocfg | 1.5.1 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | build-time | all |
 | av-scenechange | 0.14.1 | Rust crate | MIT | MIT | linked | all |
 | av1-grain | 0.2.5 | Rust crate | BSD-2-Clause | BSD-2-Clause | linked | all |
 | avif-serialize | 0.8.9 | Rust crate | BSD-3-Clause | BSD-3-Clause | linked | all |
 | bail | 2.0.2 | npm package | MIT | MIT | linked | all |
-| base64 | 0.21.7 | Rust crate | MIT OR Apache-2.0 | MIT | linked | macos-x64, macos-arm64, ios |
-| base64 | 0.22.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| base64 | 0.23.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| bit_field | 0.10.3 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
-| bit-set | 0.8.0 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
-| bit-vec | 0.8.0 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
-| bitflags | 1.3.2 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| bitflags | 2.13.2 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| bitstream-io | 4.10.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| block-buffer | 0.10.4 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| base64 | 0.21.7 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | macos-x64, macos-arm64, ios |
+| base64 | 0.22.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| base64 | 0.23.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| bit_field | 0.10.3 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
+| bit-set | 0.8.0 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
+| bit-vec | 0.8.0 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
+| bitflags | 1.3.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| bitflags | 2.13.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| bitstream-io | 4.10.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| block-buffer | 0.10.4 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | block2 | 0.6.2 | Rust crate | MIT | MIT | linked | macos-x64, macos-arm64, ios |
-| blocking | 1.7.0 | Rust crate | Apache-2.0 OR MIT | MIT | linked | linux-x64, linux-arm64 |
+| blocking | 1.7.0 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | linux-x64, linux-arm64 |
 | brotli | 9.1.1 | Rust crate | BSD-3-Clause AND MIT | BSD-3-Clause AND MIT | linked | all |
 | brotli-decompressor | 6.2.0 | Rust crate | BSD-3-Clause OR MIT | BSD-3-Clause | linked | all |
-| bs58 | 0.5.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| bs58 | 0.5.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | built | 0.8.1 | Rust crate | MIT | MIT | build-time | all |
-| bumpalo | 3.20.3 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
-| bytemuck | 1.25.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | MIT | linked | all |
-| bytemuck_derive | 1.12.1 | Rust crate | Zlib OR Apache-2.0 OR MIT | MIT | build-time | all |
+| bumpalo | 3.20.3 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
+| bytemuck | 1.25.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | Apache-2.0 | linked | all |
+| bytemuck_derive | 1.12.1 | Rust crate | Zlib OR Apache-2.0 OR MIT | Apache-2.0 | build-time | all |
 | byteorder | 1.5.0 | Rust crate | Unlicense OR MIT | MIT | build-time | all |
 | byteorder-lite | 0.1.0 | Rust crate | Unlicense OR MIT | MIT | linked | all |
 | bytes | 1.12.1 | Rust crate | MIT | MIT | linked | all |
 | cairo-rs | 0.18.5 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | cairo-sys-rs | 0.18.2 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
-| camino | 1.2.6 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| camino | 1.2.6 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | cargo_metadata | 0.19.2 | Rust crate | MIT | MIT | linked | all |
-| cargo_toml | 1.0.1 | Rust crate | Apache-2.0 OR MIT | MIT | build-time | all |
-| cargo-platform | 0.1.9 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| cc | 1.10.0 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
+| cargo_toml | 1.0.1 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | build-time | all |
+| cargo-platform | 0.1.9 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| cc | 1.10.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
 | ccount | 2.0.1 | npm package | MIT | MIT | linked | all |
 | cesu8 | 1.1.0 | Rust crate | Apache-2.0 OR MIT | MIT | linked | android |
 | cfb | 0.14.0 | Rust crate | MIT | MIT | linked | all |
-| cfg-expr | 0.15.8 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | linux-x64, linux-arm64 |
-| cfg-if | 1.0.5 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| cfg-expr | 0.15.8 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | linux-x64, linux-arm64 |
+| cfg-if | 1.0.5 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | character-entities | 2.0.2 | npm package | MIT | MIT | linked | all |
 | character-entities-html4 | 2.1.0 | npm package | MIT | MIT | linked | all |
 | character-entities-legacy | 3.0.0 | npm package | MIT | MIT | linked | all |
 | character-reference-invalid | 2.0.1 | npm package | MIT | MIT | linked | all |
-| chrono | 0.4.45 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| chrono | 0.4.45 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | codemirror | 6.0.2 | npm package | MIT | MIT | linked | all |
 | color_quant | 1.1.0 | Rust crate | MIT | MIT | linked | all |
 | combine | 4.6.9 | Rust crate | MIT | MIT | linked | android |
 | comma-separated-tokens | 2.0.3 | npm package | MIT | MIT | linked | all |
 | commander | 15.0.0 | npm package | MIT | MIT | linked | all |
 | commander | 7.2.0 | npm package | MIT | MIT | linked | all |
-| concurrent-queue | 2.5.0 | Rust crate | Apache-2.0 OR MIT | MIT | linked | linux-x64, linux-arm64 |
-| cookie | 0.18.2 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| core-foundation | 0.10.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | macos-x64, macos-arm64 |
-| core-foundation-sys | 0.8.7 | Rust crate | MIT OR Apache-2.0 | MIT | linked | macos-x64, macos-arm64, ios |
-| core-graphics | 0.25.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | macos-x64, macos-arm64 |
-| core-graphics-types | 0.2.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | macos-x64, macos-arm64 |
+| concurrent-queue | 2.5.0 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | linux-x64, linux-arm64 |
+| cookie | 0.18.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| core-foundation | 0.10.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | macos-x64, macos-arm64 |
+| core-foundation-sys | 0.8.7 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | macos-x64, macos-arm64, ios |
+| core-graphics | 0.25.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | macos-x64, macos-arm64 |
+| core-graphics-types | 0.2.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | macos-x64, macos-arm64 |
 | cose-base | 1.0.3 | npm package | MIT | MIT | linked | all |
 | cose-base | 2.2.0 | npm package | MIT | MIT | linked | all |
-| cpufeatures | 0.2.17 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| crc32fast | 1.5.3 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| cpufeatures | 0.2.17 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| crc32fast | 1.5.3 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | crelt | 1.0.7 | npm package | MIT | MIT | linked | all |
-| crossbeam-channel | 0.5.17 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| crossbeam-deque | 0.8.8 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| crossbeam-epoch | 0.9.21 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| crossbeam-utils | 0.8.23 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| crypto-common | 0.1.7 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| crossbeam-channel | 0.5.17 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| crossbeam-deque | 0.8.8 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| crossbeam-epoch | 0.9.21 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| crossbeam-utils | 0.8.23 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| crypto-common | 0.1.7 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | cssparser | 0.37.0 | Rust crate | MPL-2.0 | MPL-2.0 | linked | all |
 | cssparser-macros | 0.7.1 | Rust crate | MPL-2.0 | MPL-2.0 | build-time | all |
 | csstype | 3.2.3 | npm package | MIT | MIT | linked | all |
-| ctor | 1.0.13 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
+| ctor | 1.0.13 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
 | cytoscape | 3.34.4 | npm package | MIT | MIT | linked | all |
 | cytoscape-cose-bilkent | 4.1.0 | npm package | MIT | MIT | linked | all |
 | cytoscape-fcose | 2.2.0 | npm package | MIT | MIT | linked | all |
@@ -333,78 +333,78 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 | darling_core | 0.24.1 | Rust crate | MIT | MIT | build-time | all |
 | darling_macro | 0.24.1 | Rust crate | MIT | MIT | build-time | all |
 | dayjs | 1.11.23 | npm package | MIT | MIT | linked | all |
-| dbus | 0.9.12 | Rust crate | Apache-2.0 OR MIT | MIT | linked | linux-x64, linux-arm64 |
+| dbus | 0.9.12 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | linux-x64, linux-arm64 |
 | debug | 4.4.3 | npm package | MIT | MIT | linked | all |
 | decode-named-character-reference | 1.3.0 | npm package | MIT | MIT | linked | all |
-| defmt | 1.2.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| defmt-macros | 1.2.0 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
-| defmt-parser | 1.1.0 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
+| defmt | 1.2.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| defmt-macros | 1.2.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
+| defmt-parser | 1.1.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
 | delaunator | 5.1.0 | npm package | ISC | ISC | linked | all |
 | dequal | 2.0.3 | npm package | MIT | MIT | linked | all |
-| deranged | 0.5.9 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| deranged | 0.5.9 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | derive_more | 2.1.1 | Rust crate | MIT | MIT | linked | all |
 | derive_more-impl | 2.1.1 | Rust crate | MIT | MIT | build-time | all |
 | devlop | 1.1.0 | npm package | MIT | MIT | linked | all |
-| digest | 0.10.7 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| dirs | 6.0.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| dirs | 7.0.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| dirs-sys | 0.5.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| dispatch2 | 0.3.1 | Rust crate | Zlib OR Apache-2.0 OR MIT | MIT | linked | macos-x64, macos-arm64, ios |
-| displaydoc | 0.2.7 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
+| digest | 0.10.7 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| dirs | 6.0.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| dirs | 7.0.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| dirs-sys | 0.5.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| dispatch2 | 0.3.1 | Rust crate | Zlib OR Apache-2.0 OR MIT | Apache-2.0 | linked | macos-x64, macos-arm64, ios |
+| displaydoc | 0.2.7 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
 | dlopen2 | 0.8.2 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | dlopen2_derive | 0.4.3 | Rust crate | MIT | MIT | build-time | linux-x64, linux-arm64 |
 | dom_query | 0.28.0 | Rust crate | MIT | MIT | linked | all |
 | dompurify | 3.4.17 | npm package | MPL-2.0 OR Apache-2.0 | Apache-2.0 | linked | all |
 | dpi | 0.1.2 | Rust crate | Apache-2.0 AND MIT | Apache-2.0 AND MIT | linked | all |
-| dtoa | 1.0.11 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| dtoa | 1.0.11 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | dtoa-short | 0.3.5 | Rust crate | MPL-2.0 | MPL-2.0 | linked | all |
 | dunce | 1.0.5 | Rust crate | CC0-1.0 OR MIT-0 OR Apache-2.0 | CC0-1.0 | linked | all |
-| dyn-clone | 1.0.20 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| either | 1.19.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| embed_plist | 1.2.2 | Rust crate | MIT OR Apache-2.0 | MIT | linked | macos-x64, macos-arm64 |
+| dyn-clone | 1.0.20 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| either | 1.19.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| embed_plist | 1.2.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | macos-x64, macos-arm64 |
 | embed-resource | 3.0.12 | Rust crate | MIT | MIT | build-time | all |
 | endi | 1.1.1 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | entities | 6.0.1 | npm package | BSD-2-Clause | BSD-2-Clause | linked | all |
-| enumflags2 | 0.7.12 | Rust crate | MIT OR Apache-2.0 | MIT | linked | linux-x64, linux-arm64 |
-| enumflags2_derive | 0.7.12 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | linux-x64, linux-arm64 |
-| env_filter | 0.1.4 | Rust crate | MIT OR Apache-2.0 | MIT | linked | android |
+| enumflags2 | 0.7.12 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | linux-x64, linux-arm64 |
+| enumflags2_derive | 0.7.12 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | linux-x64, linux-arm64 |
+| env_filter | 0.1.4 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | android |
 | equator | 0.4.2 | Rust crate | MIT | MIT | linked | all |
 | equator-macro | 0.4.2 | Rust crate | MIT | MIT | build-time | all |
-| equivalent | 1.0.3 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
-| erased-serde | 0.4.11 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| errno | 0.3.14 | Rust crate | MIT OR Apache-2.0 | MIT | linked | linux-x64, linux-arm64 |
+| equivalent | 1.0.3 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
+| erased-serde | 0.4.11 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| errno | 0.3.14 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | linux-x64, linux-arm64 |
 | es-toolkit | 1.53.1 | npm package | MIT | MIT | linked | all |
 | escape-string-regexp | 5.0.0 | npm package | MIT | MIT | linked | all |
 | estree-util-is-identifier-name | 3.0.0 | npm package | MIT | MIT | linked | all |
-| event-listener | 5.4.2 | Rust crate | Apache-2.0 OR MIT | MIT | linked | linux-x64, linux-arm64 |
-| event-listener-strategy | 0.5.4 | Rust crate | Apache-2.0 OR MIT | MIT | linked | linux-x64, linux-arm64 |
+| event-listener | 5.4.2 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | linux-x64, linux-arm64 |
+| event-listener-strategy | 0.5.4 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | linux-x64, linux-arm64 |
 | exr | 1.74.2 | Rust crate | BSD-3-Clause | BSD-3-Clause | linked | all |
 | extend | 3.0.2 | npm package | MIT | MIT | linked | all |
 | fastdom | 1.0.12 | npm package | MIT | MIT | linked | all |
-| fastrand | 2.5.0 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
+| fastrand | 2.5.0 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
 | fax | 0.2.7 | Rust crate | MIT | MIT | linked | all |
-| fdeflate | 0.3.7 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| fdeflate | 0.3.7 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | fern | 0.7.1 | Rust crate | MIT | MIT | linked | all |
-| field-offset | 0.3.6 | Rust crate | MIT OR Apache-2.0 | MIT | linked | linux-x64, linux-arm64 |
-| filetime | 0.2.29 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| find-msvc-tools | 0.1.15 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
-| flate2 | 1.1.10 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| fnv | 1.0.7 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
+| field-offset | 0.3.6 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | linux-x64, linux-arm64 |
+| filetime | 0.2.29 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| find-msvc-tools | 0.1.15 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
+| flate2 | 1.1.10 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| fnv | 1.0.7 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
 | foldhash | 0.2.0 | Rust crate | Zlib | Zlib | linked | all |
-| foreign-types | 0.5.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | macos-x64, macos-arm64 |
-| foreign-types-macros | 0.2.4 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | macos-x64, macos-arm64 |
-| foreign-types-shared | 0.3.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | macos-x64, macos-arm64 |
-| form_urlencoded | 1.2.2 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| foreign-types | 0.5.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | macos-x64, macos-arm64 |
+| foreign-types-macros | 0.2.4 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | macos-x64, macos-arm64 |
+| foreign-types-shared | 0.3.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | macos-x64, macos-arm64 |
+| form_urlencoded | 1.2.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | fsevent-sys | 4.1.0 | Rust crate | MIT | MIT | linked | macos-x64, macos-arm64 |
-| futures-channel | 0.3.34 | Rust crate | MIT OR Apache-2.0 | MIT | linked | linux-x64, linux-arm64, android, ios |
-| futures-core | 0.3.34 | Rust crate | MIT OR Apache-2.0 | MIT | linked | linux-x64, linux-arm64, android, ios |
-| futures-executor | 0.3.34 | Rust crate | MIT OR Apache-2.0 | MIT | linked | linux-x64, linux-arm64 |
-| futures-io | 0.3.34 | Rust crate | MIT OR Apache-2.0 | MIT | linked | linux-x64, linux-arm64, android, ios |
-| futures-lite | 2.6.1 | Rust crate | Apache-2.0 OR MIT | MIT | linked | linux-x64, linux-arm64 |
-| futures-macro | 0.3.34 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | linux-x64, linux-arm64, android, ios |
-| futures-sink | 0.3.34 | Rust crate | MIT OR Apache-2.0 | MIT | linked | linux-x64, linux-arm64, android, ios |
-| futures-task | 0.3.34 | Rust crate | MIT OR Apache-2.0 | MIT | linked | linux-x64, linux-arm64, android, ios |
-| futures-util | 0.3.34 | Rust crate | MIT OR Apache-2.0 | MIT | linked | linux-x64, linux-arm64, android, ios |
+| futures-channel | 0.3.34 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | linux-x64, linux-arm64, android, ios |
+| futures-core | 0.3.34 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | linux-x64, linux-arm64, android, ios |
+| futures-executor | 0.3.34 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | linux-x64, linux-arm64 |
+| futures-io | 0.3.34 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | linux-x64, linux-arm64, android, ios |
+| futures-lite | 2.6.1 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | linux-x64, linux-arm64 |
+| futures-macro | 0.3.34 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | linux-x64, linux-arm64, android, ios |
+| futures-sink | 0.3.34 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | linux-x64, linux-arm64, android, ios |
+| futures-task | 0.3.34 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | linux-x64, linux-arm64, android, ios |
+| futures-util | 0.3.34 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | linux-x64, linux-arm64, android, ios |
 | gdk | 0.18.2 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | gdk-pixbuf | 0.18.5 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | gdk-pixbuf-sys | 0.18.0 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
@@ -413,24 +413,24 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 | gdkx11 | 0.18.2 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | gdkx11-sys | 0.18.2 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | generic-array | 0.14.7 | Rust crate | MIT | MIT | linked | all |
-| getrandom | 0.3.4 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| getrandom | 0.4.3 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| gif | 0.14.2 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| getrandom | 0.3.4 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| getrandom | 0.4.3 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| gif | 0.14.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | gio | 0.18.4 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | gio-sys | 0.18.1 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | github-markdown-css | 5.9.0 | npm package | MIT | MIT | linked | all |
 | glib | 0.18.5 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | glib-macros | 0.18.5 | Rust crate | MIT | MIT | build-time | linux-x64, linux-arm64 |
 | glib-sys | 0.18.1 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
-| glob | 0.3.4 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| glob | 0.3.4 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | gobject-sys | 0.18.0 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | gtk | 0.18.2 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | gtk-sys | 0.18.2 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | gtk3-macros | 0.18.2 | Rust crate | MIT | MIT | build-time | linux-x64, linux-arm64 |
 | hachure-fill | 0.5.2 | npm package | MIT | MIT | linked | all |
-| half | 2.7.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| hashbrown | 0.12.3 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| hashbrown | 0.17.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| half | 2.7.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| hashbrown | 0.12.3 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| hashbrown | 0.17.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | hast-util-from-dom | 5.0.1 | npm package | ISC | ISC | linked | all |
 | hast-util-from-html | 2.0.3 | npm package | MIT | MIT | linked | all |
 | hast-util-from-html-isomorphic | 2.0.0 | npm package | MIT | MIT | linked | all |
@@ -440,18 +440,18 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 | hast-util-to-text | 4.0.3 | npm package | MIT | MIT | linked | all |
 | hast-util-whitespace | 3.0.0 | npm package | MIT | MIT | linked | all |
 | hastscript | 9.0.3 | npm package | MIT | MIT | linked | all |
-| heck | 0.4.1 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | linux-x64, linux-arm64 |
-| heck | 0.5.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| hex | 0.4.3 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| heck | 0.4.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | linux-x64, linux-arm64 |
+| heck | 0.5.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| hex | 0.4.3 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | html-url-attributes | 3.0.1 | npm package | MIT | MIT | linked | all |
-| html5ever | 0.39.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| http | 1.5.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| html5ever | 0.39.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| http | 1.5.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | http-body | 1.1.0 | Rust crate | MIT | MIT | linked | android, ios |
 | http-body-util | 0.1.5 | Rust crate | MIT | MIT | linked | android, ios |
-| httparse | 1.10.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | android, ios |
+| httparse | 1.10.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | android, ios |
 | hyper | 1.12.0 | Rust crate | MIT | MIT | linked | android, ios |
 | hyper-util | 0.1.21 | Rust crate | MIT | MIT | linked | android, ios |
-| iana-time-zone | 0.1.65 | Rust crate | MIT OR Apache-2.0 | MIT | linked | linux-x64, linux-arm64, macos-x64, macos-arm64, android, ios |
+| iana-time-zone | 0.1.65 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | linux-x64, linux-arm64, macos-x64, macos-arm64, android, ios |
 | ico | 0.6.0 | Rust crate | MIT | MIT | build-time | all |
 | iconv-lite | 0.6.3 | npm package | MIT | MIT | linked | all |
 | icu_collections | 2.4.0 | Rust crate | Unicode-3.0 | Unicode-3.0 | linked | all |
@@ -462,21 +462,21 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 | icu_properties_data | 2.4.0 | Rust crate | Unicode-3.0 | Unicode-3.0 | linked | all |
 | icu_provider | 2.4.0 | Rust crate | Unicode-3.0 | Unicode-3.0 | linked | all |
 | ident_case | 1.0.1 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
-| idna | 1.1.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| idna_adapter | 1.2.2 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
-| image | 0.25.10 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| image-webp | 0.2.4 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| idna | 1.1.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| idna_adapter | 1.2.2 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
+| image | 0.25.10 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| image-webp | 0.2.4 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | imgref | 1.12.3 | Rust crate | CC0-1.0 OR Apache-2.0 | Apache-2.0 | linked | all |
 | import-meta-resolve | 4.2.0 | npm package | MIT | MIT | linked | all |
-| indexmap | 1.9.3 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
-| indexmap | 2.14.2 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
+| indexmap | 1.9.3 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
+| indexmap | 2.14.2 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
 | infer | 0.22.0 | Rust crate | MIT | MIT | linked | all |
 | inline-style-parser | 0.2.9 | npm package | MIT | MIT | linked | all |
 | inotify | 0.9.6 | Rust crate | ISC | ISC | linked | linux-x64, linux-arm64, android |
 | inotify-sys | 0.1.8 | Rust crate | ISC | ISC | linked | linux-x64, linux-arm64, android |
 | internmap | 1.0.1 | npm package | ISC | ISC | linked | all |
 | internmap | 2.0.3 | npm package | ISC | ISC | linked | all |
-| ipnet | 2.12.2 | Rust crate | MIT OR Apache-2.0 | MIT | linked | android, ios |
+| ipnet | 2.12.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | android, ios |
 | is-alphabetical | 2.0.1 | npm package | MIT | MIT | linked | all |
 | is-alphanumerical | 2.0.1 | npm package | MIT | MIT | linked | all |
 | is-decimal | 2.0.1 | npm package | MIT | MIT | linked | all |
@@ -484,45 +484,45 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 | is-hexadecimal | 2.0.1 | npm package | MIT | MIT | linked | all |
 | is-plain-obj | 4.1.0 | npm package | MIT | MIT | linked | all |
 | is-wsl | 0.4.0 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64, android |
-| itertools | 0.14.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| itoa | 1.0.18 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| itertools | 0.14.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| itoa | 1.0.18 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | javascriptcore-rs | 1.1.2 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | javascriptcore-rs-sys | 1.1.1 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | jiff | 0.2.38 | Rust crate | Unlicense OR MIT | MIT | linked | all |
 | jiff-core | 0.1.1 | Rust crate | Unlicense OR MIT | MIT | linked | all |
 | jiff-tzdb | 0.1.9 | Rust crate | Unlicense OR MIT | MIT | linked | win-x64, win-arm64 |
 | jiff-tzdb-platform | 0.1.3 | Rust crate | Unlicense OR MIT | MIT | linked | win-x64, win-arm64 |
-| jni | 0.21.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | android |
-| jni-sys | 0.3.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | android |
-| jni-sys | 0.4.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | android |
-| jni-sys-macros | 0.4.1 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | android |
-| jobserver | 0.1.35 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
-| json-patch | 4.2.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| jsonptr | 0.7.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| jni | 0.21.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | android |
+| jni-sys | 0.3.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | android |
+| jni-sys | 0.4.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | android |
+| jni-sys-macros | 0.4.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | android |
+| jobserver | 0.1.35 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
+| json-patch | 4.2.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| jsonptr | 0.7.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | katex | 0.18.10 | npm package | MIT | MIT | linked | all |
-| keyboard-types | 0.8.3 | Rust crate | MIT OR Apache-2.0 | MIT | linked | win-x64, win-arm64, linux-x64, linux-arm64, macos-x64, macos-arm64 |
+| keyboard-types | 0.8.3 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | win-x64, win-arm64, linux-x64, linux-arm64, macos-x64, macos-arm64 |
 | khroma | 2.1.0 | npm package | MIT | MIT | linked | all |
 | layout-base | 1.0.2 | npm package | MIT | MIT | linked | all |
 | layout-base | 2.0.1 | npm package | MIT | MIT | linked | all |
 | lebe | 0.5.3 | Rust crate | BSD-3-Clause | BSD-3-Clause | linked | all |
-| libappindicator | 0.9.0 | Rust crate | Apache-2.0 OR MIT | MIT | linked | linux-x64, linux-arm64 |
-| libappindicator-sys | 0.9.0 | Rust crate | Apache-2.0 OR MIT | MIT | linked | linux-x64, linux-arm64 |
-| libc | 0.2.191 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| libdbus-sys | 0.2.7 | Rust crate | Apache-2.0 OR MIT | MIT | linked | linux-x64, linux-arm64 |
+| libappindicator | 0.9.0 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | linux-x64, linux-arm64 |
+| libappindicator-sys | 0.9.0 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | linux-x64, linux-arm64 |
+| libc | 0.2.191 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| libdbus-sys | 0.2.7 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | linux-x64, linux-arm64 |
 | libfuse (in the AppImage type 2 runtime) | 3.15.0, mount.c patched by type2-runtime | other component | LGPL-2.1-only | LGPL-2.1-only | separate-program | linux-x64, linux-arm64 |
 | libloading | 0.7.4 | Rust crate | ISC | ISC | linked | linux-x64, linux-arm64 |
 | libm | 0.2.16 | Rust crate | MIT | MIT | linked | all |
-| linux-raw-sys | 0.12.1 | Rust crate | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT | MIT | linked | linux-x64, linux-arm64 |
+| linux-raw-sys | 0.12.1 | Rust crate | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT | Apache-2.0 WITH LLVM-exception | linked | linux-x64, linux-arm64 |
 | linuxdeploy-plugin-gtk AppRun hook | as vendored by tauri-bundler | other component | MIT | MIT | separate-program | linux-x64, linux-arm64 |
 | litemap | 0.8.3 | Rust crate | Unicode-3.0 | Unicode-3.0 | linked | all |
-| lock_api | 0.4.14 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| lock_api | 0.4.14 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | lodash-es | 4.18.1 | npm package | MIT | MIT | linked | all |
-| log | 0.4.34 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| log | 0.4.34 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | longest-streak | 3.1.0 | npm package | MIT | MIT | linked | all |
 | loop9 | 0.1.5 | Rust crate | MIT | MIT | linked | all |
 | markdown-table | 3.0.4 | npm package | MIT | MIT | linked | all |
 | marked | 16.4.2 | npm package | MIT | MIT | linked | all |
-| markup5ever | 0.39.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| markup5ever | 0.39.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | maybe-rayon | 0.1.1 | Rust crate | MIT | MIT | linked | all |
 | mdast-util-find-and-replace | 3.0.4 | npm package | MIT | MIT | linked | all |
 | mdast-util-from-markdown | 2.1.0 | npm package | MIT | MIT | linked | all |
@@ -574,131 +574,131 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 | micromark-util-symbol | 2.0.1 | npm package | MIT | MIT | linked | all |
 | micromark-util-types | 2.0.3 | npm package | MIT | MIT | linked | all |
 | mimalloc (in the AppImage type 2 runtime) | Alpine 3.21 package, in type2-runtime fedfad5 | other component | MIT | MIT | separate-program | linux-x64, linux-arm64 |
-| mime | 0.3.17 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| miniz_oxide | 0.8.9 | Rust crate | MIT OR Zlib OR Apache-2.0 | MIT | linked | all |
-| miniz_oxide | 0.9.1 | Rust crate | MIT OR Zlib OR Apache-2.0 | MIT | linked | all |
+| mime | 0.3.17 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| miniz_oxide | 0.8.9 | Rust crate | MIT OR Zlib OR Apache-2.0 | Apache-2.0 | linked | all |
+| miniz_oxide | 0.9.1 | Rust crate | MIT OR Zlib OR Apache-2.0 | Apache-2.0 | linked | all |
 | mio | 0.8.11 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64, android |
 | mio | 1.2.4 | Rust crate | MIT | MIT | linked | all |
-| moxcms | 0.8.1 | Rust crate | BSD-3-Clause OR Apache-2.0 | BSD-3-Clause | linked | all |
+| moxcms | 0.8.1 | Rust crate | BSD-3-Clause OR Apache-2.0 | Apache-2.0 | linked | all |
 | ms | 2.1.3 | npm package | MIT | MIT | linked | all |
-| muda | 0.20.0 | Rust crate | Apache-2.0 OR MIT | MIT | linked | win-x64, win-arm64, linux-x64, linux-arm64, macos-x64, macos-arm64 |
+| muda | 0.20.0 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | win-x64, win-arm64, linux-x64, linux-arm64, macos-x64, macos-arm64 |
 | musl libc (in the AppImage type 2 runtime) | Alpine 3.21 package, in type2-runtime fedfad5 | other component | MIT | MIT | separate-program | linux-x64, linux-arm64 |
-| ndk | 0.9.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | android |
-| ndk-context | 0.1.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | android |
-| ndk-sys | 0.6.0+11769913 | Rust crate | MIT OR Apache-2.0 | MIT | linked | android |
+| ndk | 0.9.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | android |
+| ndk-context | 0.1.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | android |
+| ndk-sys | 0.6.0+11769913 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | android |
 | new_debug_unreachable | 1.0.6 | Rust crate | MIT | MIT | linked | all |
-| no_std_io2 | 0.9.4 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
+| no_std_io2 | 0.9.4 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
 | nom | 8.0.0 | Rust crate | MIT | MIT | linked | all |
 | noop_proc_macro | 0.3.0 | Rust crate | MIT | MIT | build-time | all |
 | notify | 6.1.1 | Rust crate | CC0-1.0 | CC0-1.0 | linked | all |
-| num_enum | 0.7.6 | Rust crate | BSD-3-Clause OR MIT OR Apache-2.0 | MIT | linked | android |
-| num_enum_derive | 0.7.6 | Rust crate | BSD-3-Clause OR MIT OR Apache-2.0 | MIT | build-time | android |
-| num_threads | 0.1.8 | Rust crate | MIT OR Apache-2.0 | MIT | linked | linux-x64, linux-arm64, macos-x64, macos-arm64, android, ios |
-| num-bigint | 0.4.8 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| num-complex | 0.4.6 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| num-conv | 0.2.2 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| num-derive | 0.4.2 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
-| num-integer | 0.1.47 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| num-rational | 0.4.2 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| num-traits | 0.2.19 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| num_enum | 0.7.6 | Rust crate | BSD-3-Clause OR MIT OR Apache-2.0 | Apache-2.0 | linked | android |
+| num_enum_derive | 0.7.6 | Rust crate | BSD-3-Clause OR MIT OR Apache-2.0 | Apache-2.0 | build-time | android |
+| num_threads | 0.1.8 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | linux-x64, linux-arm64, macos-x64, macos-arm64, android, ios |
+| num-bigint | 0.4.8 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| num-complex | 0.4.6 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| num-conv | 0.2.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| num-derive | 0.4.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
+| num-integer | 0.1.47 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| num-rational | 0.4.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| num-traits | 0.2.19 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | objc2 | 0.6.5 | Rust crate | MIT | MIT | linked | macos-x64, macos-arm64, ios |
-| objc2-app-kit | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | MIT | linked | macos-x64, macos-arm64 |
-| objc2-cloud-kit | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | MIT | linked | ios |
-| objc2-core-data | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | MIT | linked | ios |
-| objc2-core-foundation | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | MIT | linked | macos-x64, macos-arm64, ios |
-| objc2-core-graphics | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | MIT | linked | macos-x64, macos-arm64, ios |
-| objc2-core-image | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | MIT | linked | ios |
-| objc2-core-location | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | MIT | linked | ios |
-| objc2-core-text | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | MIT | linked | ios |
+| objc2-app-kit | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | Apache-2.0 | linked | macos-x64, macos-arm64 |
+| objc2-cloud-kit | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | Apache-2.0 | linked | ios |
+| objc2-core-data | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | Apache-2.0 | linked | ios |
+| objc2-core-foundation | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | Apache-2.0 | linked | macos-x64, macos-arm64, ios |
+| objc2-core-graphics | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | Apache-2.0 | linked | macos-x64, macos-arm64, ios |
+| objc2-core-image | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | Apache-2.0 | linked | ios |
+| objc2-core-location | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | Apache-2.0 | linked | ios |
+| objc2-core-text | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | Apache-2.0 | linked | ios |
 | objc2-encode | 4.1.0 | Rust crate | MIT | MIT | linked | macos-x64, macos-arm64, ios |
-| objc2-exception-helper | 0.1.1 | Rust crate | Zlib OR Apache-2.0 OR MIT | MIT | linked | macos-x64, macos-arm64, ios |
+| objc2-exception-helper | 0.1.1 | Rust crate | Zlib OR Apache-2.0 OR MIT | Apache-2.0 | linked | macos-x64, macos-arm64, ios |
 | objc2-foundation | 0.3.2 | Rust crate | MIT | MIT | linked | macos-x64, macos-arm64, ios |
-| objc2-io-surface | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | MIT | linked | macos-x64, macos-arm64, ios |
-| objc2-javascript-core | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | MIT | linked | macos-x64, macos-arm64, ios |
-| objc2-quartz-core | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | MIT | linked | macos-x64, macos-arm64, ios |
-| objc2-security | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | MIT | linked | macos-x64, macos-arm64, ios |
-| objc2-ui-kit | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | MIT | linked | ios |
-| objc2-user-notifications | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | MIT | linked | ios |
-| objc2-web-kit | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | MIT | linked | macos-x64, macos-arm64, ios |
-| once_cell | 1.21.4 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| objc2-io-surface | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | Apache-2.0 | linked | macos-x64, macos-arm64, ios |
+| objc2-javascript-core | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | Apache-2.0 | linked | macos-x64, macos-arm64, ios |
+| objc2-quartz-core | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | Apache-2.0 | linked | macos-x64, macos-arm64, ios |
+| objc2-security | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | Apache-2.0 | linked | macos-x64, macos-arm64, ios |
+| objc2-ui-kit | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | Apache-2.0 | linked | ios |
+| objc2-user-notifications | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | Apache-2.0 | linked | ios |
+| objc2-web-kit | 0.3.2 | Rust crate | Zlib OR Apache-2.0 OR MIT | Apache-2.0 | linked | macos-x64, macos-arm64, ios |
+| once_cell | 1.21.4 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | open | 5.4.5 | Rust crate | MIT | MIT | linked | all |
 | option-ext | 0.2.0 | Rust crate | MPL-2.0 | MPL-2.0 | linked | all |
-| ordered-stream | 0.2.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | linux-x64, linux-arm64 |
+| ordered-stream | 0.2.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | linux-x64, linux-arm64 |
 | package-manager-detector | 1.9.0 | npm package | MIT | MIT | linked | all |
 | pango | 0.18.3 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | pango-sys | 0.18.0 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
-| parking | 2.2.1 | Rust crate | Apache-2.0 OR MIT | MIT | linked | linux-x64, linux-arm64 |
-| parking_lot | 0.12.5 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| parking_lot_core | 0.9.12 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| parking | 2.2.1 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | linux-x64, linux-arm64 |
+| parking_lot | 0.12.5 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| parking_lot_core | 0.9.12 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | parse-entities | 4.0.2 | npm package | MIT | MIT | linked | all |
 | parse5 | 7.3.0 | npm package | MIT | MIT | linked | all |
-| paste | 1.0.15 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
-| pastey | 0.1.1 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
+| paste | 1.0.15 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
+| pastey | 0.1.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
 | path-data-parser | 0.1.0 | npm package | MIT | MIT | linked | all |
-| percent-encoding | 2.3.2 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| percent-encoding | 2.3.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | phf | 0.13.1 | Rust crate | MIT | MIT | linked | all |
 | phf_codegen | 0.13.1 | Rust crate | MIT | MIT | build-time | all |
 | phf_generator | 0.13.1 | Rust crate | MIT | MIT | build-time | all |
 | phf_macros | 0.13.1 | Rust crate | MIT | MIT | build-time | all |
 | phf_shared | 0.13.1 | Rust crate | MIT | MIT | linked | all |
-| pin-project-lite | 0.2.17 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
-| piper | 0.2.5 | Rust crate | MIT OR Apache-2.0 | MIT | linked | linux-x64, linux-arm64 |
-| pkg-config | 0.3.34 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | linux-x64, linux-arm64 |
+| pin-project-lite | 0.2.17 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
+| piper | 0.2.5 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | linux-x64, linux-arm64 |
+| pkg-config | 0.3.34 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | linux-x64, linux-arm64 |
 | plist | 1.10.3 | Rust crate | MIT | MIT | linked | all |
-| png | 0.18.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| png | 0.18.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | points-on-curve | 0.2.0 | npm package | MIT | MIT | linked | all |
 | points-on-path | 0.2.1 | npm package | MIT | MIT | linked | all |
-| polling | 3.11.0 | Rust crate | Apache-2.0 OR MIT | MIT | linked | linux-x64, linux-arm64 |
+| polling | 3.11.0 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | linux-x64, linux-arm64 |
 | potential_utf | 0.1.6 | Rust crate | Unicode-3.0 | Unicode-3.0 | linked | all |
-| powerfmt | 0.2.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| powerfmt | 0.2.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | precomputed-hash | 0.1.1 | Rust crate | MIT | MIT | linked | all |
-| proc-macro-crate | 1.3.1 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | linux-x64, linux-arm64 |
-| proc-macro-crate | 2.0.2 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | linux-x64, linux-arm64 |
-| proc-macro-crate | 3.5.0 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | linux-x64, linux-arm64, android |
-| proc-macro-error | 1.0.4 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | linux-x64, linux-arm64 |
-| proc-macro-error-attr | 1.0.4 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | linux-x64, linux-arm64 |
-| proc-macro2 | 1.0.107 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| profiling | 1.0.18 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| profiling-procmacros | 1.0.18 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
+| proc-macro-crate | 1.3.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | linux-x64, linux-arm64 |
+| proc-macro-crate | 2.0.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | linux-x64, linux-arm64 |
+| proc-macro-crate | 3.5.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | linux-x64, linux-arm64, android |
+| proc-macro-error | 1.0.4 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | linux-x64, linux-arm64 |
+| proc-macro-error-attr | 1.0.4 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | linux-x64, linux-arm64 |
+| proc-macro2 | 1.0.107 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| profiling | 1.0.18 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| profiling-procmacros | 1.0.18 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
 | property-information | 7.2.0 | npm package | MIT | MIT | linked | all |
 | pulp | 0.22.3 | Rust crate | MIT | MIT | linked | all |
 | pulp-wasm-simd-flag | 0.1.1 | Rust crate | MIT | MIT | linked | all |
-| pxfm | 0.1.30 | Rust crate | BSD-3-Clause OR Apache-2.0 | BSD-3-Clause | linked | all |
-| qoi | 0.4.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| quick-error | 2.0.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| pxfm | 0.1.30 | Rust crate | BSD-3-Clause OR Apache-2.0 | Apache-2.0 | linked | all |
+| qoi | 0.4.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| quick-error | 2.0.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | quick-xml | 0.42.0 | Rust crate | MIT | MIT | linked | all |
-| quote | 1.0.47 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| quote | 1.0.47 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | rav1e | 0.8.1 | Rust crate | BSD-2-Clause | BSD-2-Clause | linked | all |
 | ravif | 0.13.0 | Rust crate | BSD-3-Clause | BSD-3-Clause | linked | all |
 | raw-cpuid | 11.6.0 | Rust crate | MIT | MIT | linked | win-x64, linux-x64, macos-x64 |
-| raw-window-handle | 0.6.2 | Rust crate | MIT OR Apache-2.0 OR Zlib | MIT | linked | all |
-| rayon | 1.12.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| rayon-core | 1.13.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| raw-window-handle | 0.6.2 | Rust crate | MIT OR Apache-2.0 OR Zlib | Apache-2.0 | linked | all |
+| rayon | 1.12.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| rayon-core | 1.13.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | react | 19.3.1 | npm package | MIT | MIT | linked | all |
 | react-dom | 19.3.1 | npm package | MIT | MIT | linked | all |
 | react-markdown | 10.1.0 | npm package | MIT | MIT | linked | all |
 | reborrow | 0.5.5 | Rust crate | MIT | MIT | linked | all |
-| ref-cast | 1.0.27 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| ref-cast-impl | 1.0.27 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
-| regex | 1.13.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| regex-automata | 0.4.18 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| regex-syntax | 0.8.11 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| ref-cast | 1.0.27 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| ref-cast-impl | 1.0.27 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
+| regex | 1.13.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| regex-automata | 0.4.18 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| regex-syntax | 0.8.11 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | rehype-katex | 7.0.1 | npm package | MIT | MIT | linked | all |
 | remark-gfm | 4.0.1 | npm package | MIT | MIT | linked | all |
 | remark-math | 6.0.0 | npm package | MIT | MIT | linked | all |
 | remark-parse | 11.0.0 | npm package | MIT | MIT | linked | all |
 | remark-rehype | 11.1.2 | npm package | MIT | MIT | linked | all |
 | remark-stringify | 11.0.0 | npm package | MIT | MIT | linked | all |
-| reqwest | 0.13.5 | Rust crate | MIT OR Apache-2.0 | MIT | linked | android, ios |
+| reqwest | 0.13.5 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | android, ios |
 | rfd | 0.17.2 | Rust crate | MIT | MIT | linked | win-x64, win-arm64, linux-x64, linux-arm64, macos-x64, macos-arm64 |
 | rgb | 0.8.53 | Rust crate | MIT | MIT | linked | all |
 | robust-predicates | 3.0.3 | npm package | Unlicense | Unlicense | linked | all |
 | roughjs | 4.6.6 | npm package | MIT | MIT | linked | all |
-| Rust standard library (std, core, alloc) | toolchain | other component | MIT OR Apache-2.0 | MIT | linked | all |
-| rustc_version | 0.4.1 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
-| rustc-hash | 2.1.3 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
-| rustix | 1.1.6 | Rust crate | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT | MIT | linked | linux-x64, linux-arm64 |
-| rustversion | 1.0.23 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
+| Rust standard library (std, core, alloc) | toolchain | other component | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| rustc_version | 0.4.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
+| rustc-hash | 2.1.3 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
+| rustix | 1.1.6 | Rust crate | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT | Apache-2.0 WITH LLVM-exception | linked | linux-x64, linux-arm64 |
+| rustversion | 1.0.23 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
 | rw | 1.3.3 | npm package | BSD-3-Clause | BSD-3-Clause | linked | all |
 | safer-buffer | 2.1.2 | npm package | MIT | MIT | linked | all |
 | same-file | 1.0.6 | Rust crate | Unlicense OR MIT | MIT | linked | all |
@@ -707,93 +707,93 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 | schemars | 0.9.0 | Rust crate | MIT | MIT | linked | all |
 | schemars | 1.2.3 | Rust crate | MIT | MIT | linked | all |
 | schemars_derive | 0.8.22 | Rust crate | MIT | MIT | build-time | all |
-| scopeguard | 1.2.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| scopeguard | 1.2.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | selectors | 0.38.0 | Rust crate | MPL-2.0 | MPL-2.0 | linked | all |
-| semver | 1.0.28 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| serde | 1.0.229 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| serde_core | 1.0.229 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| serde_derive | 1.0.229 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
-| serde_derive_internals | 0.29.1 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
-| serde_json | 1.0.154 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| serde_repr | 0.1.21 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
-| serde_spanned | 0.6.9 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | linux-x64, linux-arm64 |
-| serde_spanned | 1.1.2 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| serde_with | 3.24.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| serde_with_macros | 3.24.0 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
-| serde-untagged | 0.1.9 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| serialize-to-javascript | 0.1.2 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| serialize-to-javascript-impl | 0.1.2 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
-| servo_arc | 0.4.3 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| sha2 | 0.10.9 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| semver | 1.0.28 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| serde | 1.0.229 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| serde_core | 1.0.229 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| serde_derive | 1.0.229 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
+| serde_derive_internals | 0.29.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
+| serde_json | 1.0.154 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| serde_repr | 0.1.21 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
+| serde_spanned | 0.6.9 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | linux-x64, linux-arm64 |
+| serde_spanned | 1.1.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| serde_with | 3.24.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| serde_with_macros | 3.24.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
+| serde-untagged | 0.1.9 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| serialize-to-javascript | 0.1.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| serialize-to-javascript-impl | 0.1.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
+| servo_arc | 0.4.3 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| sha2 | 0.10.9 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | shlex | 2.0.1 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
-| signal-hook-registry | 1.4.8 | Rust crate | MIT OR Apache-2.0 | MIT | linked | linux-x64, linux-arm64 |
+| signal-hook-registry | 1.4.8 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | linux-x64, linux-arm64 |
 | simd_helpers | 0.1.0 | Rust crate | MIT | MIT | build-time | all |
 | simd-adler32 | 0.3.10 | Rust crate | MIT | MIT | linked | all |
-| siphasher | 1.0.4 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| siphasher | 1.0.4 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | slab | 0.4.12 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64, android, ios |
-| smallvec | 1.16.4 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| socket2 | 0.6.5 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| softbuffer | 0.4.8 | Rust crate | MIT OR Apache-2.0 | MIT | linked | win-x64, win-arm64 |
+| smallvec | 1.16.4 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| socket2 | 0.6.5 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| softbuffer | 0.4.8 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | win-x64, win-arm64 |
 | soup3 | 0.5.0 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | soup3-sys | 0.5.0 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | space-separated-tokens | 2.0.2 | npm package | MIT | MIT | linked | all |
 | squashfuse (in the AppImage type 2 runtime) | 0.5.2 | other component | BSD-2-Clause | BSD-2-Clause | separate-program | linux-x64, linux-arm64 |
-| stable_deref_trait | 1.2.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| static_vcruntime | 3.0.0 | Rust crate | MIT OR Apache-2.0 OR Zlib | MIT | build-time | all |
+| stable_deref_trait | 1.2.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| static_vcruntime | 3.0.0 | Rust crate | MIT OR Apache-2.0 OR Zlib | Apache-2.0 | build-time | all |
 | strictdom | 1.0.1 | npm package | MIT | MIT | linked | all |
-| string_cache | 0.9.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| string_cache_codegen | 0.6.1 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
+| string_cache | 0.9.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| string_cache_codegen | 0.6.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
 | stringify-entities | 4.0.4 | npm package | MIT | MIT | linked | all |
 | strsim | 0.11.1 | Rust crate | MIT | MIT | build-time | all |
 | style-mod | 4.1.4 | npm package | MIT | MIT | linked | all |
 | style-to-object | 2.0.2 | npm package | MIT | MIT | linked | all |
 | stylis | 4.4.0 | npm package | MIT | MIT | linked | all |
-| swift-rs | 1.0.9 | Rust crate | MIT OR Apache-2.0 | MIT | linked | macos-x64, macos-arm64, ios |
-| syn | 1.0.109 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | linux-x64, linux-arm64 |
-| syn | 2.0.119 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
-| syn | 3.0.9 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| swift-rs | 1.0.9 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | macos-x64, macos-arm64, ios |
+| syn | 1.0.109 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | linux-x64, linux-arm64 |
+| syn | 2.0.119 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
+| syn | 3.0.9 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | sync_wrapper | 1.0.2 | Rust crate | Apache-2.0 | Apache-2.0 | linked | android, ios |
 | synstructure | 0.14.0 | Rust crate | MIT | MIT | build-time | all |
-| system-deps | 6.2.2 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | linux-x64, linux-arm64 |
+| system-deps | 6.2.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | linux-x64, linux-arm64 |
 | tao | 0.37.2 | Rust crate | Apache-2.0 | Apache-2.0 | linked | all |
-| tao-macros | 0.1.4 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | android |
+| tao-macros | 0.1.4 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | android |
 | target-lexicon | 0.12.16 | Rust crate | Apache-2.0 WITH LLVM-exception | Apache-2.0 WITH LLVM-exception | build-time | linux-x64, linux-arm64 |
-| tauri | 2.12.5 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
-| tauri-build | 2.7.4 | Rust crate | Apache-2.0 OR MIT | MIT | build-time | all |
-| tauri-codegen | 2.7.4 | Rust crate | Apache-2.0 OR MIT | MIT | build-time | all |
-| tauri-macros | 2.7.4 | Rust crate | Apache-2.0 OR MIT | MIT | build-time | all |
-| tauri-plugin | 2.7.2 | Rust crate | Apache-2.0 OR MIT | MIT | build-time | all |
-| tauri-plugin-dialog | 2.8.4 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
-| tauri-plugin-fs | 2.7.1 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
-| tauri-plugin-log | 2.10.1 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
-| tauri-plugin-opener | 2.7.2 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
-| tauri-runtime | 2.12.2 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
-| tauri-runtime-wry | 2.12.3 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
-| tauri-utils | 2.10.2 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
+| tauri | 2.12.5 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
+| tauri-build | 2.7.4 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | build-time | all |
+| tauri-codegen | 2.7.4 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | build-time | all |
+| tauri-macros | 2.7.4 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | build-time | all |
+| tauri-plugin | 2.7.2 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | build-time | all |
+| tauri-plugin-dialog | 2.8.4 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
+| tauri-plugin-fs | 2.7.1 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
+| tauri-plugin-log | 2.10.1 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
+| tauri-plugin-opener | 2.7.2 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
+| tauri-runtime | 2.12.2 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
+| tauri-runtime-wry | 2.12.3 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
+| tauri-utils | 2.10.2 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
 | tauri-winres | 0.3.7 | Rust crate | MIT | MIT | build-time | all |
-| tendril | 0.5.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| thiserror | 1.0.69 | Rust crate | MIT OR Apache-2.0 | MIT | linked | linux-x64, linux-arm64, android |
-| thiserror | 2.0.21 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| thiserror-impl | 1.0.69 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | linux-x64, linux-arm64, android |
-| thiserror-impl | 2.0.21 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
+| tendril | 0.5.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| thiserror | 1.0.69 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | linux-x64, linux-arm64, android |
+| thiserror | 2.0.21 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| thiserror-impl | 1.0.69 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | linux-x64, linux-arm64, android |
+| thiserror-impl | 2.0.21 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
 | tiff | 0.11.3 | Rust crate | MIT | MIT | linked | all |
-| time | 0.3.55 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| time-core | 0.1.9 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| time-macros | 0.2.32 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
+| time | 0.3.55 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| time-core | 0.1.9 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| time-macros | 0.2.32 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
 | tinyexec | 1.3.1 | npm package | MIT | MIT | linked | all |
 | tinystr | 0.8.5 | Rust crate | Unicode-3.0 | Unicode-3.0 | linked | all |
-| tinyvec | 1.13.3 | Rust crate | Zlib OR Apache-2.0 OR MIT | MIT | linked | all |
+| tinyvec | 1.13.3 | Rust crate | Zlib OR Apache-2.0 OR MIT | Apache-2.0 | linked | all |
 | tokio | 1.54.1 | Rust crate | MIT | MIT | linked | all |
 | tokio-util | 0.7.20 | Rust crate | MIT | MIT | linked | android, ios |
-| toml | 0.8.2 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | linux-x64, linux-arm64 |
-| toml | 1.1.8+spec-1.1.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| toml_datetime | 0.6.3 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | linux-x64, linux-arm64 |
-| toml_datetime | 1.1.2+spec-1.1.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| toml_edit | 0.19.15 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | linux-x64, linux-arm64 |
-| toml_edit | 0.20.2 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | linux-x64, linux-arm64 |
-| toml_edit | 0.25.17+spec-1.1.0 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | linux-x64, linux-arm64, android |
-| toml_parser | 1.1.5+spec-1.1.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| toml_writer | 1.1.3+spec-1.1.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| toml | 0.8.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | linux-x64, linux-arm64 |
+| toml | 1.1.8+spec-1.1.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| toml_datetime | 0.6.3 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | linux-x64, linux-arm64 |
+| toml_datetime | 1.1.2+spec-1.1.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| toml_edit | 0.19.15 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | linux-x64, linux-arm64 |
+| toml_edit | 0.20.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | linux-x64, linux-arm64 |
+| toml_edit | 0.25.17+spec-1.1.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | linux-x64, linux-arm64, android |
+| toml_parser | 1.1.5+spec-1.1.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| toml_writer | 1.1.3+spec-1.1.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | tower | 0.5.3 | Rust crate | MIT | MIT | linked | android, ios |
 | tower-http | 0.6.11 | Rust crate | MIT | MIT | linked | android, ios |
 | tower-layer | 0.3.3 | Rust crate | MIT | MIT | linked | android, ios |
@@ -801,15 +801,15 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 | tracing | 0.1.44 | Rust crate | MIT | MIT | linked | win-x64, win-arm64, linux-x64, linux-arm64, android, ios |
 | tracing-attributes | 0.1.31 | Rust crate | MIT | MIT | build-time | win-x64, win-arm64, linux-x64, linux-arm64, android, ios |
 | tracing-core | 0.1.36 | Rust crate | MIT | MIT | linked | win-x64, win-arm64, linux-x64, linux-arm64, android, ios |
-| tray-icon | 0.25.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | win-x64, win-arm64, linux-x64, linux-arm64, macos-x64, macos-arm64 |
+| tray-icon | 0.25.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | win-x64, win-arm64, linux-x64, linux-arm64, macos-x64, macos-arm64 |
 | trim-lines | 3.0.1 | npm package | MIT | MIT | linked | all |
 | trough | 2.2.0 | npm package | MIT | MIT | linked | all |
 | try-lock | 0.2.5 | Rust crate | MIT | MIT | linked | android, ios |
 | ts-dedent | 2.3.0 | npm package | MIT | MIT | linked | all |
-| typeid | 1.0.3 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| typenum | 1.20.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| unicode-ident | 1.0.27 | Rust crate | (MIT OR Apache-2.0) AND Unicode-3.0 | MIT AND Unicode-3.0 | linked | all |
-| unicode-segmentation | 1.13.3 | Rust crate | MIT OR Apache-2.0 | MIT | linked | win-x64, win-arm64 |
+| typeid | 1.0.3 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| typenum | 1.20.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| unicode-ident | 1.0.27 | Rust crate | (MIT OR Apache-2.0) AND Unicode-3.0 | Apache-2.0 AND Unicode-3.0 | linked | all |
+| unicode-segmentation | 1.13.3 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | win-x64, win-arm64 |
 | unified | 11.0.5 | npm package | MIT | MIT | linked | all |
 | unist-util-is | 6.0.1 | npm package | MIT | MIT | linked | all |
 | unist-util-position | 5.0.0 | npm package | MIT | MIT | linked | all |
@@ -817,14 +817,14 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 | unist-util-stringify-position | 4.0.0 | npm package | MIT | MIT | linked | all |
 | unist-util-visit | 5.2.0 | npm package | MIT | MIT | linked | all |
 | unist-util-visit-parents | 6.1.0 | npm package | MIT | MIT | linked | all |
-| url | 2.5.8 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| url | 2.5.8 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | urlpattern | 0.6.0 | Rust crate | MIT | MIT | linked | all |
-| utf_types | 1.0.0 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
-| utf8_iter | 1.1.0 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
-| uuid | 1.29.0 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
+| utf_types | 1.0.0 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
+| utf8_iter | 1.1.0 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
+| uuid | 1.29.0 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
 | uuid | 14.0.3 | npm package | MIT | MIT | linked | all |
 | v_frame | 0.3.9 | Rust crate | BSD-2-Clause | BSD-2-Clause | linked | all |
-| version_check | 0.9.5 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
+| version_check | 0.9.5 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
 | version-compare | 0.2.1 | Rust crate | MIT | MIT | build-time | linux-x64, linux-arm64 |
 | vfile | 6.0.3 | npm package | MIT | MIT | linked | all |
 | vfile-location | 5.0.3 | npm package | MIT | MIT | linked | all |
@@ -834,43 +834,43 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 | w3c-keyname | 2.2.8 | npm package | MIT | MIT | linked | all |
 | walkdir | 2.5.0 | Rust crate | Unlicense OR MIT | MIT | linked | all |
 | want | 0.3.2 | Rust crate | MIT | MIT | linked | android, ios |
-| wasm-bindgen | 0.2.130 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| wasm-bindgen-macro | 0.2.130 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
-| wasm-bindgen-macro-support | 0.2.130 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | all |
-| wasm-bindgen-shared | 0.2.130 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
-| web_atoms | 0.2.6 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| wasm-bindgen | 0.2.130 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| wasm-bindgen-macro | 0.2.130 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
+| wasm-bindgen-macro-support | 0.2.130 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | all |
+| wasm-bindgen-shared | 0.2.130 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
+| web_atoms | 0.2.6 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | web-namespaces | 2.0.1 | npm package | MIT | MIT | linked | all |
-| web-time | 1.1.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| web-time | 1.1.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | webkit2gtk | 2.0.2 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | webkit2gtk-sys | 2.0.2 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | webview2-com | 0.39.1 | Rust crate | MIT | MIT | linked | win-x64, win-arm64 |
 | webview2-com-macros | 0.8.1 | Rust crate | MIT | MIT | build-time | win-x64, win-arm64 |
 | webview2-com-sys | 0.39.1 | Rust crate | MIT | MIT | linked | win-x64, win-arm64 |
-| weezl | 0.1.12 | Rust crate | MIT OR Apache-2.0 | MIT | linked | all |
+| weezl | 0.1.12 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | all |
 | winapi-util | 0.1.11 | Rust crate | Unlicense OR MIT | MIT | linked | win-x64, win-arm64 |
-| window-vibrancy | 0.8.1 | Rust crate | Apache-2.0 OR MIT | MIT | linked | win-x64, win-arm64, macos-x64, macos-arm64 |
-| windows | 0.62.2 | Rust crate | MIT OR Apache-2.0 | MIT | linked | win-x64, win-arm64 |
-| windows_aarch64_msvc | 0.48.5 | Rust crate | MIT OR Apache-2.0 | MIT | linked | win-arm64 |
-| windows_x86_64_msvc | 0.48.5 | Rust crate | MIT OR Apache-2.0 | MIT | linked | win-x64 |
-| windows-collections | 0.3.2 | Rust crate | MIT OR Apache-2.0 | MIT | linked | win-x64, win-arm64 |
-| windows-core | 0.62.2 | Rust crate | MIT OR Apache-2.0 | MIT | linked | win-x64, win-arm64 |
-| windows-future | 0.3.2 | Rust crate | MIT OR Apache-2.0 | MIT | linked | win-x64, win-arm64 |
-| windows-implement | 0.60.2 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | win-x64, win-arm64 |
-| windows-interface | 0.59.3 | Rust crate | MIT OR Apache-2.0 | MIT | build-time | win-x64, win-arm64 |
-| windows-link | 0.2.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | win-x64, win-arm64 |
-| windows-numerics | 0.3.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | win-x64, win-arm64 |
-| windows-result | 0.4.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | win-x64, win-arm64 |
-| windows-strings | 0.5.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | win-x64, win-arm64 |
-| windows-sys | 0.48.0 | Rust crate | MIT OR Apache-2.0 | MIT | linked | win-x64, win-arm64 |
-| windows-sys | 0.61.2 | Rust crate | MIT OR Apache-2.0 | MIT | linked | win-x64, win-arm64 |
-| windows-targets | 0.48.5 | Rust crate | MIT OR Apache-2.0 | MIT | linked | win-x64, win-arm64 |
-| windows-threading | 0.2.1 | Rust crate | MIT OR Apache-2.0 | MIT | linked | win-x64, win-arm64 |
-| windows-version | 0.1.7 | Rust crate | MIT OR Apache-2.0 | MIT | linked | win-x64, win-arm64 |
+| window-vibrancy | 0.8.1 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | win-x64, win-arm64, macos-x64, macos-arm64 |
+| windows | 0.62.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | win-x64, win-arm64 |
+| windows_aarch64_msvc | 0.48.5 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | win-arm64 |
+| windows_x86_64_msvc | 0.48.5 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | win-x64 |
+| windows-collections | 0.3.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | win-x64, win-arm64 |
+| windows-core | 0.62.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | win-x64, win-arm64 |
+| windows-future | 0.3.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | win-x64, win-arm64 |
+| windows-implement | 0.60.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | win-x64, win-arm64 |
+| windows-interface | 0.59.3 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | build-time | win-x64, win-arm64 |
+| windows-link | 0.2.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | win-x64, win-arm64 |
+| windows-numerics | 0.3.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | win-x64, win-arm64 |
+| windows-result | 0.4.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | win-x64, win-arm64 |
+| windows-strings | 0.5.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | win-x64, win-arm64 |
+| windows-sys | 0.48.0 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | win-x64, win-arm64 |
+| windows-sys | 0.61.2 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | win-x64, win-arm64 |
+| windows-targets | 0.48.5 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | win-x64, win-arm64 |
+| windows-threading | 0.2.1 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | win-x64, win-arm64 |
+| windows-version | 0.1.7 | Rust crate | MIT OR Apache-2.0 | Apache-2.0 | linked | win-x64, win-arm64 |
 | winnow | 0.5.40 | Rust crate | MIT | MIT | build-time | linux-x64, linux-arm64 |
 | winnow | 1.0.4 | Rust crate | MIT | MIT | linked | all |
 | winreg | 0.56.0 | Rust crate | MIT | MIT | build-time | win-x64, win-arm64 |
 | writeable | 0.6.4 | Rust crate | Unicode-3.0 | Unicode-3.0 | linked | all |
-| wry | 0.57.1 | Rust crate | Apache-2.0 OR MIT | MIT | linked | all |
+| wry | 0.57.1 | Rust crate | Apache-2.0 OR MIT | Apache-2.0 | linked | all |
 | x11 | 2.21.0 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | x11-dl | 2.21.0 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | y4m | 0.8.0 | Rust crate | MIT | MIT | linked | all |
@@ -880,8 +880,8 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 | zbus_macros | 5.19.0 | Rust crate | MIT | MIT | build-time | linux-x64, linux-arm64 |
 | zbus_names | 4.3.5 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | zcheapstr | 1.2.0 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
-| zerocopy | 0.8.63 | Rust crate | BSD-2-Clause OR Apache-2.0 OR MIT | MIT | linked | all |
-| zerocopy-derive | 0.8.63 | Rust crate | BSD-2-Clause OR Apache-2.0 OR MIT | MIT | build-time | all |
+| zerocopy | 0.8.63 | Rust crate | BSD-2-Clause OR Apache-2.0 OR MIT | Apache-2.0 | linked | all |
+| zerocopy-derive | 0.8.63 | Rust crate | BSD-2-Clause OR Apache-2.0 OR MIT | Apache-2.0 | build-time | all |
 | zerofrom | 0.1.8 | Rust crate | Unicode-3.0 | Unicode-3.0 | linked | all |
 | zerofrom-derive | 0.1.8 | Rust crate | Unicode-3.0 | Unicode-3.0 | build-time | all |
 | zerotrie | 0.2.5 | Rust crate | Unicode-3.0 | Unicode-3.0 | linked | all |
@@ -891,9 +891,9 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 | zlib-rs | 0.6.8 | Rust crate | Zlib | Zlib | linked | all |
 | zmij | 1.0.23 | Rust crate | MIT | MIT | linked | all |
 | zstd (in the AppImage type 2 runtime) | Alpine 3.21 package, in type2-runtime fedfad5 | other component | BSD-3-Clause OR GPL-2.0-only | BSD-3-Clause | separate-program | linux-x64, linux-arm64 |
-| zune-core | 0.5.3 | Rust crate | MIT OR Apache-2.0 OR Zlib | MIT | linked | all |
-| zune-inflate | 0.2.54 | Rust crate | MIT OR Apache-2.0 OR Zlib | MIT | linked | all |
-| zune-jpeg | 0.5.15 | Rust crate | MIT OR Apache-2.0 OR Zlib | MIT | linked | all |
+| zune-core | 0.5.3 | Rust crate | MIT OR Apache-2.0 OR Zlib | Apache-2.0 | linked | all |
+| zune-inflate | 0.2.54 | Rust crate | MIT OR Apache-2.0 OR Zlib | Apache-2.0 | linked | all |
+| zune-jpeg | 0.5.15 | Rust crate | MIT OR Apache-2.0 OR Zlib | Apache-2.0 | linked | all |
 | zvariant | 5.15.1 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
 | zvariant_derive | 5.15.1 | Rust crate | MIT | MIT | build-time | linux-x64, linux-arm64 |
 | zvariant_utils | 4.2.0 | Rust crate | MIT | MIT | linked | linux-x64, linux-arm64 |
@@ -1408,29 +1408,29 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### @tauri-apps/api 2.12.4
 
 - Kind: npm package, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/tauri-apps/tauri
 - Copyright:
   - Copyright (c) 2017 - Present Tauri Apps Contributors
-- Licence text (MIT): [text-89ff9689](#text-89ff9689), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### @tauri-apps/plugin-dialog 2.8.4
 
 - Kind: npm package, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/tauri-apps/plugins-workspace
 - Copyright:
   - Copyright (c) the authors of @tauri-apps/plugin-dialog (no holder named in the package)
-- Licence text (MIT): [text-eb8a6c84](#text-eb8a6c84), as shipped in the package file LICENSE.spdx
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### @tauri-apps/plugin-opener 2.7.2
 
 - Kind: npm package, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/tauri-apps/plugins-workspace
 - Copyright:
   - Copyright (c) the authors of @tauri-apps/plugin-opener (no holder named in the package)
-- Licence text (MIT): [text-eb8a6c84](#text-eb8a6c84), as shipped in the package file LICENSE.spdx
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### @types/d3 7.4.3
 
@@ -2174,11 +2174,11 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### adler2 2.0.1
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: 0BSD OR MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: 0BSD OR MIT OR Apache-2.0)
 - Source: https://github.com/oyvindln/adler2
 - Copyright:
   - Copyright (C) Jonas Schievink \<jonasschievink@gmail.com\>
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### aho-corasick 1.1.5
 
@@ -2192,11 +2192,11 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### aligned 0.4.3
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-embedded-community/aligned
 - Copyright:
   - Copyright (c) 2017 Jorge Aparicio
-- Licence text (MIT): [text-8adee6e9](#text-8adee6e9), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### aligned-vec 0.6.4
 
@@ -2228,22 +2228,22 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### android_log-sys 0.3.2
 
 - Kind: Rust crate, linked, platforms: android
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-mobile/android_log-sys-rs
 - Copyright:
-  - Copyright (c) 2016 The android_log_sys Developers
   - Copyright 2016 The android_log_sys Developers
-- Licence text (MIT): [text-0f70b9a3](#text-0f70b9a3), as shipped in the package file LICENSE-MIT
+  - Copyright (c) 2016 The android_log_sys Developers
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### android_logger 0.15.1
 
 - Kind: Rust crate, linked, platforms: android
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-mobile/android_logger-rs
 - Copyright:
-  - Copyright (c) 2016 The android_logger Developers
   - Copyright 2016 The android_logger Developers
-- Licence text (MIT): [text-a6fbdfb3](#text-a6fbdfb3), as shipped in the package file LICENSE-MIT
+  - Copyright (c) 2016 The android_logger Developers
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### android_system_properties 0.1.6
 
@@ -2258,11 +2258,11 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### anyhow 1.0.104
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/anyhow
 - Copyright:
   - Copyright (c) David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### AppImage type 2 runtime fedfad5
 
@@ -2294,111 +2294,111 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### arrayvec 0.7.8
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/bluss/arrayvec
 - Copyright:
   - Copyright (c) Ulrik Sverdrup "bluss" 2015-2023
-- Licence text (MIT): [text-92c66648](#text-92c66648), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### as-slice 0.2.1
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/japaric/as-slice
 - Copyright:
   - Copyright (c) 2018 Jorge Aparicio
-- Licence text (MIT): [text-42926e59](#text-42926e59), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### async-broadcast 0.7.2
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/smol-rs/async-broadcast
 - Copyright:
-  - Copyright (c) 2020 Yoshua Wuyts
   - Copyright 2020 Yoshua Wuyts
-- Licence text (MIT): [text-48d36a67](#text-48d36a67), as shipped in the package file LICENSE-MIT
+  - Copyright (c) 2020 Yoshua Wuyts
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### async-channel 2.5.0
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/async-channel
 - Copyright:
   - Copyright (c) Stjepan Glavina (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### async-executor 1.14.0
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/async-executor
 - Copyright:
   - Copyright (c) Stjepan Glavina, John Nunley (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### async-io 2.6.0
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/async-io
 - Copyright:
   - Copyright (c) Stjepan Glavina (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### async-lock 3.4.2
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/async-lock
 - Copyright:
   - Copyright (c) Stjepan Glavina (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### async-process 2.5.0
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/async-process
 - Copyright:
   - Copyright (c) Stjepan Glavina (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### async-recursion 1.2.0
 
 - Kind: Rust crate, build-time, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dcchut/async-recursion
 - Copyright:
   - Copyright (c) Robert Usher (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### async-signal 0.2.14
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/async-signal
 - Copyright:
   - Copyright (c) John Nunley (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### async-task 4.7.1
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/async-task
 - Copyright:
   - Copyright (c) Stjepan Glavina (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### async-trait 0.1.92
 
 - Kind: Rust crate, build-time, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/async-trait
 - Copyright:
   - Copyright (c) David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### atk 0.18.2
 
@@ -2421,21 +2421,21 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### atomic-waker 1.1.2
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64, android, ios
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/atomic-waker
 - Copyright:
   - Copyright (c) 2016 Alex Crichton
   - Copyright (c) 2017 The Tokio Authors
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### autocfg 1.5.1
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/cuviper/autocfg
 - Copyright:
   - Copyright (c) 2018 Josh Stone
-- Licence text (MIT): [text-99afaa30](#text-99afaa30), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### av-scenechange 0.14.1
 
@@ -2526,92 +2526,92 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### base64 0.21.7
 
 - Kind: Rust crate, linked, platforms: macos-x64, macos-arm64, ios
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/marshallpierce/rust-base64
 - Copyright:
   - Copyright (c) 2015 Alice Maz
-- Licence text (MIT): [text-6a8da4c7](#text-6a8da4c7), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### base64 0.22.1
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/marshallpierce/rust-base64
 - Copyright:
   - Copyright (c) 2015 Alice Maz
-- Licence text (MIT): [text-6a8da4c7](#text-6a8da4c7), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### base64 0.23.1
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/marshallpierce/rust-base64
 - Copyright:
   - Copyright (c) 2025 Alice Maz, Marshall Pierce
-- Licence text (MIT): [text-2ff8d973](#text-2ff8d973), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### bit_field 0.10.3
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/phil-opp/rust-bit-field
 - Copyright:
   - Copyright (c) 2016 Philipp Oppermann
-- Licence text (MIT): [text-3e772b50](#text-3e772b50), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### bit-set 0.8.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/contain-rs/bit-set
 - Copyright:
   - Copyright (c) 2023 The Rust Project Developers
-- Licence text (MIT): [text-4c4e6eed](#text-4c4e6eed), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### bit-vec 0.8.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/contain-rs/bit-vec
 - Copyright:
   - Copyright (c) 2023 The Rust Project Developers
-- Licence text (MIT): [text-4c4e6eed](#text-4c4e6eed), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### bitflags 1.3.2
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/bitflags/bitflags
 - Copyright:
   - Copyright (c) 2014 The Rust Project Developers
-- Licence text (MIT): [text-14435fbc](#text-14435fbc), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### bitflags 2.13.2
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/bitflags/bitflags
 - Copyright:
   - Copyright (c) 2014 The Rust Project Developers
-- Licence text (MIT): [text-14435fbc](#text-14435fbc), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### bitstream-io 4.10.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/tuffy/bitstream-io
 - Copyright:
   - Copyright (c) 2017 Brian Langenberger
-- Licence text (MIT): [text-39cf2da1](#text-39cf2da1), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### block-buffer 0.10.4
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/RustCrypto/utils
 - Copyright:
   - Copyright (c) 2018-2019 The RustCrypto Project Developers
-- Licence text (MIT): [text-5ff5253f](#text-5ff5253f), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### block2 0.6.2
 
@@ -2625,11 +2625,11 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### blocking 1.7.0
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/blocking
 - Copyright:
   - Copyright (c) the authors of blocking (no holder named in the package)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### brotli 9.1.1
 
@@ -2654,11 +2654,11 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### bs58 0.5.1
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/Nullus157/bs58-rs
 - Copyright:
   - Copyright (c) 2016 The roaring-rs developers.
-- Licence text (MIT): [text-67047503](#text-67047503), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### built 0.8.1
 
@@ -2672,29 +2672,29 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### bumpalo 3.20.3
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/fitzgen/bumpalo
 - Copyright:
   - Copyright (c) 2019 Nick Fitzgerald
-- Licence text (MIT): [text-5662394b](#text-5662394b), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### bytemuck 1.25.2
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Zlib OR Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Zlib OR Apache-2.0 OR MIT)
 - Source: https://github.com/Lokathor/bytemuck
 - Copyright:
   - Copyright (c) 2019 Daniel "Lokathor" Gee.
-- Licence text (MIT): [text-dfbd1c2a](#text-dfbd1c2a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### bytemuck_derive 1.12.1
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: Zlib OR Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Zlib OR Apache-2.0 OR MIT)
 - Source: https://github.com/Lokathor/bytemuck
 - Copyright:
   - Copyright (c) 2019 Daniel "Lokathor" Gee.
-- Licence text (MIT): [text-dfbd1c2a](#text-dfbd1c2a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### byteorder 1.5.0
 
@@ -2744,11 +2744,11 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### camino 1.2.6
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/camino-rs/camino
 - Copyright:
   - Copyright (c) Without Boats, Ashley Williams, Steve Klabnik, Rain (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### cargo_metadata 0.19.2
 
@@ -2762,29 +2762,29 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### cargo_toml 1.0.1
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://gitlab.com/lib.rs/cargo_toml
 - Copyright:
   - © Kornel Lesiński
-- Licence text (MIT): [text-fa436384](#text-fa436384), as shipped in the package file LICENSE
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### cargo-platform 0.1.9
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/cargo
 - Copyright:
   - Copyright (c) the authors of cargo-platform (no holder named in the package)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### cc 1.10.0
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/cc-rs
 - Copyright:
   - Copyright (c) 2014 Alex Crichton
-- Licence text (MIT): [text-84e1bbfe](#text-84e1bbfe), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### ccount 2.0.1
 
@@ -2826,20 +2826,20 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### cfg-expr 0.15.8
 
 - Kind: Rust crate, build-time, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/EmbarkStudios/cfg-expr
 - Copyright:
   - Copyright (c) 2019 Embark Studios
-- Licence text (MIT): [text-6d182023](#text-6d182023), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### cfg-if 1.0.5
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/cfg-if
 - Copyright:
   - Copyright (c) 2014 Alex Crichton
-- Licence text (MIT): [text-84e1bbfe](#text-84e1bbfe), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### character-entities 2.0.2
 
@@ -2880,11 +2880,11 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### chrono 0.4.45
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/chronotope/chrono
 - Copyright:
   - Copyright (c) 2014, Kang Seonghoon.
-- Licence text (MIT): [text-ce4a94c0](#text-ce4a94c0), as shipped in the package file LICENSE.txt
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### codemirror 6.0.2
 
@@ -2947,59 +2947,59 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### concurrent-queue 2.5.0
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/concurrent-queue
 - Copyright:
   - Copyright (c) Stjepan Glavina, Taiki Endo, John Nunley (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### cookie 0.18.2
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/SergioBenitez/cookie-rs
 - Copyright:
-  - Copyright (c) 2017 Sergio Benitez
-  - Copyright (c) 2014 Alex Crichton
   - Copyright 2017 Sergio Benitez
   - Copyright 2014 Alex Chricton
-- Licence text (MIT): [text-47c8d252](#text-47c8d252), as shipped in the package file LICENSE-MIT
+  - Copyright (c) 2017 Sergio Benitez
+  - Copyright (c) 2014 Alex Crichton
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### core-foundation 0.10.1
 
 - Kind: Rust crate, linked, platforms: macos-x64, macos-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/servo/core-foundation-rs
 - Copyright:
   - Copyright (c) 2012-2013 Mozilla Foundation
-- Licence text (MIT): [text-3bfacc19](#text-3bfacc19), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### core-foundation-sys 0.8.7
 
 - Kind: Rust crate, linked, platforms: macos-x64, macos-arm64, ios
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/servo/core-foundation-rs
 - Copyright:
   - Copyright (c) 2012-2013 Mozilla Foundation
-- Licence text (MIT): [text-3bfacc19](#text-3bfacc19), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### core-graphics 0.25.0
 
 - Kind: Rust crate, linked, platforms: macos-x64, macos-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/servo/core-foundation-rs
 - Copyright:
   - Copyright (c) 2012-2013 Mozilla Foundation
-- Licence text (MIT): [text-3bfacc19](#text-3bfacc19), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### core-graphics-types 0.2.0
 
 - Kind: Rust crate, linked, platforms: macos-x64, macos-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/servo/core-foundation-rs
 - Copyright:
   - Copyright (c) 2012-2013 Mozilla Foundation
-- Licence text (MIT): [text-3bfacc19](#text-3bfacc19), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### cose-base 1.0.3
 
@@ -3022,20 +3022,20 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### cpufeatures 0.2.17
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/RustCrypto/utils
 - Copyright:
   - Copyright (c) 2020-2025 The RustCrypto Project Developers
-- Licence text (MIT): [text-6334e528](#text-6334e528), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### crc32fast 1.5.3
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/srijs/rust-crc32fast
 - Copyright:
   - Copyright (c) 2018 Sam Rijs, Alex Crichton and contributors
-- Licence text (MIT): [text-9599127e](#text-9599127e), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### crelt 1.0.7
 
@@ -3049,48 +3049,48 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### crossbeam-channel 0.5.17
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/crossbeam-rs/crossbeam
 - Copyright:
   - Copyright (c) 2019 The Crossbeam Project Developers
   - Copyright (c) 2009 The Go Authors. All rights reserved.
-- Licence text (MIT): [text-5a7d13c6](#text-5a7d13c6), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### crossbeam-deque 0.8.8
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/crossbeam-rs/crossbeam
 - Copyright:
   - Copyright (c) 2019 The Crossbeam Project Developers
-- Licence text (MIT): [text-5a7d13c6](#text-5a7d13c6), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### crossbeam-epoch 0.9.21
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/crossbeam-rs/crossbeam
 - Copyright:
   - Copyright (c) 2019 The Crossbeam Project Developers
-- Licence text (MIT): [text-5a7d13c6](#text-5a7d13c6), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### crossbeam-utils 0.8.23
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/crossbeam-rs/crossbeam
 - Copyright:
   - Copyright (c) 2019 The Crossbeam Project Developers
-- Licence text (MIT): [text-5a7d13c6](#text-5a7d13c6), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### crypto-common 0.1.7
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/RustCrypto/traits
 - Copyright:
   - Copyright (c) 2021 RustCrypto Developers
-- Licence text (MIT): [text-692b1604](#text-692b1604), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### cssparser 0.37.0
 
@@ -3124,11 +3124,11 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### ctor 1.0.13
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/mmastrac/linktime
 - Copyright:
   - Copyright (c) Matt Mastracci (authors as declared in the package metadata)
-- Licence text (MIT): [text-bccaa8b6](#text-bccaa8b6), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### cytoscape 3.34.4
 
@@ -3539,12 +3539,12 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### dbus 0.9.12
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/diwic/dbus-rs
 - Copyright:
-  - Copyright (c) 2014-2018 David Henningsson \<diwic@ubuntu.com\> and other contributors
   - Copyright 2014-2018 David Henningsson \<diwic@ubuntu.com\> and other contributors
-- Licence text (MIT): [text-de3911c2](#text-de3911c2), as shipped in the package file LICENSE-MIT
+  - Copyright (c) 2014-2018 David Henningsson \<diwic@ubuntu.com\> and other contributors
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### debug 4.4.3
 
@@ -3568,29 +3568,29 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### defmt 1.2.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/knurling-rs/defmt
 - Copyright:
   - Copyright (c) Ferrous Systems
-- Licence text (MIT): [text-2710a622](#text-2710a622), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### defmt-macros 1.2.0
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/knurling-rs/defmt
 - Copyright:
   - Copyright (c) Ferrous Systems
-- Licence text (MIT): [text-2710a622](#text-2710a622), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### defmt-parser 1.1.0
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/knurling-rs/defmt
 - Copyright:
   - Copyright (c) Ferrous Systems
-- Licence text (MIT): [text-2710a622](#text-2710a622), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### delaunator 5.1.0
 
@@ -3613,12 +3613,12 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### deranged 0.5.9
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/jhpratt/deranged
 - Copyright:
-  - Copyright (c) 2024 Jacob Pratt et al.
   - Copyright 2024 Jacob Pratt et al.
-- Licence text (MIT): [text-1b66e3be](#text-1b66e3be), as shipped in the package file LICENSE-MIT
+  - Copyright (c) 2024 Jacob Pratt et al.
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### derive_more 2.1.1
 
@@ -3650,56 +3650,56 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### digest 0.10.7
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/RustCrypto/traits
 - Copyright:
   - Copyright (c) 2017 Artyom Pavlov
-- Licence text (MIT): [text-9c5127ab](#text-9c5127ab), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### dirs 6.0.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/soc/dirs-rs
 - Copyright:
   - Copyright (c) 2018-2019 dirs-rs contributors
-- Licence text (MIT): [text-f25a5b60](#text-f25a5b60), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### dirs 7.0.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://codeberg.org/dirs/dirs-rs
 - Copyright:
   - Copyright (c) 2018-2019 dirs-rs contributors
-- Licence text (MIT): [text-f25a5b60](#text-f25a5b60), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### dirs-sys 0.5.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dirs-dev/dirs-sys-rs
 - Copyright:
   - Copyright (c) 2018-2019 dirs-rs contributors
-- Licence text (MIT): [text-f25a5b60](#text-f25a5b60), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### dispatch2 0.3.1
 
 - Kind: Rust crate, linked, platforms: macos-x64, macos-arm64, ios
-- Licence: MIT (declared: Zlib OR Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Zlib OR Apache-2.0 OR MIT)
 - Source: https://github.com/madsmtm/objc2
 - Copyright:
   - Copyright (c) Mads Marquart, Mary (authors as declared in the package metadata)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### displaydoc 0.2.7
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/yaahc/displaydoc
 - Copyright:
   - Copyright (c) Jane Lusby (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### dlopen2 0.8.2
 
@@ -3763,11 +3763,11 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### dtoa 1.0.11
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/dtoa
 - Copyright:
   - Copyright (c) David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### dtoa-short 0.3.5
 
@@ -3791,29 +3791,29 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### dyn-clone 1.0.20
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/dyn-clone
 - Copyright:
   - Copyright (c) David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### either 1.19.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rayon-rs/either
 - Copyright:
   - Copyright (c) 2015
-- Licence text (MIT): [text-fdd1c211](#text-fdd1c211), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### embed_plist 1.2.2
 
 - Kind: Rust crate, linked, platforms: macos-x64, macos-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/nvzqz/embed-plist-rs
 - Copyright:
   - Copyright (c) 2020 Nikolai Vazquez
-- Licence text (MIT): [text-a29c4d8a](#text-a29c4d8a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### embed-resource 3.0.12
 
@@ -3845,31 +3845,31 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### enumflags2 0.7.12
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/meithecatte/enumflags2
 - Copyright:
-  - Copyright (c) 2017-2023 Maik Klein, Maja Kądziołka
   - Copyright 2017-2023 Maik Klein, Maja Kądziołka
-- Licence text (MIT): [text-de561d2b](#text-de561d2b), as shipped in the package file LICENSE-MIT
+  - Copyright (c) 2017-2023 Maik Klein, Maja Kądziołka
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### enumflags2_derive 0.7.12
 
 - Kind: Rust crate, build-time, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/meithecatte/enumflags2
 - Copyright:
-  - Copyright (c) 2017 Maik Klein
   - Copyright \[2017\] \[Maik Klein\]
-- Licence text (MIT): [text-12a9724e](#text-12a9724e), as shipped in the package file LICENSE-MIT
+  - Copyright (c) 2017 Maik Klein
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### env_filter 0.1.4
 
 - Kind: Rust crate, linked, platforms: android
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-cli/env_logger
 - Copyright:
   - Copyright (c) Individual contributors
-- Licence text (MIT): [text-4498464c](#text-4498464c), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### equator 0.4.2
 
@@ -3892,29 +3892,29 @@ Weak copyleft, OFL-1.1: katex 0.18.10.
 ### equivalent 1.0.3
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/indexmap-rs/equivalent
 - Copyright:
   - Copyright (c) 2016--2023
-- Licence text (MIT): [text-4428cd87](#text-4428cd87), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### erased-serde 0.4.11
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/erased-serde
 - Copyright:
   - Copyright (c) David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### errno 0.3.14
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/lambda-fairy/rust-errno
 - Copyright:
   - Copyright (c) 2014 Chris Wong
-- Licence text (MIT): [text-7f91c2a4](#text-7f91c2a4), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### es-toolkit 1.53.1
 
@@ -3991,20 +3991,20 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### event-listener 5.4.2
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/event-listener
 - Copyright:
   - Copyright (c) Stjepan Glavina, John Nunley (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### event-listener-strategy 0.5.4
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/event-listener-strategy
 - Copyright:
   - Copyright (c) John Nunley (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### exr 1.74.2
 
@@ -4037,11 +4037,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### fastrand 2.5.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/fastrand
 - Copyright:
   - Copyright (c) Stjepan Glavina (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### fax 0.2.7
 
@@ -4055,11 +4055,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### fdeflate 0.3.7
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/image-rs/fdeflate
 - Copyright:
   - Copyright (c) The image-rs Developers (authors as declared in the package metadata)
-- Licence text (MIT): [text-77949ead](#text-77949ead), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### fern 0.7.1
 
@@ -4073,47 +4073,47 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### field-offset 0.3.6
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/Diggsey/rust-field-offset
 - Copyright:
   - Copyright (c) 2016-2021 Diggory Blake, and other contributors.
-- Licence text (MIT): [text-f4bc3f3c](#text-f4bc3f3c), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### filetime 0.2.29
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/alexcrichton/filetime
 - Copyright:
   - Copyright (c) 2014 Alex Crichton
-- Licence text (MIT): [text-84e1bbfe](#text-84e1bbfe), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### find-msvc-tools 0.1.15
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/cc-rs
 - Copyright:
   - Copyright (c) 2014 Alex Crichton
-- Licence text (MIT): [text-84e1bbfe](#text-84e1bbfe), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### flate2 1.1.10
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/flate2-rs
 - Copyright:
   - Copyright (c) 2014-2026 Alex Crichton
-- Licence text (MIT): [text-1b7402ea](#text-1b7402ea), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### fnv 1.0.7
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/servo/rust-fnv
 - Copyright:
   - Copyright (c) 2017 Contributors
-- Licence text (MIT): [text-c48b7333](#text-c48b7333), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### foldhash 0.2.0
 
@@ -4127,38 +4127,38 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### foreign-types 0.5.0
 
 - Kind: Rust crate, linked, platforms: macos-x64, macos-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/sfackler/foreign-types
 - Copyright:
   - Copyright (c) 2017 The foreign-types Developers
-- Licence text (MIT): [text-c9067b1c](#text-c9067b1c), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### foreign-types-macros 0.2.4
 
 - Kind: Rust crate, build-time, platforms: macos-x64, macos-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/sfackler/foreign-types
 - Copyright:
   - Copyright (c) 2017 The foreign-types Developers
-- Licence text (MIT): [text-c9067b1c](#text-c9067b1c), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### foreign-types-shared 0.3.1
 
 - Kind: Rust crate, linked, platforms: macos-x64, macos-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/sfackler/foreign-types
 - Copyright:
   - Copyright (c) 2017 The foreign-types Developers
-- Licence text (MIT): [text-c9067b1c](#text-c9067b1c), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### form_urlencoded 1.2.2
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/servo/rust-url
 - Copyright:
   - Copyright (c) 2013-2016 The rust-url developers
-- Licence text (MIT): [text-33ed9a8e](#text-33ed9a8e), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### fsevent-sys 4.1.0
 
@@ -4172,92 +4172,92 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### futures-channel 0.3.34
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64, android, ios
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/futures-rs
 - Copyright:
   - Copyright (c) 2016 Alex Crichton
   - Copyright (c) 2017 The Tokio Authors
-- Licence text (MIT): [text-b420d8ad](#text-b420d8ad), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### futures-core 0.3.34
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64, android, ios
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/futures-rs
 - Copyright:
   - Copyright (c) 2016 Alex Crichton
   - Copyright (c) 2017 The Tokio Authors
-- Licence text (MIT): [text-b420d8ad](#text-b420d8ad), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### futures-executor 0.3.34
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/futures-rs
 - Copyright:
   - Copyright (c) 2016 Alex Crichton
   - Copyright (c) 2017 The Tokio Authors
-- Licence text (MIT): [text-b420d8ad](#text-b420d8ad), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### futures-io 0.3.34
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64, android, ios
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/futures-rs
 - Copyright:
   - Copyright (c) 2016 Alex Crichton
   - Copyright (c) 2017 The Tokio Authors
-- Licence text (MIT): [text-b420d8ad](#text-b420d8ad), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### futures-lite 2.6.1
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/futures-lite
 - Copyright:
   - Copyright (c) 2016 Alex Crichton
   - Copyright (c) 2017 The Tokio Authors
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### futures-macro 0.3.34
 
 - Kind: Rust crate, build-time, platforms: linux-x64, linux-arm64, android, ios
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/futures-rs
 - Copyright:
   - Copyright (c) 2016 Alex Crichton
   - Copyright (c) 2017 The Tokio Authors
-- Licence text (MIT): [text-b420d8ad](#text-b420d8ad), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### futures-sink 0.3.34
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64, android, ios
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/futures-rs
 - Copyright:
   - Copyright (c) 2016 Alex Crichton
   - Copyright (c) 2017 The Tokio Authors
-- Licence text (MIT): [text-b420d8ad](#text-b420d8ad), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### futures-task 0.3.34
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64, android, ios
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/futures-rs
 - Copyright:
   - Copyright (c) 2016 Alex Crichton
   - Copyright (c) 2017 The Tokio Authors
-- Licence text (MIT): [text-b420d8ad](#text-b420d8ad), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### futures-util 0.3.34
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64, android, ios
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/futures-rs
 - Copyright:
   - Copyright (c) 2016 Alex Crichton
   - Copyright (c) 2017 The Tokio Authors
-- Licence text (MIT): [text-b420d8ad](#text-b420d8ad), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### gdk 0.18.2
 
@@ -4334,31 +4334,31 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### getrandom 0.3.4
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-random/getrandom
 - Copyright:
   - Copyright (c) 2018-2025 The rust-random Project Developers
   - Copyright (c) 2014 The Rust Project Developers
-- Licence text (MIT): [text-73af2019](#text-73af2019), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### getrandom 0.4.3
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-random/getrandom
 - Copyright:
   - Copyright (c) 2018-2026 The rust-random Project Developers
   - Copyright (c) 2014 The Rust Project Developers
-- Licence text (MIT): [text-94b1870d](#text-94b1870d), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### gif 0.14.2
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/image-rs/image-gif
 - Copyright:
   - Copyright (c) 2015 nwin
-- Licence text (MIT): [text-1b6f7ab8](#text-1b6f7ab8), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### gio 0.18.4
 
@@ -4417,11 +4417,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### glob 0.3.4
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/glob
 - Copyright:
   - Copyright (c) 2014 The Rust Project Developers
-- Licence text (MIT): [text-14435fbc](#text-14435fbc), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### gobject-sys 0.18.0
 
@@ -4471,29 +4471,29 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### half 2.7.1
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/VoidStarKat/half-rs
 - Copyright:
   - Copyright (c) Kathryn Long (authors as declared in the package metadata)
-- Licence text (MIT): [text-1847e0e0](#text-1847e0e0), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### hashbrown 0.12.3
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/hashbrown
 - Copyright:
   - Copyright (c) 2016 Amanieu d'Antras
-- Licence text (MIT): [text-ae9791f0](#text-ae9791f0), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### hashbrown 0.17.1
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/hashbrown
 - Copyright:
   - Copyright (c) 2016 Amanieu d'Antras
-- Licence text (MIT): [text-ae9791f0](#text-ae9791f0), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### hast-util-from-dom 5.0.1
 
@@ -4579,30 +4579,30 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### heck 0.4.1
 
 - Kind: Rust crate, build-time, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/withoutboats/heck
 - Copyright:
   - Copyright (c) 2015 The Rust Project Developers
-- Licence text (MIT): [text-033a9383](#text-033a9383), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### heck 0.5.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/withoutboats/heck
 - Copyright:
   - Copyright (c) 2015 The Rust Project Developers
-- Licence text (MIT): [text-033a9383](#text-033a9383), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### hex 0.4.3
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/KokaKiwi/rust-hex
 - Copyright:
   - Copyright (c) 2013-2014 The Rust Project Developers.
   - Copyright (c) 2015-2020 The rust-hex Developers
-- Licence text (MIT): [text-9dde4a6a](#text-9dde4a6a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### html-url-attributes 3.0.1
 
@@ -4616,21 +4616,21 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### html5ever 0.39.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/servo/html5ever
 - Copyright:
   - Copyright (c) 2014 The html5ever Project Developers
-- Licence text (MIT): [text-35af0fd8](#text-35af0fd8), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### http 1.5.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/hyperium/http
 - Copyright:
-  - Copyright (c) 2017 http-rs authors
   - Copyright 2017 http-rs authors
-- Licence text (MIT): [text-f47894ff](#text-f47894ff), as shipped in the package file LICENSE-MIT
+  - Copyright (c) 2017 http-rs authors
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### http-body 1.1.0
 
@@ -4653,11 +4653,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### httparse 1.10.1
 
 - Kind: Rust crate, linked, platforms: android, ios
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/seanmonstar/httparse
 - Copyright:
   - Copyright (c) 2015-2025 Sean McArthur
-- Licence text (MIT): [text-8502803c](#text-8502803c), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### hyper 1.12.0
 
@@ -4680,12 +4680,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### iana-time-zone 0.1.65
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64, macos-x64, macos-arm64, android, ios
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/strawlab/iana-time-zone
 - Copyright:
-  - Copyright (c) 2020 Andrew D. Straw
   - Copyright 2020 Andrew Straw
-- Licence text (MIT): [text-3444712f](#text-3444712f), as shipped in the package file LICENSE-MIT
+  - Copyright (c) 2020 Andrew D. Straw
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### ico 0.6.0
 
@@ -4788,38 +4788,38 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### idna 1.1.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/servo/rust-url/
 - Copyright:
   - Copyright (c) 2013-2025 The rust-url developers
-- Licence text (MIT): [text-7a8093fb](#text-7a8093fb), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### idna_adapter 1.2.2
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/hsivonen/idna_adapter
 - Copyright:
   - Copyright (c) The rust-url developers
-- Licence text (MIT): [text-0d8a0aec](#text-0d8a0aec), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### image 0.25.10
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/image-rs/image
 - Copyright:
   - Copyright (c) The image-rs Developers (authors as declared in the package metadata)
-- Licence text (MIT): [text-77949ead](#text-77949ead), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### image-webp 0.2.4
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/image-rs/image-webp
 - Copyright:
   - Copyright (c) the authors of image-webp (no holder named in the package)
-- Licence text (MIT): [text-77949ead](#text-77949ead), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### imgref 1.12.3
 
@@ -4844,20 +4844,20 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### indexmap 1.9.3
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/bluss/indexmap
 - Copyright:
   - Copyright (c) 2016--2017
-- Licence text (MIT): [text-4f2ac128](#text-4f2ac128), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### indexmap 2.14.2
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/indexmap-rs/indexmap
 - Copyright:
   - Copyright (c) 2016--2017
-- Licence text (MIT): [text-4f2ac128](#text-4f2ac128), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### infer 0.22.0
 
@@ -4916,11 +4916,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### ipnet 2.12.2
 
 - Kind: Rust crate, linked, platforms: android, ios
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/krisprice/ipnet
 - Copyright:
   - Copyright 2017 Juniper Networks, Inc.
-- Licence text (MIT): [text-c935506f](#text-c935506f), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### is-alphabetical 2.0.1
 
@@ -4988,20 +4988,20 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### itertools 0.14.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-itertools/itertools
 - Copyright:
   - Copyright (c) 2015
-- Licence text (MIT): [text-fdd1c211](#text-fdd1c211), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### itoa 1.0.18
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/itoa
 - Copyright:
   - Copyright (c) David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### javascriptcore-rs 1.1.2
 
@@ -5061,66 +5061,66 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### jni 0.21.1
 
 - Kind: Rust crate, linked, platforms: android
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/jni-rs/jni-rs
 - Copyright:
   - Copyright (c) 2016 Prevoty, Inc. and jni-rs contributors
-- Licence text (MIT): [text-6c1dcd86](#text-6c1dcd86), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### jni-sys 0.3.1
 
 - Kind: Rust crate, linked, platforms: android
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/jni-rs/jni-sys
 - Copyright:
   - Copyright (c) 2015 The rust-jni-sys Developers
-- Licence text (MIT): [text-3a771adc](#text-3a771adc), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### jni-sys 0.4.1
 
 - Kind: Rust crate, linked, platforms: android
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/jni-rs/jni-sys
 - Copyright:
   - Copyright (c) 2015 The rust-jni-sys Developers
-- Licence text (MIT): [text-3a771adc](#text-3a771adc), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### jni-sys-macros 0.4.1
 
 - Kind: Rust crate, build-time, platforms: android
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/jni-rs/jni-sys
 - Copyright:
   - Copyright (c) Robert Bragg (authors as declared in the package metadata)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### jobserver 0.1.35
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/jobserver-rs
 - Copyright:
   - Copyright (c) 2014 Alex Crichton
-- Licence text (MIT): [text-84e1bbfe](#text-84e1bbfe), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### json-patch 4.2.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/idubrov/json-patch
 - Copyright:
   - Copyright (c) 2017 Ivan Dubrov
-- Licence text (MIT): [text-19328c46](#text-19328c46), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### jsonptr 0.7.1
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/chanced/jsonptr
 - Copyright:
-  - Copyright (c) 2022 Chance Dinkins
   - Copyright 2024 Chance Dinkins
-- Licence text (MIT): [text-055a1711](#text-055a1711), as shipped in the package file LICENSE-MIT
+  - Copyright (c) 2022 Chance Dinkins
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### katex 0.18.10
 
@@ -5162,11 +5162,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### keyboard-types 0.8.3
 
 - Kind: Rust crate, linked, platforms: win-x64, win-arm64, linux-x64, linux-arm64, macos-x64, macos-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-windowing/keyboard-types
 - Copyright:
   - Copyright (c) 2017 Pyfisch
-- Licence text (MIT): [text-31dbbab0](#text-31dbbab0), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### khroma 2.1.0
 
@@ -5211,38 +5211,38 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### libappindicator 0.9.0
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Copyright:
   - Copyright (c) 2017-2021 qDot
   - Copyright (c) 2021 Tauri Apps Contributors
-- Licence text (MIT): [text-d2c4a266](#text-d2c4a266), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### libappindicator-sys 0.9.0
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Copyright:
   - Copyright (c) the authors of libappindicator-sys (no holder named in the package)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### libc 0.2.191
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/libc
 - Copyright:
   - Copyright (c) The Rust Project Developers
-- Licence text (MIT): [text-c9630229](#text-c9630229), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### libdbus-sys 0.2.7
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/diwic/dbus-rs
 - Copyright:
-  - Copyright (c) 2014-2018 David Henningsson \<diwic@ubuntu.com\> and other contributors
   - Copyright 2014-2018 David Henningsson \<diwic@ubuntu.com\> and other contributors
-- Licence text (MIT): [text-de3911c2](#text-de3911c2), as shipped in the package file LICENSE-MIT
+  - Copyright (c) 2014-2018 David Henningsson \<diwic@ubuntu.com\> and other contributors
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### libfuse (in the AppImage type 2 runtime) 3.15.0, mount.c patched by type2-runtime
 
@@ -5297,11 +5297,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### linux-raw-sys 0.12.1
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT)
+- Licence: Apache-2.0 WITH LLVM-exception (declared: Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT)
 - Source: https://github.com/sunfishcode/linux-raw-sys
 - Copyright:
   - Copyrights in the \`linux-raw-sys\` project are retained by their contributors.
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0 WITH LLVM-exception): [text-c454c52c](#text-c454c52c), standard text
 
 ### linuxdeploy-plugin-gtk AppRun hook as vendored by tauri-bundler
 
@@ -5325,11 +5325,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### lock_api 0.4.14
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/Amanieu/parking_lot
 - Copyright:
   - Copyright (c) 2016 The Rust Project Developers
-- Licence text (MIT): [text-8d1f81ea](#text-8d1f81ea), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### lodash-es 4.18.1
 
@@ -5343,11 +5343,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### log 0.4.34
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/log
 - Copyright:
   - Copyright (c) 2014 The Rust Project Developers
-- Licence text (MIT): [text-14435fbc](#text-14435fbc), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### longest-streak 3.1.0
 
@@ -5396,11 +5396,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### markup5ever 0.39.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/servo/html5ever
 - Copyright:
   - Copyright (c) 2014 The html5ever Project Developers
-- Licence text (MIT): [text-35af0fd8](#text-35af0fd8), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### maybe-rayon 0.1.1
 
@@ -5895,16 +5895,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### mime 0.3.17
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/hyperium/mime
 - Copyright:
   - Copyright (c) 2014 Sean McArthur
-- Licence text (MIT): [text-a302dc76](#text-a302dc76), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### miniz_oxide 0.8.9
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Zlib OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Zlib OR Apache-2.0)
 - Source: https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide
 - Copyright:
   - Copyright 2013-2014 RAD Game Tools and Valve Software
@@ -5912,12 +5912,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   - Copyright (c) 2017 Frommi
   - Copyright (c) 2017-2024 oyvindln
   - Copyright (c) 2020 Frommi
-- Licence text (MIT): [text-7427abc6](#text-7427abc6), as shipped in the package file LICENSE
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### miniz_oxide 0.9.1
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Zlib OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Zlib OR Apache-2.0)
 - Source: https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide
 - Copyright:
   - Copyright 2013-2014 RAD Game Tools and Valve Software
@@ -5925,7 +5925,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   - Copyright (c) 2017 Frommi
   - Copyright (c) 2017-2024 oyvindln
   - Copyright (c) 2020 Frommi
-- Licence text (MIT): [text-7427abc6](#text-7427abc6), as shipped in the package file LICENSE
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### mio 0.8.11
 
@@ -5948,12 +5948,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### moxcms 0.8.1
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: BSD-3-Clause (declared: BSD-3-Clause OR Apache-2.0)
+- Licence: Apache-2.0 (declared: BSD-3-Clause OR Apache-2.0)
 - Source: https://github.com/awxkee/moxcms.git
 - Copyright:
-  - Copyright (c) Radzivon Bartoshyk. All rights reserved.
   - Copyright 2024 Radzivon Bartoshyk
-- Licence text (BSD-3-Clause): [text-2aa92cad](#text-2aa92cad), as shipped in the package file LICENSE.md
+  - Copyright (c) Radzivon Bartoshyk. All rights reserved.
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### ms 2.1.3
 
@@ -5967,11 +5967,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### muda 0.20.0
 
 - Kind: Rust crate, linked, platforms: win-x64, win-arm64, linux-x64, linux-arm64, macos-x64, macos-arm64
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/tauri-apps/muda
 - Copyright:
   - Copyright (c) 2022-2022 Tauri Programme within The Commons Conservancy
-- Licence text (MIT): [text-859a9032](#text-859a9032), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### musl libc (in the AppImage type 2 runtime) Alpine 3.21 package, in type2-runtime fedfad5
 
@@ -5985,29 +5985,29 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### ndk 0.9.0
 
 - Kind: Rust crate, linked, platforms: android
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-mobile/ndk
 - Copyright:
   - Copyright (c) The Rust Mobile contributors (authors as declared in the package metadata)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### ndk-context 0.1.1
 
 - Kind: Rust crate, linked, platforms: android
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-windowing/android-ndk-rs
 - Copyright:
   - Copyright (c) The Rust Windowing contributors (authors as declared in the package metadata)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### ndk-sys 0.6.0+11769913
 
 - Kind: Rust crate, linked, platforms: android
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-mobile/ndk
 - Copyright:
   - Copyright (c) The Rust Windowing contributors (authors as declared in the package metadata)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### new_debug_unreachable 1.0.6
 
@@ -6021,11 +6021,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### no_std_io2 0.9.4
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/wcampbell0x2a/no-std-io2
 - Copyright:
   - Copyright (c) 2020-2021 Brendan Molloy \<brendan@bbqsrc.net\>
-- Licence text (MIT): [text-8b36c5b7](#text-8b36c5b7), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### nom 8.0.0
 
@@ -6057,93 +6057,93 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### num_enum 0.7.6
 
 - Kind: Rust crate, linked, platforms: android
-- Licence: MIT (declared: BSD-3-Clause OR MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: BSD-3-Clause OR MIT OR Apache-2.0)
 - Source: https://github.com/illicitonion/num_enum
 - Copyright:
   - Copyright (c) 2018, Daniel Wagner-Hall
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### num_enum_derive 0.7.6
 
 - Kind: Rust crate, build-time, platforms: android
-- Licence: MIT (declared: BSD-3-Clause OR MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: BSD-3-Clause OR MIT OR Apache-2.0)
 - Source: https://github.com/illicitonion/num_enum
 - Copyright:
   - Copyright (c) 2018, Daniel Wagner-Hall
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### num_threads 0.1.8
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64, macos-x64, macos-arm64, android, ios
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/jhpratt/num_threads
 - Copyright:
-  - Copyright (c) 2021 Jacob Pratt
   - Copyright 2021 Jacob Pratt
-- Licence text (MIT): [text-c2c01161](#text-c2c01161), as shipped in the package file LICENSE-MIT
+  - Copyright (c) 2021 Jacob Pratt
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### num-bigint 0.4.8
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-num/num-bigint
 - Copyright:
   - Copyright (c) 2014 The Rust Project Developers
-- Licence text (MIT): [text-14435fbc](#text-14435fbc), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### num-complex 0.4.6
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-num/num-complex
 - Copyright:
   - Copyright (c) 2014 The Rust Project Developers
-- Licence text (MIT): [text-14435fbc](#text-14435fbc), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### num-conv 0.2.2
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/jhpratt/num-conv
 - Copyright:
   - Copyright (c) Jacob Pratt
-- Licence text (MIT): [text-4d83b119](#text-4d83b119), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### num-derive 0.4.2
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-num/num-derive
 - Copyright:
   - Copyright (c) 2014 The Rust Project Developers
-- Licence text (MIT): [text-14435fbc](#text-14435fbc), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### num-integer 0.1.47
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-num/num-integer
 - Copyright:
   - Copyright (c) 2014 The Rust Project Developers
-- Licence text (MIT): [text-14435fbc](#text-14435fbc), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### num-rational 0.4.2
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-num/num-rational
 - Copyright:
   - Copyright (c) 2014 The Rust Project Developers
-- Licence text (MIT): [text-14435fbc](#text-14435fbc), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### num-traits 0.2.19
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-num/num-traits
 - Copyright:
   - Copyright (c) 2014 The Rust Project Developers
-- Licence text (MIT): [text-14435fbc](#text-14435fbc), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### objc2 0.6.5
 
@@ -6157,74 +6157,74 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### objc2-app-kit 0.3.2
 
 - Kind: Rust crate, linked, platforms: macos-x64, macos-arm64
-- Licence: MIT (declared: Zlib OR Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Zlib OR Apache-2.0 OR MIT)
 - Source: https://github.com/madsmtm/objc2
 - Copyright:
   - Copyright (c) the authors of objc2-app-kit (no holder named in the package)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### objc2-cloud-kit 0.3.2
 
 - Kind: Rust crate, linked, platforms: ios
-- Licence: MIT (declared: Zlib OR Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Zlib OR Apache-2.0 OR MIT)
 - Source: https://github.com/madsmtm/objc2
 - Copyright:
   - Copyright (c) the authors of objc2-cloud-kit (no holder named in the package)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### objc2-core-data 0.3.2
 
 - Kind: Rust crate, linked, platforms: ios
-- Licence: MIT (declared: Zlib OR Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Zlib OR Apache-2.0 OR MIT)
 - Source: https://github.com/madsmtm/objc2
 - Copyright:
   - Copyright (c) the authors of objc2-core-data (no holder named in the package)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### objc2-core-foundation 0.3.2
 
 - Kind: Rust crate, linked, platforms: macos-x64, macos-arm64, ios
-- Licence: MIT (declared: Zlib OR Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Zlib OR Apache-2.0 OR MIT)
 - Source: https://github.com/madsmtm/objc2
 - Copyright:
   - Copyright (c) the authors of objc2-core-foundation (no holder named in the package)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### objc2-core-graphics 0.3.2
 
 - Kind: Rust crate, linked, platforms: macos-x64, macos-arm64, ios
-- Licence: MIT (declared: Zlib OR Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Zlib OR Apache-2.0 OR MIT)
 - Source: https://github.com/madsmtm/objc2
 - Copyright:
   - Copyright (c) the authors of objc2-core-graphics (no holder named in the package)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### objc2-core-image 0.3.2
 
 - Kind: Rust crate, linked, platforms: ios
-- Licence: MIT (declared: Zlib OR Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Zlib OR Apache-2.0 OR MIT)
 - Source: https://github.com/madsmtm/objc2
 - Copyright:
   - Copyright (c) the authors of objc2-core-image (no holder named in the package)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### objc2-core-location 0.3.2
 
 - Kind: Rust crate, linked, platforms: ios
-- Licence: MIT (declared: Zlib OR Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Zlib OR Apache-2.0 OR MIT)
 - Source: https://github.com/madsmtm/objc2
 - Copyright:
   - Copyright (c) the authors of objc2-core-location (no holder named in the package)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### objc2-core-text 0.3.2
 
 - Kind: Rust crate, linked, platforms: ios
-- Licence: MIT (declared: Zlib OR Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Zlib OR Apache-2.0 OR MIT)
 - Source: https://github.com/madsmtm/objc2
 - Copyright:
   - Copyright (c) the authors of objc2-core-text (no holder named in the package)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### objc2-encode 4.1.0
 
@@ -6238,11 +6238,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### objc2-exception-helper 0.1.1
 
 - Kind: Rust crate, linked, platforms: macos-x64, macos-arm64, ios
-- Licence: MIT (declared: Zlib OR Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Zlib OR Apache-2.0 OR MIT)
 - Source: https://github.com/madsmtm/objc2
 - Copyright:
   - Copyright (c) Mads Marquart (authors as declared in the package metadata)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### objc2-foundation 0.3.2
 
@@ -6256,74 +6256,74 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### objc2-io-surface 0.3.2
 
 - Kind: Rust crate, linked, platforms: macos-x64, macos-arm64, ios
-- Licence: MIT (declared: Zlib OR Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Zlib OR Apache-2.0 OR MIT)
 - Source: https://github.com/madsmtm/objc2
 - Copyright:
   - Copyright (c) the authors of objc2-io-surface (no holder named in the package)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### objc2-javascript-core 0.3.2
 
 - Kind: Rust crate, linked, platforms: macos-x64, macos-arm64, ios
-- Licence: MIT (declared: Zlib OR Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Zlib OR Apache-2.0 OR MIT)
 - Source: https://github.com/madsmtm/objc2
 - Copyright:
   - Copyright (c) the authors of objc2-javascript-core (no holder named in the package)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### objc2-quartz-core 0.3.2
 
 - Kind: Rust crate, linked, platforms: macos-x64, macos-arm64, ios
-- Licence: MIT (declared: Zlib OR Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Zlib OR Apache-2.0 OR MIT)
 - Source: https://github.com/madsmtm/objc2
 - Copyright:
   - Copyright (c) the authors of objc2-quartz-core (no holder named in the package)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### objc2-security 0.3.2
 
 - Kind: Rust crate, linked, platforms: macos-x64, macos-arm64, ios
-- Licence: MIT (declared: Zlib OR Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Zlib OR Apache-2.0 OR MIT)
 - Source: https://github.com/madsmtm/objc2
 - Copyright:
   - Copyright (c) the authors of objc2-security (no holder named in the package)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### objc2-ui-kit 0.3.2
 
 - Kind: Rust crate, linked, platforms: ios
-- Licence: MIT (declared: Zlib OR Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Zlib OR Apache-2.0 OR MIT)
 - Source: https://github.com/madsmtm/objc2
 - Copyright:
   - Copyright (c) the authors of objc2-ui-kit (no holder named in the package)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### objc2-user-notifications 0.3.2
 
 - Kind: Rust crate, linked, platforms: ios
-- Licence: MIT (declared: Zlib OR Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Zlib OR Apache-2.0 OR MIT)
 - Source: https://github.com/madsmtm/objc2
 - Copyright:
   - Copyright (c) the authors of objc2-user-notifications (no holder named in the package)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### objc2-web-kit 0.3.2
 
 - Kind: Rust crate, linked, platforms: macos-x64, macos-arm64, ios
-- Licence: MIT (declared: Zlib OR Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Zlib OR Apache-2.0 OR MIT)
 - Source: https://github.com/madsmtm/objc2
 - Copyright:
   - Copyright (c) the authors of objc2-web-kit (no holder named in the package)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### once_cell 1.21.4
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/matklad/once_cell
 - Copyright:
   - Copyright (c) Aleksey Kladov (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### open 5.4.5
 
@@ -6347,11 +6347,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### ordered-stream 0.2.0
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/danieldg/ordered-stream
 - Copyright:
   - Copyright (c) Daniel De Graaf, Zeeshan Ali Khan (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### package-manager-detector 1.9.0
 
@@ -6383,29 +6383,29 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### parking 2.2.1
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/parking
 - Copyright:
   - Copyright 2014-2020 The Rust Project Developers
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### parking_lot 0.12.5
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/Amanieu/parking_lot
 - Copyright:
   - Copyright (c) 2016 The Rust Project Developers
-- Licence text (MIT): [text-8d1f81ea](#text-8d1f81ea), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### parking_lot_core 0.9.12
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/Amanieu/parking_lot
 - Copyright:
   - Copyright (c) 2016 The Rust Project Developers
-- Licence text (MIT): [text-8d1f81ea](#text-8d1f81ea), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### parse-entities 4.0.2
 
@@ -6428,20 +6428,20 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### paste 1.0.15
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/paste
 - Copyright:
   - Copyright (c) David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### pastey 0.1.1
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/as1100k/pastey
 - Copyright:
   - Copyright (c) Aditya Kumar, David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### path-data-parser 0.1.0
 
@@ -6455,11 +6455,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### percent-encoding 2.3.2
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/servo/rust-url/
 - Copyright:
   - Copyright (c) 2013-2025 The rust-url developers
-- Licence text (MIT): [text-7a8093fb](#text-7a8093fb), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### phf 0.13.1
 
@@ -6509,29 +6509,29 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### pin-project-lite 0.2.17
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/taiki-e/pin-project-lite
 - Copyright:
   - Copyright (c) the authors of pin-project-lite (no holder named in the package)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### piper 0.2.5
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/smol-rs/piper
 - Copyright:
   - Copyright (c) Stjepan Glavina, John Nunley (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### pkg-config 0.3.34
 
 - Kind: Rust crate, build-time, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/pkg-config-rs
 - Copyright:
   - Copyright (c) 2014 Alex Crichton
-- Licence text (MIT): [text-84e1bbfe](#text-84e1bbfe), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### plist 1.10.3
 
@@ -6545,11 +6545,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### png 0.18.1
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/image-rs/image-png
 - Copyright:
   - Copyright (c) 2015 nwin
-- Licence text (MIT): [text-80cdd906](#text-80cdd906), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### points-on-curve 0.2.0
 
@@ -6572,11 +6572,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### polling 3.11.0
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/smol-rs/polling
 - Copyright:
   - Copyright (c) Stjepan Glavina, John Nunley (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### potential_utf 0.1.6
 
@@ -6590,12 +6590,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### powerfmt 0.2.1
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/jhpratt/powerfmt
 - Copyright:
-  - Copyright (c) 2023 Jacob Pratt et al.
   - Copyright 2023 Jacob Pratt et al.
-- Licence text (MIT): [text-6e972f31](#text-6e972f31), as shipped in the package file LICENSE-MIT
+  - Copyright (c) 2023 Jacob Pratt et al.
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### precomputed-hash 0.1.1
 
@@ -6609,76 +6609,76 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### proc-macro-crate 1.3.1
 
 - Kind: Rust crate, build-time, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/bkchr/proc-macro-crate
 - Copyright:
   - Copyright (c) Bastian Köcher (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### proc-macro-crate 2.0.2
 
 - Kind: Rust crate, build-time, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/bkchr/proc-macro-crate
 - Copyright:
   - Copyright (c) Bastian Köcher (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### proc-macro-crate 3.5.0
 
 - Kind: Rust crate, build-time, platforms: linux-x64, linux-arm64, android
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/bkchr/proc-macro-crate
 - Copyright:
   - Copyright (c) Bastian Köcher (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### proc-macro-error 1.0.4
 
 - Kind: Rust crate, build-time, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://gitlab.com/CreepySkeleton/proc-macro-error
 - Copyright:
-  - Copyright (c) 2019-2020 CreepySkeleton
   - Copyright 2019-2020 CreepySkeleton \<creepy-skeleton@yandex.ru\>
-- Licence text (MIT): [text-c7495b7b](#text-c7495b7b), as shipped in the package file LICENSE-MIT
+  - Copyright (c) 2019-2020 CreepySkeleton
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### proc-macro-error-attr 1.0.4
 
 - Kind: Rust crate, build-time, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://gitlab.com/CreepySkeleton/proc-macro-error
 - Copyright:
-  - Copyright (c) 2019-2020 CreepySkeleton
   - Copyright 2019-2020 CreepySkeleton \<creepy-skeleton@yandex.ru\>
-- Licence text (MIT): [text-c7495b7b](#text-c7495b7b), as shipped in the package file LICENSE-MIT
+  - Copyright (c) 2019-2020 CreepySkeleton
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### proc-macro2 1.0.107
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/proc-macro2
 - Copyright:
   - Copyright (c) David Tolnay, Alex Crichton (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### profiling 1.0.18
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/aclysma/profiling
 - Copyright:
   - Copyright (c) Philip Degarmo (authors as declared in the package metadata)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### profiling-procmacros 1.0.18
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/aclysma/profiling
 - Copyright:
   - Copyright (c) Philip Degarmo (authors as declared in the package metadata)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### property-information 7.2.0
 
@@ -6710,30 +6710,30 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### pxfm 0.1.30
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: BSD-3-Clause (declared: BSD-3-Clause OR Apache-2.0)
+- Licence: Apache-2.0 (declared: BSD-3-Clause OR Apache-2.0)
 - Source: https://github.com/awxkee/pxfm
 - Copyright:
-  - Copyright (c) Radzivon Bartoshyk. All rights reserved.
   - Copyright 2024 Radzivon Bartoshyk
-- Licence text (BSD-3-Clause): [text-2aa92cad](#text-2aa92cad), as shipped in the package file LICENSE.md
+  - Copyright (c) Radzivon Bartoshyk. All rights reserved.
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### qoi 0.4.1
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/aldanor/qoi-rust
 - Copyright:
   - Copyright (c) 2022 Ivan Smirnov
-- Licence text (MIT): [text-f2b5bb92](#text-f2b5bb92), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### quick-error 2.0.1
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: http://github.com/tailhook/quick-error
 - Copyright:
   - Copyright (c) 2015 The quick-error Developers
-- Licence text (MIT): [text-cf798811](#text-cf798811), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### quick-xml 0.42.0
 
@@ -6747,11 +6747,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### quote 1.0.47
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/quote
 - Copyright:
   - Copyright (c) David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### rav1e 0.8.1
 
@@ -6816,30 +6816,30 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### raw-window-handle 0.6.2
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0 OR Zlib)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0 OR Zlib)
 - Source: https://github.com/rust-windowing/raw-window-handle
 - Copyright:
   - Copyright (c) 2019 Osspial
   - Copyright (c) 2020 Osspial
-- Licence text (MIT): [text-aa69fda6](#text-aa69fda6), as shipped in the package file LICENSE-MIT.md
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### rayon 1.12.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rayon-rs/rayon
 - Copyright:
   - Copyright (c) 2010 The Rust Project Developers
-- Licence text (MIT): [text-9e002780](#text-9e002780), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### rayon-core 1.13.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rayon-rs/rayon
 - Copyright:
   - Copyright (c) 2010 The Rust Project Developers
-- Licence text (MIT): [text-9e002780](#text-9e002780), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### react 19.3.1
 
@@ -6880,47 +6880,47 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### ref-cast 1.0.27
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/ref-cast
 - Copyright:
   - Copyright (c) David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### ref-cast-impl 1.0.27
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/ref-cast
 - Copyright:
   - Copyright (c) David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### regex 1.13.1
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/regex
 - Copyright:
   - Copyright (c) 2014 The Rust Project Developers
-- Licence text (MIT): [text-14435fbc](#text-14435fbc), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### regex-automata 0.4.18
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/regex
 - Copyright:
   - Copyright (c) 2014 The Rust Project Developers
-- Licence text (MIT): [text-14435fbc](#text-14435fbc), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### regex-syntax 0.8.11
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/regex
 - Copyright:
   - Copyright (c) 2014 The Rust Project Developers
-- Licence text (MIT): [text-14435fbc](#text-14435fbc), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### rehype-katex 7.0.1
 
@@ -6979,12 +6979,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### reqwest 0.13.5
 
 - Kind: Rust crate, linked, platforms: android, ios
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/seanmonstar/reqwest
 - Copyright:
-  - Copyright (c) 2016-2026 Sean McArthur
   - Copyright 2016 Sean McArthur
-- Licence text (MIT): [text-bde59a7e](#text-bde59a7e), as shipped in the package file LICENSE-MIT
+  - Copyright (c) 2016-2026 Sean McArthur
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### rfd 0.17.2
 
@@ -7025,47 +7025,47 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### Rust standard library (std, core, alloc) toolchain
 
 - Kind: other component, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/rust
 - Copyright:
   - Copyrights in the Rust project are retained by their contributors (The Rust Project Developers).
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### rustc_version 0.4.1
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/djc/rustc-version-rs
 - Copyright:
   - Copyright (c) 2016 The Rust Project Developers
-- Licence text (MIT): [text-8d1f81ea](#text-8d1f81ea), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### rustc-hash 2.1.3
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/rust-lang/rustc-hash
 - Copyright:
   - Copyright (c) The Rust Project Developers (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### rustix 1.1.6
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT)
+- Licence: Apache-2.0 WITH LLVM-exception (declared: Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT)
 - Source: https://github.com/bytecodealliance/rustix
 - Copyright:
   - Copyrights in the \`rustix\` project are retained by their contributors.
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0 WITH LLVM-exception): [text-c454c52c](#text-c454c52c), standard text
 
 ### rustversion 1.0.23
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/rustversion
 - Copyright:
   - Copyright (c) David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### rw 1.3.3
 
@@ -7142,11 +7142,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### scopeguard 1.2.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/bluss/scopeguard
 - Copyright:
   - Copyright (c) 2016-2019 Ulrik Sverdrup "bluss" and scopeguard developers
-- Licence text (MIT): [text-1a6aa261](#text-1a6aa261), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### selectors 0.38.0
 
@@ -7161,148 +7161,148 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### semver 1.0.28
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/semver
 - Copyright:
   - Copyright (c) David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### serde 1.0.229
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/serde-rs/serde
 - Copyright:
   - Copyright (c) Erick Tryzelaar, David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### serde_core 1.0.229
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/serde-rs/serde
 - Copyright:
   - Copyright (c) Erick Tryzelaar, David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### serde_derive 1.0.229
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/serde-rs/serde
 - Copyright:
   - Copyright (c) Erick Tryzelaar, David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### serde_derive_internals 0.29.1
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/serde-rs/serde
 - Copyright:
   - Copyright (c) Erick Tryzelaar, David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### serde_json 1.0.154
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/serde-rs/json
 - Copyright:
   - Copyright (c) the authors of serde_json (no holder named in the package)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### serde_repr 0.1.21
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/serde-repr
 - Copyright:
   - Copyright (c) David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### serde_spanned 0.6.9
 
 - Kind: Rust crate, build-time, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/toml-rs/toml
 - Copyright:
   - Copyright (c) Individual contributors
-- Licence text (MIT): [text-4498464c](#text-4498464c), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### serde_spanned 1.1.2
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/toml-rs/toml
 - Copyright:
   - Copyright (c) Individual contributors
-- Licence text (MIT): [text-4498464c](#text-4498464c), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### serde_with 3.24.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/jonasbb/serde_with/
 - Copyright:
   - Copyright (c) 2015
-- Licence text (MIT): [text-fdd1c211](#text-fdd1c211), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### serde_with_macros 3.24.0
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/jonasbb/serde_with/
 - Copyright:
   - Copyright (c) 2015
-- Licence text (MIT): [text-fdd1c211](#text-fdd1c211), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### serde-untagged 0.1.9
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/serde-untagged
 - Copyright:
   - Copyright (c) David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### serialize-to-javascript 0.1.2
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/chippers/serialize-to-javascript
 - Copyright:
   - Copyright (c) 2021 Chip Reed
-- Licence text (MIT): [text-777eb741](#text-777eb741), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### serialize-to-javascript-impl 0.1.2
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/chippers/serialize-to-javascript
 - Copyright:
   - Copyright (c) 2021 Chip Reed
-- Licence text (MIT): [text-777eb741](#text-777eb741), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### servo_arc 0.4.3
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/servo/stylo
 - Copyright:
   - Copyright (c) The Servo Project Developers (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### sha2 0.10.9
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/RustCrypto/hashes
 - Copyright:
   - Copyright (c) 2006-2009 Graydon Hoare
   - Copyright (c) 2009-2013 Mozilla Foundation
   - Copyright (c) 2016 Artyom Pavlov
-- Licence text (MIT): [text-4031faf6](#text-4031faf6), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### shlex 2.0.1
 
@@ -7317,11 +7317,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### signal-hook-registry 1.4.8
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/vorner/signal-hook
 - Copyright:
   - Copyright (c) 2017 tokio-jsonrpc developers
-- Licence text (MIT): [text-aaac889d](#text-aaac889d), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### simd_helpers 0.1.0
 
@@ -7344,12 +7344,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### siphasher 1.0.4
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/jedisct1/rust-siphash
 - Copyright:
   - Copyright 2012-2016 The Rust Project Developers.
   - Copyright 2016-2026 Frank Denis.
-- Licence text (MIT): [text-21a21212](#text-21a21212), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### slab 0.4.12
 
@@ -7363,29 +7363,29 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### smallvec 1.16.4
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/servo/rust-smallvec
 - Copyright:
   - Copyright (c) 2018 The Servo Project Developers
-- Licence text (MIT): [text-7f194ae4](#text-7f194ae4), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### socket2 0.6.5
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-lang/socket2
 - Copyright:
   - Copyright (c) 2014 Alex Crichton
-- Licence text (MIT): [text-84e1bbfe](#text-84e1bbfe), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### softbuffer 0.4.8
 
 - Kind: Rust crate, linked, platforms: win-x64, win-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/rust-windowing/softbuffer
 - Copyright:
   - Copyright 2022 Kirill Chibisov
-- Licence text (MIT): [text-f8babf29](#text-f8babf29), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### soup3 0.5.0
 
@@ -7426,20 +7426,20 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### stable_deref_trait 1.2.1
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/storyyeller/stable_deref_trait
 - Copyright:
   - Copyright (c) 2017 Robert Grosse
-- Licence text (MIT): [text-5e05b024](#text-5e05b024), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### static_vcruntime 3.0.0
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0 OR Zlib)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0 OR Zlib)
 - Source: https://github.com/ChrisDenton/static_vcruntime
 - Copyright:
   - Copyright (c) 2021 Chris Denton.
-- Licence text (MIT): [text-fdbaaf92](#text-fdbaaf92), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### strictdom 1.0.1
 
@@ -7453,20 +7453,20 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### string_cache 0.9.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/servo/string-cache
 - Copyright:
   - Copyright (c) 2012-2013 Mozilla Foundation
-- Licence text (MIT): [text-3bfacc19](#text-3bfacc19), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### string_cache_codegen 0.6.1
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/servo/string-cache
 - Copyright:
   - Copyright (c) 2012-2013 Mozilla Foundation
-- Licence text (MIT): [text-3bfacc19](#text-3bfacc19), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### stringify-entities 4.0.4
 
@@ -7518,39 +7518,39 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### swift-rs 1.0.9
 
 - Kind: Rust crate, linked, platforms: macos-x64, macos-arm64, ios
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/Brendonovich/swift-rs
 - Copyright:
-  - Copyright (c) 2023 The swift-rs Developers
   - Copyright 2023 The swift-rs developers
-- Licence text (MIT): [text-7593ea50](#text-7593ea50), as shipped in the package file LICENSE-MIT
+  - Copyright (c) 2023 The swift-rs Developers
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### syn 1.0.109
 
 - Kind: Rust crate, build-time, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/syn
 - Copyright:
   - Copyright (c) David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### syn 2.0.119
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/syn
 - Copyright:
   - Copyright (c) David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### syn 3.0.9
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/syn
 - Copyright:
   - Copyright (c) David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### sync_wrapper 1.0.2
 
@@ -7573,11 +7573,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### system-deps 6.2.2
 
 - Kind: Rust crate, build-time, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/gdesmott/system-deps
 - Copyright:
   - Copyright (c) Guillaume Desmottes, Josh Triplett (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### tao 0.37.2
 
@@ -7606,11 +7606,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### tao-macros 0.1.4
 
 - Kind: Rust crate, build-time, platforms: android
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/tauri-apps/tao
 - Copyright:
   - Copyright (c) 2022 - Present Tauri Apps Contributors
-- Licence text (MIT): [text-26e6f69c](#text-26e6f69c), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### target-lexicon 0.12.16
 
@@ -7624,110 +7624,110 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### tauri 2.12.5
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/tauri-apps/tauri
 - Copyright:
   - Copyright (c) 2017 - Present Tauri Apps Contributors
-- Licence text (MIT): [text-89ff9689](#text-89ff9689), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### tauri-build 2.7.4
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/tauri-apps/tauri
 - Copyright:
   - Copyright (c) 2017 - Present Tauri Apps Contributors
-- Licence text (MIT): [text-89ff9689](#text-89ff9689), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### tauri-codegen 2.7.4
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/tauri-apps/tauri
 - Copyright:
   - Copyright (c) 2017 - Present Tauri Apps Contributors
-- Licence text (MIT): [text-89ff9689](#text-89ff9689), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### tauri-macros 2.7.4
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/tauri-apps/tauri
 - Copyright:
   - Copyright (c) 2017 - Present Tauri Apps Contributors
-- Licence text (MIT): [text-89ff9689](#text-89ff9689), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### tauri-plugin 2.7.2
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/tauri-apps/tauri
 - Copyright:
   - Copyright (c) Tauri Programme within The Commons Conservancy (authors as declared in the package metadata)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### tauri-plugin-dialog 2.8.4
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/tauri-apps/plugins-workspace
 - Copyright:
   - Copyright (c) 2017 - Present Tauri Apps Contributors
-- Licence text (MIT): [text-89ff9689](#text-89ff9689), as shipped in the package file LICENSE_MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### tauri-plugin-fs 2.7.1
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/tauri-apps/plugins-workspace
 - Copyright:
   - Copyright (c) 2017 - Present Tauri Apps Contributors
-- Licence text (MIT): [text-89ff9689](#text-89ff9689), as shipped in the package file LICENSE_MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### tauri-plugin-log 2.10.1
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/tauri-apps/plugins-workspace
 - Copyright:
   - Copyright (c) 2017 - Present Tauri Apps Contributors
-- Licence text (MIT): [text-89ff9689](#text-89ff9689), as shipped in the package file LICENSE_MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### tauri-plugin-opener 2.7.2
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/tauri-apps/plugins-workspace
 - Copyright:
   - Copyright (c) 2017 - Present Tauri Apps Contributors
-- Licence text (MIT): [text-89ff9689](#text-89ff9689), as shipped in the package file LICENSE_MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### tauri-runtime 2.12.2
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/tauri-apps/tauri
 - Copyright:
   - Copyright (c) 2017 - Present Tauri Apps Contributors
-- Licence text (MIT): [text-89ff9689](#text-89ff9689), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### tauri-runtime-wry 2.12.3
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/tauri-apps/tauri
 - Copyright:
   - Copyright (c) 2017 - Present Tauri Apps Contributors
-- Licence text (MIT): [text-89ff9689](#text-89ff9689), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### tauri-utils 2.10.2
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/tauri-apps/tauri
 - Copyright:
   - Copyright (c) 2017 - Present Tauri Apps Contributors
-- Licence text (MIT): [text-89ff9689](#text-89ff9689), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### tauri-winres 0.3.7
 
@@ -7742,47 +7742,47 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### tendril 0.5.1
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/servo/html5ever
 - Copyright:
   - Copyright (c) 2015 Keegan McAllister
-- Licence text (MIT): [text-dfa7fbad](#text-dfa7fbad), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### thiserror 1.0.69
 
 - Kind: Rust crate, linked, platforms: linux-x64, linux-arm64, android
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/thiserror
 - Copyright:
   - Copyright (c) David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### thiserror 2.0.21
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/thiserror
 - Copyright:
   - Copyright (c) David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### thiserror-impl 1.0.69
 
 - Kind: Rust crate, build-time, platforms: linux-x64, linux-arm64, android
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/thiserror
 - Copyright:
   - Copyright (c) David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### thiserror-impl 2.0.21
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/thiserror
 - Copyright:
   - Copyright (c) David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### tiff 0.11.3
 
@@ -7796,29 +7796,29 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### time 0.3.55
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/time-rs/time
 - Copyright:
   - Copyright (c) Jacob Pratt et al.
-- Licence text (MIT): [text-7fdbca77](#text-7fdbca77), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### time-core 0.1.9
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/time-rs/time
 - Copyright:
   - Copyright (c) Jacob Pratt et al.
-- Licence text (MIT): [text-7fdbca77](#text-7fdbca77), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### time-macros 0.2.32
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/time-rs/time
 - Copyright:
   - Copyright (c) Jacob Pratt et al.
-- Licence text (MIT): [text-7fdbca77](#text-7fdbca77), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### tinyexec 1.3.1
 
@@ -7841,11 +7841,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### tinyvec 1.13.3
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Zlib OR Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Zlib OR Apache-2.0 OR MIT)
 - Source: https://github.com/Lokathor/tinyvec
 - Copyright:
   - Copyright (c) 2019 Daniel "Lokathor" Gee.
-- Licence text (MIT): [text-bccaa8b6](#text-bccaa8b6), as shipped in the package file LICENSE-MIT.md
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### tokio 1.54.1
 
@@ -7868,83 +7868,83 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### toml 0.8.2
 
 - Kind: Rust crate, build-time, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/toml-rs/toml
 - Copyright:
   - Copyright (c) Individual contributors
-- Licence text (MIT): [text-4498464c](#text-4498464c), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### toml 1.1.8+spec-1.1.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/toml-rs/toml
 - Copyright:
   - Copyright (c) Individual contributors
-- Licence text (MIT): [text-4498464c](#text-4498464c), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### toml_datetime 0.6.3
 
 - Kind: Rust crate, build-time, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/toml-rs/toml
 - Copyright:
   - Copyright (c) 2014 Alex Crichton
-- Licence text (MIT): [text-84e1bbfe](#text-84e1bbfe), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### toml_datetime 1.1.2+spec-1.1.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/toml-rs/toml
 - Copyright:
   - Copyright (c) Individual contributors
-- Licence text (MIT): [text-4498464c](#text-4498464c), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### toml_edit 0.19.15
 
 - Kind: Rust crate, build-time, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/toml-rs/toml
 - Copyright:
   - Copyright (c) Individual contributors
-- Licence text (MIT): [text-4498464c](#text-4498464c), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### toml_edit 0.20.2
 
 - Kind: Rust crate, build-time, platforms: linux-x64, linux-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/toml-rs/toml
 - Copyright:
   - Copyright (c) Individual contributors
-- Licence text (MIT): [text-4498464c](#text-4498464c), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### toml_edit 0.25.17+spec-1.1.0
 
 - Kind: Rust crate, build-time, platforms: linux-x64, linux-arm64, android
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/toml-rs/toml
 - Copyright:
   - Copyright (c) Individual contributors
-- Licence text (MIT): [text-4498464c](#text-4498464c), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### toml_parser 1.1.5+spec-1.1.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/toml-rs/toml
 - Copyright:
   - Copyright (c) Individual contributors
-- Licence text (MIT): [text-4498464c](#text-4498464c), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### toml_writer 1.1.3+spec-1.1.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/toml-rs/toml
 - Copyright:
   - Copyright (c) Individual contributors
-- Licence text (MIT): [text-4498464c](#text-4498464c), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### tower 0.5.3
 
@@ -8019,11 +8019,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### tray-icon 0.25.1
 
 - Kind: Rust crate, linked, platforms: win-x64, win-arm64, linux-x64, linux-arm64, macos-x64, macos-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/tauri-apps/tray-icon
 - Copyright:
   - Copyright (c) 2022-2022 Tauri Programme within The Commons Conservancy
-- Licence text (MIT): [text-859a9032](#text-859a9032), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### trim-lines 3.0.1
 
@@ -8065,40 +8065,40 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### typeid 1.0.3
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/dtolnay/typeid
 - Copyright:
   - Copyright (c) David Tolnay (authors as declared in the package metadata)
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### typenum 1.20.1
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/paholg/typenum
 - Copyright:
-  - Copyright (c) 2014 Paho Lurie-Gregg
   - Copyright 2014 Paho Lurie-Gregg
-- Licence text (MIT): [text-87ebb379](#text-87ebb379), as shipped in the package file LICENSE-MIT
+  - Copyright (c) 2014 Paho Lurie-Gregg
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### unicode-ident 1.0.27
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT AND Unicode-3.0 (declared: (MIT OR Apache-2.0) AND Unicode-3.0)
+- Licence: Apache-2.0 AND Unicode-3.0 (declared: (MIT OR Apache-2.0) AND Unicode-3.0)
 - Source: https://github.com/dtolnay/unicode-ident
 - Copyright:
   - Copyright © 1991-2023 Unicode, Inc.
-- Licence text (MIT): [text-30fefc3a](#text-30fefc3a), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 - Licence text (Unicode-3.0): [text-361d7912](#text-361d7912), as shipped in the package file LICENSE-UNICODE
 
 ### unicode-segmentation 1.13.3
 
 - Kind: Rust crate, linked, platforms: win-x64, win-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/unicode-rs/unicode-segmentation
 - Copyright:
   - Copyright (c) 2015 The Rust Project Developers
-- Licence text (MIT): [text-033a9383](#text-033a9383), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### unified 11.0.5
 
@@ -8166,11 +8166,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### url 2.5.8
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/servo/rust-url
 - Copyright:
   - Copyright (c) 2013-2025 The rust-url developers
-- Licence text (MIT): [text-7a8093fb](#text-7a8093fb), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### urlpattern 0.6.0
 
@@ -8184,30 +8184,30 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### utf_types 1.0.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/hsivonen/utf_types
 - Copyright:
   - Copyright Mozilla Foundation
-- Licence text (MIT): [text-7dc2f640](#text-7dc2f640), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### utf8_iter 1.1.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/hsivonen/utf8_iter
 - Copyright:
   - Copyright Mozilla Foundation
-- Licence text (MIT): [text-7dc2f640](#text-7dc2f640), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### uuid 1.29.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/uuid-rs/uuid
 - Copyright:
   - Copyright (c) 2014 The Rust Project Developers
   - Copyright (c) 2018 Ashley Mannix, Christopher Armstrong, Dylan DPC, Hunar Roop Kahlon
-- Licence text (MIT): [text-11cd7e6c](#text-11cd7e6c), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### uuid 14.0.3
 
@@ -8237,11 +8237,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### version_check 0.9.5
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/SergioBenitez/version_check
 - Copyright:
   - Copyright (c) 2017-2018 Sergio Benitez
-- Licence text (MIT): [text-ed2fda47](#text-ed2fda47), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### version-compare 0.2.1
 
@@ -8327,47 +8327,47 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### wasm-bindgen 0.2.130
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/wasm-bindgen/wasm-bindgen
 - Copyright:
   - Copyright (c) 2014 Alex Crichton
-- Licence text (MIT): [text-84e1bbfe](#text-84e1bbfe), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### wasm-bindgen-macro 0.2.130
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/macro
 - Copyright:
   - Copyright (c) 2014 Alex Crichton
-- Licence text (MIT): [text-84e1bbfe](#text-84e1bbfe), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### wasm-bindgen-macro-support 0.2.130
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/wasm-bindgen/wasm-bindgen/tree/main/crates/macro-support
 - Copyright:
   - Copyright (c) 2014 Alex Crichton
-- Licence text (MIT): [text-84e1bbfe](#text-84e1bbfe), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### wasm-bindgen-shared 0.2.130
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/shared
 - Copyright:
   - Copyright (c) 2014 Alex Crichton
-- Licence text (MIT): [text-84e1bbfe](#text-84e1bbfe), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### web_atoms 0.2.6
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/servo/html5ever
 - Copyright:
   - Copyright (c) 2014 The html5ever Project Developers
-- Licence text (MIT): [text-35af0fd8](#text-35af0fd8), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### web-namespaces 2.0.1
 
@@ -8381,12 +8381,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### web-time 1.1.0
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/daxpedda/web-time
 - Copyright:
-  - Copyright (c) 2023 dAxpeDDa
   - Copyright 2023 dAxpeDDa
-- Licence text (MIT): [text-32ae0b6c](#text-32ae0b6c), as shipped in the package file LICENSE-MIT
+  - Copyright (c) 2023 dAxpeDDa
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### webkit2gtk 2.0.2
 
@@ -8438,11 +8438,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### weezl 0.1.12
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/image-rs/weezl
 - Copyright:
   - Copyright (c) HeroicKatora 2020
-- Licence text (MIT): [text-603c83c4](#text-603c83c4), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### winapi-util 0.1.11
 
@@ -8456,164 +8456,164 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### window-vibrancy 0.8.1
 
 - Kind: Rust crate, linked, platforms: win-x64, win-arm64, macos-x64, macos-arm64
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/tauri-apps/tauri-plugin-vibrancy
 - Copyright:
   - Copyright (c) 2020-2022 Tauri Programme within The Commons Conservancy
-- Licence text (MIT): [text-b4670011](#text-b4670011), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### windows 0.62.2
 
 - Kind: Rust crate, linked, platforms: win-x64, win-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/microsoft/windows-rs
 - Copyright:
   - Copyright (c) Microsoft Corporation.
-- Licence text (MIT): [text-d9a1b1e3](#text-d9a1b1e3), as shipped in the package file license-mit
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### windows_aarch64_msvc 0.48.5
 
 - Kind: Rust crate, linked, platforms: win-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/microsoft/windows-rs
 - Copyright:
   - Copyright (c) Microsoft Corporation.
-- Licence text (MIT): [text-d9a1b1e3](#text-d9a1b1e3), as shipped in the package file license-mit
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### windows_x86_64_msvc 0.48.5
 
 - Kind: Rust crate, linked, platforms: win-x64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/microsoft/windows-rs
 - Copyright:
   - Copyright (c) Microsoft Corporation.
-- Licence text (MIT): [text-d9a1b1e3](#text-d9a1b1e3), as shipped in the package file license-mit
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### windows-collections 0.3.2
 
 - Kind: Rust crate, linked, platforms: win-x64, win-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/microsoft/windows-rs
 - Copyright:
   - Copyright (c) Microsoft Corporation.
-- Licence text (MIT): [text-d9a1b1e3](#text-d9a1b1e3), as shipped in the package file license-mit
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### windows-core 0.62.2
 
 - Kind: Rust crate, linked, platforms: win-x64, win-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/microsoft/windows-rs
 - Copyright:
   - Copyright (c) Microsoft Corporation.
-- Licence text (MIT): [text-d9a1b1e3](#text-d9a1b1e3), as shipped in the package file license-mit
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### windows-future 0.3.2
 
 - Kind: Rust crate, linked, platforms: win-x64, win-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/microsoft/windows-rs
 - Copyright:
   - Copyright (c) Microsoft Corporation.
-- Licence text (MIT): [text-d9a1b1e3](#text-d9a1b1e3), as shipped in the package file license-mit
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### windows-implement 0.60.2
 
 - Kind: Rust crate, build-time, platforms: win-x64, win-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/microsoft/windows-rs
 - Copyright:
   - Copyright (c) Microsoft Corporation.
-- Licence text (MIT): [text-d9a1b1e3](#text-d9a1b1e3), as shipped in the package file license-mit
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### windows-interface 0.59.3
 
 - Kind: Rust crate, build-time, platforms: win-x64, win-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/microsoft/windows-rs
 - Copyright:
   - Copyright (c) Microsoft Corporation.
-- Licence text (MIT): [text-d9a1b1e3](#text-d9a1b1e3), as shipped in the package file license-mit
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### windows-link 0.2.1
 
 - Kind: Rust crate, linked, platforms: win-x64, win-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/microsoft/windows-rs
 - Copyright:
   - Copyright (c) Microsoft Corporation.
-- Licence text (MIT): [text-d9a1b1e3](#text-d9a1b1e3), as shipped in the package file license-mit
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### windows-numerics 0.3.1
 
 - Kind: Rust crate, linked, platforms: win-x64, win-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/microsoft/windows-rs
 - Copyright:
   - Copyright (c) Microsoft Corporation.
-- Licence text (MIT): [text-d9a1b1e3](#text-d9a1b1e3), as shipped in the package file license-mit
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### windows-result 0.4.1
 
 - Kind: Rust crate, linked, platforms: win-x64, win-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/microsoft/windows-rs
 - Copyright:
   - Copyright (c) Microsoft Corporation.
-- Licence text (MIT): [text-d9a1b1e3](#text-d9a1b1e3), as shipped in the package file license-mit
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### windows-strings 0.5.1
 
 - Kind: Rust crate, linked, platforms: win-x64, win-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/microsoft/windows-rs
 - Copyright:
   - Copyright (c) Microsoft Corporation.
-- Licence text (MIT): [text-d9a1b1e3](#text-d9a1b1e3), as shipped in the package file license-mit
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### windows-sys 0.48.0
 
 - Kind: Rust crate, linked, platforms: win-x64, win-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/microsoft/windows-rs
 - Copyright:
   - Copyright (c) Microsoft Corporation.
-- Licence text (MIT): [text-d9a1b1e3](#text-d9a1b1e3), as shipped in the package file license-mit
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### windows-sys 0.61.2
 
 - Kind: Rust crate, linked, platforms: win-x64, win-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/microsoft/windows-rs
 - Copyright:
   - Copyright (c) Microsoft Corporation.
-- Licence text (MIT): [text-d9a1b1e3](#text-d9a1b1e3), as shipped in the package file license-mit
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### windows-targets 0.48.5
 
 - Kind: Rust crate, linked, platforms: win-x64, win-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/microsoft/windows-rs
 - Copyright:
   - Copyright (c) Microsoft Corporation.
-- Licence text (MIT): [text-d9a1b1e3](#text-d9a1b1e3), as shipped in the package file license-mit
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### windows-threading 0.2.1
 
 - Kind: Rust crate, linked, platforms: win-x64, win-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/microsoft/windows-rs
 - Copyright:
   - Copyright (c) Microsoft Corporation.
-- Licence text (MIT): [text-d9a1b1e3](#text-d9a1b1e3), as shipped in the package file license-mit
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### windows-version 0.1.7
 
 - Kind: Rust crate, linked, platforms: win-x64, win-arm64
-- Licence: MIT (declared: MIT OR Apache-2.0)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0)
 - Source: https://github.com/microsoft/windows-rs
 - Copyright:
   - Copyright (c) Microsoft Corporation.
-- Licence text (MIT): [text-d9a1b1e3](#text-d9a1b1e3), as shipped in the package file license-mit
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### winnow 0.5.40
 
@@ -8654,11 +8654,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### wry 0.57.1
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: Apache-2.0 OR MIT)
 - Source: https://github.com/tauri-apps/wry
 - Copyright:
   - Copyright (c) 2020-2023 Ngo Iok Ui & Tauri Programme within The Commons Conservancy
-- Licence text (MIT): [text-86eb6a41](#text-86eb6a41), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### x11 2.21.0
 
@@ -8745,22 +8745,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### zerocopy 0.8.63
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: BSD-2-Clause OR Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: BSD-2-Clause OR Apache-2.0 OR MIT)
 - Source: https://github.com/google/zerocopy
 - Copyright:
   - Copyright 2023 The Fuchsia Authors
   - Copyright 2019 The Fuchsia Authors.
-- Licence text (MIT): [text-a03d4daa](#text-a03d4daa), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### zerocopy-derive 0.8.63
 
 - Kind: Rust crate, build-time, platforms: all
-- Licence: MIT (declared: BSD-2-Clause OR Apache-2.0 OR MIT)
+- Licence: Apache-2.0 (declared: BSD-2-Clause OR Apache-2.0 OR MIT)
 - Source: https://github.com/google/zerocopy
 - Copyright:
   - Copyright 2023 The Fuchsia Authors
   - Copyright 2019 The Fuchsia Authors.
-- Licence text (MIT): [text-a03d4daa](#text-a03d4daa), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### zerofrom 0.1.8
 
@@ -8846,31 +8846,31 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### zune-core 0.5.3
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0 OR Zlib)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0 OR Zlib)
 - Source: https://github.com/etemesi254/zune-image
 - Copyright:
   - Copyright (c) zune-image developers
   - (C) zune-image developers
-- Licence text (MIT): [text-4ae44197](#text-4ae44197), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### zune-inflate 0.2.54
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0 OR Zlib)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0 OR Zlib)
 - Source: https://github.com/etemesi254/zune-image/tree/main/zune-inflate
 - Copyright:
   - Copyright (c) the authors of zune-inflate (no holder named in the package)
-- Licence text (MIT): [text-8cbb2f08](#text-8cbb2f08), standard text; the package ships no licence file, so the copyright above is taken from its metadata
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### zune-jpeg 0.5.15
 
 - Kind: Rust crate, linked, platforms: all
-- Licence: MIT (declared: MIT OR Apache-2.0 OR Zlib)
+- Licence: Apache-2.0 (declared: MIT OR Apache-2.0 OR Zlib)
 - Source: https://github.com/etemesi254/zune-image/tree/dev/crates/zune-jpeg
 - Copyright:
   - Copyright (c) zune-image developers
   - (C) zune-image developers
-- Licence text (MIT): [text-4ae44197](#text-4ae44197), as shipped in the package file LICENSE-MIT
+- Licence text (Apache-2.0): [text-c274f803](#text-c274f803), standard text
 
 ### zvariant 5.15.1
 
@@ -9064,38 +9064,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### text-033a9383
-
-Licence: MIT. Used by: heck 0.4.1, heck 0.5.0, unicode-segmentation 1.13.3.
-
-```text
-Copyright (c) 2015 The Rust Project Developers
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
 ### text-03aff879
 
 Licence: Apache-2.0 (as found in the code). Used by: tower 0.5.3.
@@ -9141,34 +9109,6 @@ Licence: MIT. Used by: maybe-rayon 0.1.1.
 MIT License
 
 Copyright (c) 2021 Joshua Holmer
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### text-055a1711
-
-Licence: MIT. Used by: jsonptr 0.7.1.
-
-```text
-MIT License
-
-Copyright (c) 2022 Chance Dinkins
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -9375,38 +9315,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### text-0d8a0aec
-
-Licence: MIT. Used by: idna_adapter 1.2.2.
-
-```text
-Copyright (c) The rust-url developers
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
 ### text-0e57eeac
 
 Licence: BSD-2-Clause. Used by: entities 6.0.1.
@@ -9452,32 +9360,6 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-```
-
-### text-0f70b9a3
-
-Licence: MIT. Used by: android_log-sys 0.3.2.
-
-```text
-Copyright (c) 2016 The android_log_sys Developers
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 ```
 
 ### text-1078bbb5
@@ -9691,71 +9573,6 @@ Ty Coon, President of Vice
 That's all there is to it!
 ```
 
-### text-11cd7e6c
-
-Licence: MIT. Used by: uuid 1.29.0.
-
-```text
-Copyright (c) 2014 The Rust Project Developers
-Copyright (c) 2018 Ashley Mannix, Christopher Armstrong, Dylan DPC, Hunar Roop Kahlon
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
-### text-12a9724e
-
-Licence: MIT. Used by: enumflags2_derive 0.7.12.
-
-```text
-Copyright (c) 2017 Maik Klein
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
 ### text-12bfa73c
 
 Licence: MIT. Used by: quick-xml 0.42.0.
@@ -9849,38 +9666,6 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
 OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-```
-
-### text-14435fbc
-
-Licence: MIT. Used by: bitflags 1.3.2, bitflags 2.13.2, glob 0.3.4, log 0.4.34, num-bigint 0.4.8, num-complex 0.4.6, num-derive 0.4.2, num-integer 0.1.47, num-rational 0.4.2, num-traits 0.2.19, regex 1.13.1, regex-automata 0.4.18, regex-syntax 0.8.11.
-
-```text
-Copyright (c) 2014 The Rust Project Developers
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
 ```
 
 ### text-1521adec
@@ -10100,7 +9885,7 @@ SOFTWARE.
 
 ### text-1847e0e0
 
-Licence: MIT. Used by: half 2.7.1, ident_case 1.0.1.
+Licence: MIT. Used by: ident_case 1.0.1.
 
 ```text
 MIT License
@@ -10153,34 +9938,6 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### text-19328c46
-
-Licence: MIT. Used by: json-patch 4.2.0.
-
-```text
-MIT License
-
-Copyright (c) 2017 Ivan Dubrov
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
 ### text-19f9e00b
 
 Licence: MIT. Used by: uuid 14.0.3.
@@ -10215,38 +9972,6 @@ Licence: W3C (as found in the code). Used by: tao 0.37.2.
 // FITNESS FOR A PARTICULAR PURPOSE.
 //
 // [1] http://www.w3.org/Consortium/Legal/copyright-software
-```
-
-### text-1a6aa261
-
-Licence: MIT. Used by: scopeguard 1.2.0.
-
-```text
-Copyright (c) 2016-2019 Ulrik Sverdrup "bluss" and scopeguard developers
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
 ```
 
 ### text-1a6dd955
@@ -10331,92 +10056,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-```
-
-### text-1b66e3be
-
-Licence: MIT. Used by: deranged 0.5.9.
-
-```text
-Copyright (c) 2024 Jacob Pratt et al.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### text-1b6f7ab8
-
-Licence: MIT. Used by: gif 0.14.2.
-
-```text
-The MIT License (MIT)
-
-Copyright (c) 2015 nwin
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### text-1b7402ea
-
-Licence: MIT. Used by: flate2 1.1.10.
-
-```text
-Copyright (c) 2014-2026 Alex Crichton
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
 ```
 
 ### text-1cb954bf
@@ -10599,7 +10238,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ### text-21a21212
 
-Licence: MIT. Used by: atk 0.18.2, atk-sys 0.18.2, cairo-rs 0.18.5, cairo-sys-rs 0.18.2, gdk 0.18.2, gdk-pixbuf 0.18.5, gdk-pixbuf-sys 0.18.0, gdk-sys 0.18.2, gdkwayland-sys 0.18.2, gdkx11 0.18.2, gdkx11-sys 0.18.2, gio 0.18.4, gio-sys 0.18.1, glib 0.18.5, glib-macros 0.18.5, glib-sys 0.18.1, gobject-sys 0.18.0, gtk 0.18.2, gtk-sys 0.18.2, gtk3-macros 0.18.2, pango 0.18.3, pango-sys 0.18.0, siphasher 1.0.4.
+Licence: MIT. Used by: atk 0.18.2, atk-sys 0.18.2, cairo-rs 0.18.5, cairo-sys-rs 0.18.2, gdk 0.18.2, gdk-pixbuf 0.18.5, gdk-pixbuf-sys 0.18.0, gdk-sys 0.18.2, gdkwayland-sys 0.18.2, gdkx11 0.18.2, gdkx11-sys 0.18.2, gio 0.18.4, gio-sys 0.18.1, glib 0.18.5, glib-macros 0.18.5, glib-sys 0.18.1, gobject-sys 0.18.0, gtk 0.18.2, gtk-sys 0.18.2, gtk3-macros 0.18.2, pango 0.18.3, pango-sys 0.18.0.
 
 ```text
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -10697,66 +10336,6 @@ licenses; we recommend you read them, as their terms may differ from the
 terms above.
 ```
 
-### text-26e6f69c
-
-Licence: MIT. Used by: tao-macros 0.1.4.
-
-```text
-MIT License
-
-Copyright (c) 2022 - Present Tauri Apps Contributors
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### text-2710a622
-
-Licence: MIT. Used by: defmt 1.2.0, defmt-macros 1.2.0, defmt-parser 1.1.0.
-
-```text
-Copyright (c) Ferrous Systems
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
 ### text-2970d8b0
 
 Licence: MIT. Used by: version-compare 0.2.1.
@@ -10807,39 +10386,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-```
-
-### text-2aa92cad
-
-Licence: BSD-3-Clause. Used by: moxcms 0.8.1, pxfm 0.1.30.
-
-```text
-Copyright (c) Radzivon Bartoshyk. All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-1.  Redistributions of source code must retain the above copyright notice, this
-    list of conditions and the following disclaimer.
-
-2.  Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation
-    and/or other materials provided with the distribution.
-
-3.  Neither the name of the copyright holder nor the names of its
-    contributors may be used to endorse or promote products derived from
-    this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
 ### text-2ac8da45
@@ -11003,37 +10549,9 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### text-2ff8d973
-
-Licence: MIT. Used by: base64 0.23.1.
-
-```text
-The MIT License (MIT)
-
-Copyright (c) 2025 Alice Maz, Marshall Pierce
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-```
-
 ### text-30fefc3a
 
-Licence: MIT. Used by: adler2 2.0.1, anyhow 1.0.104, async-channel 2.5.0, async-executor 1.14.0, async-io 2.6.0, async-lock 3.4.2, async-process 2.5.0, async-recursion 1.2.0, async-signal 0.2.14, async-task 4.7.1, async-trait 0.1.92, atomic-waker 1.1.2, blocking 1.7.0, camino 1.2.6, cargo_metadata 0.19.2, cargo-platform 0.1.9, concurrent-queue 2.5.0, displaydoc 0.2.7, dtoa 1.0.11, dyn-clone 1.0.20, endi 1.1.1, erased-serde 0.4.11, event-listener 5.4.2, event-listener-strategy 0.5.4, fastrand 2.5.0, futures-lite 2.6.1, itoa 1.0.18, linux-raw-sys 0.12.1, num_enum 0.7.6, num_enum_derive 0.7.6, once_cell 1.21.4, ordered-stream 0.2.0, parking 2.2.1, paste 1.0.15, pastey 0.1.1, pin-project-lite 0.2.17, piper 0.2.5, polling 3.11.0, proc-macro-crate 1.3.1, proc-macro-crate 2.0.2, proc-macro-crate 3.5.0, proc-macro2 1.0.107, quote 1.0.47, ref-cast 1.0.27, ref-cast-impl 1.0.27, rustc-hash 2.1.3, rustix 1.1.6, rustversion 1.0.23, semver 1.0.28, serde 1.0.229, serde_core 1.0.229, serde_derive 1.0.229, serde_derive_internals 0.29.1, serde_json 1.0.154, serde_repr 0.1.21, serde-untagged 0.1.9, servo_arc 0.4.3, syn 1.0.109, syn 2.0.119, syn 3.0.9, system-deps 6.2.2, thiserror 1.0.69, thiserror 2.0.21, thiserror-impl 1.0.69, thiserror-impl 2.0.21, typeid 1.0.3, unicode-ident 1.0.27, x11 2.21.0, x11-dl 2.21.0, zmij 1.0.23, zvariant_utils 4.2.0.
+Licence: MIT. Used by: cargo_metadata 0.19.2, endi 1.1.1, x11 2.21.0, x11-dl 2.21.0, zmij 1.0.23, zvariant_utils 4.2.0.
 
 ```text
 Permission is hereby granted, free of charge, to any
@@ -11079,66 +10597,12 @@ Licence: ISC (as found in the code). Used by: av-scenechange 0.14.1, rav1e 0.8.1
 ;* OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 ```
 
-### text-31dbbab0
-
-Licence: MIT. Used by: keyboard-types 0.8.3.
-
-```text
-Copyright (c) 2017 Pyfisch
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-```
-
 ### text-3234ac55
 
 Licence: MIT. Used by: memoffset 0.9.1.
 
 ```text
 Copyright (c) 2017 Gilad Naaman
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### text-32ae0b6c
-
-Licence: MIT. Used by: web-time 1.1.0.
-
-```text
-MIT License
-
-Copyright (c) 2023 dAxpeDDa
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -11197,102 +10661,6 @@ Redistribution and use in source and binary forms, with or without modification,
 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-```
-
-### text-33ed9a8e
-
-Licence: MIT. Used by: form_urlencoded 1.2.2.
-
-```text
-Copyright (c) 2013-2016 The rust-url developers
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
-### text-3444712f
-
-Licence: MIT. Used by: iana-time-zone 0.1.65.
-
-```text
-Copyright (c) 2020 Andrew D. Straw
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
-### text-35af0fd8
-
-Licence: MIT. Used by: html5ever 0.39.0, markup5ever 0.39.0, web_atoms 0.2.6.
-
-```text
-Copyright (c) 2014 The html5ever Project Developers
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
 ```
 
 ### text-361d7912
@@ -11541,38 +10909,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### text-39cf2da1
-
-Licence: MIT. Used by: bitstream-io 4.10.0.
-
-```text
-Copyright (c) 2017 Brian Langenberger
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
 ### text-39f7d156
 
 Licence: BSD-2-Clause (as found in the code). Used by: av-scenechange 0.14.1.
@@ -11626,64 +10962,6 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-```
-
-### text-3a771adc
-
-Licence: MIT. Used by: jni-sys 0.3.1, jni-sys 0.4.1.
-
-```text
-Copyright (c) 2015 The rust-jni-sys Developers
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### text-3bfacc19
-
-Licence: MIT. Used by: core-foundation 0.10.1, core-foundation-sys 0.8.7, core-graphics 0.25.0, core-graphics-types 0.2.0, string_cache 0.9.0, string_cache_codegen 0.6.1.
-
-```text
-Copyright (c) 2012-2013 Mozilla Foundation
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
 ```
 
 ### text-3ce3e256
@@ -11742,68 +11020,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### text-3e772b50
-
-Licence: MIT. Used by: bit_field 0.10.3.
-
-```text
-The MIT License (MIT)
-
-Copyright (c) 2016 Philipp Oppermann
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### text-4031faf6
-
-Licence: MIT. Used by: sha2 0.10.9.
-
-```text
-Copyright (c) 2006-2009 Graydon Hoare
-Copyright (c) 2009-2013 Mozilla Foundation
-Copyright (c) 2016 Artyom Pavlov
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
 ### text-40f693c6
 
 Licence: OFL-1.1. Used by: katex 0.18.10.
@@ -11854,38 +11070,6 @@ DISCLAIMER
 THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM OTHER DEALINGS IN THE FONT SOFTWARE.
 ```
 
-### text-42926e59
-
-Licence: MIT. Used by: as-slice 0.2.1.
-
-```text
-Copyright (c) 2018 Jorge Aparicio
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
 ### text-42d8a095
 
 Licence: MIT. Used by: new_debug_unreachable 1.0.6.
@@ -11932,64 +11116,6 @@ Licence: Apache-2.0 (as found in the code). Used by: mermaid 11.17.2.
 
 ```text
   (*! @license DOMPurify 3.4.12 | (c) Cure53 and other contributors | Released under the Apache license 2.0 and Mozilla Public License 2.0 | github.com/cure53/DOMPurify/blob/3.4.12/LICENSE *)
-```
-
-### text-4428cd87
-
-Licence: MIT. Used by: equivalent 1.0.3.
-
-```text
-Copyright (c) 2016--2023
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
-### text-4498464c
-
-Licence: MIT. Used by: env_filter 0.1.4, serde_spanned 0.6.9, serde_spanned 1.1.2, toml 0.8.2, toml 1.1.8+spec-1.1.0, toml_datetime 1.1.2+spec-1.1.0, toml_edit 0.19.15, toml_edit 0.20.2, toml_edit 0.25.17+spec-1.1.0, toml_parser 1.1.5+spec-1.1.0, toml_writer 1.1.3+spec-1.1.0.
-
-```text
-Copyright (c) Individual contributors
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 ```
 
 ### text-4603441e
@@ -12043,39 +11169,6 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### text-47c8d252
-
-Licence: MIT. Used by: cookie 0.18.2.
-
-```text
-Copyright (c) 2017 Sergio Benitez
-Copyright (c) 2014 Alex Crichton
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
 ### text-48186f59
 
 Licence: MIT. Used by: iconv-lite 0.6.3.
@@ -12113,34 +11206,6 @@ Licence: OFL-1.1 (as found in the code). Used by: katex 0.18.10.
 %% is also available with a FAQ at: http://scripts.sil.org/OFL.
 ```
 
-### text-48d36a67
-
-Licence: MIT. Used by: async-broadcast 0.7.2.
-
-```text
-The MIT License (MIT)
-
-Copyright (c) 2020 Yoshua Wuyts
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
 ### text-49f9bfe6
 
 Licence: LicenseRef-scancode-alliance-open-media-patent-1.0 (as found in the code). Used by: av1-grain 0.2.5, rav1e 0.8.1, v_frame 0.3.9.
@@ -12162,34 +11227,6 @@ Licence: MIT. Used by: derive_more 2.1.1, derive_more-impl 2.1.1.
 The MIT License (MIT)
 
 Copyright (c) 2016 Jelte Fennema
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### text-4ae44197
-
-Licence: MIT. Used by: zune-core 0.5.3, zune-jpeg 0.5.15.
-
-```text
-MIT License
-
-Copyright (c) zune-image developers
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -12293,38 +11330,6 @@ TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ```
 
-### text-4c4e6eed
-
-Licence: MIT. Used by: bit-set 0.8.0, bit-vec 0.8.0.
-
-```text
-Copyright (c) 2023 The Rust Project Developers
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
 ### text-4c54c0a6
 
 Licence: MIT. Used by: w3c-keyname 2.2.8.
@@ -12380,70 +11385,12 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### text-4d83b119
-
-Licence: MIT. Used by: num-conv 0.2.2.
-
-```text
-Copyright (c) Jacob Pratt
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
 ### text-4f02d6be
 
 Licence: ISC (as found in the code). Used by: d3-array 2.12.1.
 
 ```text
 // ISC license, Copyright 2018 Vladimir Agafonkin.
-```
-
-### text-4f2ac128
-
-Licence: MIT. Used by: indexmap 1.9.3, indexmap 2.14.2.
-
-```text
-Copyright (c) 2016--2017
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
 ```
 
 ### text-4f4f9997
@@ -12611,38 +11558,6 @@ Licence: SunPro (as found in the code). Used by: libm 0.2.16.
  * is preserved.
 ```
 
-### text-5662394b
-
-Licence: MIT. Used by: bumpalo 3.20.3.
-
-```text
-Copyright (c) 2019 Nick Fitzgerald
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
 ### text-56ec5a14
 
 Licence: SunPro (as found in the code). Used by: libm 0.2.16.
@@ -12771,40 +11686,6 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### text-5a7d13c6
-
-Licence: MIT. Used by: crossbeam-channel 0.5.17, crossbeam-deque 0.8.8, crossbeam-epoch 0.9.21, crossbeam-utils 0.8.23.
-
-```text
-The MIT License (MIT)
-
-Copyright (c) 2019 The Crossbeam Project Developers
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
 ### text-5ad2a6a1
 
 Licence: Unlicense. Used by: robust-predicates 3.0.3.
@@ -12874,38 +11755,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-```
-
-### text-5e05b024
-
-Licence: MIT. Used by: stable_deref_trait 1.2.1.
-
-```text
-Copyright (c) 2017 Robert Grosse
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
 ```
 
 ### text-5f350cbd
@@ -13183,38 +12032,6 @@ have been licensed under extremely permissive terms.
 Copyright notices are retained in src/* files where relevant.
 ```
 
-### text-5ff5253f
-
-Licence: MIT. Used by: block-buffer 0.10.4.
-
-```text
-Copyright (c) 2018-2019 The RustCrypto Project Developers
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
 ### text-6019bf34
 
 Licence: ISC. Used by: d3-axis 3.0.0, d3-brush 3.0.0, d3-chord 3.0.1, d3-dispatch 3.0.1, d3-drag 3.0.0, d3-force 3.0.0, d3-hierarchy 3.1.2, d3-interpolate 3.0.1, d3-polygon 3.0.1, d3-quadtree 3.0.1, d3-random 3.0.1, d3-scale 4.0.2, d3-selection 3.0.0, d3-time-format 4.1.0, d3-timer 3.0.1, d3-transition 3.0.1, d3-zoom 3.0.0.
@@ -13233,34 +12050,6 @@ INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
 OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
 TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
-```
-
-### text-603c83c4
-
-Licence: MIT. Used by: weezl 0.1.12.
-
-```text
-The MIT License (MIT)
-
-Copyright (c) HeroicKatora 2020
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 ```
 
 ### text-615e13b5
@@ -13323,38 +12112,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### text-6334e528
-
-Licence: MIT. Used by: cpufeatures 0.2.17.
-
-```text
-Copyright (c) 2020-2025 The RustCrypto Project Developers
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
 ### text-6659f034
 
 Licence: MIT (as found in the code). Used by: icu_provider 2.4.0.
@@ -13397,33 +12154,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### text-67047503
-
-Licence: MIT. Used by: bs58 0.5.1.
-
-```text
-MIT License
-Copyright (c) 2016 The roaring-rs developers.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-of the Software, and to permit persons to whom the Software is furnished to do
-so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
 ### text-6821b85d
 
 Licence: MIT. Used by: stylis 4.4.0.
@@ -13450,38 +12180,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-```
-
-### text-692b1604
-
-Licence: MIT. Used by: crypto-common 0.1.7.
-
-```text
-Copyright (c) 2021 RustCrypto Developers
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
 ```
 
 ### text-695de743
@@ -13547,34 +12245,6 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-### text-6a8da4c7
-
-Licence: MIT. Used by: base64 0.21.7, base64 0.22.1.
-
-```text
-The MIT License (MIT)
-
-Copyright (c) 2015 Alice Maz
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-```
-
 ### text-6a972b33
 
 Licence: MIT. Used by: csstype 3.2.3.
@@ -13622,34 +12292,6 @@ CONDITIONS OF ANY KIND, either express or implied. See the License for the
 specific language governing permissions and limitations under the License.
 ```
 
-### text-6c1dcd86
-
-Licence: MIT. Used by: jni 0.21.1.
-
-```text
-The MIT License (MIT)
-
-Copyright (c) 2016 Prevoty, Inc. and jni-rs contributors
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
 ### text-6c91ec82
 
 Licence: BSD-3-Clause. Used by: alloc-no-stdlib 3.0.0, brotli 9.1.1, brotli-decompressor 6.2.0.
@@ -13667,38 +12309,6 @@ Redistribution and use in source and binary forms, with or without modification,
 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-```
-
-### text-6d182023
-
-Licence: MIT. Used by: cfg-expr 0.15.8.
-
-```text
-Copyright (c) 2019 Embark Studios
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
 ```
 
 ### text-6d489af6
@@ -13912,32 +12522,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### text-6e972f31
-
-Licence: MIT. Used by: powerfmt 0.2.1.
-
-```text
-Copyright (c) 2023 Jacob Pratt et al.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
 ### text-6fad4b84
 
 Licence: Apache-2.0 (as found in the code). Used by: katex 0.18.10.
@@ -13998,157 +12582,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
 
-### text-73af2019
-
-Licence: MIT. Used by: getrandom 0.3.4.
-
-```text
-Copyright (c) 2018-2025 The rust-random Project Developers
-Copyright (c) 2014 The Rust Project Developers
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
-### text-7427abc6
-
-Licence: MIT. Used by: miniz_oxide 0.8.9, miniz_oxide 0.9.1.
-
-```text
-MIT License
-
-Copyright 2013-2014 RAD Game Tools and Valve Software
-Copyright 2010-2014 Rich Geldreich and Tenacious Software LLC
-Copyright (c) 2017 Frommi
-Copyright (c) 2017-2024 oyvindln
-
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### text-7593ea50
-
-Licence: MIT. Used by: swift-rs 1.0.9.
-
-```text
-Copyright (c) 2023 The swift-rs Developers
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### text-777eb741
-
-Licence: MIT. Used by: serialize-to-javascript 0.1.2, serialize-to-javascript-impl 0.1.2.
-
-```text
-MIT License
-
-Copyright (c) 2021 Chip Reed
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### text-77949ead
-
-Licence: MIT. Used by: fdeflate 0.3.7, image 0.25.10, image-webp 0.2.4.
-
-```text
-MIT License
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
 ### text-7804ded9
 
 Licence: MIT. Used by: infer 0.22.0.
@@ -14185,38 +12618,6 @@ Licence: Apache-2.0 (as found in the code). Used by: katex 0.18.10.
 // hyphenate and escape adapted from Facebook's React under Apache 2 license
 ```
 
-### text-7a8093fb
-
-Licence: MIT. Used by: idna 1.1.0, percent-encoding 2.3.2, url 2.5.8.
-
-```text
-Copyright (c) 2013-2025 The rust-url developers
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
 ### text-7bdac5ba
 
 Licence: MIT. Used by: @upsetjs/venn.js 2.0.0.
@@ -14244,38 +12645,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-```
-
-### text-7dc2f640
-
-Licence: MIT. Used by: utf_types 1.0.0, utf8_iter 1.1.0.
-
-```text
-Copyright Mozilla Foundation
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
 ```
 
 ### text-7e744ae1
@@ -14321,38 +12690,6 @@ copies from any such party to do so, with the only requirement being
 that this copyright notice remain intact.
 ```
 
-### text-7f194ae4
-
-Licence: MIT. Used by: smallvec 1.16.4.
-
-```text
-Copyright (c) 2018 The Servo Project Developers
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
 ### text-7f577f9a
 
 Licence: MIT. Used by: @codemirror/lang-liquid 6.3.3.
@@ -14379,182 +12716,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-```
-
-### text-7f91c2a4
-
-Licence: MIT. Used by: errno 0.3.14.
-
-```text
-Copyright (c) 2014 Chris Wong
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
-### text-7fdbca77
-
-Licence: MIT. Used by: time 0.3.55, time-core 0.1.9, time-macros 0.2.32.
-
-```text
-Copyright (c) Jacob Pratt et al.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### text-80cdd906
-
-Licence: MIT. Used by: png 0.18.1.
-
-```text
-Copyright (c) 2015 nwin
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
-### text-84e1bbfe
-
-Licence: MIT. Used by: cc 1.10.0, cfg-if 1.0.5, filetime 0.2.29, find-msvc-tools 0.1.15, jobserver 0.1.35, pkg-config 0.3.34, socket2 0.6.5, toml_datetime 0.6.3, wasm-bindgen 0.2.130, wasm-bindgen-macro 0.2.130, wasm-bindgen-macro-support 0.2.130, wasm-bindgen-shared 0.2.130.
-
-```text
-Copyright (c) 2014 Alex Crichton
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
-### text-8502803c
-
-Licence: MIT. Used by: httparse 1.10.1.
-
-```text
-Copyright (c) 2015-2025 Sean McArthur
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-```
-
-### text-859a9032
-
-Licence: MIT. Used by: muda 0.20.0, tray-icon 0.25.1.
-
-```text
-MIT License
-
-Copyright (c) 2022-2022 Tauri Programme within The Commons Conservancy
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 ```
 
 ### text-866e55f8
@@ -14699,34 +12860,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
 
-### text-86eb6a41
-
-Licence: MIT. Used by: wry 0.57.1.
-
-```text
-MIT License
-
-Copyright (c) 2020-2023 Ngo Iok Ui & Tauri Programme within The Commons Conservancy
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
 ### text-8793aa41
 
 Licence: MIT. Used by: winnow 0.5.40, winnow 1.0.4.
@@ -14750,34 +12883,6 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
 LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-```
-
-### text-87ebb379
-
-Licence: MIT. Used by: typenum 1.20.1.
-
-```text
-The MIT License (MIT)
-
-Copyright (c) 2014 Paho Lurie-Gregg
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 ```
 
 ### text-8885adee
@@ -14807,34 +12912,6 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-```
-
-### text-89ff9689
-
-Licence: MIT. Used by: @tauri-apps/api 2.12.4, tauri 2.12.5, tauri-build 2.7.4, tauri-codegen 2.7.4, tauri-macros 2.7.4, tauri-plugin-dialog 2.8.4, tauri-plugin-fs 2.7.1, tauri-plugin-log 2.10.1, tauri-plugin-opener 2.7.2, tauri-runtime 2.12.2, tauri-runtime-wry 2.12.3, tauri-utils 2.10.2.
-
-```text
-MIT License
-
-Copyright (c) 2017 - Present Tauri Apps Contributors
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 ```
 
 ### text-8a08757a
@@ -14894,38 +12971,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### text-8adee6e9
-
-Licence: MIT. Used by: aligned 0.4.3.
-
-```text
-Copyright (c) 2017 Jorge Aparicio
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
 ### text-8af47eab
 
 Licence: MIT. Used by: hast-util-from-html-isomorphic 2.0.0.
@@ -14953,32 +12998,6 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-```
-
-### text-8b36c5b7
-
-Licence: MIT. Used by: no_std_io2 0.9.4.
-
-```text
-Copyright (c) 2020-2021  Brendan Molloy <brendan@bbqsrc.net>
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 ```
 
 ### text-8be10979
@@ -15039,7 +13058,7 @@ THE SOFTWARE.
 
 ### text-8cbb2f08
 
-Licence: MIT. Used by: @uiw/codemirror-theme-abcdef 4.25.12, @uiw/codemirror-theme-abyss 4.25.12, @uiw/codemirror-theme-androidstudio 4.25.12, @uiw/codemirror-theme-andromeda 4.25.12, @uiw/codemirror-theme-atomone 4.25.12, @uiw/codemirror-theme-aura 4.25.12, @uiw/codemirror-theme-basic 4.25.12, @uiw/codemirror-theme-bbedit 4.25.12, @uiw/codemirror-theme-bespin 4.25.12, @uiw/codemirror-theme-console 4.25.12, @uiw/codemirror-theme-copilot 4.25.12, @uiw/codemirror-theme-darcula 4.25.12, @uiw/codemirror-theme-dracula 4.25.12, @uiw/codemirror-theme-duotone 4.25.12, @uiw/codemirror-theme-eclipse 4.25.12, @uiw/codemirror-theme-github 4.25.12, @uiw/codemirror-theme-gruvbox-dark 4.25.12, @uiw/codemirror-theme-kimbie 4.25.12, @uiw/codemirror-theme-material 4.25.12, @uiw/codemirror-theme-monokai 4.25.12, @uiw/codemirror-theme-monokai-dimmed 4.25.12, @uiw/codemirror-theme-noctis-lilac 4.25.12, @uiw/codemirror-theme-nord 4.25.12, @uiw/codemirror-theme-okaidia 4.25.12, @uiw/codemirror-theme-quietlight 4.25.12, @uiw/codemirror-theme-red 4.25.12, @uiw/codemirror-theme-solarized 4.25.12, @uiw/codemirror-theme-sublime 4.25.12, @uiw/codemirror-theme-tokyo-night 4.25.12, @uiw/codemirror-theme-tokyo-night-day 4.25.12, @uiw/codemirror-theme-tokyo-night-storm 4.25.12, @uiw/codemirror-theme-tomorrow-night-blue 4.25.12, @uiw/codemirror-theme-vscode 4.25.12, @uiw/codemirror-theme-white 4.25.12, @uiw/codemirror-theme-xcode 4.25.12, @uiw/codemirror-themes 4.25.12, @uiw/codemirror-themes-all 4.25.12, AppImage type 2 runtime fedfad5, AppImageKit AppRun continuous, mirrored by Tauri (binary-releases apprun-old), block2 0.6.2, dispatch2 0.3.1, dlopen2 0.8.2, dlopen2_derive 0.4.3, fastdom 1.0.12, jni-sys-macros 0.4.1, libappindicator-sys 0.9.0, linuxdeploy-plugin-gtk AppRun hook as vendored by tauri-bundler, mimalloc (in the AppImage type 2 runtime) Alpine 3.21 package, in type2-runtime fedfad5, musl libc (in the AppImage type 2 runtime) Alpine 3.21 package, in type2-runtime fedfad5, ndk 0.9.0, ndk-context 0.1.1, ndk-sys 0.6.0+11769913, objc2 0.6.5, objc2-app-kit 0.3.2, objc2-cloud-kit 0.3.2, objc2-core-data 0.3.2, objc2-core-foundation 0.3.2, objc2-core-graphics 0.3.2, objc2-core-image 0.3.2, objc2-core-location 0.3.2, objc2-core-text 0.3.2, objc2-encode 4.1.0, objc2-exception-helper 0.1.1, objc2-foundation 0.3.2, objc2-io-surface 0.3.2, objc2-javascript-core 0.3.2, objc2-quartz-core 0.3.2, objc2-security 0.3.2, objc2-ui-kit 0.3.2, objc2-user-notifications 0.3.2, objc2-web-kit 0.3.2, profiling 1.0.18, profiling-procmacros 1.0.18, pulp-wasm-simd-flag 0.1.1, rehype-katex 7.0.1, remark-math 6.0.0, Rust standard library (std, core, alloc) toolchain, simd_helpers 0.1.0, strictdom 1.0.1, tauri-plugin 2.7.2, webview2-com 0.39.1, webview2-com-macros 0.8.1, webview2-com-sys 0.39.1, zune-inflate 0.2.54.
+Licence: MIT. Used by: @uiw/codemirror-theme-abcdef 4.25.12, @uiw/codemirror-theme-abyss 4.25.12, @uiw/codemirror-theme-androidstudio 4.25.12, @uiw/codemirror-theme-andromeda 4.25.12, @uiw/codemirror-theme-atomone 4.25.12, @uiw/codemirror-theme-aura 4.25.12, @uiw/codemirror-theme-basic 4.25.12, @uiw/codemirror-theme-bbedit 4.25.12, @uiw/codemirror-theme-bespin 4.25.12, @uiw/codemirror-theme-console 4.25.12, @uiw/codemirror-theme-copilot 4.25.12, @uiw/codemirror-theme-darcula 4.25.12, @uiw/codemirror-theme-dracula 4.25.12, @uiw/codemirror-theme-duotone 4.25.12, @uiw/codemirror-theme-eclipse 4.25.12, @uiw/codemirror-theme-github 4.25.12, @uiw/codemirror-theme-gruvbox-dark 4.25.12, @uiw/codemirror-theme-kimbie 4.25.12, @uiw/codemirror-theme-material 4.25.12, @uiw/codemirror-theme-monokai 4.25.12, @uiw/codemirror-theme-monokai-dimmed 4.25.12, @uiw/codemirror-theme-noctis-lilac 4.25.12, @uiw/codemirror-theme-nord 4.25.12, @uiw/codemirror-theme-okaidia 4.25.12, @uiw/codemirror-theme-quietlight 4.25.12, @uiw/codemirror-theme-red 4.25.12, @uiw/codemirror-theme-solarized 4.25.12, @uiw/codemirror-theme-sublime 4.25.12, @uiw/codemirror-theme-tokyo-night 4.25.12, @uiw/codemirror-theme-tokyo-night-day 4.25.12, @uiw/codemirror-theme-tokyo-night-storm 4.25.12, @uiw/codemirror-theme-tomorrow-night-blue 4.25.12, @uiw/codemirror-theme-vscode 4.25.12, @uiw/codemirror-theme-white 4.25.12, @uiw/codemirror-theme-xcode 4.25.12, @uiw/codemirror-themes 4.25.12, @uiw/codemirror-themes-all 4.25.12, AppImage type 2 runtime fedfad5, AppImageKit AppRun continuous, mirrored by Tauri (binary-releases apprun-old), block2 0.6.2, dlopen2 0.8.2, dlopen2_derive 0.4.3, fastdom 1.0.12, linuxdeploy-plugin-gtk AppRun hook as vendored by tauri-bundler, mimalloc (in the AppImage type 2 runtime) Alpine 3.21 package, in type2-runtime fedfad5, musl libc (in the AppImage type 2 runtime) Alpine 3.21 package, in type2-runtime fedfad5, objc2 0.6.5, objc2-encode 4.1.0, objc2-foundation 0.3.2, pulp-wasm-simd-flag 0.1.1, rehype-katex 7.0.1, remark-math 6.0.0, simd_helpers 0.1.0, strictdom 1.0.1, webview2-com 0.39.1, webview2-com-macros 0.8.1, webview2-com-sys 0.39.1.
 
 ```text
 MIT License
@@ -15059,38 +13078,6 @@ LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE A
 EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 USE OR OTHER DEALINGS IN THE SOFTWARE.
-```
-
-### text-8d1f81ea
-
-Licence: MIT. Used by: lock_api 0.4.14, parking_lot 0.12.5, parking_lot_core 0.9.12, rustc_version 0.4.1.
-
-```text
-Copyright (c) 2016 The Rust Project Developers
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
 ```
 
 ### text-8f08c824
@@ -15223,38 +13210,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### text-92c66648
-
-Licence: MIT. Used by: arrayvec 0.7.8.
-
-```text
-Copyright (c) Ulrik Sverdrup "bluss" 2015-2023
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
 ### text-93bbf912
 
 Licence: Zlib. Used by: zlib (in the AppImage type 2 runtime) 1.3.2.
@@ -15301,39 +13256,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### text-94b1870d
-
-Licence: MIT. Used by: getrandom 0.4.3.
-
-```text
-Copyright (c) 2018-2026 The rust-random Project Developers
-Copyright (c) 2014 The Rust Project Developers
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
 ### text-95573f04
 
 Licence: MIT. Used by: ico 0.6.0.
@@ -15342,34 +13264,6 @@ Licence: MIT. Used by: ico 0.6.0.
 MIT License
 
 Copyright (c) 2018 Matthew D. Steele
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### text-9599127e
-
-Licence: MIT. Used by: crc32fast 1.5.3.
-
-```text
-MIT License
-
-Copyright (c) 2018 Sam Rijs, Alex Crichton and contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -15847,70 +13741,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### text-99afaa30
-
-Licence: MIT. Used by: autocfg 1.5.1.
-
-```text
-Copyright (c) 2018 Josh Stone
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
-### text-9c5127ab
-
-Licence: MIT. Used by: digest 0.10.7.
-
-```text
-Copyright (c) 2017 Artyom Pavlov
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
 ### text-9cac2500
 
 Licence: MIT. Used by: inline-style-parser 0.2.9.
@@ -15960,65 +13790,6 @@ TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ```
 
-### text-9dde4a6a
-
-Licence: MIT. Used by: hex 0.4.3.
-
-```text
-Copyright (c) 2013-2014 The Rust Project Developers.
-Copyright (c) 2015-2020 The rust-hex Developers
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### text-9e002780
-
-Licence: MIT. Used by: rayon 1.12.0, rayon-core 1.13.0.
-
-```text
-Copyright (c) 2010 The Rust Project Developers
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
 ### text-9f5ea8f5
 
 Licence: MIT. Used by: cytoscape-fcose 2.2.0.
@@ -16063,38 +13834,6 @@ INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
 OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
 TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
-```
-
-### text-a03d4daa
-
-Licence: MIT. Used by: zerocopy 0.8.63, zerocopy-derive 0.8.63.
-
-```text
-Copyright 2023 The Fuchsia Authors
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
 ```
 
 ### text-a047c726
@@ -16249,34 +13988,6 @@ Licence: BSD-2-Clause (as found in the code), LicenseRef-scancode-alliance-open-
  * PATENTS file, you can obtain it at www.aomedia.org/license/patent.
 ```
 
-### text-a29c4d8a
-
-Licence: MIT. Used by: embed_plist 1.2.2.
-
-```text
-MIT License
-
-Copyright (c) 2020 Nikolai Vazquez
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
 ### text-a2c382fb
 
 Licence: MIT. Used by: tauri-winres 0.3.7.
@@ -16310,32 +14021,6 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
-```
-
-### text-a302dc76
-
-Licence: MIT. Used by: mime 0.3.17.
-
-```text
-Copyright (c) 2014 Sean McArthur
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
 ```
 
 ### text-a4b2e7ff
@@ -16394,32 +14079,6 @@ Redistribution and use in source and binary forms, with or without modification,
 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-```
-
-### text-a6fbdfb3
-
-Licence: MIT. Used by: android_logger 0.15.1.
-
-```text
-Copyright (c) 2016 The android_logger Developers
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 ```
 
 ### text-a734fd0e
@@ -16514,34 +14173,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
 
-### text-aa69fda6
-
-Licence: MIT. Used by: raw-window-handle 0.6.2.
-
-```text
-MIT License
-
-Copyright (c) 2019 Osspial
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
 ### text-aa72fb61
 
 Licence: MIT. Used by: safer-buffer 2.1.2.
@@ -16568,38 +14199,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-```
-
-### text-aaac889d
-
-Licence: MIT. Used by: signal-hook-registry 1.4.8.
-
-```text
-Copyright (c) 2017 tokio-jsonrpc developers
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
 ```
 
 ### text-abf5b740
@@ -16666,38 +14265,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-```
-
-### text-ae9791f0
-
-Licence: MIT. Used by: hashbrown 0.12.3, hashbrown 0.17.1.
-
-```text
-Copyright (c) 2016 Amanieu d'Antras
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
 ```
 
 ### text-af6e2a74
@@ -16832,67 +14399,6 @@ TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ```
 
-### text-b420d8ad
-
-Licence: MIT. Used by: futures-channel 0.3.34, futures-core 0.3.34, futures-executor 0.3.34, futures-io 0.3.34, futures-macro 0.3.34, futures-sink 0.3.34, futures-task 0.3.34, futures-util 0.3.34.
-
-```text
-Copyright (c) 2016 Alex Crichton
-Copyright (c) 2017 The Tokio Authors
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
-### text-b4670011
-
-Licence: MIT. Used by: window-vibrancy 0.8.1.
-
-```text
-MIT License
-
-Copyright (c) 2020-2022 Tauri Programme within The Commons Conservancy
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
 ### text-b4b2baa7
 
 Licence: W3C (as found in the code). Used by: tao 0.37.2.
@@ -17021,44 +14527,6 @@ NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE US
 THIS SOFTWARE.
 ```
 
-### text-bccaa8b6
-
-Licence: MIT. Used by: ctor 1.0.13, tinyvec 1.13.3.
-
-```text
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-```
-
-### text-bde59a7e
-
-Licence: MIT. Used by: reqwest 0.13.5.
-
-```text
-Copyright (c) 2016-2026 Sean McArthur
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-```
-
 ### text-c0333bf2
 
 Licence: BSD-2-Clause. Used by: rav1e 0.8.1.
@@ -17148,7 +14616,7 @@ DEALINGS IN THE SOFTWARE.
 
 ### text-c274f803
 
-Licence: Apache-2.0. Used by: @chevrotain/types 11.1.2, d3-scale-chromatic 3.1.0, dompurify 3.4.17, dpi 0.1.2, imgref 1.12.3, katex 0.18.10, layout-base 2.0.1, mermaid 11.17.2, sync_wrapper 1.0.2, tao 0.37.2, tower 0.5.3.
+Licence: Apache-2.0. Used by: @chevrotain/types 11.1.2, @tauri-apps/api 2.12.4, @tauri-apps/plugin-dialog 2.8.4, @tauri-apps/plugin-opener 2.7.2, adler2 2.0.1, aligned 0.4.3, android_log-sys 0.3.2, android_logger 0.15.1, anyhow 1.0.104, arrayvec 0.7.8, as-slice 0.2.1, async-broadcast 0.7.2, async-channel 2.5.0, async-executor 1.14.0, async-io 2.6.0, async-lock 3.4.2, async-process 2.5.0, async-recursion 1.2.0, async-signal 0.2.14, async-task 4.7.1, async-trait 0.1.92, atomic-waker 1.1.2, autocfg 1.5.1, base64 0.21.7, base64 0.22.1, base64 0.23.1, bit_field 0.10.3, bit-set 0.8.0, bit-vec 0.8.0, bitflags 1.3.2, bitflags 2.13.2, bitstream-io 4.10.0, block-buffer 0.10.4, blocking 1.7.0, bs58 0.5.1, bumpalo 3.20.3, bytemuck 1.25.2, bytemuck_derive 1.12.1, camino 1.2.6, cargo_toml 1.0.1, cargo-platform 0.1.9, cc 1.10.0, cfg-expr 0.15.8, cfg-if 1.0.5, chrono 0.4.45, concurrent-queue 2.5.0, cookie 0.18.2, core-foundation 0.10.1, core-foundation-sys 0.8.7, core-graphics 0.25.0, core-graphics-types 0.2.0, cpufeatures 0.2.17, crc32fast 1.5.3, crossbeam-channel 0.5.17, crossbeam-deque 0.8.8, crossbeam-epoch 0.9.21, crossbeam-utils 0.8.23, crypto-common 0.1.7, ctor 1.0.13, d3-scale-chromatic 3.1.0, dbus 0.9.12, defmt 1.2.0, defmt-macros 1.2.0, defmt-parser 1.1.0, deranged 0.5.9, digest 0.10.7, dirs 6.0.0, dirs 7.0.0, dirs-sys 0.5.0, dispatch2 0.3.1, displaydoc 0.2.7, dompurify 3.4.17, dpi 0.1.2, dtoa 1.0.11, dyn-clone 1.0.20, either 1.19.0, embed_plist 1.2.2, enumflags2 0.7.12, enumflags2_derive 0.7.12, env_filter 0.1.4, equivalent 1.0.3, erased-serde 0.4.11, errno 0.3.14, event-listener 5.4.2, event-listener-strategy 0.5.4, fastrand 2.5.0, fdeflate 0.3.7, field-offset 0.3.6, filetime 0.2.29, find-msvc-tools 0.1.15, flate2 1.1.10, fnv 1.0.7, foreign-types 0.5.0, foreign-types-macros 0.2.4, foreign-types-shared 0.3.1, form_urlencoded 1.2.2, futures-channel 0.3.34, futures-core 0.3.34, futures-executor 0.3.34, futures-io 0.3.34, futures-lite 2.6.1, futures-macro 0.3.34, futures-sink 0.3.34, futures-task 0.3.34, futures-util 0.3.34, getrandom 0.3.4, getrandom 0.4.3, gif 0.14.2, glob 0.3.4, half 2.7.1, hashbrown 0.12.3, hashbrown 0.17.1, heck 0.4.1, heck 0.5.0, hex 0.4.3, html5ever 0.39.0, http 1.5.0, httparse 1.10.1, iana-time-zone 0.1.65, idna 1.1.0, idna_adapter 1.2.2, image 0.25.10, image-webp 0.2.4, imgref 1.12.3, indexmap 1.9.3, indexmap 2.14.2, ipnet 2.12.2, itertools 0.14.0, itoa 1.0.18, jni 0.21.1, jni-sys 0.3.1, jni-sys 0.4.1, jni-sys-macros 0.4.1, jobserver 0.1.35, json-patch 4.2.0, jsonptr 0.7.1, katex 0.18.10, keyboard-types 0.8.3, layout-base 2.0.1, libappindicator 0.9.0, libappindicator-sys 0.9.0, libc 0.2.191, libdbus-sys 0.2.7, lock_api 0.4.14, log 0.4.34, markup5ever 0.39.0, mermaid 11.17.2, mime 0.3.17, miniz_oxide 0.8.9, miniz_oxide 0.9.1, moxcms 0.8.1, muda 0.20.0, ndk 0.9.0, ndk-context 0.1.1, ndk-sys 0.6.0+11769913, no_std_io2 0.9.4, num_enum 0.7.6, num_enum_derive 0.7.6, num_threads 0.1.8, num-bigint 0.4.8, num-complex 0.4.6, num-conv 0.2.2, num-derive 0.4.2, num-integer 0.1.47, num-rational 0.4.2, num-traits 0.2.19, objc2-app-kit 0.3.2, objc2-cloud-kit 0.3.2, objc2-core-data 0.3.2, objc2-core-foundation 0.3.2, objc2-core-graphics 0.3.2, objc2-core-image 0.3.2, objc2-core-location 0.3.2, objc2-core-text 0.3.2, objc2-exception-helper 0.1.1, objc2-io-surface 0.3.2, objc2-javascript-core 0.3.2, objc2-quartz-core 0.3.2, objc2-security 0.3.2, objc2-ui-kit 0.3.2, objc2-user-notifications 0.3.2, objc2-web-kit 0.3.2, once_cell 1.21.4, ordered-stream 0.2.0, parking 2.2.1, parking_lot 0.12.5, parking_lot_core 0.9.12, paste 1.0.15, pastey 0.1.1, percent-encoding 2.3.2, pin-project-lite 0.2.17, piper 0.2.5, pkg-config 0.3.34, png 0.18.1, polling 3.11.0, powerfmt 0.2.1, proc-macro-crate 1.3.1, proc-macro-crate 2.0.2, proc-macro-crate 3.5.0, proc-macro-error 1.0.4, proc-macro-error-attr 1.0.4, proc-macro2 1.0.107, profiling 1.0.18, profiling-procmacros 1.0.18, pxfm 0.1.30, qoi 0.4.1, quick-error 2.0.1, quote 1.0.47, raw-window-handle 0.6.2, rayon 1.12.0, rayon-core 1.13.0, ref-cast 1.0.27, ref-cast-impl 1.0.27, regex 1.13.1, regex-automata 0.4.18, regex-syntax 0.8.11, reqwest 0.13.5, Rust standard library (std, core, alloc) toolchain, rustc_version 0.4.1, rustc-hash 2.1.3, rustversion 1.0.23, scopeguard 1.2.0, semver 1.0.28, serde 1.0.229, serde_core 1.0.229, serde_derive 1.0.229, serde_derive_internals 0.29.1, serde_json 1.0.154, serde_repr 0.1.21, serde_spanned 0.6.9, serde_spanned 1.1.2, serde_with 3.24.0, serde_with_macros 3.24.0, serde-untagged 0.1.9, serialize-to-javascript 0.1.2, serialize-to-javascript-impl 0.1.2, servo_arc 0.4.3, sha2 0.10.9, signal-hook-registry 1.4.8, siphasher 1.0.4, smallvec 1.16.4, socket2 0.6.5, softbuffer 0.4.8, stable_deref_trait 1.2.1, static_vcruntime 3.0.0, string_cache 0.9.0, string_cache_codegen 0.6.1, swift-rs 1.0.9, syn 1.0.109, syn 2.0.119, syn 3.0.9, sync_wrapper 1.0.2, system-deps 6.2.2, tao 0.37.2, tao-macros 0.1.4, tauri 2.12.5, tauri-build 2.7.4, tauri-codegen 2.7.4, tauri-macros 2.7.4, tauri-plugin 2.7.2, tauri-plugin-dialog 2.8.4, tauri-plugin-fs 2.7.1, tauri-plugin-log 2.10.1, tauri-plugin-opener 2.7.2, tauri-runtime 2.12.2, tauri-runtime-wry 2.12.3, tauri-utils 2.10.2, tendril 0.5.1, thiserror 1.0.69, thiserror 2.0.21, thiserror-impl 1.0.69, thiserror-impl 2.0.21, time 0.3.55, time-core 0.1.9, time-macros 0.2.32, tinyvec 1.13.3, toml 0.8.2, toml 1.1.8+spec-1.1.0, toml_datetime 0.6.3, toml_datetime 1.1.2+spec-1.1.0, toml_edit 0.19.15, toml_edit 0.20.2, toml_edit 0.25.17+spec-1.1.0, toml_parser 1.1.5+spec-1.1.0, toml_writer 1.1.3+spec-1.1.0, tower 0.5.3, tray-icon 0.25.1, typeid 1.0.3, typenum 1.20.1, unicode-ident 1.0.27, unicode-segmentation 1.13.3, url 2.5.8, utf_types 1.0.0, utf8_iter 1.1.0, uuid 1.29.0, version_check 0.9.5, wasm-bindgen 0.2.130, wasm-bindgen-macro 0.2.130, wasm-bindgen-macro-support 0.2.130, wasm-bindgen-shared 0.2.130, web_atoms 0.2.6, web-time 1.1.0, weezl 0.1.12, window-vibrancy 0.8.1, windows 0.62.2, windows_aarch64_msvc 0.48.5, windows_x86_64_msvc 0.48.5, windows-collections 0.3.2, windows-core 0.62.2, windows-future 0.3.2, windows-implement 0.60.2, windows-interface 0.59.3, windows-link 0.2.1, windows-numerics 0.3.1, windows-result 0.4.1, windows-strings 0.5.1, windows-sys 0.48.0, windows-sys 0.61.2, windows-targets 0.48.5, windows-threading 0.2.1, windows-version 0.1.7, wry 0.57.1, zerocopy 0.8.63, zerocopy-derive 0.8.63, zune-core 0.5.3, zune-inflate 0.2.54, zune-jpeg 0.5.15.
 
 ```text
 Apache License
@@ -17226,32 +14694,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ```
 
-### text-c2c01161
-
-Licence: MIT. Used by: num_threads 0.1.8.
-
-```text
-Copyright (c) 2021 Jacob Pratt
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
 ### text-c37a32dd
 
 Licence: MIT. Used by: bail 2.0.2, ccount 2.0.1, character-entities 2.0.2, character-entities-html4 2.1.0, character-entities-legacy 3.0.0, character-reference-invalid 2.0.1, mdast-util-to-string 4.0.0, unist-util-position 5.0.0.
@@ -17315,7 +14757,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 ### text-c454c52c
 
-Licence: Apache-2.0 WITH LLVM-exception. Used by: target-lexicon 0.12.16.
+Licence: Apache-2.0 WITH LLVM-exception. Used by: linux-raw-sys 0.12.1, rustix 1.1.6, target-lexicon 0.12.16.
 
 ```text
 Apache License
@@ -17439,38 +14881,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### text-c48b7333
-
-Licence: MIT. Used by: fnv 1.0.7.
-
-```text
-Copyright (c) 2017 Contributors
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
 ### text-c4be15bd
 
 Licence: MIT. Used by: embed-resource 3.0.12.
@@ -17529,34 +14939,6 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-```
-
-### text-c7495b7b
-
-Licence: MIT. Used by: proc-macro-error 1.0.4, proc-macro-error-attr 1.0.4.
-
-```text
-MIT License
-
-Copyright (c) 2019-2020 CreepySkeleton
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 ```
 
 ### text-c74f9c5a
@@ -17660,78 +15042,6 @@ INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
 OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
 TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
-```
-
-### text-c9067b1c
-
-Licence: MIT. Used by: foreign-types 0.5.0, foreign-types-macros 0.2.4, foreign-types-shared 0.3.1.
-
-```text
-Copyright (c) 2017 The foreign-types Developers
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### text-c935506f
-
-Licence: MIT. Used by: ipnet 2.12.2.
-
-```text
-Copyright 2017 Juniper Networks, Inc.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-```
-
-### text-c9630229
-
-Licence: MIT. Used by: libc 0.2.191.
-
-```text
-Copyright (c) The Rust Project Developers
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
 ```
 
 ### text-cc5ba558
@@ -17871,278 +15181,6 @@ Portions of ICU4X may have been adapted from ICU4C and/or ICU4J.
 ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation and others.
 ```
 
-### text-ce4a94c0
-
-Licence: MIT. Used by: chrono 0.4.45.
-
-```text
-Rust-chrono is dual-licensed under The MIT License [1] and
-Apache 2.0 License [2]. Copyright (c) 2014--2026, Kang Seonghoon and
-contributors.
-
-Nota Bene: This is same as the Rust Project's own license.
-
-
-[1]: <http://opensource.org/licenses/MIT>, which is reproduced below:
-
-~~~~
-The MIT License (MIT)
-
-Copyright (c) 2014, Kang Seonghoon.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-~~~~
-
-
-[2]: <http://www.apache.org/licenses/LICENSE-2.0>, which is reproduced below:
-
-~~~~
-                              Apache License
-                        Version 2.0, January 2004
-                     http://www.apache.org/licenses/
-
-TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
-
-1. Definitions.
-
-   "License" shall mean the terms and conditions for use, reproduction,
-   and distribution as defined by Sections 1 through 9 of this document.
-
-   "Licensor" shall mean the copyright owner or entity authorized by
-   the copyright owner that is granting the License.
-
-   "Legal Entity" shall mean the union of the acting entity and all
-   other entities that control, are controlled by, or are under common
-   control with that entity. For the purposes of this definition,
-   "control" means (i) the power, direct or indirect, to cause the
-   direction or management of such entity, whether by contract or
-   otherwise, or (ii) ownership of fifty percent (50%) or more of the
-   outstanding shares, or (iii) beneficial ownership of such entity.
-
-   "You" (or "Your") shall mean an individual or Legal Entity
-   exercising permissions granted by this License.
-
-   "Source" form shall mean the preferred form for making modifications,
-   including but not limited to software source code, documentation
-   source, and configuration files.
-
-   "Object" form shall mean any form resulting from mechanical
-   transformation or translation of a Source form, including but
-   not limited to compiled object code, generated documentation,
-   and conversions to other media types.
-
-   "Work" shall mean the work of authorship, whether in Source or
-   Object form, made available under the License, as indicated by a
-   copyright notice that is included in or attached to the work
-   (an example is provided in the Appendix below).
-
-   "Derivative Works" shall mean any work, whether in Source or Object
-   form, that is based on (or derived from) the Work and for which the
-   editorial revisions, annotations, elaborations, or other modifications
-   represent, as a whole, an original work of authorship. For the purposes
-   of this License, Derivative Works shall not include works that remain
-   separable from, or merely link (or bind by name) to the interfaces of,
-   the Work and Derivative Works thereof.
-
-   "Contribution" shall mean any work of authorship, including
-   the original version of the Work and any modifications or additions
-   to that Work or Derivative Works thereof, that is intentionally
-   submitted to Licensor for inclusion in the Work by the copyright owner
-   or by an individual or Legal Entity authorized to submit on behalf of
-   the copyright owner. For the purposes of this definition, "submitted"
-   means any form of electronic, verbal, or written communication sent
-   to the Licensor or its representatives, including but not limited to
-   communication on electronic mailing lists, source code control systems,
-   and issue tracking systems that are managed by, or on behalf of, the
-   Licensor for the purpose of discussing and improving the Work, but
-   excluding communication that is conspicuously marked or otherwise
-   designated in writing by the copyright owner as "Not a Contribution."
-
-   "Contributor" shall mean Licensor and any individual or Legal Entity
-   on behalf of whom a Contribution has been received by Licensor and
-   subsequently incorporated within the Work.
-
-2. Grant of Copyright License. Subject to the terms and conditions of
-   this License, each Contributor hereby grants to You a perpetual,
-   worldwide, non-exclusive, no-charge, royalty-free, irrevocable
-   copyright license to reproduce, prepare Derivative Works of,
-   publicly display, publicly perform, sublicense, and distribute the
-   Work and such Derivative Works in Source or Object form.
-
-3. Grant of Patent License. Subject to the terms and conditions of
-   this License, each Contributor hereby grants to You a perpetual,
-   worldwide, non-exclusive, no-charge, royalty-free, irrevocable
-   (except as stated in this section) patent license to make, have made,
-   use, offer to sell, sell, import, and otherwise transfer the Work,
-   where such license applies only to those patent claims licensable
-   by such Contributor that are necessarily infringed by their
-   Contribution(s) alone or by combination of their Contribution(s)
-   with the Work to which such Contribution(s) was submitted. If You
-   institute patent litigation against any entity (including a
-   cross-claim or counterclaim in a lawsuit) alleging that the Work
-   or a Contribution incorporated within the Work constitutes direct
-   or contributory patent infringement, then any patent licenses
-   granted to You under this License for that Work shall terminate
-   as of the date such litigation is filed.
-
-4. Redistribution. You may reproduce and distribute copies of the
-   Work or Derivative Works thereof in any medium, with or without
-   modifications, and in Source or Object form, provided that You
-   meet the following conditions:
-
-   (a) You must give any other recipients of the Work or
-       Derivative Works a copy of this License; and
-
-   (b) You must cause any modified files to carry prominent notices
-       stating that You changed the files; and
-
-   (c) You must retain, in the Source form of any Derivative Works
-       that You distribute, all copyright, patent, trademark, and
-       attribution notices from the Source form of the Work,
-       excluding those notices that do not pertain to any part of
-       the Derivative Works; and
-
-   (d) If the Work includes a "NOTICE" text file as part of its
-       distribution, then any Derivative Works that You distribute must
-       include a readable copy of the attribution notices contained
-       within such NOTICE file, excluding those notices that do not
-       pertain to any part of the Derivative Works, in at least one
-       of the following places: within a NOTICE text file distributed
-       as part of the Derivative Works; within the Source form or
-       documentation, if provided along with the Derivative Works; or,
-       within a display generated by the Derivative Works, if and
-       wherever such third-party notices normally appear. The contents
-       of the NOTICE file are for informational purposes only and
-       do not modify the License. You may add Your own attribution
-       notices within Derivative Works that You distribute, alongside
-       or as an addendum to the NOTICE text from the Work, provided
-       that such additional attribution notices cannot be construed
-       as modifying the License.
-
-   You may add Your own copyright statement to Your modifications and
-   may provide additional or different license terms and conditions
-   for use, reproduction, or distribution of Your modifications, or
-   for any such Derivative Works as a whole, provided Your use,
-   reproduction, and distribution of the Work otherwise complies with
-   the conditions stated in this License.
-
-5. Submission of Contributions. Unless You explicitly state otherwise,
-   any Contribution intentionally submitted for inclusion in the Work
-   by You to the Licensor shall be under the terms and conditions of
-   this License, without any additional terms or conditions.
-   Notwithstanding the above, nothing herein shall supersede or modify
-   the terms of any separate license agreement you may have executed
-   with Licensor regarding such Contributions.
-
-6. Trademarks. This License does not grant permission to use the trade
-   names, trademarks, service marks, or product names of the Licensor,
-   except as required for reasonable and customary use in describing the
-   origin of the Work and reproducing the content of the NOTICE file.
-
-7. Disclaimer of Warranty. Unless required by applicable law or
-   agreed to in writing, Licensor provides the Work (and each
-   Contributor provides its Contributions) on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
-   implied, including, without limitation, any warranties or conditions
-   of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
-   PARTICULAR PURPOSE. You are solely responsible for determining the
-   appropriateness of using or redistributing the Work and assume any
-   risks associated with Your exercise of permissions under this License.
-
-8. Limitation of Liability. In no event and under no legal theory,
-   whether in tort (including negligence), contract, or otherwise,
-   unless required by applicable law (such as deliberate and grossly
-   negligent acts) or agreed to in writing, shall any Contributor be
-   liable to You for damages, including any direct, indirect, special,
-   incidental, or consequential damages of any character arising as a
-   result of this License or out of the use or inability to use the
-   Work (including but not limited to damages for loss of goodwill,
-   work stoppage, computer failure or malfunction, or any and all
-   other commercial damages or losses), even if such Contributor
-   has been advised of the possibility of such damages.
-
-9. Accepting Warranty or Additional Liability. While redistributing
-   the Work or Derivative Works thereof, You may choose to offer,
-   and charge a fee for, acceptance of support, warranty, indemnity,
-   or other liability obligations and/or rights consistent with this
-   License. However, in accepting such obligations, You may act only
-   on Your own behalf and on Your sole responsibility, not on behalf
-   of any other Contributor, and only if You agree to indemnify,
-   defend, and hold each Contributor harmless for any liability
-   incurred by, or claims asserted against, such Contributor by reason
-   of your accepting any such warranty or additional liability.
-
-END OF TERMS AND CONDITIONS
-
-APPENDIX: How to apply the Apache License to your work.
-
-   To apply the Apache License to your work, attach the following
-   boilerplate notice, with the fields enclosed by brackets "[]"
-   replaced with your own identifying information. (Don't include
-   the brackets!)  The text should be enclosed in the appropriate
-   comment syntax for the file format. We also recommend that a
-   file or class name and description of purpose be included on the
-   same "printed page" as the copyright notice for easier
-   identification within third-party archives.
-
-Copyright [yyyy] [name of copyright owner]
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-	http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-~~~~
-```
-
-### text-cf798811
-
-Licence: MIT. Used by: quick-error 2.0.1.
-
-```text
-Copyright (c) 2015 The quick-error Developers
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
 ### text-cf9b1782
 
 Licence: MIT. Used by: react 19.3.1, react-dom 19.3.1, scheduler 0.28.0.
@@ -18197,35 +15235,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-```
-
-### text-d2c4a266
-
-Licence: MIT. Used by: libappindicator 0.9.0.
-
-```text
-MIT License
-
-Copyright (c) 2017-2021 qDot
-Copyright (c) 2021 Tauri Apps Contributors
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 ```
 
 ### text-d35b20f6
@@ -18358,7 +15367,7 @@ SOFTWARE.
 
 ### text-d9a1b1e3
 
-Licence: MIT. Used by: @types/d3 7.4.3, @types/d3-array 3.2.2, @types/d3-axis 3.0.6, @types/d3-brush 3.0.6, @types/d3-chord 3.0.6, @types/d3-color 3.1.3, @types/d3-contour 3.0.6, @types/d3-delaunay 6.0.4, @types/d3-dispatch 3.0.7, @types/d3-drag 3.0.7, @types/d3-dsv 3.0.7, @types/d3-ease 3.0.2, @types/d3-fetch 3.0.7, @types/d3-force 3.0.10, @types/d3-format 3.0.4, @types/d3-geo 3.1.1, @types/d3-hierarchy 3.1.7, @types/d3-interpolate 3.0.4, @types/d3-path 3.1.1, @types/d3-polygon 3.0.2, @types/d3-quadtree 3.0.6, @types/d3-random 3.0.4, @types/d3-scale 4.0.9, @types/d3-scale-chromatic 3.1.0, @types/d3-selection 3.0.12, @types/d3-shape 3.2.0, @types/d3-time 3.0.4, @types/d3-time-format 4.0.3, @types/d3-timer 3.0.2, @types/d3-transition 3.0.9, @types/d3-zoom 3.0.9, @types/debug 4.1.13, @types/estree 1.0.10, @types/estree-jsx 1.0.5, @types/geojson 7946.0.16, @types/hast 3.0.5, @types/katex 0.16.8, @types/mdast 4.0.4, @types/ms 2.1.0, @types/react 19.3.0, @types/trusted-types 2.0.7, @types/unist 2.0.11, @types/unist 3.0.3, windows 0.62.2, windows_aarch64_msvc 0.48.5, windows_x86_64_msvc 0.48.5, windows-collections 0.3.2, windows-core 0.62.2, windows-future 0.3.2, windows-implement 0.60.2, windows-interface 0.59.3, windows-link 0.2.1, windows-numerics 0.3.1, windows-result 0.4.1, windows-strings 0.5.1, windows-sys 0.48.0, windows-sys 0.61.2, windows-targets 0.48.5, windows-threading 0.2.1, windows-version 0.1.7.
+Licence: MIT. Used by: @types/d3 7.4.3, @types/d3-array 3.2.2, @types/d3-axis 3.0.6, @types/d3-brush 3.0.6, @types/d3-chord 3.0.6, @types/d3-color 3.1.3, @types/d3-contour 3.0.6, @types/d3-delaunay 6.0.4, @types/d3-dispatch 3.0.7, @types/d3-drag 3.0.7, @types/d3-dsv 3.0.7, @types/d3-ease 3.0.2, @types/d3-fetch 3.0.7, @types/d3-force 3.0.10, @types/d3-format 3.0.4, @types/d3-geo 3.1.1, @types/d3-hierarchy 3.1.7, @types/d3-interpolate 3.0.4, @types/d3-path 3.1.1, @types/d3-polygon 3.0.2, @types/d3-quadtree 3.0.6, @types/d3-random 3.0.4, @types/d3-scale 4.0.9, @types/d3-scale-chromatic 3.1.0, @types/d3-selection 3.0.12, @types/d3-shape 3.2.0, @types/d3-time 3.0.4, @types/d3-time-format 4.0.3, @types/d3-timer 3.0.2, @types/d3-transition 3.0.9, @types/d3-zoom 3.0.9, @types/debug 4.1.13, @types/estree 1.0.10, @types/estree-jsx 1.0.5, @types/geojson 7946.0.16, @types/hast 3.0.5, @types/katex 0.16.8, @types/mdast 4.0.4, @types/ms 2.1.0, @types/react 19.3.0, @types/trusted-types 2.0.7, @types/unist 2.0.11, @types/unist 3.0.3.
 
 ```text
     MIT License
@@ -18574,112 +15583,6 @@ Redistribution and use in source and binary forms, with or without modification,
 * Neither the name “Markdown” nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
 
 This software is provided by the copyright holders and contributors “as is” and any express or implied warranties, including, but not limited to, the implied warranties of merchantability and fitness for a particular purpose are disclaimed. In no event shall the copyright owner or contributors be liable for any direct, indirect, incidental, special, exemplary, or consequential damages (including, but not limited to, procurement of substitute goods or services; loss of use, data, or profits; or business interruption) however caused and on any theory of liability, whether in contract, strict liability, or tort (including negligence or otherwise) arising in any way out of the use of this software, even if advised of the possibility of such damage.
-```
-
-### text-de3911c2
-
-Licence: MIT. Used by: dbus 0.9.12, libdbus-sys 0.2.7.
-
-```text
-Copyright (c) 2014-2018 David Henningsson <diwic@ubuntu.com> and other contributors
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### text-de561d2b
-
-Licence: MIT. Used by: enumflags2 0.7.12.
-
-```text
-Copyright (c) 2017-2023 Maik Klein, Maja Kądziołka
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
-### text-dfa7fbad
-
-Licence: MIT. Used by: tendril 0.5.1.
-
-```text
-Copyright (c) 2015 Keegan McAllister
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
-### text-dfbd1c2a
-
-Licence: MIT. Used by: bytemuck 1.25.2, bytemuck_derive 1.12.1.
-
-```text
-MIT License
-
-Copyright (c) 2019 Daniel "Lokathor" Gee.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice (including the next paragraph) shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
 ### text-e0543276
@@ -19033,33 +15936,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### text-eb8a6c84
-
-Licence: MIT. Used by: @tauri-apps/plugin-dialog 2.8.4, @tauri-apps/plugin-opener 2.7.2.
-
-```text
-SPDXVersion: SPDX-2.1
-DataLicense: CC0-1.0
-PackageName: tauri
-DataFormat: SPDXRef-1
-PackageSupplier: Organization: The Tauri Programme in the Commons Conservancy
-PackageHomePage: https://tauri.app
-PackageLicenseDeclared: Apache-2.0
-PackageLicenseDeclared: MIT
-PackageCopyrightText: 2019-2022, The Tauri Programme in the Commons Conservancy
-PackageSummary: <text>Tauri is a rust project that enables developers to make secure
-and small desktop applications using a web frontend.
-                </text>
-PackageComment: <text>The package includes the following libraries; see
-Relationship information.
-                </text>
-Created: 2019-05-20T09:00:00Z
-PackageDownloadLocation: git://github.com/tauri-apps/tauri
-PackageDownloadLocation: git+https://github.com/tauri-apps/tauri.git
-PackageDownloadLocation: git+ssh://github.com/tauri-apps/tauri.git
-Creator: Person: Daniel Thompson-Yvetot
-```
-
 ### text-ec5d7c32
 
 Licence: MIT. Used by: phf 0.13.1, phf_codegen 0.13.1, phf_generator 0.13.1, phf_macros 0.13.1, phf_shared 0.13.1.
@@ -19068,32 +15944,6 @@ Licence: MIT. Used by: phf 0.13.1, phf_codegen 0.13.1, phf_generator 0.13.1, phf
 The MIT License (MIT)
 
 Copyright (c) 2014-2022 Steven Fackler, Yuki Okushi
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software is furnished to do so,
-subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-```
-
-### text-ed2fda47
-
-Licence: MIT. Used by: version_check 0.9.5.
-
-```text
-The MIT License (MIT)
-Copyright (c) 2017-2018 Sergio Benitez
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -19173,64 +16023,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### text-f25a5b60
-
-Licence: MIT. Used by: dirs 6.0.0, dirs 7.0.0, dirs-sys 0.5.0.
-
-```text
-Copyright (c) 2018-2019 dirs-rs contributors
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### text-f2b5bb92
-
-Licence: MIT. Used by: qoi 0.4.1.
-
-```text
-Copyright (c) 2022 Ivan Smirnov
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
 ### text-f2ff9e66
 
 Licence: ISC. Used by: av-scenechange 0.14.1, d3-array 2.12.1, rav1e 0.8.1.
@@ -19274,38 +16066,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### text-f47894ff
-
-Licence: MIT. Used by: http 1.5.0.
-
-```text
-Copyright (c) 2017 http-rs authors
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-```
-
 ### text-f4bb8f65
 
 Licence: ISC. Used by: internmap 1.0.1, internmap 2.0.3.
@@ -19324,34 +16084,6 @@ INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
 OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
 TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
-```
-
-### text-f4bc3f3c
-
-Licence: MIT. Used by: field-offset 0.3.6.
-
-```text
-MIT License
-
-Copyright (c) 2016-2021 Diggory Blake, and other contributors.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 ```
 
 ### text-f57e3a2c
@@ -19484,241 +16216,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-```
-
-### text-f8babf29
-
-Licence: MIT. Used by: softbuffer 0.4.8.
-
-```text
-Copyright 2022 Kirill Chibisov
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-of the Software, and to permit persons to whom the Software is furnished to do
-so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### text-fa436384
-
-Licence: MIT. Used by: cargo_toml 1.0.1.
-
-```text
-© Kornel Lesiński
-
-                                 Apache License
-                           Version 2.0, January 2004
-                        http://www.apache.org/licenses/
-
-   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
-
-   1. Definitions.
-
-      "License" shall mean the terms and conditions for use, reproduction,
-      and distribution as defined by Sections 1 through 9 of this document.
-
-      "Licensor" shall mean the copyright owner or entity authorized by
-      the copyright owner that is granting the License.
-
-      "Legal Entity" shall mean the union of the acting entity and all
-      other entities that control, are controlled by, or are under common
-      control with that entity. For the purposes of this definition,
-      "control" means (i) the power, direct or indirect, to cause the
-      direction or management of such entity, whether by contract or
-      otherwise, or (ii) ownership of fifty percent (50%) or more of the
-      outstanding shares, or (iii) beneficial ownership of such entity.
-
-      "You" (or "Your") shall mean an individual or Legal Entity
-      exercising permissions granted by this License.
-
-      "Source" form shall mean the preferred form for making modifications,
-      including but not limited to software source code, documentation
-      source, and configuration files.
-
-      "Object" form shall mean any form resulting from mechanical
-      transformation or translation of a Source form, including but
-      not limited to compiled object code, generated documentation,
-      and conversions to other media types.
-
-      "Work" shall mean the work of authorship, whether in Source or
-      Object form, made available under the License, as indicated by a
-      copyright notice that is included in or attached to the work
-      (an example is provided in the Appendix below).
-
-      "Derivative Works" shall mean any work, whether in Source or Object
-      form, that is based on (or derived from) the Work and for which the
-      editorial revisions, annotations, elaborations, or other modifications
-      represent, as a whole, an original work of authorship. For the purposes
-      of this License, Derivative Works shall not include works that remain
-      separable from, or merely link (or bind by name) to the interfaces of,
-      the Work and Derivative Works thereof.
-
-      "Contribution" shall mean any work of authorship, including
-      the original version of the Work and any modifications or additions
-      to that Work or Derivative Works thereof, that is intentionally
-      submitted to Licensor for inclusion in the Work by the copyright owner
-      or by an individual or Legal Entity authorized to submit on behalf of
-      the copyright owner. For the purposes of this definition, "submitted"
-      means any form of electronic, verbal, or written communication sent
-      to the Licensor or its representatives, including but not limited to
-      communication on electronic mailing lists, source code control systems,
-      and issue tracking systems that are managed by, or on behalf of, the
-      Licensor for the purpose of discussing and improving the Work, but
-      excluding communication that is conspicuously marked or otherwise
-      designated in writing by the copyright owner as "Not a Contribution."
-
-      "Contributor" shall mean Licensor and any individual or Legal Entity
-      on behalf of whom a Contribution has been received by Licensor and
-      subsequently incorporated within the Work.
-
-   2. Grant of Copyright License. Subject to the terms and conditions of
-      this License, each Contributor hereby grants to You a perpetual,
-      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
-      copyright license to reproduce, prepare Derivative Works of,
-      publicly display, publicly perform, sublicense, and distribute the
-      Work and such Derivative Works in Source or Object form.
-
-   3. Grant of Patent License. Subject to the terms and conditions of
-      this License, each Contributor hereby grants to You a perpetual,
-      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
-      (except as stated in this section) patent license to make, have made,
-      use, offer to sell, sell, import, and otherwise transfer the Work,
-      where such license applies only to those patent claims licensable
-      by such Contributor that are necessarily infringed by their
-      Contribution(s) alone or by combination of their Contribution(s)
-      with the Work to which such Contribution(s) was submitted. If You
-      institute patent litigation against any entity (including a
-      cross-claim or counterclaim in a lawsuit) alleging that the Work
-      or a Contribution incorporated within the Work constitutes direct
-      or contributory patent infringement, then any patent licenses
-      granted to You under this License for that Work shall terminate
-      as of the date such litigation is filed.
-
-   4. Redistribution. You may reproduce and distribute copies of the
-      Work or Derivative Works thereof in any medium, with or without
-      modifications, and in Source or Object form, provided that You
-      meet the following conditions:
-
-      (a) You must give any other recipients of the Work or
-          Derivative Works a copy of this License; and
-
-      (b) You must cause any modified files to carry prominent notices
-          stating that You changed the files; and
-
-      (c) You must retain, in the Source form of any Derivative Works
-          that You distribute, all copyright, patent, trademark, and
-          attribution notices from the Source form of the Work,
-          excluding those notices that do not pertain to any part of
-          the Derivative Works; and
-
-      (d) If the Work includes a "NOTICE" text file as part of its
-          distribution, then any Derivative Works that You distribute must
-          include a readable copy of the attribution notices contained
-          within such NOTICE file, excluding those notices that do not
-          pertain to any part of the Derivative Works, in at least one
-          of the following places: within a NOTICE text file distributed
-          as part of the Derivative Works; within the Source form or
-          documentation, if provided along with the Derivative Works; or,
-          within a display generated by the Derivative Works, if and
-          wherever such third-party notices normally appear. The contents
-          of the NOTICE file are for informational purposes only and
-          do not modify the License. You may add Your own attribution
-          notices within Derivative Works that You distribute, alongside
-          or as an addendum to the NOTICE text from the Work, provided
-          that such additional attribution notices cannot be construed
-          as modifying the License.
-
-      You may add Your own copyright statement to Your modifications and
-      may provide additional or different license terms and conditions
-      for use, reproduction, or distribution of Your modifications, or
-      for any such Derivative Works as a whole, provided Your use,
-      reproduction, and distribution of the Work otherwise complies with
-      the conditions stated in this License.
-
-   5. Submission of Contributions. Unless You explicitly state otherwise,
-      any Contribution intentionally submitted for inclusion in the Work
-      by You to the Licensor shall be under the terms and conditions of
-      this License, without any additional terms or conditions.
-      Notwithstanding the above, nothing herein shall supersede or modify
-      the terms of any separate license agreement you may have executed
-      with Licensor regarding such Contributions.
-
-   6. Trademarks. This License does not grant permission to use the trade
-      names, trademarks, service marks, or product names of the Licensor,
-      except as required for reasonable and customary use in describing the
-      origin of the Work and reproducing the content of the NOTICE file.
-
-   7. Disclaimer of Warranty. Unless required by applicable law or
-      agreed to in writing, Licensor provides the Work (and each
-      Contributor provides its Contributions) on an "AS IS" BASIS,
-      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
-      implied, including, without limitation, any warranties or conditions
-      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
-      PARTICULAR PURPOSE. You are solely responsible for determining the
-      appropriateness of using or redistributing the Work and assume any
-      risks associated with Your exercise of permissions under this License.
-
-   8. Limitation of Liability. In no event and under no legal theory,
-      whether in tort (including negligence), contract, or otherwise,
-      unless required by applicable law (such as deliberate and grossly
-      negligent acts) or agreed to in writing, shall any Contributor be
-      liable to You for damages, including any direct, indirect, special,
-      incidental, or consequential damages of any character arising as a
-      result of this License or out of the use or inability to use the
-      Work (including but not limited to damages for loss of goodwill,
-      work stoppage, computer failure or malfunction, or any and all
-      other commercial damages or losses), even if such Contributor
-      has been advised of the possibility of such damages.
-
-   9. Accepting Warranty or Additional Liability. While redistributing
-      the Work or Derivative Works thereof, You may choose to offer,
-      and charge a fee for, acceptance of support, warranty, indemnity,
-      or other liability obligations and/or rights consistent with this
-      License. However, in accepting such obligations, You may act only
-      on Your own behalf and on Your sole responsibility, not on behalf
-      of any other Contributor, and only if You agree to indemnify,
-      defend, and hold each Contributor harmless for any liability
-      incurred by, or claims asserted against, such Contributor by reason
-      of your accepting any such warranty or additional liability.
-
-----
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
 ```
 
 ### text-fb5c4045
@@ -20181,52 +16678,4 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-```
-
-### text-fdbaaf92
-
-Licence: MIT. Used by: static_vcruntime 3.0.0.
-
-```text
-MIT License
-
-Copyright (c) 2021 Chris Denton.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice (including the next paragraph) shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-```
-
-### text-fdd1c211
-
-Licence: MIT. Used by: either 1.19.0, itertools 0.14.0, serde_with 3.24.0, serde_with_macros 3.24.0.
-
-```text
-Copyright (c) 2015
-
-Permission is hereby granted, free of charge, to any
-person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the
-Software without restriction, including without
-limitation the rights to use, copy, modify, merge,
-publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software
-is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice
-shall be included in all copies or substantial portions
-of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
 ```

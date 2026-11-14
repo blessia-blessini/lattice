@@ -37,6 +37,8 @@ import {
     DIAGRAM_PNG_ATTR,
     DIAGRAM_PNG_FAILED_ATTR,
     HIGHLIGHT_PENDING_ATTR,
+    PREVIEW_UI_ATTR,
+    stripPreviewUi,
 } from './preview-copy';
 
 const PNG = 'data:image/png;base64,AAAA';
@@ -180,6 +182,35 @@ describe('preview copy — HTML for CLI export', () => {
         buildExportHtml(root);
         expect(root.querySelector('svg')).not.toBeNull();
         expect(root.querySelector('img')).toBeNull();
+    });
+});
+
+// UTST for REQ-LTTCE-PRV-00005 (IMPL-LTTCE-PRV-00004) — the code block copy
+// button is preview UI, not document: no serialised HTML may carry it.
+describe('preview copy — preview controls stay out of serialised HTML', () => {
+    const codeBlock = '<div class="code-block"><pre><code>x = 1</code></pre>'
+        + `<button class="code-copy-btn" ${PREVIEW_UI_ATTR}=""><svg></svg></button></div>`;
+
+    it('stripPreviewUi removes every marked control and counts them', () => {
+        const fragment = fragmentOf(codeBlock + codeBlock);
+        expect(stripPreviewUi(fragment)).toBe(2);
+        expect(fragment.querySelector('button')).toBeNull();
+        expect(fragment.querySelectorAll('pre')).toHaveLength(2);
+    });
+
+    it('the CLI export drops the button and keeps the code', () => {
+        const root = elementOf(codeBlock);
+        const html = buildExportHtml(root);
+        expect(html).not.toContain('<button');
+        expect(html).toContain('<pre><code>x = 1</code></pre>');
+        // The live preview keeps its button.
+        expect(root.querySelector('button')).not.toBeNull();
+    });
+
+    it('a rewritten clipboard copy drops the button too', () => {
+        const html = buildCopyHtml(fragmentOf(codeBlock + diagram()));
+        expect(html).not.toContain('<button');
+        expect(html).toContain('x = 1');
     });
 });
 

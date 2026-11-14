@@ -769,6 +769,63 @@ Theme Design chapter is preserved.
 rely on stable component identities across re-renders, are unaffected. The flash inversion CSS composes
 with token colors (both are plain CSS on descendants).
 
+<!--ARCH-LTTCE-PRV-00003-->
+### Code Block Copy Buttons
+
+Covers REQ-LTTCE-PRV-00004 / 00005 / 00006. A `pre(props)` renderer in `previewComponents` (App.tsx) wraps
+every `<pre>` — a Mermaid fence included — in `<div class="code-block">` and lays a bar of buttons
+(`<div class="code-copy-bar">`) over its top-right corner: "Copy code" on every block, and before it
+"Copy SVG" on a Mermaid fence. The `<pre>` itself is passed through unchanged — its `data-source-line`
+attributes stay where scroll sync and the cursor flash look for them. Four parts, split like the
+highlighting above:
+
+1. **Pure logic** — `src/lib/code-block-copy.ts` (IMPL-LTTCE-PRV-00004):
+   - `fenceText(node)` takes the text of the `<pre>`'s hast node — the Markdown source between the
+     fences, one trailing line break dropped. Not the DOM: a Mermaid fence shows an SVG there, and a
+     highlighted fence has its text split into `tok-*` spans that may not have arrived yet; the hast
+     node is the same for every kind of block. `isMermaidFence(node)` picks the blocks that also get
+     "Copy SVG".
+   - `diagramSvgText(block)` gives the SVG for "Copy SVG": the *copy SVG* recorded for the diagram's
+     container (below), or the SVG on screen while none is recorded yet; `null` for a diagram that
+     failed to render. `serializeSvg` writes it with `XMLSerializer` — not `outerHTML`, which leaves
+     the `<br>` in Mermaid's HTML labels unclosed — after removing literal `xmlns` attributes, which
+     the serialiser would otherwise write a second time next to its own namespace declarations.
+   - `copyText(text)` first copies **synchronously** through a focused off-screen textarea and
+     `document.execCommand('copy')`, before anything is awaited — so, called from a click handler, it
+     runs inside the user gesture WebKit (WKWebView, WebKitGTK) requires for the copy command. Only if
+     that fails does it try `navigator.clipboard.writeText`; awaiting that first and falling back after
+     a rejection could reach the copy command after the gesture had expired. The textarea route puts
+     the user's previous focus and text selection back afterwards. It resolves a success flag and
+     never rejects.
+
+   No new dependency: no clipboard plugin, no icon library — the icons are inline SVG paths.
+2. **React glue** — `src/components/CodeBlock.tsx` (IMPL-LTTCE-PRV-00005): the wrapper and the bar; one
+   `CopyButton` component for both buttons, each with its own `idle | copied | failed` state shown as
+   icon, `title` and `aria-label`, reset after `COPY_FEEDBACK_MS` — restarted by every click, also one
+   with the same outcome as the last (each click sets a new feedback object). A button asks for its
+   text at click time; no text counts as a failed copy. A `mousedown` default is suppressed so clicking does not
+   destroy the user's selection.
+3. **The copy SVG** — `src/components/Mermaid.tsx` (IMPL-LTTCE-PRV-00007): the diagram's PNG cache
+   (IMPL-LTTCE-MRC-00001) already chooses the SVG the clipboard should carry — the light re-render in
+   dark theme with "Copy Diagrams On Light Background" on, else the one on screen. It now records that
+   same SVG (`rememberDiagramSvg`) before rasterising it, so picture and SVG copies always agree, and
+   drops it (`forgetDiagramSvg`) whenever the diagram renders again, so a new chart can never copy the
+   old one's SVG. The record is a module-level `WeakMap` keyed by the container element — no attribute,
+   so an export or a selection copy does not carry kilobytes of duplicated markup.
+4. **CSS** — `App.css` (IMPL-LTTCE-PRV-00006): buttons hidden (`opacity: 0`) until `.code-block:hover`,
+   `:focus-visible`, a non-idle state, or `@media (hover: none)`; GitHub's light/dark button colours on
+   the preview's `data-theme`; the bar `display: none` in `@media print`, which also covers the PDF export.
+   The `<pre>`'s block margin moves to `.code-block`, which is now the element github-markdown-css's
+   `:first-child` / `:last-child` margin rules match (body, blockquote, table cell, alert).
+
+**Keeping the buttons out of the document (REQ-LTTCE-PRV-00005).** The bar carries `PREVIEW_UI_ATTR`
+(`data-lattice-ui`, defined in `preview-copy.ts` next to the other attributes the preview and its
+serialisers share). `stripPreviewUi` removes every element so marked, and both serialisers call it:
+`buildExportHtml` (HTML export, which carries only `preview-theme.css` and so could not hide it by CSS)
+and `buildCopyHtml` (the diagram-copy rewrite). A selection copied by the WebView's own path
+(REQ-LTTCE-MRC-00003) is not rewritten, so there the buttons are kept out by holding no text at all —
+`aria-label` and `title` are attributes, the icons are SVG paths — and by `user-select: none`.
+
 ---
 
 ## Feature: Show Whitespace

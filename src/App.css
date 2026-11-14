@@ -136,6 +136,109 @@ body {
 }
 
 /* ============================================================
+   Code block copy button — IMPL-LTTCE-PRV-00006
+   REQ-LTTCE-PRV-00004: shown while the pointer is over the block, while the
+   button has keyboard focus, and always where there is no hover (touch).
+   REQ-LTTCE-PRV-00005: never printed (PDF export prints too).
+   Markup: components/CodeBlock.tsx.
+   ============================================================ */
+.markdown-body .code-block {
+  position: relative;
+  /* The <pre>'s block margin moves to the wrapper, which is now the child
+     that github-markdown-css's ":first-child / :last-child → margin 0" rules
+     (body, blockquote, table cell, alert) match. The blockquote, table-cell
+     and alert rules out-rank this one; ".markdown-body > *:last-child" ties
+     with it (0,2,0) and wins only because App.tsx imports
+     github-markdown.css after this file — keep that import order. */
+  margin-top: 0;
+  margin-bottom: var(--base-size-16);
+}
+
+.markdown-body .code-block > pre {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Bar of buttons: "Copy code", and "Copy SVG" before it on a diagram */
+.markdown-body .code-copy-bar {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+}
+
+.markdown-body .code-copy-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid;
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+  opacity: 0;
+  transition: opacity 0.15s ease-in-out;
+}
+
+.markdown-body .code-block:hover .code-copy-btn,
+.markdown-body .code-copy-btn:focus-visible,
+.markdown-body .code-copy-btn:not([data-state="idle"]) {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .markdown-body .code-copy-btn {
+    opacity: 1;
+  }
+}
+
+/* Same GitHub palettes as the block chrome (github-markdown-css) */
+.markdown-body[data-theme="light"] .code-copy-btn {
+  background-color: #f6f8fa;
+  border-color: #d1d9e0;
+  color: #59636e;
+}
+
+.markdown-body[data-theme="light"] .code-copy-btn:hover {
+  background-color: #eff2f5;
+}
+
+.markdown-body[data-theme="light"] .code-copy-btn[data-state="copied"] {
+  color: #1a7f37;
+}
+
+.markdown-body[data-theme="light"] .code-copy-btn[data-state="failed"] {
+  color: #d1242f;
+}
+
+.markdown-body[data-theme="dark"] .code-copy-btn {
+  background-color: #212830;
+  border-color: #3d444d;
+  color: #9198a1;
+}
+
+.markdown-body[data-theme="dark"] .code-copy-btn:hover {
+  background-color: #262c36;
+}
+
+.markdown-body[data-theme="dark"] .code-copy-btn[data-state="copied"] {
+  color: #3fb950;
+}
+
+.markdown-body[data-theme="dark"] .code-copy-btn[data-state="failed"] {
+  color: #f85149;
+}
+
+@media print {
+  .markdown-body .code-copy-bar {
+    display: none !important;
+  }
+}
+
+/* ============================================================
    Pane divider (dual modes)
    ============================================================ */
 .pane-divider {

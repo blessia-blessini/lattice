@@ -318,6 +318,48 @@ NOT alter the text content of the code block in any way.
 bundle loads (and if loading fails) the block SHALL be readable as plain code. Highlighting SHALL
 never block or break preview rendering.
 
+### Copying a code block
+
+Selecting a code block by hand is fiddly — the selection easily misses the first or last character or
+takes the surrounding paragraph along. Code hosting sites solve this with a copy button on each block;
+users expect the same here.
+
+<!--REQ-LTTCE-PRV-00004-->
+**REQ-LTTCE-PRV-00004** — Every code block in the preview pane — fenced with or without a language
+tag — SHALL offer a copy button at its top-right corner, visible while the pointer is over the block,
+while the button has keyboard focus, and at all times on devices without a hovering pointer.
+Activating it SHALL put the block's text content on the clipboard as plain text — exactly the text
+between the fences, without the line break that ends the last line — and SHALL show for a short time
+whether the copy succeeded or failed. A `mermaid` block, although rendered as a diagram, SHALL have
+the same button and SHALL copy its source text in the same way. Inline code SHALL have no copy button.
+
+*Rationale*: the text is taken from the Markdown source of the block, not from what is displayed or
+selected, so highlighting (REQ-LTTCE-PRV-00002), a rendered diagram and the selection's boundaries
+cannot change it. One button with one meaning on every block; copying the diagram as a picture stays
+with the selection copy (REQ-LTTCE-MRC-00002). Showing a failure as well as a
+success matters because the clipboard is not visible: a silent failure leaves the user pasting stale
+content.
+
+<!--REQ-LTTCE-PRV-00005-->
+**REQ-LTTCE-PRV-00005** — The copy buttons are part of the preview's user interface, not of the
+document: they SHALL NOT appear in print, in a PDF or HTML export (Chapter XPT), or in the HTML of a
+preview selection rewritten for the clipboard (REQ-LTTCE-MRC-00002), and SHALL NOT add text to any
+copied preview selection.
+
+<!--REQ-LTTCE-PRV-00006-->
+**REQ-LTTCE-PRV-00006** — A `mermaid` block SHALL offer, next to its copy button of
+REQ-LTTCE-PRV-00004 and with the same visibility and feedback, a second button **"Copy SVG"**. It
+SHALL put the rendered diagram on the clipboard as plain text holding a standalone, well-formed SVG
+document. Its colours SHALL follow the setting "Copy Diagrams On Light Background"
+(REQ-LTTCE-MRC-00005) exactly as the diagram's raster copy does. When the diagram could not be
+rendered, the button SHALL report a failed copy and leave the clipboard unchanged.
+
+*Rationale*: the source text (REQ-LTTCE-PRV-00004) is what a Markdown user needs; the SVG is what a
+user needs who takes the picture into another tool — a vector file, a slide, a design tool — at full
+quality. Following the light-background setting keeps the two diagram copies (picture and SVG)
+consistent with each other: a dark-theme SVG pasted into a white page would otherwise show
+light lines on white.
+
 ---
 
 ## Chapter WSP — Show Whitespace

@@ -41,6 +41,8 @@ import { Editor } from "./components/Editor";
 import { Mermaid } from "./components/Mermaid";
 import { Menu } from "./components/Menu";
 import { HighlightedCode } from "./components/HighlightedCode";
+import { CodeBlock } from "./components/CodeBlock";
+import { fenceText, isMermaidFence } from "./lib/code-block-copy";
 import { rehypeAddHeadingIds } from "./lib/rehype-heading-ids";
 import { rehypeHighlightMark } from "./lib/rehype-highlight-mark";
 import { rehypeSafeHtml } from "./lib/rehype-safe-html";
@@ -1969,6 +1971,14 @@ function App() {
           {children}
         </code>
       );
+    },
+    // IMPL-LTTCE-PRV-00005 — every code block, a Mermaid fence included,
+    // gets a copy button for its source text (REQ-LTTCE-PRV-00004); a Mermaid
+    // fence also gets "Copy SVG" for the rendered diagram (REQ-LTTCE-PRV-00006).
+    // CodeBlock is a stable import, so the useMemo identity holds.
+    pre(props) {
+      const { node, children, ...rest } = props;
+      return <CodeBlock text={fenceText(node)} diagram={isMermaidFence(node)} {...rest}>{children}</CodeBlock>;
     },
     // GFM task-list checkboxes. remark-gfm renders them as
     // <input type="checkbox" disabled [checked]>. We override that to

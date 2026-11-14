@@ -7,6 +7,13 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.59
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: Ledger - signed REASON-011 decisions replace the old ones
+- CHORE: Prefer Apache-2.0 over MIT in the FOSS licence policy
+- DOCS: Correct the code-block margin comment on CSS specificity
+- FIX: Copy buttons - copy inside the click, restart feedback, keep margins
+- FEAT: Copy SVG button on Mermaid diagrams in the preview
+- FEAT: Copy button on Mermaid blocks too, copying their source
+- FEAT: Copy button on preview code blocks
 - CHORE: Merged bac dev
 - FEAT: Start view (REQ-LTTCE-WIN-00003, ARCH-LTTCE-WIN-00003, IMPL-LTTCE-WIN-00003..00006)
 - TEST: Stop the trace_log mocks recursing (cause of the App.coverage timeouts)

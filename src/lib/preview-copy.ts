@@ -85,6 +85,17 @@ export const EXPORT_MODE_ATTR = 'data-lattice-export';
  */
 export const HIGHLIGHT_PENDING_ATTR = 'data-lattice-highlight-pending';
 
+/**
+ * Attribute marking an element of the preview's own user interface — a control
+ * laid over the document, such as a code block's copy button — that is not
+ * part of the document itself.
+ *
+ * REQ-LTTCE-PRV-00005 — such elements are removed from every HTML this module
+ * serialises (`buildCopyHtml`, `buildExportHtml`); print hides them by CSS.
+ * Written by `CodeBlock.tsx`, read here.
+ */
+export const PREVIEW_UI_ATTR = 'data-lattice-ui';
+
 /** Alt text given to the substituted image. */
 const DIAGRAM_ALT = 'Mermaid diagram';
 
@@ -151,6 +162,21 @@ export function substituteDiagrams(fragment: DocumentFragment): number {
 
 
 //******************************************************************************
+// stripPreviewUi
+//******************************************************************************
+/**
+ * IMPL-LTTCE-PRV-00004 — REQ-LTTCE-PRV-00005 — remove every preview control
+ * (`PREVIEW_UI_ATTR`) from `fragment`, a throw-away clone. Returns the number
+ * of elements removed.
+ */
+export function stripPreviewUi(fragment: DocumentFragment): number {
+    const controls = fragment.querySelectorAll(`[${PREVIEW_UI_ATTR}]`);
+    controls.forEach(el => el.remove());
+    return controls.length;
+} // stripPreviewUi END ********************************************************
+
+
+//******************************************************************************
 // buildCopyHtml
 //******************************************************************************
 /**
@@ -161,6 +187,7 @@ export function substituteDiagrams(fragment: DocumentFragment): number {
 export function buildCopyHtml(fragment: DocumentFragment): string | null {
     if (!fragmentHasDiagram(fragment)) return null;
     if (substituteDiagrams(fragment) === 0) return null;
+    stripPreviewUi(fragment);
 
     const host = fragment.ownerDocument.createElement('div');
     host.appendChild(fragment);
@@ -329,5 +356,6 @@ export function buildExportHtml(root: Element): string {
     const fragment = clone.ownerDocument.createDocumentFragment();
     fragment.appendChild(clone);
     substituteDiagrams(fragment);
+    stripPreviewUi(fragment);
     return clone.innerHTML;
 } // buildExportHtml END *******************************************************
