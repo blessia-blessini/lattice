@@ -7,7 +7,8 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 ---
 
 - IMPL-LTTCE-PRV-00005 **covers** REQ-LTTCE-PRV-00004  (wrapper, button bar, `CopyButton` with
-  `idle | copied | failed` feedback reset after `COPY_FEEDBACK_MS`, restarted by every click; mouse-down keeps the selection) — UTST:
+  `idle | busy | copied | failed` feedback reset after `COPY_FEEDBACK_MS`, restarted by every click; `busy` (hourglass,
+  "Copying…", `aria-busy`) until the copy resolves, clicks ignored meanwhile; mouse-down keeps the selection) — UTST:
   `src/components/CodeBlock.test.tsx`
 - IMPL-LTTCE-PRV-00005 **covers** REQ-LTTCE-PRV-00005  (bar marked `PREVIEW_UI_ATTR`, holds no text)
   — UTST: `src/components/CodeBlock.test.tsx`, first case
@@ -15,8 +16,9 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   no SVG → failed, clipboard untouched) — UTST: `src/components/CodeBlock.test.tsx`, *CodeBlock — diagram*
   (4 cases)
 - IMPL-LTTCE-PRV-00005 **covers** REQ-LTTCE-PRV-00007  ("Copy PNG image" first on a diagram, through
-  `copyDiagramImage`; no PNG → failed, clipboard untouched) — UTST: `src/components/CodeBlock.test.tsx`,
-  *CodeBlock — diagram* (order) and *CodeBlock — Copy PNG image* (2 cases)
+  `copyDiagramImage`; no PNG → failed, clipboard untouched; an unconfirmed picture keeps the hourglass up to
+  `IMAGE_COPY_TIMEOUT_MS`, then failed) — UTST: `src/components/CodeBlock.test.tsx`,
+  *CodeBlock — diagram* (order) and *CodeBlock — Copy PNG image* (4 cases)
 - IMPL-LTTCE-PRV-00005 **covers** ARCH-LTTCE-PRV-00003  (also the `pre(props)` renderer in `App.tsx`)
   — ITST: `src/App.code-copy.test.tsx`
 - IMPL-LTTCE-PRV-00006 (button CSS in `src/App.css`) **covers** REQ-LTTCE-PRV-00004  (visible on hover,

@@ -48,7 +48,7 @@ const DIAGRAM_CONTAINER_SELECTOR = '.mermaid';
  * How long "Copy PNG image" waits for the clipboard to confirm the picture
  * before it reports a failed copy (REQ-LTTCE-PRV-00007).
  */
-export const IMAGE_COPY_TIMEOUT_MS = 5000;
+export const IMAGE_COPY_TIMEOUT_MS = 20_000;
 
 
 

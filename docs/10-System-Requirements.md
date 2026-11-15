@@ -331,7 +331,9 @@ tag — SHALL offer a copy button at its top-right corner, visible while the poi
 while the button has keyboard focus, and at all times on devices without a hovering pointer.
 Activating it SHALL put the block's text content on the clipboard as plain text — exactly the text
 between the fences, without the line break that ends the last line — and SHALL show for a short time
-whether the copy succeeded or failed. Its tooltip and accessible name SHALL read **"Copy code"**. A
+whether the copy succeeded or failed. While a copy has not completed yet, the button SHALL show that
+it is in progress (tooltip and accessible name **"Copying…"**) and SHALL ignore further activation
+until it has. Its tooltip and accessible name SHALL read **"Copy code"**. A
 `mermaid` block, although rendered as a diagram, SHALL have the same button and SHALL copy its source
 text in the same way; there its tooltip and accessible name SHALL read **"Copy Mermaid Code"**. Inline
 code SHALL have no copy button.
@@ -374,7 +376,7 @@ size and with the same background, that a copy of a preview selection carries fo
 (REQ-LTTCE-MRC-00001 / 00005) — as an image (`image/png`) where the WebView supports one, and as an
 HTML image otherwise. When the diagram has no such raster — it could not be rendered or rasterised,
 or has not been rasterised yet — the button SHALL report a failed copy and leave the clipboard
-unchanged. When the system clipboard has not confirmed the picture within 5 seconds, the button
+unchanged. When the system clipboard has not confirmed the picture within 20 seconds, the button
 SHALL report a failed copy.
 
 *Rationale*: SVG text pastes as text into most applications; a user who wants the diagram in a

@@ -806,7 +806,7 @@ highlighting above:
      no `clipboardData`), then `navigator.clipboard.write` with an `image/png` `ClipboardItem` built
      synchronously from the data URI (`pngBlob`), which replaces the first. If the image route is
      missing or refused (e.g. a WebView without image support on the clipboard), the HTML copy stays
-     and decides the result. If it has not settled after `IMAGE_COPY_TIMEOUT_MS` (5 s, `settleWithin`),
+     and decides the result. If it has not settled after `IMAGE_COPY_TIMEOUT_MS` (20 s, `settleWithin`),
      the copy counts as failed: the write may still land later or never, so the clipboard's content is
      unknown and success is not claimed. No PNG yet → failure, clipboard untouched; the PNG is rasterised in an
      idle slot after rendering, so this is only possible in the first moments after a diagram appears.
@@ -814,8 +814,11 @@ highlighting above:
    No new dependency: no clipboard plugin, no icon library — the icons are inline SVG paths.
 2. **React glue** — `src/components/CodeBlock.tsx` (IMPL-LTTCE-PRV-00005): the wrapper and the bar; one
    `CopyButton` component for all buttons (on a diagram: "Copy PNG image", "Copy SVG", "Copy Mermaid Code"), each
-   with its own `idle | copied | failed` state shown as
-   icon, `title` and `aria-label`, reset after `COPY_FEEDBACK_MS` — restarted by every click, also one
+   with its own `idle | busy | copied | failed` state shown as
+   icon, `title` and `aria-label`. `busy` (an hourglass, "Copying…", `aria-busy`) lasts from the click
+   until the copy function resolves — for a text copy no longer than the click itself, for a picture
+   up to `IMAGE_COPY_TIMEOUT_MS` — and ignores further clicks, so copies never overlap. The outcome is
+   reset after `COPY_FEEDBACK_MS` — restarted by every click, also one
    with the same outcome as the last (each click sets a new feedback object). A button runs its copy
    function synchronously in the click and shows the flag it resolves; nothing to copy counts as a
    failed copy. A `mousedown` default is suppressed so clicking does not

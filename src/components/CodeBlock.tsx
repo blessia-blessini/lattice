@@ -38,7 +38,7 @@ import { PREVIEW_UI_ATTR } from '../lib/preview-copy';
 /** How long a button shows the outcome of a copy before it resets. */
 export const COPY_FEEDBACK_MS = 1500;
 
-type CopyState = 'idle' | 'copied' | 'failed';
+type CopyState = 'idle' | 'busy' | 'copied' | 'failed';
 
 /**
  * Accessible names (`aria-label`) of the buttons in the idle state — short,
@@ -68,8 +68,8 @@ export const COPY_IMAGE_TOOLTIP = 'Copy PNG image (can be pasted anywhere)';
  */
 export const COPY_KIND_ATTR = 'data-copy';
 
-/** Labels after a copy, shared by all buttons. */
-const RESULT_LABELS = { copied: 'Copied', failed: 'Copy failed' } as const;
+/** Labels while a copy runs and after it, shared by all buttons. */
+export const STATE_LABELS = { busy: 'Copying…', copied: 'Copied', failed: 'Copy failed' } as const;
 
 /** Stroke paths of the icons, drawn on a 16×16 grid. */
 const ICON_PATHS = {
@@ -77,6 +77,8 @@ const ICON_PATHS = {
     // A curve between two anchor points: the vector drawing, not the picture.
     svg: 'M3.5 10.5C4.5 4.5 11.5 4.5 12.5 10.5 M2 10.5h3v3H2z M11 10.5h3v3h-3z',
     image: 'M2.5 3.5h11v9h-11z M2.5 10.5l3.5-3.5 3 3 2-2 2.5 2.5 M10.5 6a.5.5 0 1 0 0 .01',
+    // An hourglass: two triangles meeting in the middle, closed top and bottom.
+    busy: 'M4 2.5h8 M4 13.5h8 M5 2.5L8 8l3-5.5 M5 13.5L8 8l3 5.5',
     copied: 'M3 8.5l3 3 7-7',
     failed: 'M4 4l8 8M12 4l-8 8',
 } as const;
@@ -89,6 +91,9 @@ const ICON_PATHS = {
  * One copy button: runs `copy` on click and shows for `COPY_FEEDBACK_MS`
  * whether it worked (its resolved flag). `copy` is called synchronously in
  * the click handler, so its clipboard routes start inside the user gesture.
+ * Until `copy` resolves the button shows an hourglass ("Copying…") and
+ * ignores clicks, so two copies never overlap; a picture copy may take up to
+ * `IMAGE_COPY_TIMEOUT_MS` (copyDiagramImage).
  *
  * `label` is the accessible name, `tooltip` the hover text (default: the
  * name); after a copy both show the outcome.
@@ -106,23 +111,34 @@ function CopyButton({ label, tooltip = label, icon, copy }: {
     // state change and restarts the reset timer below.
     const [feedback, setFeedback] = useState<{ state: CopyState }>({ state: 'idle' });
     const state = feedback.state;
+    // Set synchronously in the click, so even a second click before the next
+    // render cannot start an overlapping copy.
+    const busy = useRef(false);
 
-    // Reset the feedback after a while; a new click restarts the timer.
+    // Reset the outcome after a while; a new click restarts the timer. A
+    // running copy is not an outcome and stays until it resolves.
     useEffect(() => {
-        if (feedback.state === 'idle') return;
+        if (feedback.state === 'idle' || feedback.state === 'busy') return;
         const timer = setTimeout(() => setFeedback({ state: 'idle' }), COPY_FEEDBACK_MS);
         return () => clearTimeout(timer);
     }, [feedback]);
 
     const onCopy = async () => {
-        // The copy functions start their routes before their first await,
-        // i.e. still inside this click (see copyText, copyDiagramImage).
-        const ok = await copy();
-        setFeedback({ state: ok ? 'copied' : 'failed' });
+        if (busy.current) return;
+        busy.current = true;
+        setFeedback({ state: 'busy' });
+        try {
+            // The copy functions start their routes before their first await,
+            // i.e. still inside this click (see copyText, copyDiagramImage).
+            const ok = await copy();
+            setFeedback({ state: ok ? 'copied' : 'failed' });
+        } finally {
+            busy.current = false;
+        }
     };
 
-    const shown = state === 'idle' ? label : RESULT_LABELS[state];
-    const hover = state === 'idle' ? tooltip : RESULT_LABELS[state];
+    const shown = state === 'idle' ? label : STATE_LABELS[state];
+    const hover = state === 'idle' ? tooltip : STATE_LABELS[state];
     return (
         <button
             type="button"
@@ -130,6 +146,7 @@ function CopyButton({ label, tooltip = label, icon, copy }: {
             {...{ [COPY_KIND_ATTR]: icon }}
             data-state={state}
             aria-label={shown}
+            aria-busy={state === 'busy'}
             title={hover}
             // Keep the user's text selection: a mouse-down on a button
             // would otherwise collapse it before the click.
