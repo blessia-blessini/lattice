@@ -125,6 +125,9 @@ mod linux {
     const SAVE_TIMEOUT: Duration = Duration::from_secs(20);
     /// How long the clipboard may take to hold the copied diagram.
     const COPY_TIMEOUT: Duration = Duration::from_secs(10);
+    /// How long the killed app may take to exit.
+    const STOP_TIMEOUT: Duration = Duration::from_secs(10);
+    const STOP_POLL: Duration = Duration::from_millis(100);
     const POLL: Duration = Duration::from_millis(500);
 
     /// Where the "Copy PNG image" button sits, from the window's top-right
@@ -329,12 +332,28 @@ mod linux {
             let links = wait_for_saved_links(&doc, 2)?;
             expect_picture(&doc, &links[1], copied)
         })();
-        // The release binary has no remote "quit"; its document is saved.
-        let _ = child.kill();
-        let _ = child.wait();
+        stop_app(&mut child);
         result
     }
     // paste_and_check END ******************************************
+
+    //**************************************************************
+    // stop_app
+    //**************************************************************
+    /// Kill the app — the release binary has no remote "quit", and its
+    /// document is saved — and wait at most `STOP_TIMEOUT` for it to exit.
+    fn stop_app(child: &mut Child) {
+        let _ = child.kill();
+        let start = Instant::now();
+        while start.elapsed() < STOP_TIMEOUT {
+            if !matches!(child.try_wait(), Ok(None)) {
+                return;
+            }
+            thread::sleep(STOP_POLL);
+        }
+        eprintln!("[WARN] the app (pid {}) did not exit within {} s of being killed", child.id(), STOP_TIMEOUT.as_secs());
+    }
+    // stop_app END *************************************************
 
     //**************************************************************
     // run

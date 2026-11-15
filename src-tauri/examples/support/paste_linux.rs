@@ -22,7 +22,7 @@
 use std::ffi::{c_int, c_uint, c_ulong};
 use std::ptr;
 use std::sync::mpsc;
-use std::thread::{self, JoinHandle};
+use std::thread;
 use std::time::Duration;
 use x11_dl::keysym;
 use x11_dl::xlib::{self, Xlib};
@@ -44,9 +44,14 @@ type Job = Box<dyn FnOnce() + Send>;
 //******************************************************************************
 /// The CLIPBOARD selection, used through GTK on a thread that pumps GTK's
 /// main loop until this value is dropped.
+///
+/// Every wait here has a limit (`GTK_TIMEOUT`): jobs only start GTK calls
+/// that answer through the main loop, never one that blocks the thread, and
+/// the answers are awaited with `recv_timeout`.
 pub struct GtkClipboard {
     jobs: Option<mpsc::Sender<Job>>,
-    thread: Option<JoinHandle<()>>,
+    /// Disconnected once the GTK thread has ended.
+    ended: mpsc::Receiver<()>,
 }
 
 impl GtkClipboard {
@@ -57,7 +62,11 @@ impl GtkClipboard {
     pub fn start() -> Result<Self, String> {
         let (jobs_tx, jobs_rx) = mpsc::channel::<Job>();
         let (ready_tx, ready_rx) = mpsc::channel::<Result<(), String>>();
-        let thread = thread::spawn(move || {
+        let (ended_tx, ended) = mpsc::channel::<()>();
+        // Detached: `Drop` waits for it with a limit, through `ended`.
+        thread::spawn(move || {
+            // Dropped when the thread ends, however it ends.
+            let _ended = ended_tx;
             // GTK is used from this thread only: init, every job and the loop.
             if let Err(e) = gtk::init() {
                 let _ = ready_tx.send(Err(format!("cannot initialise GTK: {e}")));
@@ -75,7 +84,7 @@ impl GtkClipboard {
                 }
             }
         });
-        let gtk = GtkClipboard { jobs: Some(jobs_tx), thread: Some(thread) };
+        let gtk = GtkClipboard { jobs: Some(jobs_tx), ended };
         match ready_rx.recv_timeout(GTK_TIMEOUT) {
             Ok(Ok(())) => Ok(gtk),
             Ok(Err(e)) => Err(e),
@@ -114,16 +123,14 @@ impl GtkClipboard {
             let pixbuf = gtk::gdk_pixbuf::Pixbuf::new(gtk::gdk_pixbuf::Colorspace::Rgb, false, 8, width, height)
                 .ok_or("cannot allocate the picture")?;
             pixbuf.fill(0x3366_99ff);
-            let clipboard = gtk::Clipboard::get(&gtk::gdk::SELECTION_CLIPBOARD);
-            clipboard.set_image(&pixbuf);
-            // Waiting is safe here, unlike in `picture_size`: the owner asked
-            // is this very thread, which GTK answers without the X server.
-            if clipboard.wait_is_image_available() {
-                Ok(())
-            } else {
-                Err("GTK did not take the clipboard".to_string())
-            }
-        })?
+            gtk::Clipboard::get(&gtk::gdk::SELECTION_CLIPBOARD).set_image(&pixbuf);
+            Ok::<(), String>(())
+        })??;
+        // Read back like any other picture — asynchronous, with a limit.
+        match self.picture_size()? {
+            Some(size) if size == (width, height) => Ok(()),
+            other => Err(format!("GTK did not take the clipboard: it holds {other:?}, not {width}x{height}")),
+        }
     }
     // GtkClipboard::offer_picture END ****************************
 
@@ -153,10 +160,13 @@ impl GtkClipboard {
 
 impl Drop for GtkClipboard {
     fn drop(&mut self) {
-        // Closing the job channel ends the thread's loop.
+        // Closing the job channel ends the thread's loop within one tick.
         self.jobs.take();
-        if let Some(thread) = self.thread.take() {
-            let _ = thread.join();
+        if let Err(mpsc::RecvTimeoutError::Timeout) = self.ended.recv_timeout(GTK_TIMEOUT) {
+            eprintln!(
+                "[WARN] the GTK thread did not stop within {} s; it ends with the process",
+                GTK_TIMEOUT.as_secs()
+            );
         }
     }
 }
