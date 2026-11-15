@@ -248,11 +248,14 @@ pub(crate) fn attach_parent_console() {
 pub(crate) fn reads_command_line_options() -> bool {
     PlatformImpl.reads_command_line_options()
 }
+// reads_command_line_options END **********************************************
 
 
 //******************************************************************************
 // read_clipboard_png
 //******************************************************************************
+/// Forwards to the selected platform implementation. See
+/// [`Platform::read_clipboard_png`].
 pub(crate) fn read_clipboard_png(
     app: &tauri::AppHandle,
     done: tokio::sync::oneshot::Sender<Option<Vec<u8>>>,
@@ -260,7 +263,6 @@ pub(crate) fn read_clipboard_png(
     PlatformImpl.read_clipboard_png(app, done);
 }
 // read_clipboard_png END ******************************************************
-// reads_command_line_options END **********************************************
 
 
 //******************************************************************************

@@ -82,12 +82,17 @@ const mockHost = (clip: string | null) => {
 
 describe('Editor — picture paste the web engine withheld', () => {
     let alertSpy: ReturnType<typeof vi.spyOn>;
+    let errSpy: ReturnType<typeof vi.spyOn>;
     beforeEach(() => {
         vi.mocked(TauriCore.invoke).mockReset();
         alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+        errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     });
     afterEach(() => {
+        // Restored here, not inside a test, so a failing assertion cannot
+        // leave the spies installed for the tests that follow.
         alertSpy.mockRestore();
+        errSpy.mockRestore();
     });
 
     it('asks the host for the clipboard picture, saves it and links it', async () => {
@@ -120,12 +125,10 @@ describe('Editor — picture paste the web engine withheld', () => {
 
     it('survives a failing host read without touching the document', async () => {
         vi.mocked(TauriCore.invoke).mockRejectedValue(new Error('host down'));
-        const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
         const { ref, content } = renderEditor();
         await pasteNothing(content);
         await waitFor(() => expect(errSpy).toHaveBeenCalled());
         expect(ref.current!.getContent()).toBe('');
-        errSpy.mockRestore();
     });
 
     it('does not ask the host for a text paste', async () => {

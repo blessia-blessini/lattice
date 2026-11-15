@@ -40,6 +40,38 @@ impl Drop for Display<'_> {
 
 
 //******************************************************************************
+// open_display
+//******************************************************************************
+/// Open `$DISPLAY`; closed again when the returned value is dropped.
+fn open_display(xlib: &Xlib) -> Result<Display<'_>, String> {
+    // SAFETY: NULL selects $DISPLAY.
+    let raw = unsafe { (xlib.XOpenDisplay)(ptr::null()) };
+    if raw.is_null() {
+        return Err("cannot open the X display (is DISPLAY set?)".into());
+    }
+    Ok(Display { xlib, raw })
+}
+// open_display END ************************************************************
+
+
+//******************************************************************************
+// main_window_rect
+//******************************************************************************
+/// Screen position and size of the main window of process `pid`, `Ok(None)`
+/// while it has none. Used by `paste_image_e2e.rs` to aim its clicks; the
+/// screenshot example only needs [`capture_main_window`].
+#[allow(dead_code)]
+pub fn main_window_rect(pid: u32) -> Result<Option<(c_int, c_int, c_uint, c_uint)>, String> {
+    let xlib = Xlib::open().map_err(|e| format!("cannot load libX11: {e}"))?;
+    let d = open_display(&xlib)?;
+    // SAFETY: `d.raw` is an open display.
+    let root = unsafe { (xlib.XDefaultRootWindow)(d.raw) };
+    Ok(find_main_window(&d, root, pid))
+}
+// main_window_rect END ********************************************************
+
+
+//******************************************************************************
 // window_pid
 //******************************************************************************
 /// The `_NET_WM_PID` of `window`, if it has one.
@@ -153,12 +185,7 @@ fn channel(pixel: c_ulong, mask: c_ulong) -> u8 {
 /// process has no visible window yet; `Err` when capturing itself fails.
 pub fn capture_main_window(pid: u32, png: &Path) -> Result<bool, String> {
     let xlib = Xlib::open().map_err(|e| format!("cannot load libX11: {e}"))?;
-    // SAFETY: NULL selects $DISPLAY.
-    let raw = unsafe { (xlib.XOpenDisplay)(ptr::null()) };
-    if raw.is_null() {
-        return Err("cannot open the X display (is DISPLAY set?)".into());
-    }
-    let d = Display { xlib: &xlib, raw };
+    let d = open_display(&xlib)?;
     // SAFETY: `d.raw` is an open display.
     let root = unsafe { (xlib.XDefaultRootWindow)(d.raw) };
     let Some((x, y, w, h)) = find_main_window(&d, root, pid) else {

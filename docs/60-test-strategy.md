@@ -188,6 +188,30 @@ binary, no window within 60 s, a capture error, a single-colour image — become
 annotation, the file is removed, and the leg stays green. The locating and staging helpers are
 shared with the export check through `examples/support/release_app.rs`.
 
+### Paste-image check — `examples/paste_image_e2e.rs` (STST for REQ-LTTCE-IMP-00001 / 00002, Linux only)
+
+Step 1f of `build-test.sh`, on the Linux legs. WebKitGTK hands the page an **empty** paste event when
+the clipboard holds a picture, so on Linux a pasted picture only arrives through Lattice's own
+clipboard read (`Platform::read_clipboard_png`). This check proves that path end to end, as a user
+would, with **no test hook in the app** — it drives the same release binary as the export check:
+
+1. stages `src-tauri/target/e2e-paste-image/` — a vault whose `.lattice/settings.json` opens documents
+   in the Edit view, one document `paste.md`, and an empty home;
+2. puts a 37×23 picture on the CLIPBOARD selection, owned by the check's own process through GTK (the
+   `gtk` crate is already a Linux dependency) on a thread that keeps GTK's main loop answering;
+3. launches the app with its own `HOME` / `XDG_*` folders, finds its window by `_NET_WM_PID`
+   (`support/capture_linux.rs`, shared with the screenshot), clicks into the editor and presses
+   **Ctrl+V**, then **Ctrl+S**, through the X server's XTest extension (`support/paste_linux.rs`;
+   libXtst loaded at runtime through `x11-dl`) — real input events, not synthetic DOM events;
+4. requires the saved document to end with exactly one `![Image](paste_assets/img_<n>.png)` link, and
+   that file to be a PNG of exactly 37×23.
+
+A failure fails the build. A missing release binary is a skip locally and a failure when
+`LATTICE_EXPORT_REQUIRED=1` (CI), as for the export check. Windows and macOS skip the step: their web
+engines hand the picture to the page, and the Vitest tests cover that route
+(`Editor.paste-image.test.tsx`, `paste-image.test.ts`). The check's own matching rule is unit-tested
+(`cargo test --example paste_image_e2e`, run first).
+
 ### CLI export check — `examples/export_demo.rs` (ITST-LTTCE-XPT-00010)
 
 Covers the headless export modes (`--export-html` / `--export-pdf`) end to end: the round trip
@@ -351,6 +375,9 @@ Step 1b2  cargo llvm-cov --no-report --test file_open_tests  → file-open tests
 Step 1c   RUSTFLAGS="--cfg e2e_test"                         → build instrumented binary
           cargo llvm-cov build --bin lattice --no-report
           cargo run --example e2e_harness                    → E2E scenarios (Windows only), profraw merged
+Step 1d   cargo run --example export_demo                    → CLI export check (every desktop leg)
+Step 1e   cargo run --example app_screenshot                 → screenshot (documentation, never fails)
+Step 1f   cargo run --example paste_image_e2e                → paste-image check (Linux only)
 Step 2b   npm run test:coverage                              → frontend coverage (separate)
 Step 2c   node scripts/foss/foss.mjs check / notices --check → FOSS gate + drift (local only)
 Step 3    cargo clippy -- -D warnings                        → linter
