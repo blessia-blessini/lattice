@@ -1028,6 +1028,7 @@ jobs:
           public
           docs/demo
           scripts/apt
+          scripts/release
         sparse-checkout-cone-mode: true
         fetch-depth: 1
         path: _src
@@ -1055,6 +1056,13 @@ jobs:
           echo "Automated release — no changelog entry found for ${VERSION}." > release-notes.md
           echo "" >> release-notes.md
         fi
+
+        # CSTR-LTTCE-BLD-00002: no GitHub mentions. A bare @name in a commit
+        # title (@main, @page) would notify that account and list it as a
+        # contributor of the release; put each in code instead. Covers the
+        # GitHub Release (904) and the release-site page (905), both made
+        # from this file.
+        node ./_src/scripts/release/release-mentions.mjs release-notes.md
 
         echo "--- Release notes preview ----------"
         cat release-notes.md

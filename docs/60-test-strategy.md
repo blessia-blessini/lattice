@@ -333,7 +333,9 @@ REQ-LTTCE-FOS-00002 / 00004. About 45 s (`cargo metadata` for 8 targets). Skippe
 `GITHUB_ACTIONS=true`: on CI the job `foss-compliance` runs both once instead of once per leg. The unit
 tests of `scripts/foss/` (`*.test.mjs`) run with the frontend suite in step 2b locally; on CI the build legs
 check out without `scripts/foss/` and `foss/` (proving the product does not depend on them, steps 100/101),
-so the `foss-compliance` job runs those tests instead (step 144). A stale notices file is
+so the `foss-compliance` job runs those tests instead (step 144). The unit tests of `scripts/release/`
+(`release-mentions.test.mjs`, CSTR-LTTCE-BLD-00002) are checked out everywhere and run with the frontend
+suite, locally and on every build leg. A stale notices file is
 fixed with `npm run foss:notices`. The same job (`foss-compliance.yml`) runs on every pull request into
 `dev`, Dependabot's included, and on every push to `dev`; on failure its job summary lists the failing
 components or the stale files and the commands that regenerate them.

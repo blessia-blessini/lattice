@@ -6,6 +6,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.61
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: Release notes put GitHub-style mentions in code, so no account is notified or listed
 - TEST: Paste-image check - every wait has a limit
 - FIX: Copy button never keeps its hourglass on a throwing copy; check's clipboard read cannot wedge GTK
 - TEST: Linux end-to-end check also copies a diagram with "Copy PNG image" and pastes it back

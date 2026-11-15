@@ -103,6 +103,20 @@ can bypass silently. The check turns that into a build failure.
 E2E build, `vite.e2e_test.config.ts`, is exempt). The Rust side's test hooks are compiled out by the
 `e2e_test` feature (`e2e::is_e2e_tst_build()`), which no release build enables.
 
+<!--CSTR-LTTCE-BLD-00002-->
+**CSTR-LTTCE-BLD-00002** — The release notes a release build publishes — the GitHub Release text and the
+release-site page — SHALL contain no bare `@name` outside code: every such name SHALL be put in code
+(backticks) before publishing, so that no GitHub account is mentioned.
+
+*Rationale*: the release notes are the commit titles collected in `CHANGELOG.md`, where `@main` is a
+branch and `@page` a CSS rule, never a person. GitHub reads `@name` in a release text as a mention: the
+v0.3.52 notes ("…the Legattice scan at @main…") notified the account named `main` and listed it among
+that release's contributors. Text in code is never a mention and reads the same.
+*Design*: `scripts/release/release-mentions.mjs` (`quoteMentions`, unit-tested in
+`release-mentions.test.mjs`), run on `release-notes.md` by step 900.5 of `buildAndTest.yml`, which both
+the release (904) and the release-site page (905) are made from. E-mail addresses, URL paths and text
+already in code are left alone.
+
 ---
 
 [^posix]: POSIX — Portable Operating System Interface. The IEEE/ISO standard for Unix-like system
