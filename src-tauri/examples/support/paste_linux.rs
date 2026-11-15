@@ -116,6 +116,8 @@ impl GtkClipboard {
             pixbuf.fill(0x3366_99ff);
             let clipboard = gtk::Clipboard::get(&gtk::gdk::SELECTION_CLIPBOARD);
             clipboard.set_image(&pixbuf);
+            // Waiting is safe here, unlike in `picture_size`: the owner asked
+            // is this very thread, which GTK answers without the X server.
             if clipboard.wait_is_image_available() {
                 Ok(())
             } else {
@@ -130,12 +132,21 @@ impl GtkClipboard {
     //**************************************************************
     /// Size of the picture on the clipboard, whoever owns it; `None` when it
     /// holds no picture.
+    ///
+    /// Asked with GTK's asynchronous `request_image`, not `wait_for_image`:
+    /// the job returns at once and the answer arrives through the main loop,
+    /// so an owner that never answers costs this call its timeout but leaves
+    /// the GTK thread free — later calls and `Drop` still work.
     pub fn picture_size(&self) -> Result<Option<(i32, i32)>, String> {
-        self.run(|| {
-            gtk::Clipboard::get(&gtk::gdk::SELECTION_CLIPBOARD)
-                .wait_for_image()
-                .map(|p| (p.width(), p.height()))
-        })
+        let (answer_tx, answer_rx) = mpsc::channel::<Option<(i32, i32)>>();
+        self.run(move || {
+            gtk::Clipboard::get(&gtk::gdk::SELECTION_CLIPBOARD).request_image(move |_, image| {
+                let _ = answer_tx.send(image.map(|p| (p.width(), p.height())));
+            });
+        })?;
+        answer_rx
+            .recv_timeout(GTK_TIMEOUT)
+            .map_err(|_| format!("the clipboard owner did not answer within {} s", GTK_TIMEOUT.as_secs()))
     }
     // GtkClipboard::picture_size END *****************************
 }

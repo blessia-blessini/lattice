@@ -8,13 +8,14 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 
 - IMPL-LTTCE-PRV-00005 **covers** REQ-LTTCE-PRV-00004  (wrapper, button bar, `CopyButton` with
   `idle | busy | copied | failed` feedback reset after `COPY_FEEDBACK_MS`, restarted by every click; `busy` (hourglass,
-  "Copying…", `aria-busy`) until the copy resolves, clicks ignored meanwhile; mouse-down keeps the selection) — UTST:
+  "Copying…", `aria-busy`) until the copy resolves, clicks ignored meanwhile; a copy that throws ends as failed;
+  mouse-down keeps the selection) — UTST:
   `src/components/CodeBlock.test.tsx`
 - IMPL-LTTCE-PRV-00005 **covers** REQ-LTTCE-PRV-00005  (bar marked `PREVIEW_UI_ATTR`, holds no text)
   — UTST: `src/components/CodeBlock.test.tsx`, first case
 - IMPL-LTTCE-PRV-00005 **covers** REQ-LTTCE-PRV-00006  ("Copy SVG" before "Copy Mermaid Code" on a diagram;
   no SVG → failed, clipboard untouched) — UTST: `src/components/CodeBlock.test.tsx`, *CodeBlock — diagram*
-  (4 cases)
+  (5 cases)
 - IMPL-LTTCE-PRV-00005 **covers** REQ-LTTCE-PRV-00007  ("Copy PNG image" first on a diagram, through
   `copyDiagramImage`; no PNG → failed, clipboard untouched; an unconfirmed picture keeps the hourglass up to
   `IMAGE_COPY_TIMEOUT_MS`, then failed) — UTST: `src/components/CodeBlock.test.tsx`,

@@ -6,6 +6,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.61
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: Copy button never keeps its hourglass on a throwing copy; check's clipboard read cannot wedge GTK
 - TEST: Linux end-to-end check also copies a diagram with "Copy PNG image" and pastes it back
 - FEAT: Copy buttons show an hourglass while copying; picture copy waits up to 20 s
 - FIX: Copy PNG image reports failure when the clipboard does not confirm within 5 s

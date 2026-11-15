@@ -164,6 +164,25 @@ describe('CodeBlock — diagram', () => {
         expect(writeText).toHaveBeenCalledWith('graph TD; A-->B');
     });
 
+    it('reports failure, not a lasting hourglass, when the copy itself throws, and works again after', async () => {
+        const original = globalThis.XMLSerializer;
+        const { container } = renderDiagram('<svg id="d1"><g/></svg>');
+        const btn = button(container, COPY_SVG_LABEL);
+        try {
+            globalThis.XMLSerializer = class {
+                serializeToString(): string { throw new Error('serialiser broken'); }
+            } as unknown as typeof XMLSerializer;
+            await act(async () => { fireEvent.click(btn); });
+            expect(btn.getAttribute('data-state')).toBe('failed');
+            expect(writeText).not.toHaveBeenCalled();
+        } finally {
+            globalThis.XMLSerializer = original;
+        }
+        await act(async () => { fireEvent.click(btn); });
+        expect(writeText).toHaveBeenCalledTimes(1);
+        expect(btn.getAttribute('data-state')).toBe('copied');
+    });
+
     it('"Copy SVG" reports failure, without copying, when the diagram did not render', async () => {
         const { container } = renderDiagram('<pre class="error">Failed to render diagram</pre>');
         const btn = button(container, COPY_SVG_LABEL);
