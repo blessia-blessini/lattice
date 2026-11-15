@@ -6,6 +6,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.61
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: Set version to 0.3.61
 - FEAT: Candidate tags stop on undecided licence topics, with step-by-step fix
 - FIX: NPM Install
 - CHORE: Update npm and cargo dependencies and updated the legal notices
