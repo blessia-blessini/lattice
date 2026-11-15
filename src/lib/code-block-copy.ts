@@ -44,6 +44,12 @@ const MERMAID_FENCE_CLASS = 'language-mermaid';
 /** Selector of the element `Mermaid.tsx` renders the diagram into. */
 const DIAGRAM_CONTAINER_SELECTOR = '.mermaid';
 
+/**
+ * How long "Copy PNG image" waits for the clipboard to confirm the picture
+ * before it reports a failed copy (REQ-LTTCE-PRV-00007).
+ */
+export const IMAGE_COPY_TIMEOUT_MS = 5000;
+
 
 
 //******************************************************************************
@@ -342,6 +348,12 @@ export function pngBlob(dataUri: string): Blob {
  *      the first and is what image editors and chat apps need.
  * Route 2 failing (e.g. a WebView without image support on the clipboard)
  * leaves route 1's copy in place, so the result is the better of the two.
+ *
+ * Route 2 still pending after `IMAGE_COPY_TIMEOUT_MS` is a failed copy, not
+ * a refusal: the write may yet land and replace route 1's copy, or never
+ * finish (a stalled clipboard service), so what the clipboard holds is
+ * unknown and success is not claimed. Without this limit a write that never
+ * settles leaves the button without any feedback.
  */
 export async function copyDiagramImage(
     block: Element,
@@ -358,11 +370,40 @@ export async function copyDiagramImage(
         // Unsupported — the Async Clipboard API below may still work.
     }
     if (!routes.writePng) return htmlOk;
+    let write: Promise<void>;
     try {
-        await routes.writePng(pngBlob(img.getAttribute('src') ?? ''));
-        return true;
+        write = routes.writePng(pngBlob(img.getAttribute('src') ?? ''));
     } catch {
         return htmlOk;
     }
+    switch (await settleWithin(write, IMAGE_COPY_TIMEOUT_MS)) {
+        case 'fulfilled': return true;
+        case 'rejected': return htmlOk;
+        case 'timeout': return false;
+    }
 }
 // copyDiagramImage END ********************************************************
+
+
+/** How a promise ended for `settleWithin`. */
+export type Settlement = 'fulfilled' | 'rejected' | 'timeout';
+
+
+//******************************************************************************
+// settleWithin
+//******************************************************************************
+/**
+ * How `promise` ended: `'fulfilled'` or `'rejected'` when it settled within
+ * `ms`, else `'timeout'`. Never rejects; the timer is cleared as soon as the
+ * promise settles, so nothing is left running.
+ */
+export function settleWithin(promise: Promise<unknown>, ms: number): Promise<Settlement> {
+    return new Promise<Settlement>(resolve => {
+        const timer = setTimeout(() => resolve('timeout'), ms);
+        promise.then(
+            () => { clearTimeout(timer); resolve('fulfilled'); },
+            () => { clearTimeout(timer); resolve('rejected'); },
+        );
+    });
+}
+// settleWithin END ************************************************************

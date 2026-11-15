@@ -6,6 +6,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.61
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FIX: Copy PNG image reports failure when the clipboard does not confirm within 5 s
 - TEST: Paste image - Linux end-to-end check with a real Ctrl+V; review fixes
 - FIX: Pasting a picture works on Linux - read the clipboard through GTK
 - CHORE: Set version to 0.3.61

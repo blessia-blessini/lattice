@@ -19,10 +19,11 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - IMPL-LTTCE-PRV-00004 **covers** REQ-LTTCE-PRV-00007  (`copyDiagramImage` — the cached PNG via
   `diagramImage` (shared with the selection copy in `preview-copy.ts`), the `<img>` HTML copy and then
   the `image/png` `ClipboardItem`, both started inside the click; the HTML copy decides when the image
-  route is missing or refused; no PNG → `false`, no route touched. `execCommandCopy` with `html` fails
+  route is missing or refused; an image write not settled after `IMAGE_COPY_TIMEOUT_MS` → `false`
+  (`settleWithin`); no PNG → `false`, no route touched. `execCommandCopy` with `html` fails
   without `clipboardData`. `pngBlob`, `defaultImageClipboardRoutes`) — UTST:
-  `src/lib/code-block-copy.test.ts`, *copyDiagramImage*, *pngBlob*, *execCommandCopy with HTML*,
-  *defaultImageClipboardRoutes*
+  `src/lib/code-block-copy.test.ts`, *copyDiagramImage* (incl. *when the clipboard does not confirm
+  the picture*), *settleWithin*, *pngBlob*, *execCommandCopy with HTML*, *defaultImageClipboardRoutes*
 - IMPL-LTTCE-PRV-00004 **covers** REQ-LTTCE-PRV-00005  (`PREVIEW_UI_ATTR` and `stripPreviewUi` live in
   `preview-copy.ts` next to the other shared preview attributes — see `src/lib/preview-copy.trace-cov.md`)
 - IMPL-LTTCE-PRV-00004 **covers** ARCH-LTTCE-PRV-00003

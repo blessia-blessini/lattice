@@ -806,7 +806,9 @@ highlighting above:
      no `clipboardData`), then `navigator.clipboard.write` with an `image/png` `ClipboardItem` built
      synchronously from the data URI (`pngBlob`), which replaces the first. If the image route is
      missing or refused (e.g. a WebView without image support on the clipboard), the HTML copy stays
-     and decides the result. No PNG yet → failure, clipboard untouched; the PNG is rasterised in an
+     and decides the result. If it has not settled after `IMAGE_COPY_TIMEOUT_MS` (5 s, `settleWithin`),
+     the copy counts as failed: the write may still land later or never, so the clipboard's content is
+     unknown and success is not claimed. No PNG yet → failure, clipboard untouched; the PNG is rasterised in an
      idle slot after rendering, so this is only possible in the first moments after a diagram appears.
 
    No new dependency: no clipboard plugin, no icon library — the icons are inline SVG paths.

@@ -374,10 +374,14 @@ size and with the same background, that a copy of a preview selection carries fo
 (REQ-LTTCE-MRC-00001 / 00005) — as an image (`image/png`) where the WebView supports one, and as an
 HTML image otherwise. When the diagram has no such raster — it could not be rendered or rasterised,
 or has not been rasterised yet — the button SHALL report a failed copy and leave the clipboard
-unchanged.
+unchanged. When the system clipboard has not confirmed the picture within 5 seconds, the button
+SHALL report a failed copy.
 
 *Rationale*: SVG text pastes as text into most applications; a user who wants the diagram in a
 document, slide, mail or chat needs a picture, and should not have to select the diagram to get one.
+A clipboard service that stalls (seen with a Linux desktop forwarding its clipboard to the host
+system) would otherwise leave the button with no feedback at all; once the limit has passed, what the
+clipboard holds is unknown, so success is not claimed.
 Reusing the selection copy's raster keeps every picture of the diagram identical. An image on the
 clipboard is what image editors and chat applications accept; the HTML image is what Word and mail
 clients accept, and is the fallback for a WebView that cannot put images on the clipboard.
