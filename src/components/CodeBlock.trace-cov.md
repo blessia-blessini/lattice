@@ -32,9 +32,15 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 Windows PowerShell's built-in clipboard class — the Mermaid source (REQ-LTTCE-PRV-00004), a standalone
 SVG (REQ-LTTCE-PRV-00006), an image of the PNG's exact size (REQ-LTTCE-PRV-00007).
 
-**STST — open on macOS and Linux.** The E2E harness runs on Windows only (headless WKWebView and
-WebKitGTK were flaky). Beyond that, WebKit allows clipboard writes only inside a real user gesture, and a
-scripted `click()` is not one, so a driver like the Windows one would test the refusal, not the copy. What
-those WebViews decide — whether the copy command and `ClipboardItem` (WebKitGTK may not support
-`image/png`) work there — is unverified. The print/hover CSS (REQ-LTTCE-PRV-00004 / 00005) has no
+**STST — Linux, "Copy PNG image" only.** `src-tauri/examples/paste_image_e2e.rs` (build-test step 1f):
+in the release app under xvfb, the pointer is moved over a diagram and its "Copy PNG image" is clicked
+through XTest — real X input, so a genuine user gesture for WebKitGTK — and the clipboard must then hold
+a picture; pasted back into the editor, it must be saved as a PNG of exactly that size
+(REQ-LTTCE-PRV-00007). This also shows that the button's hover visibility works (REQ-LTTCE-PRV-00004).
+Verified by the author: WebKitGTK 2.52.6 puts a real `image/png` on the clipboard.
+
+**STST — open on macOS, and for "Copy SVG" / "Copy Mermaid Code" on Linux.** The E2E harness runs on
+Windows only (headless WKWebView and WebKitGTK were flaky). WebKit allows clipboard writes only inside a
+real user gesture, and a scripted `click()` is not one, so a driver like the Windows one would test the
+refusal, not the copy. The print/hover CSS (REQ-LTTCE-PRV-00004 / 00005) has no
 automated end-to-end check on any platform.
