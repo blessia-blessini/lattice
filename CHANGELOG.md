@@ -3,10 +3,16 @@
 All notable changes to Lattice are documented here.
 Edit the section for your next version **before** pushing the release tag like vX.Y.Z.
 
-## v0.3.61
+## v0.3.62
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
-- FEAT: Copy PNG image shows an hourglass and gives up after 20 s; Linux E2E copies and pastes a diagram; no mentions in release notes
+- PREP Release 0.3.61
+---
+
+## v0.3.61
+### Changes
+- FEAT: Copy PNG image shows an hourglass and gives up after 20 s; 
+  Linux E2E copies and pastes a diagram; no mentions in release notes
 - FIX: Release notes put GitHub-style mentions in code, so no account is notified or listed
 - TEST: Paste-image check - every wait has a limit
 - FIX: Copy button never keeps its hourglass on a throwing copy; check's clipboard read cannot wedge GTK
