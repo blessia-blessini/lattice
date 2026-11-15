@@ -31,6 +31,7 @@ implementation artefacts. For the ID schema definition see `11-Traceability-Requ
   - [Chapter SET — Settings Robustness](#chapter-set-settings-robustness)
   - [Chapter CPY — Preview Copy Fidelity](#chapter-cpy-preview-copy-fidelity)
   - [Chapter SEL — Select All Scope](#chapter-sel-select-all-scope)
+  - [Chapter IMP — Pasting Pictures](#chapter-imp-pasting-pictures)
   - [Chapter TBL — Spreadsheet Paste](#chapter-tbl-spreadsheet-paste)
   - [Chapter CLU — Command-Line Usage](#chapter-clu-command-line-usage)
   - [Chapter DLN — Daily Note](#chapter-dln-daily-note)
@@ -570,6 +571,29 @@ document would replace one defect with a worse one.
 <!--REQ-LTTCE-SEL-00004-->
 **REQ-LTTCE-SEL-00004** — Selecting the document in the edit pane SHALL also give the edit pane the
 keyboard focus, so the selection can immediately be typed over, extended or copied.
+
+---
+
+## Chapter IMP — Pasting Pictures
+
+A picture on the clipboard — a screenshot, an image copied from a browser, a diagram copied with "Copy PNG
+image" — can be pasted into the edit pane. Markdown keeps no pictures inside the text, so the picture is
+saved as a file beside the document and linked from it.
+
+<!--REQ-LTTCE-IMP-00001-->
+**REQ-LTTCE-IMP-00001** — When a picture is pasted into the edit pane of a document saved to a file, Lattice
+SHALL save it as a PNG file in a folder named `<document name>_assets` beside the document and SHALL insert
+a Markdown image link to that file, relative to the document, at the cursor. When the document has no file
+yet, Lattice SHALL insert nothing and SHALL tell the user that the picture needs a saved document to be
+stored beside.
+
+<!--REQ-LTTCE-IMP-00002-->
+**REQ-LTTCE-IMP-00002** — Pasting a picture SHALL work on every desktop platform, including a host whose web
+engine does not pass a pasted picture on to the page: there Lattice SHALL read the picture from the system
+clipboard itself. A paste with nothing to insert SHALL leave the document unchanged.
+
+*Rationale*: on Linux, WebKitGTK delivers the paste of a picture as an event with no content at all
+(measured on WebKitGTK 2.52.6), so without the host's own read every picture paste on Linux does nothing.
 
 ---
 

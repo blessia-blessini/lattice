@@ -23,6 +23,7 @@ import { showWhitespaceExtension } from '../editor-extensions/show-whitespace';
 import { tocTooltip } from '../editor-extensions/toc-tooltip';
 import { cursorLineOf } from '../lib/cursor-block';
 import { wrapAsBlock } from '../lib/block-insert';
+import { imageMarkdown, isEmptyPaste, NO_FILE_FOR_IMAGE_MESSAGE } from '../lib/paste-image';
 
 /** Props for the {@link Editor} component. */
 export interface EditorProps {
@@ -119,6 +120,27 @@ export function readOnlyExtensions(on: boolean) {
     return on ? [EditorState.readOnly.of(true), EditorState.changeFilter.of(() => false)] : [];
 }
 // readOnlyExtensions END ******************************************************
+
+
+//******************************************************************************
+// insertPastedImage
+//******************************************************************************
+/**
+ * IMPL-LTTCE-IMP-00001 — saves a pasted picture (Base64, no data-URL prefix)
+ * beside `filePath` and puts its Markdown link at the selection. One path for
+ * both sources: the picture the web engine handed over, and the one the host
+ * read from the clipboard itself (IMPL-LTTCE-IMP-00002).
+ */
+async function insertPastedImage(view: EditorView, filePath: string, base64: string): Promise<void> {
+    try {
+        const relativePath = await FileSystem.saveImage(filePath, base64);
+        view.dispatch(view.state.replaceSelection(imageMarkdown(relativePath)));
+    } catch (err) {
+        console.error("Failed to save image", err);
+        alert("Failed to save paste image: " + err);
+    }
+}
+// insertPastedImage END *******************************************************
 
 const monoHighlightStyle = HighlightStyle.define([
     { tag: tags.monospace, fontFamily: "'Fira Code', 'Consolas', monospace", backgroundColor: "transparent" },
@@ -726,26 +748,40 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(({
                                     // Split to remove "data:image/png;base64," prefix
                                     const pureBase64 = base64Data.split(',')[1];
                                     if (pureBase64) {
-                                        try {
-                                            const relativePath = await FileSystem.saveImage(currentFilePathRef.current!, pureBase64);
-                                            const markdownImage = `![Image](${relativePath})`;
-
-                                            view.dispatch(view.state.replaceSelection(markdownImage));
-                                        } catch (err) {
-                                            console.error("Failed to save image", err);
-                                            alert("Failed to save paste image: " + err);
-                                        }
+                                        await insertPastedImage(view, currentFilePathRef.current!, pureBase64);
                                     }
                                 };
                                 reader.readAsDataURL(blob);
                                 event.preventDefault();
                             } else if (!currentFilePathRef.current) {
-                                alert("The current editor has no associated file. Images are saved relative to the file, " +
-                                    "so before the editor is associated to a file and path we do not know where to save the image(s) to.");
+                                alert(NO_FILE_FOR_IMAGE_MESSAGE);
                             }
                         }
                     }
                 }// paste END **********************************************************
+
+                //**********************************************************************
+                // empty paste: a picture the web engine withheld (IMPL-LTTCE-IMP-00002)
+                //**********************************************************************
+                // WebKitGTK hands the page a paste with nothing in it when the
+                // clipboard holds a picture, so an empty paste is where the host
+                // is asked to read the clipboard itself. Nothing to insert either
+                // way, so taking the event over loses nothing.
+                if (!event.defaultPrevented && isEmptyPaste(event.clipboardData)) {
+                    event.preventDefault();
+                    void FileSystem.readClipboardImage()
+                        .then((base64) => {
+                            if (!base64) return;
+                            const filePath = currentFilePathRef.current;
+                            if (!filePath) {
+                                alert(NO_FILE_FOR_IMAGE_MESSAGE);
+                                return;
+                            }
+                            return insertPastedImage(view, filePath, base64);
+                        })
+                        .catch((err) => console.error("Failed to read the clipboard image", err));
+                    return true;
+                }// empty paste END ****************************************************
 
                 //**********************************************************************
                 // spreadsheet paste (IMPL-LTTCE-TBL-00003)

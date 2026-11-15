@@ -62,6 +62,41 @@ impl Platform for PlatformImpl {
         }
     }
     // print_to_pdf (linux) END **********************************
+
+    //**************************************************************
+    // read_clipboard_png (linux)
+    //**************************************************************
+    /// IMPL-LTTCE-IMP-00002 — reads the clipboard image through GTK, because
+    /// WebKitGTK gives the page's paste event nothing when the clipboard holds
+    /// a picture. GTK may only be used on the main thread, hence
+    /// `run_on_main_thread`; `request_image` is the asynchronous read, so the
+    /// main loop keeps running while the owning application answers.
+    ///
+    /// If the hop to the main thread fails, the closure — and `done` with it —
+    /// is dropped unsent, which the caller reads as "no image".
+    fn read_clipboard_png(
+        &self,
+        app: &tauri::AppHandle,
+        done: tokio::sync::oneshot::Sender<Option<Vec<u8>>>,
+    ) {
+        let dispatch = app.run_on_main_thread(move || {
+            let clipboard = gtk::Clipboard::get(&gtk::gdk::SELECTION_CLIPBOARD);
+            clipboard.request_image(move |_, pixbuf| {
+                let png = pixbuf.and_then(|p| match p.save_to_bufferv("png", &[]) {
+                    Ok(bytes) => Some(bytes),
+                    Err(e) => {
+                        eprintln!("[clipboard] cannot encode the clipboard image as PNG: {}", e);
+                        None
+                    }
+                });
+                let _ = done.send(png);
+            });
+        });
+        if let Err(e) = dispatch {
+            eprintln!("[clipboard] cannot reach the GTK main thread: {}", e);
+        }
+    }
+    // read_clipboard_png (linux) END ****************************
 }
 
 //******************************************************************************

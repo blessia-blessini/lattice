@@ -142,6 +142,32 @@ pub(crate) trait Platform {
         false
     }
     // Platform::reads_command_line_options END *****************
+
+
+    //**************************************************************
+    // Platform::read_clipboard_png
+    //**************************************************************
+    /// Reads the image on the system clipboard through the host's own
+    /// clipboard API and sends it on `done` as PNG bytes, or `None` when the
+    /// clipboard holds no image (REQ-LTTCE-IMP-00002).
+    ///
+    /// Only needed where the web engine withholds a pasted image from the
+    /// page: WebKitGTK hands the paste event no item, type or file at all when
+    /// the clipboard holds a picture (measured on WebKitGTK 2.52.6). WebView2
+    /// and WKWebView hand the page the image themselves, so the default — no
+    /// image — is right for Windows and macOS, and for the mobile stubs.
+    ///
+    /// Asynchronous like `print_to_pdf`: sends on `done` at most once.
+    /// Dropping `done` unsent counts as "no image" for the caller.
+    fn read_clipboard_png(
+        &self,
+        app: &tauri::AppHandle,
+        done: tokio::sync::oneshot::Sender<Option<Vec<u8>>>,
+    ) {
+        let _ = app;
+        let _ = done.send(None);
+    }
+    // Platform::read_clipboard_png END **************************
 }
 
 // ── Platform implementation — injected by build.rs ──────────────────────────
@@ -222,6 +248,18 @@ pub(crate) fn attach_parent_console() {
 pub(crate) fn reads_command_line_options() -> bool {
     PlatformImpl.reads_command_line_options()
 }
+
+
+//******************************************************************************
+// read_clipboard_png
+//******************************************************************************
+pub(crate) fn read_clipboard_png(
+    app: &tauri::AppHandle,
+    done: tokio::sync::oneshot::Sender<Option<Vec<u8>>>,
+) {
+    PlatformImpl.read_clipboard_png(app, done);
+}
+// read_clipboard_png END ******************************************************
 // reads_command_line_options END **********************************************
 
 

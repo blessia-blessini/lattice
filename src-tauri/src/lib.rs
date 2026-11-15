@@ -962,6 +962,48 @@ fn save_image(file_path: String, image_data: String) -> Result<String, String> {
     Ok(relative_path)
 } // save_image END ********************************************************
 
+
+//******************************************************************************
+// clipboard_png_base64
+//******************************************************************************
+/// IMPL-LTTCE-IMP-00002 — a host clipboard read in the form the frontend
+/// takes it: Base64, the encoding [`save_image`] decodes, so a picture read by
+/// the host is saved exactly like one the web engine handed over. `None`, and
+/// an empty buffer, mean "no image".
+fn clipboard_png_base64(png: Option<Vec<u8>>) -> Option<String> {
+    png.filter(|bytes| !bytes.is_empty())
+        .map(|bytes| general_purpose::STANDARD.encode(bytes))
+}
+// clipboard_png_base64 END ****************************************************
+
+
+/// How long `read_clipboard_image` waits for the clipboard owner to answer.
+/// A paste is a user action, so an owner that never answers must not leave the
+/// paste pending forever; past this, the paste counts as "no image".
+const CLIPBOARD_READ_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
+
+
+//******************************************************************************
+// read_clipboard_image
+//******************************************************************************
+/// IMPL-LTTCE-IMP-00002 — the image on the system clipboard as Base64 PNG,
+/// read by the host itself (`platform::read_clipboard_png`), or `None`.
+///
+/// The frontend asks for it when a paste arrives with nothing in it, which is
+/// how WebKitGTK delivers a pasted picture. On hosts whose web engine hands
+/// the picture to the page, the platform answers `None` at once.
+#[tauri::command]
+async fn read_clipboard_image(app: tauri::AppHandle) -> Option<String> {
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    platform::read_clipboard_png(&app, tx);
+    let png = match tokio::time::timeout(CLIPBOARD_READ_TIMEOUT, rx).await {
+        Ok(Ok(png)) => png,
+        Ok(Err(_)) | Err(_) => None,
+    };
+    clipboard_png_base64(png)
+}
+// read_clipboard_image END ****************************************************
+
 //******************************************************************************
 // debug_file_probe
 //******************************************************************************
@@ -1275,6 +1317,7 @@ pub fn run() {
             watch_file,
             is_dir,
             save_image,
+            read_clipboard_image,
             debug_file_probe,
             read_file_base64,
             get_launch_file,
