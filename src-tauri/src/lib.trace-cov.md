@@ -24,3 +24,8 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - IMPL-LTTCE-CLU-00001 **covers** REQ-LTTCE-CLU-00001, REQ-LTTCE-CLU-00002  (`exit_on_help_or_unknown_option`,
   called first in `run()`; the pure parts and their tests are recorded in `platform/cli_args.trace-cov.md`)
 - IMPL-LTTCE-CLU-00001 **covers** ARCH-LTTCE-CLU-00001
+- IMPL-LTTCE-IMP-00002 **covers** REQ-LTTCE-IMP-00002  (`read_clipboard_image` command: asks
+  `platform::read_clipboard_png`, waits at most `CLIPBOARD_READ_TIMEOUT`, returns Base64 through
+  `clipboard_png_base64`) — UTST: `lib_tests.rs` `test_clipboard_png_base64_*` (Base64 round-trips through
+  `save_image` byte-exact; no image and an empty buffer are `None`)
+- IMPL-LTTCE-IMP-00002 **covers** ARCH-LTTCE-IMP-00001

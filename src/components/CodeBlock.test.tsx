@@ -26,7 +26,8 @@
 import { render, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { CodeBlock, COPY_FEEDBACK_MS, COPY_CODE_LABEL, COPY_MERMAID_CODE_LABEL, COPY_SVG_LABEL, COPY_IMAGE_LABEL, COPY_KIND_ATTR,
-    COPY_SVG_TOOLTIP, COPY_IMAGE_TOOLTIP } from './CodeBlock';
+    COPY_SVG_TOOLTIP, COPY_IMAGE_TOOLTIP, STATE_LABELS } from './CodeBlock';
+import { IMAGE_COPY_TIMEOUT_MS } from '../lib/code-block-copy';
 import { PREVIEW_UI_ATTR } from '../lib/preview-copy';
 import { setClipboard } from '../test/clipboard-mock';
 
@@ -205,6 +206,50 @@ describe('CodeBlock — Copy PNG image', () => {
         // Name and tooltip differ while idle, yet both show the outcome.
         expect(btn.getAttribute('aria-label')).toBe('Copied');
         expect(btn.getAttribute('title')).toBe('Copied');
+    });
+
+    describe('while the clipboard has not confirmed the picture', () => {
+        afterEach(() => { vi.useRealTimers(); });
+
+        it('shows an hourglass, ignores clicks, and reports failure at the limit', async () => {
+            vi.useFakeTimers();
+            write.mockImplementation(() => new Promise<void>(() => {}));
+            const btn = imageButton({ 'data-lattice-diagram-png': PNG });
+            await act(async () => { fireEvent.click(btn); });
+            expect(btn.getAttribute('data-state')).toBe('busy');
+            expect(btn.getAttribute('aria-label')).toBe(STATE_LABELS.busy);
+            expect(btn.getAttribute('title')).toBe(STATE_LABELS.busy);
+            expect(btn.getAttribute('aria-busy')).toBe('true');
+
+            // A running copy is not an outcome: the feedback timer leaves it alone,
+            // and a second click starts no second copy.
+            await act(async () => { await vi.advanceTimersByTimeAsync(COPY_FEEDBACK_MS); });
+            await act(async () => { fireEvent.click(btn); });
+            expect(btn.getAttribute('data-state')).toBe('busy');
+            expect(write).toHaveBeenCalledTimes(1);
+
+            await act(async () => { await vi.advanceTimersByTimeAsync(IMAGE_COPY_TIMEOUT_MS); });
+            expect(btn.getAttribute('data-state')).toBe('failed');
+            expect(btn.getAttribute('aria-busy')).toBe('false');
+
+            // Usable again: the next click starts a new copy.
+            write.mockResolvedValue(undefined);
+            await act(async () => { fireEvent.click(btn); });
+            expect(write).toHaveBeenCalledTimes(2);
+            expect(btn.getAttribute('data-state')).toBe('copied');
+        });
+
+        it('shows the hourglass until a late confirmation, then success', async () => {
+            vi.useFakeTimers();
+            let confirm!: () => void;
+            write.mockImplementation(() => new Promise<void>(r => { confirm = r; }));
+            const btn = imageButton({ 'data-lattice-diagram-png': PNG });
+            await act(async () => { fireEvent.click(btn); });
+            await act(async () => { await vi.advanceTimersByTimeAsync(IMAGE_COPY_TIMEOUT_MS / 2); });
+            expect(btn.getAttribute('data-state')).toBe('busy');
+            await act(async () => { confirm(); });
+            expect(btn.getAttribute('data-state')).toBe('copied');
+        });
     });
 
     it('reports failure, without copying, while the diagram has no PNG', async () => {

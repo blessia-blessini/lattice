@@ -31,6 +31,7 @@ implementation artefacts. For the ID schema definition see `11-Traceability-Requ
   - [Chapter SET — Settings Robustness](#chapter-set-settings-robustness)
   - [Chapter CPY — Preview Copy Fidelity](#chapter-cpy-preview-copy-fidelity)
   - [Chapter SEL — Select All Scope](#chapter-sel-select-all-scope)
+  - [Chapter IMP — Pasting Pictures](#chapter-imp-pasting-pictures)
   - [Chapter TBL — Spreadsheet Paste](#chapter-tbl-spreadsheet-paste)
   - [Chapter CLU — Command-Line Usage](#chapter-clu-command-line-usage)
   - [Chapter DLN — Daily Note](#chapter-dln-daily-note)
@@ -330,7 +331,9 @@ tag — SHALL offer a copy button at its top-right corner, visible while the poi
 while the button has keyboard focus, and at all times on devices without a hovering pointer.
 Activating it SHALL put the block's text content on the clipboard as plain text — exactly the text
 between the fences, without the line break that ends the last line — and SHALL show for a short time
-whether the copy succeeded or failed. Its tooltip and accessible name SHALL read **"Copy code"**. A
+whether the copy succeeded or failed. While a copy has not completed yet, the button SHALL show that
+it is in progress (tooltip and accessible name **"Copying…"**) and SHALL ignore further activation
+until it has. Its tooltip and accessible name SHALL read **"Copy code"**. A
 `mermaid` block, although rendered as a diagram, SHALL have the same button and SHALL copy its source
 text in the same way; there its tooltip and accessible name SHALL read **"Copy Mermaid Code"**. Inline
 code SHALL have no copy button.
@@ -373,10 +376,14 @@ size and with the same background, that a copy of a preview selection carries fo
 (REQ-LTTCE-MRC-00001 / 00005) — as an image (`image/png`) where the WebView supports one, and as an
 HTML image otherwise. When the diagram has no such raster — it could not be rendered or rasterised,
 or has not been rasterised yet — the button SHALL report a failed copy and leave the clipboard
-unchanged.
+unchanged. When the system clipboard has not confirmed the picture within 20 seconds, the button
+SHALL report a failed copy.
 
 *Rationale*: SVG text pastes as text into most applications; a user who wants the diagram in a
 document, slide, mail or chat needs a picture, and should not have to select the diagram to get one.
+A clipboard service that stalls (seen with a Linux desktop forwarding its clipboard to the host
+system) would otherwise leave the button with no feedback at all; once the limit has passed, what the
+clipboard holds is unknown, so success is not claimed.
 Reusing the selection copy's raster keeps every picture of the diagram identical. An image on the
 clipboard is what image editors and chat applications accept; the HTML image is what Word and mail
 clients accept, and is the fallback for a WebView that cannot put images on the clipboard.
@@ -570,6 +577,29 @@ document would replace one defect with a worse one.
 <!--REQ-LTTCE-SEL-00004-->
 **REQ-LTTCE-SEL-00004** — Selecting the document in the edit pane SHALL also give the edit pane the
 keyboard focus, so the selection can immediately be typed over, extended or copied.
+
+---
+
+## Chapter IMP — Pasting Pictures
+
+A picture on the clipboard — a screenshot, an image copied from a browser, a diagram copied with "Copy PNG
+image" — can be pasted into the edit pane. Markdown keeps no pictures inside the text, so the picture is
+saved as a file beside the document and linked from it.
+
+<!--REQ-LTTCE-IMP-00001-->
+**REQ-LTTCE-IMP-00001** — When a picture is pasted into the edit pane of a document saved to a file, Lattice
+SHALL save it as a PNG file in a folder named `<document name>_assets` beside the document and SHALL insert
+a Markdown image link to that file, relative to the document, at the cursor. When the document has no file
+yet, Lattice SHALL insert nothing and SHALL tell the user that the picture needs a saved document to be
+stored beside.
+
+<!--REQ-LTTCE-IMP-00002-->
+**REQ-LTTCE-IMP-00002** — Pasting a picture SHALL work on every desktop platform, including a host whose web
+engine does not pass a pasted picture on to the page: there Lattice SHALL read the picture from the system
+clipboard itself. A paste with nothing to insert SHALL leave the document unchanged.
+
+*Rationale*: on Linux, WebKitGTK delivers the paste of a picture as an event with no content at all
+(measured on WebKitGTK 2.52.6), so without the host's own read every picture paste on Linux does nothing.
 
 ---
 

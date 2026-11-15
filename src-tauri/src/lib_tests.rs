@@ -157,6 +157,30 @@ fn test_save_image_and_base64() {
 }
 // test_save_image_and_base64 END ******************************************
 
+
+//*************************************************************************
+// test_clipboard_png_base64
+//*************************************************************************
+/// IMPL-LTTCE-IMP-00002 — a host clipboard read reaches the frontend as the
+/// Base64 `save_image` decodes; no image and an empty buffer are both "none".
+#[test]
+fn test_clipboard_png_base64_round_trips_through_save_image() {
+    let png = vec![0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A, 1, 2, 3];
+    let b64 = clipboard_png_base64(Some(png.clone())).expect("an image is passed on");
+
+    let temp_dir = tempfile::tempdir().unwrap();
+    let doc_path = temp_dir.path().join("pasted.md");
+    let rel_path = save_image(doc_path.to_string_lossy().to_string(), b64).unwrap();
+    assert_eq!(fs::read(temp_dir.path().join(rel_path)).unwrap(), png);
+}
+
+#[test]
+fn test_clipboard_png_base64_no_image_is_none() {
+    assert_eq!(clipboard_png_base64(None), None);
+    assert_eq!(clipboard_png_base64(Some(Vec::new())), None);
+}
+// test_clipboard_png_base64 END *******************************************
+
 //**************************************************************************
 // test_generate_new_window_label
 //**************************************************************************

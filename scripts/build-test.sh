@@ -99,6 +99,7 @@ RUST_OUT_WIRING=$(mktemp)
 RUST_OUT_FILEOPEN=$(mktemp)
 RUST_OUT_E2E=$(mktemp)
 RUST_OUT_EXPORT=$(mktemp)
+RUST_OUT_PASTE=$(mktemp)
 RUST_OUT_COV=$(mktemp)
 
 # 1a. Run Backend Unit Tests (Rust)
@@ -432,6 +433,32 @@ gui_run cargo run --example app_screenshot -- "${_SHOT_ARGS[@]}" \
 popd || exit
 echo "****************************************************"
 
+# 1f. Paste-image check (Linux only) — STST for REQ-LTTCE-IMP-00001/00002.
+# The release app, a picture on the clipboard, a real Ctrl+V and Ctrl+S
+# through XTest; the saved document must link a PNG of the picture's size.
+# WebKitGTK hands such a paste to the page empty, so this is the end-to-end
+# proof of Lattice's own clipboard read. Like 1d it needs no test hook and
+# reads LATTICE_EXPORT_REQUIRED for a missing release binary. Windows and
+# macOS skip it: their web engines hand the picture over themselves.
+if [ "$(uname)" == "Linux" ]; then
+    echo "****************************************************"
+    echo "Running Paste-Image Check..."
+    pushd src-tauri || exit
+    if ! cargo test --example paste_image_e2e; then
+        echo "Paste-Image Check unit tests failed!"
+        popd || exit
+        exit 1
+    fi
+    gui_run cargo run --example paste_image_e2e 2>&1 | tee "$RUST_OUT_PASTE"
+    PASTE_RESULT=${PIPESTATUS[0]}
+    popd || exit
+    if [ $PASTE_RESULT -ne 0 ]; then
+        echo "Paste-Image Check failed!"
+        exit $PASTE_RESULT
+    fi
+    echo "****************************************************"
+fi
+
 pushd src-tauri || exit
   echo "****************************************************"
   echo "Gather and print all data in an output table ..."
@@ -465,7 +492,8 @@ if [ -n "${GITHUB_STEP_SUMMARY}" ]; then
       "test|Integration — wiring|$RUST_OUT_WIRING" \
       "test|Integration — file_open|$RUST_OUT_FILEOPEN" \
       "bin|E2E — conflict reproducer|$RUST_OUT_E2E" \
-      "bin|CLI export — demo.md|$RUST_OUT_EXPORT"; do
+      "bin|CLI export — demo.md|$RUST_OUT_EXPORT" \
+      "bin|Paste image — Linux, real Ctrl+V|$RUST_OUT_PASTE"; do
     kind="${entry%%|*}";  rest="${entry#*|}"
     label="${rest%%|*}";  file="${rest##*|}"
     if [ "$kind" = "test" ]; then
@@ -485,7 +513,7 @@ if [ -n "${GITHUB_STEP_SUMMARY}" ]; then
 fi
 
 rm -f "$RUST_OUT_UNIT" "$RUST_OUT_WIRING" "$RUST_OUT_FILEOPEN" "$RUST_OUT_E2E" \
-      "$RUST_OUT_EXPORT" "$RUST_OUT_COV"
+      "$RUST_OUT_EXPORT" "$RUST_OUT_PASTE" "$RUST_OUT_COV"
 
 # 2. Run Frontend Tests Run Later with Coverage
 # echo "Running Frontend Tests..."

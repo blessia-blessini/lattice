@@ -56,6 +56,10 @@ export const FileSystem = {
   saveImage: async (filePath: string, imageData: string): Promise<string> => {
     return await invoke('save_image', { filePath, imageData });
   },
+  /** REQ-LTTCE-IMP-00002: the clipboard picture as Base64 PNG, read by the host itself, or null. */
+  readClipboardImage: async (): Promise<string | null> => {
+    return await invoke('read_clipboard_image');
+  },
   isDir: async (path: string): Promise<boolean> => {
     return await invoke('is_dir', { path });
   },

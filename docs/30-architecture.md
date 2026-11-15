@@ -806,14 +806,19 @@ highlighting above:
      no `clipboardData`), then `navigator.clipboard.write` with an `image/png` `ClipboardItem` built
      synchronously from the data URI (`pngBlob`), which replaces the first. If the image route is
      missing or refused (e.g. a WebView without image support on the clipboard), the HTML copy stays
-     and decides the result. No PNG yet → failure, clipboard untouched; the PNG is rasterised in an
+     and decides the result. If it has not settled after `IMAGE_COPY_TIMEOUT_MS` (20 s, `settleWithin`),
+     the copy counts as failed: the write may still land later or never, so the clipboard's content is
+     unknown and success is not claimed. No PNG yet → failure, clipboard untouched; the PNG is rasterised in an
      idle slot after rendering, so this is only possible in the first moments after a diagram appears.
 
    No new dependency: no clipboard plugin, no icon library — the icons are inline SVG paths.
 2. **React glue** — `src/components/CodeBlock.tsx` (IMPL-LTTCE-PRV-00005): the wrapper and the bar; one
    `CopyButton` component for all buttons (on a diagram: "Copy PNG image", "Copy SVG", "Copy Mermaid Code"), each
-   with its own `idle | copied | failed` state shown as
-   icon, `title` and `aria-label`, reset after `COPY_FEEDBACK_MS` — restarted by every click, also one
+   with its own `idle | busy | copied | failed` state shown as
+   icon, `title` and `aria-label`. `busy` (an hourglass, "Copying…", `aria-busy`) lasts from the click
+   until the copy function resolves — for a text copy no longer than the click itself, for a picture
+   up to `IMAGE_COPY_TIMEOUT_MS` — and ignores further clicks, so copies never overlap. The outcome is
+   reset after `COPY_FEEDBACK_MS` — restarted by every click, also one
    with the same outcome as the last (each click sets a new feedback object). A button runs its copy
    function synchronously in the click and shows the flag it resolves; nothing to copy counts as a
    failed copy. A `mousedown` default is suppressed so clicking does not
@@ -1090,6 +1095,43 @@ exists in Rust):
 The preview case needs no clipboard work of its own: a selection over the rendered body is exactly
 what the existing copy paths already expect, so `==highlight==` fidelity (ARCH-LTTCE-CPY-00001) and
 diagram rasterisation (ARCH-LTTCE-MRC-00001) apply to it unchanged.
+
+---
+
+## Feature: Pasting Pictures
+
+<!--ARCH-LTTCE-IMP-00001-->
+
+### Overview
+
+Covers Chapter IMP of the requirements. A picture pasted into the edit pane reaches the editor by one of two
+routes and is then saved and linked by **one** shared path.
+
+| Route | When | How the picture arrives |
+| ----- | ---- | ----------------------- |
+| Web engine | WebView2 (Windows), WKWebView (macOS) | as an `image/*` item of the paste event's `clipboardData` |
+| Host read | WebKitGTK (Linux), whose paste event for a picture is **empty** — no item, no type, no file (measured on 2.52.6) | the frontend sees the empty paste and calls `read_clipboard_image`; the platform reads the clipboard with GTK |
+
+Both end in `insertPastedImage` (`src/components/Editor.tsx`): `save_image` writes the PNG into
+`<stem>_assets/` beside the document, and the Markdown link from `imageMarkdown` is put at the selection
+(REQ-LTTCE-IMP-00001).
+
+### The empty-paste signal — decided by content, not by platform
+
+The editor never asks which OS it runs on. `isEmptyPaste` (`src/lib/paste-image.ts`) is true for a paste
+with no item, no type and no text; only then is the host asked. On Windows and macOS a picture paste has an
+item, so the host read never runs there; a truly empty clipboard costs one read that answers `None`.
+
+### Host read — a `Platform` trait method
+
+`Platform::read_clipboard_png` (`src-tauri/src/platform/mod.rs`) answers through a oneshot channel, like
+`print_to_pdf`. The default answers `None` — right for Windows and macOS, whose engines hand the picture
+over, and for the mobile stubs. `impls/linux.rs` overrides it: on the GTK main thread
+(`run_on_main_thread`) it calls `gtk::Clipboard::request_image` — the asynchronous read, so the main loop
+keeps serving while the owning application answers — and encodes the `Pixbuf` as PNG. The `gtk` crate was
+already a Linux dependency; nothing new. The command `read_clipboard_image` (`lib.rs`) waits at most
+`CLIPBOARD_READ_TIMEOUT` (5 s) and returns Base64, the encoding `save_image` takes, through
+`clipboard_png_base64`.
 
 ---
 

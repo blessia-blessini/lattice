@@ -33,3 +33,10 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
   swallowed before the image branch writes a file) — UTST: `src/components/Editor.read-only.test.tsx`
   (verified to fail with the change filter removed)
 - IMPL-LTTCE-FOS-00003 **covers** ARCH-LTTCE-FOS-00003
+- IMPL-LTTCE-IMP-00001 **covers** REQ-LTTCE-IMP-00001  (`insertPastedImage`: the one save-and-link path for
+  a pasted picture, whichever route it came by; `NO_FILE_FOR_IMAGE_MESSAGE` when the document has no file)
+- IMPL-LTTCE-IMP-00001 **covers** ARCH-LTTCE-IMP-00001
+- IMPL-LTTCE-IMP-00002 **covers** REQ-LTTCE-IMP-00002  (empty-paste branch of the paste handler: asks
+  `FileSystem.readClipboardImage` and hands a picture to `insertPastedImage`) — ITST:
+  `src/components/Editor.paste-image.test.tsx` (4 of its 5 cases verified to fail with the branch disabled)
+- IMPL-LTTCE-IMP-00002 **covers** ARCH-LTTCE-IMP-00001

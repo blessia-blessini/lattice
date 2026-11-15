@@ -6,6 +6,10 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.61
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FEAT: Copy buttons show an hourglass while copying; picture copy waits up to 20 s
+- FIX: Copy PNG image reports failure when the clipboard does not confirm within 5 s
+- TEST: Paste image - Linux end-to-end check with a real Ctrl+V; review fixes
+- FIX: Pasting a picture works on Linux - read the clipboard through GTK
 - CHORE: Set version to 0.3.61
 - FEAT: Candidate tags stop on undecided licence topics, with step-by-step fix
 - FIX: NPM Install

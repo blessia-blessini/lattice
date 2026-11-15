@@ -38,6 +38,8 @@ import {
     copyDiagramImage,
     defaultImageClipboardRoutes,
     pngBlob,
+    settleWithin,
+    IMAGE_COPY_TIMEOUT_MS,
 } from './code-block-copy';
 import { setClipboard } from '../test/clipboard-mock';
 
@@ -298,6 +300,35 @@ describe('copyDiagramImage', () => {
         expect(await copyDiagramImage(ready(), { execHtmlCopy: () => false, writePng: refused })).toBe(false);
     });
 
+    describe('when the clipboard does not confirm the picture', () => {
+        afterEach(() => { vi.useRealTimers(); });
+
+        it(`reports a failed copy after ${IMAGE_COPY_TIMEOUT_MS} ms, even with the HTML copy done`, async () => {
+            vi.useFakeTimers();
+            let outcome: boolean | undefined;
+            const never = () => new Promise<void>(() => {});
+            void copyDiagramImage(ready(), { execHtmlCopy: () => true, writePng: never })
+                .then(ok => { outcome = ok; });
+            await vi.advanceTimersByTimeAsync(IMAGE_COPY_TIMEOUT_MS - 1);
+            expect(outcome).toBeUndefined();
+            await vi.advanceTimersByTimeAsync(1);
+            expect(outcome).toBe(false);
+        });
+
+        it('still succeeds when the confirmation arrives just inside the limit', async () => {
+            vi.useFakeTimers();
+            const slow = () => new Promise<void>(r => setTimeout(r, IMAGE_COPY_TIMEOUT_MS - 1));
+            const result = copyDiagramImage(ready(), { execHtmlCopy: () => false, writePng: slow });
+            await vi.advanceTimersByTimeAsync(IMAGE_COPY_TIMEOUT_MS);
+            expect(await result).toBe(true);
+        });
+    });
+
+    it('keeps the HTML copy as the result when the PNG write throws at once', async () => {
+        const throws = () => { throw new Error('no ClipboardItem'); };
+        expect(await copyDiagramImage(ready(), { execHtmlCopy: () => true, writePng: throws })).toBe(true);
+    });
+
     it('fails without touching the clipboard when the diagram has no PNG', async () => {
         const execHtmlCopy = vi.fn().mockReturnValue(true);
         const writePng = vi.fn().mockResolvedValue(undefined);
@@ -312,6 +343,28 @@ describe('copyDiagramImage', () => {
         expect(await copyDiagramImage(plain, routes)).toBe(false);
         expect(execHtmlCopy).not.toHaveBeenCalled();
         expect(writePng).not.toHaveBeenCalled();
+    });
+});
+
+describe('settleWithin', () => {
+    afterEach(() => { vi.useRealTimers(); });
+
+    it('tells fulfilled from rejected', async () => {
+        expect(await settleWithin(Promise.resolve(1), 1000)).toBe('fulfilled');
+        expect(await settleWithin(Promise.reject(new Error('x')), 1000)).toBe('rejected');
+    });
+
+    it('times out on a promise that stays pending', async () => {
+        vi.useFakeTimers();
+        const result = settleWithin(new Promise(() => {}), 50);
+        await vi.advanceTimersByTimeAsync(50);
+        expect(await result).toBe('timeout');
+    });
+
+    it('leaves no timer running once the promise settled', async () => {
+        vi.useFakeTimers();
+        await settleWithin(Promise.resolve(), 50);
+        expect(vi.getTimerCount()).toBe(0);
     });
 });
 
