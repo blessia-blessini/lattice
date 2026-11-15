@@ -132,6 +132,11 @@ function CopyButton({ label, tooltip = label, icon, copy }: {
             // i.e. still inside this click (see copyText, copyDiagramImage).
             const ok = await copy();
             setFeedback({ state: ok ? 'copied' : 'failed' });
+        } catch {
+            // The copy functions resolve a flag and are not meant to throw;
+            // should one ever, that is a failed copy — never an hourglass
+            // that stays, since no timer resets a running copy.
+            setFeedback({ state: 'failed' });
         } finally {
             busy.current = false;
         }

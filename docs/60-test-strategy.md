@@ -188,23 +188,31 @@ binary, no window within 60 s, a capture error, a single-colour image — become
 annotation, the file is removed, and the leg stays green. The locating and staging helpers are
 shared with the export check through `examples/support/release_app.rs`.
 
-### Paste-image check — `examples/paste_image_e2e.rs` (STST for REQ-LTTCE-IMP-00001 / 00002, Linux only)
+### Paste-image check — `examples/paste_image_e2e.rs` (STST for REQ-LTTCE-IMP-00001 / 00002 and REQ-LTTCE-PRV-00007, Linux only)
 
 Step 1f of `build-test.sh`, on the Linux legs. WebKitGTK hands the page an **empty** paste event when
 the clipboard holds a picture, so on Linux a pasted picture only arrives through Lattice's own
 clipboard read (`Platform::read_clipboard_png`). This check proves that path end to end, as a user
-would, with **no test hook in the app** — it drives the same release binary as the export check:
+would, with **no test hook in the app** — it drives the same release binary as the export check — and
+with it the diagram's "Copy PNG image" button, whose clipboard write WebKit allows only inside a real
+user gesture:
 
 1. stages `src-tauri/target/e2e-paste-image/` — a vault whose `.lattice/settings.json` opens documents
-   in the Edit view, one document `paste.md`, and an empty home;
+   in the Dual view, one document `paste.md` that starts with a Mermaid diagram, and an empty home;
 2. puts a 37×23 picture on the CLIPBOARD selection, owned by the check's own process through GTK (the
-   `gtk` crate is already a Linux dependency) on a thread that keeps GTK's main loop answering;
+   `gtk` crate is already a Linux dependency) on a thread that keeps GTK's main loop answering — the
+   same thread later reads the clipboard back (`GtkClipboard`; GTK accepts one thread only);
 3. launches the app with its own `HOME` / `XDG_*` folders, finds its window by `_NET_WM_PID`
    (`support/capture_linux.rs`, shared with the screenshot), clicks into the editor and presses
    **Ctrl+V**, then **Ctrl+S**, through the X server's XTest extension (`support/paste_linux.rs`;
-   libXtst loaded at runtime through `x11-dl`) — real input events, not synthetic DOM events;
-4. requires the saved document to end with exactly one `![Image](paste_assets/img_<n>.png)` link, and
-   that file to be a PNG of exactly 37×23.
+   libXtst loaded at runtime through `x11-dl`) — real input events, not synthetic DOM events — and
+   requires the saved document to end with one `![Image](paste_assets/img_<n>.png)` link to a PNG of
+   exactly 37×23;
+4. moves the pointer over the diagram and clicks its **"Copy PNG image"** button, and requires the
+   clipboard to hold a picture of another size within 10 s — the app's, since the check held the only
+   other one. The button's position is computed from the window's top-right corner and the copy-bar
+   CSS (`App.css`); a miss leaves a screenshot of the window in the fixture;
+5. pastes and saves again, and requires a second link to a PNG of exactly the copied picture's size.
 
 A failure fails the build. A missing release binary is a skip locally and a failure when
 `LATTICE_EXPORT_REQUIRED=1` (CI), as for the export check. Windows and macOS skip the step: their web
@@ -325,7 +333,9 @@ REQ-LTTCE-FOS-00002 / 00004. About 45 s (`cargo metadata` for 8 targets). Skippe
 `GITHUB_ACTIONS=true`: on CI the job `foss-compliance` runs both once instead of once per leg. The unit
 tests of `scripts/foss/` (`*.test.mjs`) run with the frontend suite in step 2b locally; on CI the build legs
 check out without `scripts/foss/` and `foss/` (proving the product does not depend on them, steps 100/101),
-so the `foss-compliance` job runs those tests instead (step 144). A stale notices file is
+so the `foss-compliance` job runs those tests instead (step 144). The unit tests of `scripts/release/`
+(`release-mentions.test.mjs`, CSTR-LTTCE-BLD-00002) are checked out everywhere and run with the frontend
+suite, locally and on every build leg. A stale notices file is
 fixed with `npm run foss:notices`. The same job (`foss-compliance.yml`) runs on every pull request into
 `dev`, Dependabot's included, and on every push to `dev`; on failure its job summary lists the failing
 components or the stale files and the commands that regenerate them.

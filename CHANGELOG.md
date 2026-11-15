@@ -6,6 +6,11 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.61
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- FEAT: Copy PNG image shows an hourglass and gives up after 20 s; Linux E2E copies and pastes a diagram; no mentions in release notes
+- FIX: Release notes put GitHub-style mentions in code, so no account is notified or listed
+- TEST: Paste-image check - every wait has a limit
+- FIX: Copy button never keeps its hourglass on a throwing copy; check's clipboard read cannot wedge GTK
+- TEST: Linux end-to-end check also copies a diagram with "Copy PNG image" and pastes it back
 - FEAT: Copy buttons show an hourglass while copying; picture copy waits up to 20 s
 - FIX: Copy PNG image reports failure when the clipboard does not confirm within 5 s
 - TEST: Paste image - Linux end-to-end check with a real Ctrl+V; review fixes

@@ -15,7 +15,8 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 
 - STST: `examples/paste_image_e2e.rs` (build-test step 1f, Linux legs) — the release app, a 37×23 picture
   owned by the check through GTK, a real Ctrl+V and Ctrl+S through XTest; the saved document must link a
-  PNG of exactly that size. No unit test of the read itself: it needs a display and a clipboard owner.
+  PNG of exactly that size. Then the same with a picture the app itself put on the clipboard ("Copy PNG
+  image", clicked through XTest). No unit test of the read itself: it needs a display and a clipboard owner.
   The Base64 hand-over it feeds is unit-tested in `lib_tests.rs` (`test_clipboard_png_base64_*`).
 - Evidence (by the author, WSL Ubuntu 24.04, WebKitGTK 2.52.6, X11 backend): WebKitGTK's paste event for a
   clipboard picture is empty (no items, types or files), whether the picture is owned by the same or by

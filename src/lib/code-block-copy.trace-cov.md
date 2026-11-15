@@ -30,4 +30,5 @@ Format: `IMPL-ID` **covers** `REQ-ID` / `ARCH-ID`
 - ITST: `src/App.code-copy.test.tsx` — the real App's Markdown pipeline: buttons on tagged, untagged and
   Mermaid fences but not on inline code, "Copy PNG image" and "Copy SVG" on the diagram only; the copied text (a diagram
   copies its source, or its SVG); the export without a button
-- STST: Windows only, E2E scenario `copy_diagram` — see `src/components/CodeBlock.trace-cov.md`
+- STST: Windows, E2E scenario `copy_diagram`; Linux, "Copy PNG image" in `examples/paste_image_e2e.rs` —
+  see `src/components/CodeBlock.trace-cov.md`
