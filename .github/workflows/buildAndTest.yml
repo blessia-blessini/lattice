@@ -123,18 +123,24 @@ jobs:
       run: |
         # 1. Define the Master Matrix as a JSON String
         #    (We use a compact JSON structure here)
-        #    "linux": set on Linux desktop legs only -- the AppImage target
-        #      architecture (x64 | arm64); the Linux steps run where it is set.
-        #    "publish": "no" marks a test-only leg: it builds and runs every
-        #      test and install check, but uploads nothing that a release
-        #      collects (DOWNLOAD-*, DEMO-EXPORT-*, FOSS-APPIMAGE-*). The
-        #      Ubuntu 26.04 legs are test-only: a binary built there needs the
-        #      newer glibc of 26.04 and would not start on Ubuntu 24.04 or
-        #      Debian, so the published Linux packages stay built on 24.04.
+        #    "linux": the AppImage target architecture (x64 | arm64) on Linux
+        #      desktop legs, "" on all others; the Linux steps run where it
+        #      is set. Set on every leg, like every other field.
+        #    "publish": "yes" on every leg except a test-only one ("no"): it
+        #      builds and runs every test and install check, but uploads
+        #      nothing that a release collects (DOWNLOAD-*, DEMO-EXPORT-*,
+        #      FOSS-APPIMAGE-*). Test-only does NOT mean optional: a failing
+        #      test-only leg fails build-and-test, and so blocks release-gate
+        #      on a release tag. The Ubuntu 26.04 legs are test-only: a binary
+        #      built there needs the newer glibc of 26.04 and would not start
+        #      on Ubuntu 24.04 or Debian, so the published Linux packages stay
+        #      built on 24.04.
         CONST_JSON='[
           {
             "os": "windows-latest",
             "platform": "windows-desktop",
+            "linux": "",
+            "publish": "yes",
             "export_mode": "required",
             "bldprefix": "",
             "mobile_build": "",
@@ -146,6 +152,8 @@ jobs:
           {
             "os": "windows-11-arm",
             "platform": "windows-arm-desktop",
+            "linux": "",
+            "publish": "yes",
             "export_mode": "required",
             "bldprefix": "",
             "mobile_build": "",
@@ -157,6 +165,8 @@ jobs:
           {
             "os": "macos-latest",
             "platform": "macos-arm64",
+            "linux": "",
+            "publish": "yes",
             "export_mode": "required",
             "bldprefix": "",
             "mobile_build": "",
@@ -168,6 +178,8 @@ jobs:
           {
             "os": "macos-latest",
             "platform": "macos-intel",
+            "linux": "",
+            "publish": "yes",
             "export_mode": "optional",
             "bldprefix": "",
             "mobile_build": "",
@@ -180,6 +192,7 @@ jobs:
             "os": "ubuntu-24.04",
             "platform": "linux-desktop",
             "linux": "x64",
+            "publish": "yes",
             "export_mode": "required",
             "bldprefix": "",
             "mobile_build": "",
@@ -192,6 +205,7 @@ jobs:
             "os": "ubuntu-24.04-arm",
             "platform": "linux-arm-desktop",
             "linux": "arm64",
+            "publish": "yes",
             "export_mode": "required",
             "bldprefix": "",
             "mobile_build": "",
@@ -229,6 +243,8 @@ jobs:
           {
             "os": "ubuntu-latest",
             "platform": "android",
+            "linux": "",
+            "publish": "yes",
             "export_mode": "skip",
             "bldprefix": "android",
             "mobile_build": "-Ax",
@@ -240,6 +256,8 @@ jobs:
           {
             "os": "macos-latest",
             "platform": "ios",
+            "linux": "",
+            "publish": "yes",
             "export_mode": "skip",
             "bldprefix": "ios",
             "mobile_build": "-Ax",

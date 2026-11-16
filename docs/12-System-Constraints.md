@@ -120,7 +120,9 @@ already in code are left alone.
 <!--CSTR-LTTCE-BLD-00003-->
 **CSTR-LTTCE-BLD-00003** — The published Linux packages (AppImage, `.deb`, the APT repository) SHALL be
 built on a pinned Ubuntu 24.04 runner image (`ubuntu-24.04`, `ubuntu-24.04-arm`), never on a moving label
-such as `ubuntu-latest`. Newer Ubuntu releases SHALL be covered by test-only CI legs that publish nothing.
+such as `ubuntu-latest`. Newer Ubuntu releases SHALL be built and tested by test-only CI legs that publish nothing
+but, when they fail, block a release like any other leg. These legs test packages built on the newer
+release; they do not test the published 24.04 packages installed there.
 
 *Rationale*: a Linux binary needs at least the glibc version of the system it was built on. One built on
 Ubuntu 26.04 does not start on Ubuntu 24.04 LTS or current Debian, the systems REQ-LTTCE-APT-00001

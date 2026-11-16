@@ -322,7 +322,10 @@ and step 390 (licence files inside every installer) in
     (matrix field `"publish": "no"`): they run the build, the full test pipeline and the install checks
     (steps 390, 393, 395), but upload nothing a release collects (steps 375, 391/392, 400 are skipped)
     and use a Rust cache of their own (step 120), since `rust-cache` keys on OS family and architecture,
-    not on the image. The Linux-only steps are selected by the matrix field `"linux"` (`x64` | `arm64`).
+    not on the image. Test-only does not mean optional: a failing test-only leg fails `build-and-test`
+    and so blocks `release-gate` on a release tag. They test packages built on 26.04, not the published
+    24.04 packages installed on 26.04. The Linux-only steps are selected by the matrix field `"linux"`
+    (`x64` | `arm64`, `""` on the other legs); `"publish"` is `"yes"` on every published leg.
 2.  **Build & Test Job**: This job runs in parallel for each configuration in the matrix.
     -   **Environment**: Sets up Node.js, Rust (including cross-compilation targets if needed), and caches dependencies.
     -   **Build**: Compiles the Rust backend and builds the frontend, finally bundling them into a native application (`.exe`, `.dmg`, `.AppImage`).
