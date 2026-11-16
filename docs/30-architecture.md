@@ -316,6 +316,13 @@ and step 390 (licence files inside every installer) in
     Every desktop leg builds natively on a runner of its own architecture — `windows-11-arm` and
     `ubuntu-24.04-arm` for the ARM64 Windows and Linux legs — except `macos-intel`, which is
     cross-built on an arm64 macOS runner.
+    The published Linux legs are pinned to Ubuntu 24.04 (`ubuntu-24.04`, `ubuntu-24.04-arm`;
+    CSTR-LTTCE-BLD-00003). Two more legs, `linux-u2604-desktop` and `linux-u2604-arm-desktop`, build
+    and test the same code on Ubuntu 26.04 (`ubuntu-26.04`, `ubuntu-26.04-arm`) and are **test-only**
+    (matrix field `"publish": "no"`): they run the build, the full test pipeline and the install checks
+    (steps 390, 393, 395), but upload nothing a release collects (steps 375, 391/392, 400 are skipped)
+    and use a Rust cache of their own (step 120), since `rust-cache` keys on OS family and architecture,
+    not on the image. The Linux-only steps are selected by the matrix field `"linux"` (`x64` | `arm64`).
 2.  **Build & Test Job**: This job runs in parallel for each configuration in the matrix.
     -   **Environment**: Sets up Node.js, Rust (including cross-compilation targets if needed), and caches dependencies.
     -   **Build**: Compiles the Rust backend and builds the frontend, finally bundling them into a native application (`.exe`, `.dmg`, `.AppImage`).
@@ -2602,7 +2609,7 @@ outputs:
 *Sequence.* The build and the scan run side by side; the gate waits for both.
 
 ```text
-               ┌─► build-and-test (8 legs, committed notices) ──► package-msix-bundle (tags) ──────┐
+               ┌─► build-and-test (10 legs, committed notices) ─► package-msix-bundle (tags) ──────┐
                │                                                                                    │
                ├─► foss-compliance  (lightweight; use_legattice false) ────────────────────────────┤
  setup ────────┤                                                                                    ▼
@@ -2620,8 +2627,8 @@ outputs:
 - **`build-and-test`** needs only `setup`: it always builds with the committed notices (no step 102 any
   more), so it never waits for the scan. Step 390 checks the installers against those committed files.
 - **`foss-scan`** (`if: use_legattice`) calls `blessia-blessini/legattice/.github/workflows/scan.yml@main` on
-  `github.sha` with `shards: '12'` — 8 build legs + 12 shards = the 20 jobs GitHub runs at once for a public
-  repository on the free plan; broker and merge run before and after the shards. `block_at: low` for a
+  `github.sha` with `shards: '12'` — 10 build legs + 12 shards = 22 jobs, of which GitHub runs 20 at once for a public
+  repository on the free plan, so 2 wait for a free slot; broker and merge run before and after the shards. `block_at: low` for a
   `release` and a `candidate`, `none` for a build by hand: on a tag build its merge job fails while any topic is
   open, reopened or pending removal; on a branch build the topics are only listed. The release gate's fix text
   (`SCAN_FIX` in `release-plan.mjs`) then lists the steps: topics in the merge job's summary, ready drafts in the

@@ -48,6 +48,8 @@ on:
         - windows-arm-desktop
         - linux-desktop
         - linux-arm-desktop
+        - linux-u2604-desktop       # test only, Ubuntu 26.04 x64 -- publishes nothing
+        - linux-u2604-arm-desktop   # test only, Ubuntu 26.04 ARM64 -- publishes nothing
         - macos-universal
         - macos-arm64
         - macos-intel
@@ -121,6 +123,14 @@ jobs:
       run: |
         # 1. Define the Master Matrix as a JSON String
         #    (We use a compact JSON structure here)
+        #    "linux": set on Linux desktop legs only -- the AppImage target
+        #      architecture (x64 | arm64); the Linux steps run where it is set.
+        #    "publish": "no" marks a test-only leg: it builds and runs every
+        #      test and install check, but uploads nothing that a release
+        #      collects (DOWNLOAD-*, DEMO-EXPORT-*, FOSS-APPIMAGE-*). The
+        #      Ubuntu 26.04 legs are test-only: a binary built there needs the
+        #      newer glibc of 26.04 and would not start on Ubuntu 24.04 or
+        #      Debian, so the published Linux packages stay built on 24.04.
         CONST_JSON='[
           {
             "os": "windows-latest",
@@ -167,8 +177,9 @@ jobs:
             "upload_path2": ""
           },
           {
-            "os": "ubuntu-latest",
+            "os": "ubuntu-24.04",
             "platform": "linux-desktop",
+            "linux": "x64",
             "export_mode": "required",
             "bldprefix": "",
             "mobile_build": "",
@@ -180,11 +191,38 @@ jobs:
           {
             "os": "ubuntu-24.04-arm",
             "platform": "linux-arm-desktop",
+            "linux": "arm64",
             "export_mode": "required",
             "bldprefix": "",
             "mobile_build": "",
             "args": "--config src-tauri/target/appimage-licences/tauri.conf.json",
             "download_name": "Linux-ARM64-Desktop-App-tested-on-Ubuntu-Appimage",
+            "upload_path1": "src-tauri/target/release/bundle/appimage/*.AppImage",
+            "upload_path2": "src-tauri/target/release/bundle/deb/*.deb"
+          },
+          {
+            "os": "ubuntu-26.04",
+            "platform": "linux-u2604-desktop",
+            "linux": "x64",
+            "publish": "no",
+            "export_mode": "required",
+            "bldprefix": "",
+            "mobile_build": "",
+            "args": "--config src-tauri/target/appimage-licences/tauri.conf.json",
+            "download_name": "Linux-Ubuntu2604-test-only",
+            "upload_path1": "src-tauri/target/release/bundle/appimage/*.AppImage",
+            "upload_path2": "src-tauri/target/release/bundle/deb/*.deb"
+          },
+          {
+            "os": "ubuntu-26.04-arm",
+            "platform": "linux-u2604-arm-desktop",
+            "linux": "arm64",
+            "publish": "no",
+            "export_mode": "required",
+            "bldprefix": "",
+            "mobile_build": "",
+            "args": "--config src-tauri/target/appimage-licences/tauri.conf.json",
+            "download_name": "Linux-ARM64-Ubuntu2604-test-only",
             "upload_path1": "src-tauri/target/release/bundle/appimage/*.AppImage",
             "upload_path2": "src-tauri/target/release/bundle/deb/*.deb"
           },
@@ -226,11 +264,11 @@ jobs:
         if [ "$TARGET" == "all" ]; then
           FINAL_JSON=$(echo "$CONST_JSON")
         elif [ "$TARGET" == "desktops" ]; then
-          FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "windows-desktop" or .platform == "windows-arm-desktop" or .platform == "linux-desktop" or .platform == "linux-arm-desktop" or .platform == "macos-arm64" or .platform == "macos-intel")]')
+          FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "windows-desktop" or .platform == "windows-arm-desktop" or .platform == "linux-desktop" or .platform == "linux-arm-desktop" or .platform == "linux-u2604-desktop" or .platform == "linux-u2604-arm-desktop" or .platform == "macos-arm64" or .platform == "macos-intel")]')
         elif [ "$TARGET" == "desktops-macos" ]; then
           FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "macos-arm64" or .platform == "macos-intel")]')
         elif [ "$TARGET" == "non-apple-os-desktops" ]; then
-          FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "windows-desktop" or .platform == "windows-arm-desktop" or .platform == "linux-desktop" or .platform == "linux-arm-desktop")]')
+          FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "windows-desktop" or .platform == "windows-arm-desktop" or .platform == "linux-desktop" or .platform == "linux-arm-desktop" or .platform == "linux-u2604-desktop" or .platform == "linux-u2604-arm-desktop")]')
         elif [ "$TARGET" == "windows-desktop" ]; then
           FINAL_JSON=$(echo "$CONST_JSON" | jq -c '[.[] | select(.platform == "windows-desktop")]')
         elif [ "$TARGET" == "windows-arm-desktop" ]; then
@@ -304,7 +342,9 @@ jobs:
     with:
       repository: ${{ github.repository }}
       ref: ${{ github.sha }}
-      # Beside the 8 build legs: 8 + 12 = the 20 jobs GitHub runs at once.
+      # Beside the 10 build legs: 10 + 12 = 22 jobs; GitHub runs 20 at once,
+      # so 2 wait for a free slot (the 2 test-only Ubuntu 26.04 legs added
+      # them; shards stayed at 12).
       shards: '12'
       # Every tag build — final release and candidate — stops on an undecided
       # topic, so a candidate shows what the release would hit; a build by
@@ -399,6 +439,11 @@ jobs:
       uses: Swatinem/rust-cache@v2
       with:
         workspaces: src-tauri
+        # rust-cache keys on OS family and architecture, not the image: a
+        # 26.04 leg would share its cache with the 24.04 leg, which would then
+        # restore build scripts linked against the newer glibc. Test-only legs
+        # get a key of their own; the other legs keep theirs unchanged.
+        key: ${{ matrix.config.publish == 'no' && matrix.config.os || '' }}
     # end RUST Cache ###############################################
 
     # NPM Cache ####################################################
@@ -511,7 +556,7 @@ jobs:
     # and their libraries, and its typelibs; the TIFF loader would bring
     # GPL-2.0+ libjbig along, and nothing in Lattice loads a typelib.
     - name: 340. Keep the TIFF loader and typelibs out of the AppImage (Linux)
-      if: matrix.config.platform == 'linux-desktop' || matrix.config.platform == 'linux-arm-desktop'
+      if: matrix.config.linux != ''
       shell: bash
       run: bash scripts/appimage-exclude.sh
 
@@ -520,7 +565,7 @@ jobs:
     # point to /usr/share/common-licenses; this stages both and writes the Tauri
     # config the Linux legs pass to 350 (matrix args: --config).
     - name: 341. Stage licence files for the AppImage (Linux)
-      if: matrix.config.platform == 'linux-desktop' || matrix.config.platform == 'linux-arm-desktop'
+      if: matrix.config.linux != ''
       shell: bash
       run: bash scripts/appimage-stage-licences.sh
 
@@ -647,7 +692,7 @@ jobs:
     #       nothing (see the Rosetta note on macos-intel in step 370.2).
     ################################################################
     - name: 375. Upload Lattice-generated demo documents
-      if: matrix.config.export_mode != 'skip'
+      if: matrix.config.export_mode != 'skip' && matrix.config.publish != 'no'
       uses: actions/upload-artifact@v7
       id: a-demo-export
       with:
@@ -777,11 +822,13 @@ jobs:
     # reviewed in foss/appimage-packages.json, with an unchanged copyright file and
     # a licence the policy admits for shared libraries. Runs on the machine that
     # built it, so dpkg knows the exact packages; writes the AppImage SBOM.
+    # Not on a test-only leg: its AppImage is never published, and the reviewed
+    # package list describes the 24.04 image the published one is built on.
     - name: 391. FOSS - AppImage system libraries (Linux)
-      if: matrix.config.platform == 'linux-desktop' || matrix.config.platform == 'linux-arm-desktop'
+      if: matrix.config.linux != '' && matrix.config.publish != 'no'
       shell: bash
       env:
-        APPIMAGE_TARGET: ${{ matrix.config.platform == 'linux-desktop' && 'linux-x64' || 'linux-arm64' }}
+        APPIMAGE_TARGET: linux-${{ matrix.config.linux }}
       run: |
         set -euo pipefail
         shopt -s nullglob
@@ -793,7 +840,7 @@ jobs:
         node scripts/foss/foss.mjs appimage --appimage "${images[0]}" --root "$work/squashfs-root" --target "$APPIMAGE_TARGET" --out-dir foss-appimage
 
     - name: 392. Upload AppImage SBOM (Linux)
-      if: always() && (matrix.config.platform == 'linux-desktop' || matrix.config.platform == 'linux-arm-desktop')
+      if: always() && matrix.config.linux != '' && matrix.config.publish != 'no'
       uses: actions/upload-artifact@v7
       with:
         name: FOSS-APPIMAGE-${{ matrix.config.platform }}
@@ -808,7 +855,7 @@ jobs:
     #   - the upload to lattice-md.app (step 905)
     #   - a real `sudo apt install` from the site (by hand, after the release)
     - name: 393. APT repository from this build (Linux)
-      if: matrix.config.platform == 'linux-desktop' || matrix.config.platform == 'linux-arm-desktop'
+      if: matrix.config.linux != ''
       shell: bash
       run: |
         set -euo pipefail
@@ -823,7 +870,7 @@ jobs:
     # through the PATH every user gets, not through the runner's. `--help` is
     # answered before any window code runs (lib.rs), so no display is needed.
     - name: 395. Command line after installing (Linux)
-      if: matrix.config.platform == 'linux-desktop' || matrix.config.platform == 'linux-arm-desktop'
+      if: matrix.config.linux != ''
       shell: bash
       run: |
         set -euo pipefail
@@ -850,6 +897,8 @@ jobs:
     # 400 / Upload Artifacts
     ################################################################
     - name: 400. Upload Artifacts (ALL)
+      # Not on a test-only leg: step 901 publishes every DOWNLOAD-* artifact.
+      if: matrix.config.publish != 'no'
       uses: actions/upload-artifact@v7
       id: a-download-exec
       with:

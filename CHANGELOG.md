@@ -6,6 +6,7 @@ Edit the section for your next version **before** pushing the release tag like v
 ## v0.3.62
 ### Changes
   <!-- INSERT BULLETS UNDER THIS LINE -->
+- CHORE: CI tests on Ubuntu 26.04 (x64 + ARM64); published Linux packages stay built on 24.04
 - PREP Release 0.3.61
 ---
 

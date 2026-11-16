@@ -117,6 +117,20 @@ that release's contributors. Text in code is never a mention and reads the same.
 the release (904) and the release-site page (905) are made from. E-mail addresses, URL paths and text
 already in code are left alone.
 
+<!--CSTR-LTTCE-BLD-00003-->
+**CSTR-LTTCE-BLD-00003** — The published Linux packages (AppImage, `.deb`, the APT repository) SHALL be
+built on a pinned Ubuntu 24.04 runner image (`ubuntu-24.04`, `ubuntu-24.04-arm`), never on a moving label
+such as `ubuntu-latest`. Newer Ubuntu releases SHALL be covered by test-only CI legs that publish nothing.
+
+*Rationale*: a Linux binary needs at least the glibc version of the system it was built on. One built on
+Ubuntu 26.04 does not start on Ubuntu 24.04 LTS or current Debian, the systems REQ-LTTCE-APT-00001
+promises the packages to; one built on 24.04 also runs on newer systems. `ubuntu-latest` moves to the
+newest Ubuntu without a change in this repository, so it would raise that floor silently (decided by the
+product owner, 2026-11-16).
+*Design*: `buildAndTest.yml`, setup job matrix: `linux-desktop` and `linux-arm-desktop` on the pinned
+images; `linux-u2604-desktop` and `linux-u2604-arm-desktop` on `ubuntu-26.04` / `ubuntu-26.04-arm` with
+`"publish": "no"` (ARCH text under *Key CI Steps* in `30-architecture.md`).
+
 ---
 
 [^posix]: POSIX — Portable Operating System Interface. The IEEE/ISO standard for Unix-like system
